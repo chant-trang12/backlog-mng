@@ -20,10 +20,10 @@ if (isMssql) {
       user: process.env.MSSQL_USER || "sa",
       password: process.env.MSSQL_PASSWORD || "",
       database: process.env.MSSQL_DATABASE || "backlog_mng",
+      requestTimeout: Number(process.env.MSSQL_REQUEST_TIMEOUT || 30000),
       options: {
         encrypt: process.env.MSSQL_ENCRYPT === "true",
         trustServerCertificate: process.env.MSSQL_TRUST_SERVER_CERTIFICATE !== "false",
-        requestTimeout: Number(process.env.MSSQL_REQUEST_TIMEOUT || 30000),
       },
     },
     pool: {
