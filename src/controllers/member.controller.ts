@@ -8,10 +8,7 @@ import {
 } from "../services/member.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
-
-function isNonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
+import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 // Khai báo nhân sự mới — dạng bảng CRUD: Họ và Tên, Chức vụ, Team. Gắn theo
 // period_id (tháng backlog) — xóa/sửa ở tháng nào chỉ ảnh hưởng tháng đó.
@@ -56,6 +53,9 @@ export async function listMembersHandler(req: Request, res: Response) {
 }
 
 export async function updateMemberHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+
   const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia } = req.body ?? {};
   if (team_id !== undefined) {
     const team = await getTeam(Number(team_id));
@@ -64,7 +64,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
     }
   }
 
-  const member = await updateMember(Number(req.params.id), {
+  const member = await updateMember(id, {
     name,
     chuc_vu,
     team_id: team_id !== undefined ? Number(team_id) : undefined,
@@ -79,7 +79,9 @@ export async function updateMemberHandler(req: Request, res: Response) {
 }
 
 export async function deleteMemberHandler(req: Request, res: Response) {
-  const ok = await deleteMember(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteMember(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy nhân sự" });
   res.status(204).send();
 }

@@ -99,10 +99,7 @@ với nhóm chức năng tương ứng (`period`, `task`, `team`, `member`, `csk
 
 ## Test
 
-`npm test` chạy vitest + supertest, gọi thẳng qua `createApp()` — **dùng
-chung file SQLite với dev server** (`data/backlog.db`), không có DB test
-riêng biệt. Chạy test nhiều lần liên tiếp có thể để lại dữ liệu thừa (period,
-tieu_chi_configs, ranking_columns...); các bảng cấu hình toàn cục
-(`tieu_chi_configs`, `ranking_rows/columns/cells`) không gắn `period_id` nên
-cần các test tự dọn dẹp dữ liệu đã tạo (xem `tests/tieuchi.test.ts`,
-`tests/ranking.test.ts` làm mẫu).
+`npm test` chạy Vitest + Supertest, gọi thẳng qua `createApp()`:
+- Sử dụng file SQLite test riêng biệt (`data/test-backlog.db`), độc lập hoàn toàn với database dev (`data/backlog.db`).
+- `tests/globalSetup.ts` tự động dọn dẹp và reset database test trước và sau mỗi đợt chạy test, không làm ảnh hưởng đến dữ liệu dev.
+- Các test file chạy tuần tự (`fileParallelism: false`) để đảm bảo tính toàn vẹn dữ liệu.

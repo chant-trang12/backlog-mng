@@ -8,10 +8,7 @@ import {
   renameRankingColumn,
   setRankingCell,
 } from "../services/ranking.service.js";
-
-function isNonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
+import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 export async function getRankingConfigHandler(_req: Request, res: Response) {
   res.json(await getRankingConfig());
@@ -23,7 +20,9 @@ export async function addRankingRowHandler(_req: Request, res: Response) {
 }
 
 export async function deleteRankingRowHandler(req: Request, res: Response) {
-  const ok = await deleteRankingRow(Number(req.params.viTri));
+  const viTri = parsePositiveInt(req.params.viTri);
+  if (!Number.isFinite(viTri)) return res.status(400).json({ error: "viTri không hợp lệ" });
+  const ok = await deleteRankingRow(viTri);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy hàng" });
   res.status(204).send();
 }
@@ -48,7 +47,9 @@ export async function renameRankingColumnHandler(req: Request, res: Response) {
 }
 
 export async function deleteRankingColumnHandler(req: Request, res: Response) {
-  const ok = await deleteRankingColumn(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteRankingColumn(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy cột" });
   res.status(204).send();
 }

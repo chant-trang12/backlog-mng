@@ -7,6 +7,7 @@ import {
 } from "../services/creationRate.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 export async function createCreationRateHandler(req: Request, res: Response) {
   const { so_luong_thanh_cong, so_luong_that_bai, team_id, period_id } = req.body ?? {};
@@ -60,7 +61,9 @@ export async function updateCreationRateHandler(req: Request, res: Response) {
 }
 
 export async function deleteCreationRateHandler(req: Request, res: Response) {
-  const ok = await deleteCreationRate(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteCreationRate(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy dữ liệu" });
   res.status(204).send();
 }

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { createTicket, deleteTicket, listTickets, updateTicket } from "../services/ticket.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 export async function createTicketHandler(req: Request, res: Response) {
   const { tong_ticket, ticket_vuot, dung_han, team_id, period_id } = req.body ?? {};
@@ -45,7 +46,7 @@ export async function updateTicketHandler(req: Request, res: Response) {
     }
   }
 
-  const ticket = await updateTicket(Number(req.params.id), {
+  const ticket = await updateTicket(parsePositiveInt(req.params.id), {
     team_id: team_id !== undefined ? Number(team_id) : undefined,
     period_id: period_id !== undefined ? Number(period_id) : undefined,
     tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
@@ -57,7 +58,9 @@ export async function updateTicketHandler(req: Request, res: Response) {
 }
 
 export async function deleteTicketHandler(req: Request, res: Response) {
-  const ok = await deleteTicket(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteTicket(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy ticket" });
   res.status(204).send();
 }

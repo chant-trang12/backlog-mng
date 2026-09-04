@@ -9,6 +9,12 @@ const dataDir = path.join(__dirname, "../../data");
 
 const isMssql = process.env.DB_CLIENT === "mssql";
 
+// Fail fast on startup if MSSQL credentials are missing
+if (isMssql && !process.env.MSSQL_PASSWORD) {
+  console.error("FATAL: MSSQL_PASSWORD is required when DB_CLIENT=mssql");
+  process.exit(1);
+}
+
 let dbInstance: Knex;
 
 if (isMssql) {

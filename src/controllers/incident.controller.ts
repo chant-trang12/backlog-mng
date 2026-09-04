@@ -7,10 +7,7 @@ import {
 } from "../services/incident.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
-
-function isNonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
+import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 export async function createIncidentHandler(req: Request, res: Response) {
   const { su_co, tinh_chat, team_id, period_id } = req.body ?? {};
@@ -62,7 +59,9 @@ export async function updateIncidentHandler(req: Request, res: Response) {
 }
 
 export async function deleteIncidentHandler(req: Request, res: Response) {
-  const ok = await deleteIncident(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteIncident(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy sự cố" });
   res.status(204).send();
 }

@@ -10,14 +10,12 @@ import {
 } from "../services/task.service.js";
 import { exportBacklogToExcel } from "../services/export.service.js";
 import { getPeriod } from "../services/period.service.js";
-
-function isNonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
+import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 // 1.3 Nhập mới task cho một team trong tháng backlog `periodId`.
 export async function createTaskHandler(req: Request, res: Response) {
-  const periodId = Number(req.params.periodId);
+  const periodId = parsePositiveInt(req.params.periodId);
+  if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
   const period = await getPeriod(periodId);
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
@@ -31,7 +29,8 @@ export async function createTaskHandler(req: Request, res: Response) {
 }
 
 export async function listTasksHandler(req: Request, res: Response) {
-  const periodId = Number(req.params.periodId);
+  const periodId = parsePositiveInt(req.params.periodId);
+  if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
   const period = await getPeriod(periodId);
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
@@ -40,7 +39,9 @@ export async function listTasksHandler(req: Request, res: Response) {
 }
 
 export async function getTaskHandler(req: Request, res: Response) {
-  const task = await getTask(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const task = await getTask(id);
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }
@@ -48,13 +49,17 @@ export async function getTaskHandler(req: Request, res: Response) {
 // 1.4 Cập nhật task (sửa nội dung hoặc cập nhật tiến độ: % hoàn thành, trạng
 // thái, tiến độ, đánh giá CPO...).
 export async function updateTaskHandler(req: Request, res: Response) {
-  const task = await updateTask(Number(req.params.id), req.body ?? {});
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const task = await updateTask(id, req.body ?? {});
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }
 
 export async function deleteTaskHandler(req: Request, res: Response) {
-  const ok = await deleteTask(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteTask(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy task" });
   res.status(204).send();
 }
@@ -62,7 +67,8 @@ export async function deleteTaskHandler(req: Request, res: Response) {
 // Chuyển các task đã chọn sang tháng kế tiếp (tự tạo tháng đích nếu chưa có),
 // đánh dấu "Nhiệm vụ tồn" vào Tính chất.
 export async function moveTasksToNextMonthHandler(req: Request, res: Response) {
-  const periodId = Number(req.params.periodId);
+  const periodId = parsePositiveInt(req.params.periodId);
+  if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
   const { ids } = req.body ?? {};
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
@@ -85,7 +91,8 @@ export async function markTasksNoScoreHandler(req: Request, res: Response) {
 
 // 1.5 Xuất Excel toàn bộ backlog của tháng (hoặc lọc theo team) theo mẫu.
 export async function exportBacklogHandler(req: Request, res: Response) {
-  const periodId = Number(req.params.periodId);
+  const periodId = parsePositiveInt(req.params.periodId);
+  if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
   const team = typeof req.query.team === "string" ? req.query.team : undefined;
 
   try {

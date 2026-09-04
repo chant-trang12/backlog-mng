@@ -7,6 +7,7 @@ import {
 } from "../services/training.service.js";
 import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 const LOAI_OPTIONS = ["Đào tạo", "Chứng chỉ QT"];
 
@@ -78,7 +79,9 @@ export async function updateTrainingRecordHandler(req: Request, res: Response) {
 }
 
 export async function deleteTrainingRecordHandler(req: Request, res: Response) {
-  const ok = await deleteTrainingRecord(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteTrainingRecord(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

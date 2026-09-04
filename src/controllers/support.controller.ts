@@ -8,6 +8,7 @@ import {
 import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { getTeam } from "../services/team.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 // Thêm mới bản ghi Hỗ trợ — Tháng theo dõi lấy từ period_id do client gửi
 // (gán theo Bộ lọc "Tháng" đang chọn ở trang Team & Nhân sự, không cho người
@@ -79,7 +80,9 @@ export async function updateSupportRecordHandler(req: Request, res: Response) {
 }
 
 export async function deleteSupportRecordHandler(req: Request, res: Response) {
-  const ok = await deleteSupportRecord(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteSupportRecord(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

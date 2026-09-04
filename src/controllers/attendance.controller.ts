@@ -8,6 +8,7 @@ import {
   setAttendanceExcluded,
 } from "../services/attendance.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 
@@ -50,7 +51,9 @@ export async function listAttendanceHandler(req: Request, res: Response) {
 }
 
 export async function deleteAttendanceHandler(req: Request, res: Response) {
-  const ok = await deleteAttendanceRecord(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteAttendanceRecord(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }
