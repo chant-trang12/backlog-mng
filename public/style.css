@@ -1,0 +1,865 @@
+:root {
+  color-scheme: light dark;
+  /* Bảng màu: xanh olive đậm → xanh lá sage → be khaki nhạt → kem (theo ảnh mẫu mới) */
+  --cream: #fdf8ef;
+  --pink-light: #dbcfa6;
+  --pink-rose: #9aad79;
+  --maroon: #546b41;
+
+  --bg: var(--cream);
+  --card-bg: #ffffff;
+  --text: #38422b;
+  --muted: #7c8467;
+  --border: #e6ddc4;
+  --primary: var(--pink-rose);
+  --primary-hover: #7f9463;
+  --danger: var(--maroon);
+  --danger-hover: #3f4f30;
+  --success: #7c9b5c;
+  --warning: #c9a24c;
+  --header-bg: var(--maroon);
+
+  /* Đỏ đất ấm dành riêng cho các nút Xóa — nổi bật, vẫn hài hoà với olive/khaki. */
+  --delete: #b3452f;
+  --delete-hover: #93361f;
+  --delete-light: #f3ded9;
+  --delete-light-hover: #e8c2b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #22261a;
+    --card-bg: #2f3423;
+    --text: #eef0e4;
+    --muted: #b7bda3;
+    --border: #454c34;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1 { margin: 0 0 4px; font-size: 1.3rem; }
+.subtitle { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+.sidebar {
+  width: 220px;
+  flex: 0 0 220px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header { padding: 24px 20px 16px; }
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+}
+
+.nav-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.nav-item:hover { background: var(--bg); }
+.nav-item.active { background: var(--primary); color: #fff; }
+
+.app-content { flex: 1; min-width: 0; }
+
+main {
+  padding: 24px 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1400px;
+}
+
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden] {
+  display: none;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.card h2 { margin-top: 0; font-size: 1.1rem; }
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Bộ lọc + Team trên cùng 1 dòng, tách 2 khung với tỉ lệ hợp lý. */
+.row-split {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.row-split-narrow {
+  flex: 0 1 280px;
+}
+
+.row-split-wide {
+  flex: 1 1 480px;
+}
+
+.row-split-equal {
+  flex: 1 1 420px;
+}
+
+label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 4px; }
+
+input, select, textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  max-width: 100%;
+}
+
+/* select ở trình duyệt thật (không phải headless) tự co giãn theo option dài
+   nhất — có option dài như "NV được giao từ BGĐ" khiến select rất rộng,
+   không co lại theo flex được nên đẩy tràn cả hàng ra ngoài trang. Giới hạn
+   độ rộng tối đa, phần chữ dài sẽ bị cắt (…) thay vì đẩy vỡ layout. */
+select {
+  max-width: 220px;
+}
+
+textarea { resize: vertical; min-height: 60px; width: 100%; }
+
+button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+button.primary:hover { background: var(--primary-hover); }
+button.danger { background: var(--delete); border-color: var(--delete); color: #fff; }
+button.danger:hover { background: var(--delete-hover); border-color: var(--delete-hover); }
+button.small { padding: 4px 8px; font-size: 0.8rem; }
+button.small + button.small { margin-left: 6px; }
+
+/* Nút hành động trong bảng — nền màu để nổi bật thay vì chỉ viền. */
+button.btn-edit { background: #ffeab0; border-color: #f6d989; color: #7a4e12; }
+button.btn-edit:hover { background: #f6d989; }
+button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+button.btn-delete:hover { background: var(--delete-light-hover); }
+button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
+button.btn-grade:hover { background: #c3d7b3; }
+
+/* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
+button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
+button.btn-move-month:hover { background: var(--primary-hover); }
+button.btn-move-month:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+
+/* Banner cảnh báo ở trang Backlog — chưa chấm điểm / quá hạn / sắp đến hạn. */
+.task-warnings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.task-warning-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+.task-warning-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.6);
+}
+.task-warning-graded { background: #ead9b0; border-color: #d9c187; color: #7a5a12; }
+.task-warning-overdue { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+.task-warning-upcoming { background: #ffedd5; border-color: #f0cd9e; color: #9a3412; }
+.task-warning-chip.active { outline: 2px solid currentColor; }
+button.btn-no-score { background: #ead9b0; border-color: #d9c187; color: #7a5a12; }
+button.btn-no-score:hover { background: #d9c187; }
+button.btn-export { background: var(--pink-light); border-color: #c7ba8e; color: var(--text); }
+button.btn-export:hover { background: #c7ba8e; }
+
+/* Nút "Không tính đi muộn" / "Bỏ Không tính đi muộn" ở tab Chấm công và Nội
+   quy — cần nổi bật rõ vì tác động trực tiếp đến số liệu tổng hợp. */
+button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
+button.btn-exclude:hover { background: #b78e3d; border-color: #b78e3d; }
+button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
+button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
+
+/* Chặn lỗi kinh điển của flexbox: item flex mặc định không co xuống dưới
+   kích thước nội dung của nó (min-width: auto), nên nếu chữ trong select/
+   nhãn dài, cả khung có thể bị đẩy tràn ra ngoài viewport thay vì tự xuống
+   dòng. Ép min-width:0 để mọi cấp flex đều co giãn/xuống dòng đúng. */
+.row-split > *,
+.row > * {
+  min-width: 0;
+}
+
+/* Bọc nút hành động trong 1 div bên trong <td> — không đặt display:flex
+   trực tiếp lên <td> vì sẽ làm mất viền ô trong bảng border-collapse. */
+.actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.actions-cell button.small + button.small { margin-left: 0; }
+
+.pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* Tab kiểu Chrome cho trang Team & Nhân sự — tab nối liền phía trên khung nội
+   dung đang active, không có khoảng cách, giống các tab trình duyệt. */
+.tab-panel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.chrome-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.chrome-tabs .pill {
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+  background: var(--bg);
+  color: var(--muted);
+  position: relative;
+  top: 1px;
+}
+
+.chrome-tabs .pill.active {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-bottom: none;
+  color: #fff;
+  font-weight: 600;
+}
+
+.tab-panel-group #team-tab-nhansu > .card,
+.tab-panel-group > .card {
+  border-top-left-radius: 0;
+  margin-top: 0;
+}
+
+.pill .pill-x {
+  margin-left: 8px;
+  color: var(--delete);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th, td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--header-bg);
+  color: #fff;
+  position: sticky;
+  top: 0;
+}
+
+.table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
+
+#task-table th { text-align: center; }
+#task-table td:nth-child(1), /* checkbox */
+#task-table td:nth-child(2), /* STT */
+#task-table td:nth-child(3), /* Tag */
+#task-table td:nth-child(4), /* Phân loại */
+#task-table td:nth-child(5), /* Team */
+#task-table td:nth-child(8), /* Deadline */
+#task-table td:nth-child(9), /* % Hoàn thành */
+#task-table td:nth-child(10), /* Trạng thái */
+#task-table td:nth-child(12), /* Tính chất */
+#task-table td:nth-child(13) { /* % Đánh giá */
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Cột Tag fix cứng chiều rộng bằng cột Team — cho phép chữ xuống dòng thay vì kéo giãn cột. */
+#task-table td:nth-child(3) .status-badge {
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+}
+
+#member-table th { text-align: center; }
+#member-table td:nth-child(2), /* STT */
+#member-table td:nth-child(5), /* Team */
+#member-table td:nth-child(6), /* Tuân thủ */
+#member-table td:nth-child(7), /* Nội quy */
+#member-table td:nth-child(8), /* Đào tạo */
+#member-table td:nth-child(9), /* Hỗ trợ */
+#member-table td:nth-child(10), /* Đánh giá */
+#member-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+#incident-table th,
+#ticket-table th,
+#creation-rate-table th,
+#compliance-table th,
+#training-table th,
+#support-table th,
+#danhgia-table th {
+  text-align: center;
+}
+
+#incident-table td:nth-child(1), /* Tháng */
+#incident-table td:nth-child(2), /* Team */
+#incident-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+#ticket-table td,
+#creation-rate-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+#compliance-table td:nth-child(1), /* Tháng theo dõi */
+#compliance-table td:nth-child(2), /* Team */
+#compliance-table td:nth-child(3), /* Nhân sự */
+#compliance-table td:nth-child(4), /* Vi phạm */
+#compliance-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Cột trong bảng Chấm công hoàn toàn động theo file Excel — không có width
+   cố định như các bảng khác, nên phải chặn xuống dòng (nowrap) và để bảng
+   tự giãn rộng + cuộn ngang qua .table-wrap, tránh mỗi ô bị bóp hẹp rồi vỡ
+   layout do chữ xuống dòng liên tục. */
+#attendance-table {
+  width: max-content;
+  min-width: 100%;
+}
+#attendance-table th,
+#attendance-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Giữ đúng độ rộng cột đã đặt cho bảng Nội quy thay vì bị kéo giãn lấp đầy
+   .table-wrap — cho phép cuộn ngang khi nội dung (VD: tên nhân sự dài) vượt
+   quá khung, thay vì ép co hẹp cột. */
+#noiquy-table {
+  width: max-content;
+  min-width: 100%;
+}
+#noiquy-table th,
+#noiquy-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+#noiquy-table th {
+  text-align: center;
+}
+#noiquy-table td:nth-child(1), /* checkbox */
+#noiquy-table td:nth-child(2), /* Tháng theo dõi */
+#noiquy-table td:nth-child(3), /* Team */
+#noiquy-table td:nth-child(5), /* Lượt đi muộn */
+#noiquy-table td:nth-child(6) { /* Total */
+  text-align: center;
+}
+
+/* Total > 0 nghĩa là nhân sự vẫn còn vi phạm sau khi trừ 3 lượt — tô sáng
+   để dễ nhận biết ngay trong bảng. */
+#noiquy-table td.noiquy-total-highlight {
+  background: var(--delete-light);
+  color: var(--delete);
+  font-weight: 600;
+}
+
+/* Dòng Chấm công đã "Không tính đi muộn" — làm mờ để phân biệt, dữ liệu vẫn
+   còn nguyên, chỉ không tính vào Lượt đi muộn ở tab Nội quy. */
+#attendance-table tr.attendance-row-excluded {
+  opacity: 0.5;
+}
+
+#training-table td:nth-child(1), /* Tháng theo dõi */
+#training-table td:nth-child(2), /* Team */
+#training-table td:nth-child(3), /* Nhân sự */
+#training-table td:nth-child(4), /* Loại */
+#training-table td:nth-child(5), /* Ngày thực hiện */
+#training-table td:nth-child(6), /* Người xác nhận */
+#training-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+#support-table td:nth-child(1), /* Tháng theo dõi */
+#support-table td:nth-child(2), /* Team thực hiện hỗ trợ */
+#support-table td:nth-child(3), /* Nhân sự */
+#support-table td:nth-child(4), /* Team nhận hỗ trợ */
+#support-table td:nth-child(6), /* Ngày hỗ trợ */
+#support-table td:nth-child(7), /* Người xác nhận */
+#support-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+#danhgia-table td:nth-child(1), /* Tháng theo dõi */
+#danhgia-table td:nth-child(2), /* Team */
+#danhgia-table td:nth-child(3), /* Nhân sự */
+#danhgia-table td:nth-child(4), /* Số thứ tự */
+#danhgia-table td:last-child { /* Sửa/Xóa */
+  text-align: center;
+  vertical-align: middle;
+}
+
+#danhgia-member-input-table td:nth-child(2) {
+  text-align: center;
+}
+#danhgia-member-input-table input[type="number"] {
+  text-align: center;
+}
+
+td[contenteditable="true"], td.editable-select { min-width: 100px; }
+td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+/* Ô nhập trực tiếp trong bảng (trang Cấu hình: Tiêu chí / Ranking team) —
+   nhìn liền mạch như spreadsheet, chỉ nổi viền khi đang focus để chỉnh. */
+.inline-cell-input {
+  width: 100%;
+  min-width: 70px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 6px;
+  text-align: center;
+  border-radius: 4px;
+}
+.inline-cell-input:hover { border-color: var(--border); }
+.inline-cell-input:focus { border-color: var(--primary); background: var(--card-bg); outline: none; }
+
+#tieuchi-table td, #ranking-table td { vertical-align: middle; }
+#tieuchi-table th, #ranking-table th { text-align: center; vertical-align: middle; }
+#tieuchi-table td:nth-child(1), /* Nhóm */
+#tieuchi-table td:nth-child(2) { /* Tiêu chí */
+  vertical-align: top;
+  padding-top: 10px;
+}
+#tieuchi-table tr:not(.tieuchi-chitieu-row) td:nth-child(1) { text-align: center; }
+#tieuchi-table .tieuchi-chitieu-row td { background: var(--bg); font-style: italic; color: var(--muted); }
+#tieuchi-table tfoot td { background: var(--bg); }
+#tieuchi-table tfoot td:not(:first-child) { text-align: center; }
+
+.ranking-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.ranking-column-header input {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+}
+.ranking-column-header input:focus { outline: 1px solid #fff; border-radius: 4px; }
+.ranking-column-header .pill-x { color: #fff; opacity: 0.8; }
+.ranking-column-header .pill-x:hover { opacity: 1; }
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
+.status-default { background: var(--border); color: var(--maroon); }
+.status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
+.status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
+.status-huy { background: var(--delete-light); color: var(--delete); }
+
+/* Tính chất — các sắc độ hồng khác nhau + 1 tông kem-nâu để phân biệt. */
+.tinh-chat-nvkh { background: #dbeafe; color: #1e40af; }
+.tinh-chat-nvps { background: #fce7f3; color: #9d174d; }
+.tinh-chat-nvtt { background: #ede9fe; color: #5b21b6; }
+.tinh-chat-bgd { background: #ffedd5; color: #9a3412; }
+.tinh-chat-ton { background: #e3e9d5; color: var(--maroon); }
+.tinh-chat-khong-tinh-diem { background: var(--border); color: var(--muted); }
+.tinh-chat-da-chuyen { background: #d6ebf5; color: #1f5f80; }
+
+/* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem teamColorClass trong app.js). */
+.team-badge { background: #dcfce7; color: #166534; }
+.team-color-0 { background: #e3ecd7; color: #4a6234; }
+.team-color-1 { background: #f3ded9; color: #93361f; }
+.team-color-2 { background: #f5e9c8; color: #8a6d1a; }
+.team-color-3 { background: #dde3d3; color: #3f4f30; }
+.team-color-4 { background: #d7e8e3; color: #2f6157; }
+.team-color-5 { background: #ecdbe4; color: #6b3a52; }
+
+/* Bản đậm hơn của bảng màu team, dùng làm màu tô cột trong biểu đồ (trang
+   Home) — cùng thứ tự index với team-color-N (xem teamBarColorClass). */
+.team-bar-0 { background: #7c9b5c; }
+.team-bar-1 { background: #b3452f; }
+.team-bar-2 { background: #c9a24c; }
+.team-bar-3 { background: #546b41; }
+.team-bar-4 { background: #4f8a7c; }
+.team-bar-5 { background: #8a5a75; }
+
+.hbar-empty { color: var(--muted); padding: 8px 4px; }
+
+.home-vbar-chart { height: 210px; }
+.home-vbar-chart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.home-combo-grid { stroke: var(--border); stroke-width: 1; }
+.home-combo-tick { font-size: 9.5px; fill: var(--muted); }
+.home-combo-axis-label { font-size: 10.5px; fill: var(--muted); font-weight: 600; }
+.home-combo-xlabel { font-size: 11px; fill: var(--text); font-weight: 600; }
+.home-combo-barvalue { font-size: 9.5px; fill: #fff; font-weight: 700; }
+.home-vbar-callout { background: var(--bg); border-radius: 10px; padding: 10px 16px; text-align: center; flex-shrink: 0; }
+.home-vbar-callout .big { font-size: 1.3rem; font-weight: 800; }
+.home-vbar-callout .small { font-size: 0.72rem; color: var(--muted); }
+.home-legend-line-icon { display: inline-flex; align-items: center; }
+
+.home-stat-groups { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
+.home-stat-list-empty { font-size: 0.8rem; color: var(--muted); }
+.home-donut-wrap { position: relative; flex-shrink: 0; }
+.home-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.home-donut-center .big { font-size: 2rem; font-weight: 800; }
+.home-donut-center .small { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+.home-donut-wedge { cursor: pointer; transition: transform 0.2s ease, filter 0.2s ease; }
+.home-donut-wedge:hover { transform: translate(var(--tx), var(--ty)); filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28)); }
+
+.home-donut-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 150px;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+  pointer-events: none;
+  z-index: 30;
+  white-space: nowrap;
+}
+.home-donut-tooltip.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.home-donut-tooltip-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.home-donut-tooltip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.home-donut-tooltip-label { color: var(--text); }
+.home-donut-tooltip-value { font-weight: 700; color: var(--text); margin-left: auto; padding-left: 12px; }
+.home-legend { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px 18px; justify-content: center; align-items: center; }
+.home-legend-grid { display: grid; grid-template-columns: repeat(2, auto); gap: 6px 20px; justify-content: center; }
+.home-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.home-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+#home-completion-table th,
+#home-completion-rate-table th {
+  text-align: center;
+  vertical-align: middle;
+  background: var(--bg);
+  color: var(--text);
+}
+#home-completion-table td,
+#home-completion-rate-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+#home-completion-table,
+#home-completion-rate-table {
+  table-layout: fixed;
+}
+#home-completion-table th:first-child,
+#home-completion-table td:first-child,
+#home-completion-rate-table th:first-child,
+#home-completion-rate-table td:first-child {
+  width: 90px;
+}
+#home-completion-table thead tr:nth-child(2) th,
+#home-completion-table td:not(:first-child) {
+  width: 70px;
+}
+#home-completion-rate-table th:not(:first-child),
+#home-completion-rate-table td:not(:first-child) {
+  width: 140px;
+}
+.home-tag-head { padding: 10px 6px; }
+.home-tag-head .status-badge { font-weight: 700; white-space: normal; line-height: 1.3; }
+#home-completion-table tr.home-tongdiem-row td,
+#home-completion-rate-table tr.home-tongdiem-row td {
+  background: var(--bg);
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
+#home-tonghop-table {
+  table-layout: fixed;
+}
+#home-tonghop-table th,
+#home-tonghop-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+#home-tonghop-table th:not(.home-tonghop-head) {
+  background: var(--bg);
+  color: var(--text);
+}
+.home-tonghop-head { color: #fff; font-weight: 700; }
+.home-tonghop-head-chitieu { background: #c9a24c; }
+.home-tonghop-head-tru { background: var(--delete); }
+.home-tonghop-head-cong { background: var(--success); }
+.home-tonghop-blank { background: #f2f0ea; }
+
+#home-ranking-team-table th,
+#home-ranking-team-table td,
+#home-ranking-detail-table th,
+#home-ranking-detail-table td:not(:first-child),
+#home-ranking-member-table th,
+#home-ranking-member-table td:not(:first-child) {
+  text-align: center;
+  vertical-align: middle;
+}
+#home-ranking-team-table tbody tr { cursor: pointer; }
+#home-ranking-team-table tbody tr:hover { background: var(--bg); }
+#home-ranking-team-table tbody tr.active { background: var(--bg); font-weight: 700; }
+#home-ranking-detail-table tr.home-nhom-row td { background: var(--bg); font-weight: 600; text-align: left; }
+#home-ranking-detail-table tr.home-tongdiem-row td { background: var(--bg); font-weight: 700; border-top: 2px solid var(--border); }
+
+/* Tag — mỗi lựa chọn trong danh sách cố định 1 màu riêng, nổi bật. */
+.tag-so-hoa { background: #d7f0ee; color: #0e6e64; }
+.tag-dau-tu { background: #f6e6bd; color: #8a5a12; }
+.tag-clc-dich-vu { background: #dbe4f5; color: #2c4a8a; }
+.tag-trai-nghiem-kh { background: #f8dbe6; color: #93265a; }
+.tag-quan-ly-clc { background: #e6dcf5; color: #5c3494; }
+.tag-iso { background: #d6ebf5; color: #1f5f80; }
+.tag-quy-trinh { background: #dfe8cf; color: #4a5f2e; }
+.tag-nv-ky-thuat { background: #ecdccb; color: #7a4a28; }
+
+/* Loại (tab Đào tạo) — Đào tạo / Chứng chỉ QT. */
+.loai-dao-tao { background: #d3ede8; color: #0f6656; }
+.loai-chung-chi { background: #f5e6b8; color: #8a6d1a; }
+
+.badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.badge-group .status-badge {
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+}
+
+.progress-bar {
+  width: 80px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.muted { color: var(--muted); }
+
+dialog {
+  border: none;
+  border-radius: 10px;
+  padding: 0;
+  max-width: 560px;
+  width: 90vw;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+dialog::backdrop { background: rgba(56, 66, 43, 0.35); }
+
+dialog form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+dialog input, dialog select, dialog textarea { width: 100%; }
+dialog .field-row { display: flex; gap: 12px; min-width: 0; }
+dialog .field-row > div { flex: 1; min-width: 0; }
+dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.checkbox-option input { width: auto; }
+
+.empty-state { color: var(--muted); padding: 24px; text-align: center; }
+
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.pagination-bar select { width: auto; }
+
+.pagination-bar #task-page-info {
+  font-size: 0.85rem;
+  min-width: 90px;
+  text-align: center;
+}
+
+.pagination-bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  min-width: 240px;
+  max-width: 360px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  color: var(--text);
+  box-shadow: 0 4px 16px rgba(56, 66, 43, 0.15);
+  font-size: 0.9rem;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast.toast-success { border-left-color: var(--success); }
+.toast.toast-error { border-left-color: var(--danger); }
+
+.toast.toast-hide {
+  animation: toast-out 0.2s ease-in forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(24px); }
+}

@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý Backlog theo Team</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>Backlog Manager</h1>
+        <p class="subtitle">Theo team, theo tháng</p>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="home">🏠 Home</button>
+        <button class="nav-item" data-page="backlog">📋 Backlog</button>
+        <button class="nav-item" data-page="team">👥 Team &amp; Nhân sự</button>
+        <button class="nav-item" data-page="cskh">🎧 CSKH</button>
+        <button class="nav-item" data-page="config">⚙️ Cấu hình</button>
+      </nav>
+    </aside>
+
+    <div class="app-content">
+      <main>
+        <!-- ---- Trang Home ---- -->
+        <div id="page-home">
+          <div class="row-split" style="margin-bottom:20px">
+            <section class="card" style="flex:1 1 160px">
+              <h2>Tìm kiếm</h2>
+              <div class="row">
+                <div>
+                  <label for="home-filter-period">Tháng</label>
+                  <select id="home-filter-period"></select>
+                </div>
+                <div>
+                  <label for="home-filter-team">Team</label>
+                  <select id="home-filter-team">
+                    <option value="">Tất cả team</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section class="card home-stat-card" style="flex:1.4 1 200px">
+              <h2 style="margin:0 0 12px">Nhiệm vụ trong Backlog</h2>
+              <div class="home-stat-groups" id="home-stat-groups"></div>
+            </section>
+
+            <section class="card" style="flex:3 1 400px">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <h2 style="margin:0">Ranking Team</h2>
+                <div class="home-vbar-callout" id="home-vbar-callout" style="margin-right:32px"></div>
+              </div>
+              <div class="home-vbar-chart" id="home-vbar-chart" style="max-width:420px;margin:16px auto 0"></div>
+              <div class="home-legend" id="home-vbar-legend" style="margin-top:10px"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="home-subnav">
+            <span class="pill active" data-tab="ranking">Ranking</span>
+            <span class="pill" data-tab="tonghop">Tổng hợp</span>
+            <span class="pill" data-tab="tyle-hoanthanh">Tỉ lệ hoàn thành nhiệm vụ</span>
+          </div>
+
+          <div id="home-tab-ranking">
+            <section class="card" style="margin-bottom:20px">
+              <h2 style="margin:0 0 6px">Ranking Team</h2>
+              <p class="muted" style="margin:0 0 12px">Bấm vào 1 team để xem điểm chi tiết và ranking thành viên.</p>
+              <div class="table-wrap">
+                <table id="home-ranking-team-table" style="max-width:420px">
+                  <thead>
+                    <tr>
+                      <th style="width:70px">Rank</th>
+                      <th>Team</th>
+                      <th style="width:110px">Điểm</th>
+                    </tr>
+                  </thead>
+                  <tbody id="home-ranking-team-tbody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <div class="row-split">
+              <section class="card row-split-equal" id="home-ranking-detail-card" hidden>
+                <h2 style="margin-top:0">Điểm chi tiết theo team: <span id="home-ranking-detail-team-name"></span></h2>
+                <div class="table-wrap">
+                  <table id="home-ranking-detail-table">
+                    <thead>
+                      <tr>
+                        <th>Chỉ tiêu</th>
+                        <th style="width:100px">Điểm chuẩn</th>
+                        <th style="width:100px">Điểm thực tế</th>
+                      </tr>
+                    </thead>
+                    <tbody id="home-ranking-detail-tbody"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="card row-split-equal" id="home-ranking-member-card" hidden>
+                <h2 style="margin-top:0">Ranking thành viên team: <span id="home-ranking-member-team-name"></span></h2>
+                <div class="table-wrap">
+                  <table id="home-ranking-member-table">
+                    <thead>
+                      <tr>
+                        <th>Họ và tên</th>
+                        <th style="width:80px">Rank</th>
+                        <th style="width:80px">KI</th>
+                      </tr>
+                    </thead>
+                    <tbody id="home-ranking-member-tbody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <section class="card" id="home-tab-tonghop" hidden>
+            <h2 style="margin:0 0 12px">Tổng hợp điểm theo Team</h2>
+            <div class="table-wrap">
+              <table id="home-tonghop-table">
+                <colgroup>
+                  <col style="width:90px" />
+                  <col style="width:90px" />
+                  <col style="width:110px" /><col style="width:110px" /><col style="width:110px" /><col style="width:110px" />
+                  <col style="width:110px" /><col style="width:110px" />
+                  <col style="width:110px" /><col style="width:110px" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th rowspan="2">Team</th>
+                    <th rowspan="2">Tổng điểm</th>
+                    <th colspan="4" class="home-tonghop-head home-tonghop-head-chitieu">Điểm tính theo chỉ tiêu</th>
+                    <th colspan="2" class="home-tonghop-head home-tonghop-head-tru">Điểm trừ</th>
+                    <th colspan="2" class="home-tonghop-head home-tonghop-head-cong">Điểm cộng</th>
+                  </tr>
+                  <tr>
+                    <th>Sprint Goal</th>
+                    <th>Sự cố</th>
+                    <th>Tỷ lệ xử lý ticket</th>
+                    <th>Tỷ lệ khởi tạo</th>
+                    <th>Tuân thủ quy trình, KH chung</th>
+                    <th>Tuân thủ nội quy</th>
+                    <th>Hỗ trợ, phối hợp</th>
+                    <th>Đào tạo</th>
+                  </tr>
+                </thead>
+                <tbody id="home-tonghop-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card" id="home-tab-tyle-hoanthanh" hidden>
+            <h2 style="margin:0 0 6px">Tổng hợp tỉ lệ hoàn thành nhiệm vụ</h2>
+            <p class="muted" style="margin:0 0 12px">Tỉ lệ % hoàn thành = Tổng tỉ lệ đã được đánh giá / Tổng đầu việc.</p>
+            <div class="table-wrap" style="margin-bottom:24px">
+              <table id="home-completion-rate-table">
+                <thead>
+                  <tr>
+                    <th>Team</th>
+                    <th class="home-tag-head"><span class="status-badge tag-so-hoa">Số hoá</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-dau-tu">Đầu tư</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-clc-dich-vu">Chất lượng dịch vụ</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-trai-nghiem-kh">Trải nghiệm khách hàng</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-quan-ly-clc">Quản lý chất lượng</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-iso">ISO</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-quy-trinh">Quy trình</span></th>
+                    <th class="home-tag-head"><span class="status-badge tag-nv-ky-thuat">Nhiệm vụ kỹ thuật</span></th>
+                    <th>Tổng</th>
+                  </tr>
+                </thead>
+                <tbody id="home-completion-rate-tbody"></tbody>
+              </table>
+            </div>
+
+            <h2 style="margin:0 0 6px">Chi tiết hoàn thành nhiệm vụ</h2>
+            <p class="muted" style="margin:0 0 12px">Tổng hợp từ Backlog theo Team và Tag — không tính các nhiệm vụ đánh dấu Hủy hoặc Không tính điểm.</p>
+            <div class="table-wrap">
+              <table id="home-completion-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2">Team</th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-so-hoa">Số hoá</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-dau-tu">Đầu tư</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-clc-dich-vu">Chất lượng dịch vụ</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-trai-nghiem-kh">Trải nghiệm khách hàng</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-quan-ly-clc">Quản lý chất lượng</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-iso">ISO</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-quy-trinh">Quy trình</span></th>
+                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-nv-ky-thuat">Nhiệm vụ kỹ thuật</span></th>
+                    <th colspan="2">Tổng</th>
+                  </tr>
+                  <tr>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+                  </tr>
+                </thead>
+                <tbody id="home-completion-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+          </div>
+        </div>
+
+        <!-- ---- Trang Backlog ---- -->
+        <div id="page-backlog" hidden>
+          <div class="row-split">
+            <section class="card row-split-equal">
+              <h2>Tháng backlog</h2>
+              <div class="row">
+                <div>
+                  <label for="period-select">Chọn tháng</label>
+                  <select id="period-select"></select>
+                </div>
+                <div>
+                  <label for="new-year">Năm</label>
+                  <input id="new-year" type="number" style="width:90px" />
+                </div>
+                <div>
+                  <label for="new-month">Tháng</label>
+                  <input id="new-month" type="number" min="1" max="12" style="width:70px" />
+                </div>
+                <div style="align-self:flex-end">
+                  <button id="create-period-btn" class="primary">+ Tạo tháng mới</button>
+                </div>
+                <div style="align-self:flex-end">
+                  <button id="delete-period-btn" class="danger">Xóa tháng này</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <h2>Tìm kiếm</h2>
+              <div class="row">
+                <div>
+                  <label for="filter-tinh-chat">Phân loại</label>
+                  <select id="filter-tinh-chat">
+                    <option value="">Tất cả</option>
+                    <option value="NVKH">NVKH</option>
+                    <option value="NVPS">NVPS</option>
+                    <option value="NVTT">NVTT</option>
+                    <option value="NV được giao từ BGĐ">NV được giao từ BGĐ</option>
+                    <option value="Nhiệm vụ tồn">Nhiệm vụ tồn</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="filter-khong-tinh-diem">Tính chất</label>
+                  <select id="filter-khong-tinh-diem">
+                    <option value="">Tất cả</option>
+                    <option value="Không tính điểm">Không tính điểm</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="filter-team">Team</label>
+                  <select id="filter-team">
+                    <option value="">Tất cả</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="filter-trang-thai">Trạng thái</label>
+                  <select id="filter-trang-thai">
+                    <option value="">Tất cả</option>
+                    <option>Chưa thực hiện</option>
+                    <option>Đang thực hiện</option>
+                    <option>Hoàn thành</option>
+                    <option>Hủy</option>
+                  </select>
+                </div>
+              </div>
+              <p class="muted" id="team-filter-empty" hidden style="margin:8px 0 0">
+                Chưa có team nào — sang mục "Team &amp; Nhân sự" để khai báo team trước.
+              </p>
+            </section>
+          </div>
+
+          <section class="card" id="task-warnings-card" hidden>
+            <div class="task-warnings-row">
+              <button type="button" class="task-warning-chip task-warning-graded" id="warning-chip-no-score" hidden>
+                <span class="task-warning-count" id="warning-count-no-score">0</span>
+                <span>task chưa được chấm điểm</span>
+              </button>
+              <button type="button" class="task-warning-chip task-warning-overdue" id="warning-chip-overdue" hidden>
+                <span class="task-warning-count" id="warning-count-overdue">0</span>
+                <span>task đã quá deadline chưa hoàn thành</span>
+              </button>
+              <button type="button" class="task-warning-chip task-warning-upcoming" id="warning-chip-upcoming" hidden>
+                <span class="task-warning-count" id="warning-count-upcoming">0</span>
+                <span>task sắp đến hạn deadline (trong 5 ngày)</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Danh sách nhiệm vụ</h2>
+              <div class="row">
+                <button id="move-next-month-btn" class="btn-move-month" hidden>Chuyển sang tháng sau (<span id="selected-task-count">0</span>)</button>
+                <button id="mark-no-score-btn" class="btn-no-score" hidden>Không tính điểm (<span id="selected-task-count-2">0</span>)</button>
+                <button id="export-btn" class="btn-export">⬇ Xuất Excel</button>
+                <button id="add-task-btn" class="primary">+ Nhập task mới</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="task-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="task-select-all" /></th>
+                    <th style="min-width:50px">STT</th>
+                    <th style="min-width:90px">Tag</th>
+                    <th style="min-width:90px">Phân loại</th>
+                    <th style="min-width:90px">Team</th>
+                    <th style="min-width:280px">Nhiệm vụ</th>
+                    <th style="min-width:280px">DoD</th>
+                    <th style="min-width:110px">Deadline</th>
+                    <th style="min-width:110px">% Hoàn thành</th>
+                    <th style="min-width:110px">Trạng thái</th>
+                    <th style="min-width:320px">Tiến độ</th>
+                    <th style="min-width:110px">Tính chất</th>
+                    <th style="min-width:100px">% Đánh giá</th>
+                    <th style="min-width:280px">Nội dung đánh giá</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="task-tbody"></tbody>
+              </table>
+              <p class="empty-state" id="empty-state" hidden>Chưa có tháng backlog nào. Tạo một tháng mới để bắt đầu.</p>
+            </div>
+            <div class="pagination-bar" id="task-pagination">
+              <div class="row">
+                <label for="task-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="task-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="task-page-prev" class="small">‹ Trước</button>
+                <span id="task-page-info" class="muted"></span>
+                <button type="button" id="task-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---- Trang Team & Nhân sự ---- -->
+        <div id="page-team" hidden>
+          <div class="row-split">
+            <section class="card row-split-narrow">
+              <h2>Tìm kiếm</h2>
+              <div class="row">
+                <div>
+                  <label for="team-period-select">Tháng</label>
+                  <select id="team-period-select"></select>
+                </div>
+                <div>
+                  <label for="team-filter-team">Team</label>
+                  <select id="team-filter-team">
+                    <option value="">Tất cả</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section class="card row-split-wide">
+              <h2>Team</h2>
+              <p class="muted" style="margin:-4px 0 12px">Team và nhân sự khai báo theo từng tháng — tháng mới tạo sẽ kế thừa danh sách từ tháng gần nhất, thêm/xóa ở tháng nào chỉ ảnh hưởng tháng đó.</p>
+              <form id="team-form" class="row">
+                <div>
+                  <label for="new-team-name">Khai báo team mới</label>
+                  <input id="new-team-name" placeholder="VD: CRM, NVKH, NVPS..." />
+                </div>
+                <div style="align-self:flex-end">
+                  <button type="submit" class="primary">+ Thêm team</button>
+                </div>
+              </form>
+              <div class="pill-group" id="team-list" style="margin-top:12px"></div>
+              <p class="muted" id="team-empty" hidden style="margin:8px 0 0">Chưa có team nào — hãy khai báo team trước khi nhập task.</p>
+            </section>
+          </div>
+
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="team-subnav">
+            <span class="pill active" data-tab="nhansu">Nhân sự</span>
+            <span class="pill" data-tab="tuanthu">Tuân thủ</span>
+            <span class="pill" data-tab="noiquy">Nội quy</span>
+            <span class="pill" data-tab="daotao">Đào tạo</span>
+            <span class="pill" data-tab="hotro">Hỗ trợ</span>
+            <span class="pill" data-tab="danhgia">Đánh giá</span>
+            <span class="pill" data-tab="chamcong">Chấm công</span>
+          </div>
+
+          <div id="team-tab-nhansu">
+          <section class="card">
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Nhân sự</h2>
+              <div class="row">
+                <button id="delete-selected-members-btn" class="danger" hidden>Xóa đã chọn (<span id="selected-member-count">0</span>)</button>
+                <button id="add-member-btn" class="primary">+ Thêm nhân sự</button>
+              </div>
+            </div>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="member-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="member-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
+            <div class="table-wrap">
+              <table id="member-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="member-select-all" /></th>
+                    <th style="width:60px">STT</th>
+                    <th style="min-width:160px">Họ và Tên</th>
+                    <th style="min-width:220px">Chức vụ</th>
+                    <th style="min-width:110px">Team</th>
+                    <th style="min-width:110px">Tuân thủ</th>
+                    <th style="min-width:110px">Nội quy</th>
+                    <th style="min-width:110px">Đào tạo</th>
+                    <th style="min-width:110px">Hỗ trợ</th>
+                    <th style="min-width:110px">Ranking</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="member-tbody"></tbody>
+              </table>
+              <p class="muted" id="member-empty" hidden style="padding:16px;text-align:center">
+                Chưa có nhân sự nào — hãy khai báo team trước rồi thêm nhân sự.
+              </p>
+            </div>
+            <div class="pagination-bar" id="member-pagination">
+              <div class="row">
+                <label for="member-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="member-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="member-page-prev" class="small">‹ Trước</button>
+                <span id="member-page-info" class="muted"></span>
+                <button type="button" id="member-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          </div>
+
+          <section class="card" id="team-tab-tuanthu" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Tuân thủ Quy trình và Kế hoạch chung</h2>
+              <button id="add-compliance-btn" class="primary">+ Thêm mới</button>
+            </div>
+            <div class="table-wrap">
+              <table id="compliance-table">
+                <thead>
+                  <tr>
+                    <th style="width:110px">Tháng theo dõi</th>
+                    <th style="min-width:140px">Team</th>
+                    <th style="min-width:160px">Nhân sự</th>
+                    <th style="width:100px">Vi phạm</th>
+                    <th>Nội dung</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="compliance-tbody"></tbody>
+              </table>
+              <p class="muted" id="compliance-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu tuân thủ nào.</p>
+            </div>
+            <div class="pagination-bar" id="compliance-pagination">
+              <div class="row">
+                <label for="compliance-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="compliance-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="compliance-page-prev" class="small">‹ Trước</button>
+                <span id="compliance-page-info" class="muted"></span>
+                <button type="button" id="compliance-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="team-tab-noiquy" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Nội quy</h2>
+              <div class="row">
+                <button id="unmark-excluded-noiquy-btn" class="btn-restore" hidden>Bỏ Không tính đi muộn</button>
+                <button id="mark-excluded-noiquy-btn" class="btn-exclude" hidden>Không tính đi muộn</button>
+              </div>
+            </div>
+            <p class="muted" style="margin:12px 0">Dữ liệu được tự động tổng hợp từ tab Chấm công của tháng đang chọn.</p>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="noiquy-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="noiquy-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
+            <div class="table-wrap">
+              <table id="noiquy-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px"><input type="checkbox" id="noiquy-select-all" /></th>
+                    <th style="width:110px">Tháng theo dõi</th>
+                    <th style="width:120px">Team</th>
+                    <th style="width:200px">Nhân sự</th>
+                    <th style="width:120px">Lượt đi muộn</th>
+                    <th style="width:100px">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="noiquy-tbody"></tbody>
+              </table>
+              <p class="muted" id="noiquy-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu Chấm công của tháng này để tổng hợp.</p>
+            </div>
+            <div class="pagination-bar" id="noiquy-pagination">
+              <div class="row">
+                <label for="noiquy-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="noiquy-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="noiquy-page-prev" class="small">‹ Trước</button>
+                <span id="noiquy-page-info" class="muted"></span>
+                <button type="button" id="noiquy-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="team-tab-daotao" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Đào tạo nội bộ và Chứng chỉ quốc tế</h2>
+              <button id="add-training-btn" class="primary">+ Thêm mới</button>
+            </div>
+            <div class="table-wrap">
+              <table id="training-table">
+                <thead>
+                  <tr>
+                    <th style="width:110px">Tháng theo dõi</th>
+                    <th style="min-width:140px">Team</th>
+                    <th style="min-width:160px">Nhân sự</th>
+                    <th style="width:120px">Loại</th>
+                    <th style="width:120px">Ngày thực hiện</th>
+                    <th style="min-width:140px">Người xác nhận</th>
+                    <th style="min-width:280px">Nội dung</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="training-tbody"></tbody>
+              </table>
+              <p class="muted" id="training-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu đào tạo nào.</p>
+            </div>
+            <div class="pagination-bar" id="training-pagination">
+              <div class="row">
+                <label for="training-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="training-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="training-page-prev" class="small">‹ Trước</button>
+                <span id="training-page-info" class="muted"></span>
+                <button type="button" id="training-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="team-tab-hotro" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Hỗ trợ</h2>
+              <button id="add-support-btn" class="primary">+ Thêm mới</button>
+            </div>
+            <div class="table-wrap">
+              <table id="support-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:140px">Tháng theo dõi</th>
+                    <th style="min-width:140px">Team thực hiện hỗ trợ</th>
+                    <th style="min-width:160px">Nhân sự</th>
+                    <th style="min-width:140px">Team nhận hỗ trợ</th>
+                    <th style="min-width:280px">Nội dung</th>
+                    <th style="width:120px">Ngày hỗ trợ</th>
+                    <th style="min-width:140px">Người xác nhận</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="support-tbody"></tbody>
+              </table>
+              <p class="muted" id="support-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu hỗ trợ nào.</p>
+            </div>
+            <div class="pagination-bar" id="support-pagination">
+              <div class="row">
+                <label for="support-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="support-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="support-page-prev" class="small">‹ Trước</button>
+                <span id="support-page-info" class="muted"></span>
+                <button type="button" id="support-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="team-tab-danhgia" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Đánh giá</h2>
+              <button id="add-danhgia-btn" class="primary">+ Thêm Đánh giá</button>
+            </div>
+            <div class="table-wrap">
+              <table id="danhgia-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:140px">Tháng theo dõi</th>
+                    <th style="min-width:140px">Team</th>
+                    <th style="min-width:160px">Nhân sự</th>
+                    <th style="width:120px">Ranking</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="danhgia-tbody"></tbody>
+              </table>
+              <p class="muted" id="danhgia-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu đánh giá nào.</p>
+            </div>
+            <div class="pagination-bar" id="danhgia-pagination">
+              <div class="row">
+                <label for="danhgia-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="danhgia-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="danhgia-page-prev" class="small">‹ Trước</button>
+                <span id="danhgia-page-info" class="muted"></span>
+                <button type="button" id="danhgia-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          <section class="card" id="team-tab-chamcong" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Chấm công</h2>
+              <div class="row">
+                <button id="unmark-excluded-attendance-btn" class="btn-restore" hidden>Bỏ Không tính đi muộn</button>
+                <button id="mark-excluded-attendance-btn" class="btn-exclude" hidden>Không tính đi muộn</button>
+                <button id="delete-selected-attendance-btn" class="danger" hidden>Xóa đã chọn (<span id="selected-attendance-count">0</span>)</button>
+                <input type="file" id="attendance-file-input" accept=".xlsx,.xls" hidden />
+                <button id="import-attendance-btn" class="primary">+ Nhập file Excel</button>
+              </div>
+            </div>
+            <p class="muted" style="margin:12px 0">Nhập file Excel để hiển thị dữ liệu theo đúng các cột có trong file. Nhập lại sẽ thay thế toàn bộ dữ liệu Chấm công của tháng đang chọn.</p>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="attendance-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="attendance-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
+            <div class="table-wrap">
+              <table id="attendance-table">
+                <thead id="attendance-thead"></thead>
+                <tbody id="attendance-tbody"></tbody>
+              </table>
+              <p class="muted" id="attendance-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu Chấm công nào — hãy nhập file Excel.</p>
+            </div>
+            <div class="pagination-bar" id="attendance-pagination">
+              <div class="row">
+                <label for="attendance-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="attendance-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="attendance-page-prev" class="small">‹ Trước</button>
+                <span id="attendance-page-info" class="muted"></span>
+                <button type="button" id="attendance-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          </div>
+        </div>
+
+        <!-- ---- Trang CSKH ---- -->
+        <div id="page-cskh" hidden>
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="cskh-subnav">
+            <span class="pill active" data-tab="incidents">Sự cố</span>
+            <span class="pill" data-tab="tickets">Hỗ trợ ticket</span>
+            <span class="pill" data-tab="creation-rates">Tỉ lệ khởi tạo</span>
+          </div>
+
+          <section class="card" id="cskh-tab-incidents">
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Sự cố</h2>
+              <button id="add-incident-btn" class="primary">+ Thêm sự cố</button>
+            </div>
+            <div class="table-wrap">
+              <table id="incident-table">
+                <thead>
+                  <tr>
+                    <th style="width:110px">Tháng</th>
+                    <th style="width:120px">Team</th>
+                    <th>Sự cố</th>
+                    <th style="width:200px">Tính chất</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="incident-tbody"></tbody>
+              </table>
+              <p class="muted" id="incident-empty" hidden style="padding:16px;text-align:center">Chưa có sự cố nào.</p>
+            </div>
+            <div class="pagination-bar" id="incident-pagination">
+              <div class="row">
+                <label for="incident-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="incident-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="incident-page-prev" class="small">‹ Trước</button>
+                <span id="incident-page-info" class="muted"></span>
+                <button type="button" id="incident-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" id="cskh-tab-tickets" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Hỗ trợ ticket</h2>
+              <button id="add-ticket-btn" class="primary">+ Thêm dữ liệu</button>
+            </div>
+            <div class="table-wrap">
+              <table id="ticket-table">
+                <thead>
+                  <tr>
+                    <th style="width:110px">Tháng</th>
+                    <th style="width:120px">Team</th>
+                    <th>Tổng ticket</th>
+                    <th>Ticket vượt</th>
+                    <th>Đúng hạn</th>
+                    <th>Tỷ lệ</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="ticket-tbody"></tbody>
+              </table>
+              <p class="muted" id="ticket-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu ticket nào.</p>
+            </div>
+            <div class="pagination-bar" id="ticket-pagination">
+              <div class="row">
+                <label for="ticket-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="ticket-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="ticket-page-prev" class="small">‹ Trước</button>
+                <span id="ticket-page-info" class="muted"></span>
+                <button type="button" id="ticket-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" id="cskh-tab-creation-rates" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Tỉ lệ khởi tạo</h2>
+              <button id="add-creation-rate-btn" class="primary">+ Thêm dữ liệu</button>
+            </div>
+            <div class="table-wrap">
+              <table id="creation-rate-table">
+                <thead>
+                  <tr>
+                    <th style="width:110px">Tháng</th>
+                    <th style="width:120px">Team</th>
+                    <th>Số lượng Thành công</th>
+                    <th>Số lượng Thất bại</th>
+                    <th>Total</th>
+                    <th>Grand Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="creation-rate-tbody"></tbody>
+              </table>
+              <p class="muted" id="creation-rate-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu nào.</p>
+            </div>
+            <div class="pagination-bar" id="creation-rate-pagination">
+              <div class="row">
+                <label for="creation-rate-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="creation-rate-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="creation-rate-page-prev" class="small">‹ Trước</button>
+                <span id="creation-rate-page-info" class="muted"></span>
+                <button type="button" id="creation-rate-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          </div>
+        </div>
+
+        <!-- ---- Trang Cấu hình ---- -->
+        <div id="page-config" hidden>
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="config-subnav">
+            <span class="pill active" data-tab="tieuchi">Tiêu chí</span>
+            <span class="pill" data-tab="ranking">Ranking team</span>
+          </div>
+
+          <section class="card" id="config-tab-tieuchi">
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Tiêu chí</h2>
+              <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+            </div>
+            <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — dùng chung cho mọi tháng backlog. Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
+            <div class="table-wrap">
+              <table id="tieuchi-table">
+                <thead>
+                  <tr id="tieuchi-thead-row">
+                    <th style="min-width:140px">Nhóm</th>
+                    <th style="min-width:180px">Tiêu chí</th>
+                    <th style="min-width:280px">Cách tính điểm</th>
+                    <th style="min-width:170px"></th>
+                  </tr>
+                </thead>
+                <tbody id="tieuchi-tbody"></tbody>
+                <tfoot>
+                  <tr id="tieuchi-tongdiem-row">
+                    <td colspan="3" style="font-weight:600">Tổng điểm</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <p class="muted" id="tieuchi-empty" hidden style="padding:16px;text-align:center">Chưa có tiêu chí nào — bấm "+ Thêm tiêu chí" để bắt đầu.</p>
+            </div>
+          </section>
+
+          <section class="card" id="config-tab-ranking" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Ranking team</h2>
+              <div class="row">
+                <button id="add-ranking-column-btn">+ Thêm cột</button>
+                <button id="add-ranking-row-btn" class="primary">+ Thêm dòng</button>
+              </div>
+            </div>
+            <p class="muted" style="margin:12px 0">Cấu hình xếp hạng: mỗi dòng là 1 vị trí xếp hạng, mỗi cột là 1 kịch bản xếp hạng — bấm vào tiêu đề cột để đổi tên.</p>
+            <div class="table-wrap">
+              <table id="ranking-table">
+                <thead>
+                  <tr id="ranking-thead-row">
+                    <th style="width:140px;text-align:center">Ranking Team</th>
+                  </tr>
+                </thead>
+                <tbody id="ranking-tbody"></tbody>
+              </table>
+              <p class="muted" id="ranking-empty" hidden style="padding:16px;text-align:center">Chưa có dòng xếp hạng nào — bấm "+ Thêm dòng" để bắt đầu.</p>
+            </div>
+          </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="incident-dialog">
+    <form id="incident-form">
+      <h2 id="incident-dialog-title" style="margin:0">Thêm sự cố</h2>
+      <input type="hidden" id="inc-id" />
+      <div class="field-row">
+        <div>
+          <label for="inc-period">Tháng *</label>
+          <select id="inc-period" required></select>
+        </div>
+        <div>
+          <label for="inc-team">Team *</label>
+          <select id="inc-team" required></select>
+        </div>
+      </div>
+      <div>
+        <label for="inc-su-co">Sự cố *</label>
+        <textarea id="inc-su-co" required></textarea>
+      </div>
+      <div>
+        <label for="inc-tinh-chat">Tính chất</label>
+        <input id="inc-tinh-chat" />
+      </div>
+      <div class="actions">
+        <button type="button" id="incident-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="compliance-dialog">
+    <form id="compliance-form">
+      <h2 id="compliance-dialog-title" style="margin:0">Thêm mới</h2>
+      <input type="hidden" id="cp-id" />
+      <div class="field-row">
+        <div>
+          <label for="cp-team">Team *</label>
+          <select id="cp-team" required></select>
+        </div>
+        <div>
+          <label for="cp-member">Nhân sự *</label>
+          <select id="cp-member" required></select>
+        </div>
+      </div>
+      <div>
+        <label for="cp-vi-pham">Vi phạm *</label>
+        <input id="cp-vi-pham" type="number" step="1" required style="width:100%" />
+      </div>
+      <div>
+        <label for="cp-noi-dung">Nội dung</label>
+        <textarea id="cp-noi-dung"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="compliance-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="training-dialog">
+    <form id="training-form">
+      <h2 id="training-dialog-title" style="margin:0">Thêm mới</h2>
+      <input type="hidden" id="tr-id" />
+      <div class="field-row">
+        <div>
+          <label for="tr-team">Team *</label>
+          <select id="tr-team" required></select>
+        </div>
+        <div>
+          <label for="tr-member">Nhân sự *</label>
+          <select id="tr-member" required></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="tr-loai">Loại *</label>
+          <select id="tr-loai" required>
+            <option value="">-- Chọn loại --</option>
+            <option value="Đào tạo">Đào tạo</option>
+            <option value="Chứng chỉ QT">Chứng chỉ QT</option>
+          </select>
+        </div>
+        <div>
+          <label for="tr-ngay-thuc-hien">Ngày thực hiện</label>
+          <input id="tr-ngay-thuc-hien" type="date" />
+        </div>
+      </div>
+      <div>
+        <label for="tr-nguoi-xac-nhan">Người xác nhận</label>
+        <input id="tr-nguoi-xac-nhan" style="width:100%" />
+      </div>
+      <div>
+        <label for="tr-noi-dung">Nội dung</label>
+        <textarea id="tr-noi-dung"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="training-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="support-dialog">
+    <form id="support-form">
+      <h2 id="support-dialog-title" style="margin:0">Thêm mới</h2>
+      <input type="hidden" id="sp-id" />
+      <div class="field-row">
+        <div>
+          <label for="sp-team">Team thực hiện hỗ trợ *</label>
+          <select id="sp-team" required></select>
+        </div>
+        <div>
+          <label for="sp-member">Nhân sự *</label>
+          <select id="sp-member" required></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="sp-team-nhan">Team nhận hỗ trợ *</label>
+          <select id="sp-team-nhan" required></select>
+        </div>
+        <div>
+          <label for="sp-ngay-ho-tro">Ngày hỗ trợ</label>
+          <input id="sp-ngay-ho-tro" type="date" />
+        </div>
+      </div>
+      <div>
+        <label for="sp-nguoi-xac-nhan">Người xác nhận</label>
+        <input id="sp-nguoi-xac-nhan" style="width:100%" />
+      </div>
+      <div>
+        <label for="sp-noi-dung">Nội dung</label>
+        <textarea id="sp-noi-dung"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="support-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="danhgia-dialog">
+    <form id="danhgia-form">
+      <h2 id="danhgia-dialog-title" style="margin:0">Thêm Đánh giá</h2>
+      <div>
+        <label for="dg-team">Team đánh giá *</label>
+        <select id="dg-team" required></select>
+      </div>
+      <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+        <table id="danhgia-member-input-table">
+          <thead>
+            <tr>
+              <th>Nhân sự</th>
+              <th style="width:140px">Ranking</th>
+            </tr>
+          </thead>
+          <tbody id="danhgia-member-input-tbody"></tbody>
+        </table>
+      </div>
+      <p class="muted" id="danhgia-member-input-empty" hidden style="padding:16px;text-align:center">Team này chưa có nhân sự nào.</p>
+      <div class="actions">
+        <button type="button" id="danhgia-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="tieuchi-dialog">
+    <form id="tieuchi-form">
+      <h2 id="tieuchi-dialog-title" style="margin:0">Thêm tiêu chí</h2>
+      <input type="hidden" id="tc-id" />
+      <div class="field-row">
+        <div>
+          <label for="tc-nhom">Nhóm *</label>
+          <input id="tc-nhom" required list="tc-nhom-options" />
+          <datalist id="tc-nhom-options"></datalist>
+        </div>
+        <div>
+          <label for="tc-ten">Tiêu chí *</label>
+          <input id="tc-ten" required />
+        </div>
+      </div>
+      <div>
+        <label for="tc-cach-tinh">Cách tính điểm</label>
+        <textarea id="tc-cach-tinh"></textarea>
+      </div>
+      <div>
+        <label><input type="checkbox" id="tc-co-chi-tieu" style="width:auto" /> Có dòng "Chỉ tiêu" riêng (VD: tỷ lệ mục tiêu %)</label>
+      </div>
+      <div class="actions">
+        <button type="button" id="tieuchi-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="ticket-dialog">
+    <form id="ticket-form">
+      <h2 id="ticket-dialog-title" style="margin:0">Thêm dữ liệu ticket</h2>
+      <input type="hidden" id="tk-id" />
+      <div class="field-row">
+        <div>
+          <label for="tk-period">Tháng *</label>
+          <select id="tk-period" required></select>
+        </div>
+        <div>
+          <label for="tk-team">Team *</label>
+          <select id="tk-team" required></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="tk-tong">Tổng ticket</label>
+          <input id="tk-tong" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label for="tk-vuot">Ticket vượt</label>
+          <input id="tk-vuot" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label for="tk-dung-han">Đúng hạn</label>
+          <input id="tk-dung-han" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="ticket-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="creation-rate-dialog">
+    <form id="creation-rate-form">
+      <h2 id="creation-rate-dialog-title" style="margin:0">Thêm tỉ lệ khởi tạo</h2>
+      <input type="hidden" id="cr-id" />
+      <div class="field-row">
+        <div>
+          <label for="cr-period">Tháng *</label>
+          <select id="cr-period" required></select>
+        </div>
+        <div>
+          <label for="cr-team">Team *</label>
+          <select id="cr-team" required></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="cr-thanh-cong">Số lượng Thành công</label>
+          <input id="cr-thanh-cong" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label for="cr-that-bai">Số lượng Thất bại</label>
+          <input id="cr-that-bai" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="creation-rate-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="member-dialog">
+    <form id="member-form">
+      <h2 id="member-dialog-title" style="margin:0">Thêm nhân sự</h2>
+      <input type="hidden" id="m-id" />
+      <div>
+        <label for="m-name">Họ và Tên *</label>
+        <input id="m-name" required style="width:100%" />
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="m-chuc-vu">Chức vụ</label>
+          <select id="m-chuc-vu">
+            <option value="">-- Chọn chức vụ --</option>
+            <option>Trưởng phòng</option>
+            <option>Chuyên gia</option>
+            <option>Trưởng nhóm</option>
+            <option>Trưởng nhóm (Nội bộ)</option>
+            <option>Trưởng nhóm (ATM + Billing)</option>
+            <option>Nghiệp vụ sản phẩm (BA)</option>
+            <option>Nhân viên Nghiệp vụ Kỹ thuật</option>
+            <option>Chuyên gia Nghiên cứu Phát triển dịch vụ</option>
+            <option>Kỹ sư Phần mềm</option>
+            <option>Kỹ sư kiểm thử &amp; Quản lý chất lượng</option>
+            <option>Chuyên viên Quy trình - ISO</option>
+            <option>Nhân viên quản lý phát triển bền vững</option>
+            <option>Kỹ sư Phân tích Dữ liệu (DA)</option>
+            <option>Nhân viên quản lý chất lượng</option>
+            <option>Kỹ sư dữ liệu (DE)</option>
+            <option>Nhân viên thiết kế, đồ họa (UI/UX Designer)</option>
+            <option>Nhân viên quy trình - ISO</option>
+            <option>Nhân viên Scrum Master</option>
+            <option>Nhân viên phân tích nghiệp vụ</option>
+            <option>Chuyên viên Trí tuệ nhân tạo</option>
+          </select>
+        </div>
+        <div>
+          <label for="m-team">Team *</label>
+          <select id="m-team" required></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" id="member-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="task-dialog">
+    <form id="task-form">
+      <h2 id="task-dialog-title" style="margin:0">Nhập task mới</h2>
+      <input type="hidden" id="task-id" />
+      <div class="field-row">
+        <div>
+          <label for="f-team">Team *</label>
+          <select id="f-team" required></select>
+        </div>
+        <div>
+          <label for="f-tag">Tag</label>
+          <select id="f-tag">
+            <option value="">-- Không chọn --</option>
+            <option value="Số hoá">Số hoá</option>
+            <option value="Đầu tư">Đầu tư</option>
+            <option value="Chất lượng dịch vụ">Chất lượng dịch vụ</option>
+            <option value="Trải nghiệm khách hàng">Trải nghiệm khách hàng</option>
+            <option value="Quản lý chất lượng">Quản lý chất lượng</option>
+            <option value="ISO">ISO</option>
+            <option value="Quy trình">Quy trình</option>
+            <option value="Nhiệm vụ kỹ thuật">Nhiệm vụ kỹ thuật</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Phân loại</label>
+        <div class="checkbox-group" id="f-tinh-chat-group">
+          <label class="checkbox-option"><input type="checkbox" value="NVKH" /> NVKH</label>
+          <label class="checkbox-option"><input type="checkbox" value="NVPS" /> NVPS</label>
+          <label class="checkbox-option"><input type="checkbox" value="NVTT" /> NVTT</label>
+          <label class="checkbox-option"><input type="checkbox" value="NV được giao từ BGĐ" /> NV được giao từ BGĐ</label>
+        </div>
+      </div>
+      <div>
+        <label for="f-nhiem-vu">Nhiệm vụ *</label>
+        <input id="f-nhiem-vu" required style="width:100%" />
+      </div>
+      <div>
+        <label for="f-dod">DoD</label>
+        <textarea id="f-dod"></textarea>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="f-deadline">Deadline</label>
+          <input id="f-deadline" type="date" />
+        </div>
+        <div>
+          <label for="f-phan-tram">% Hoàn thành</label>
+          <input id="f-phan-tram" type="number" min="0" max="100" value="0" />
+        </div>
+        <div>
+          <label for="f-trang-thai">Trạng thái</label>
+          <select id="f-trang-thai">
+            <option>Chưa thực hiện</option>
+            <option>Đang thực hiện</option>
+            <option>Hoàn thành</option>
+            <option>Hủy</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="f-tien-do">Tiến độ</label>
+        <textarea id="f-tien-do"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="grade-dialog">
+    <form id="grade-form">
+      <h2 style="margin:0">Chấm điểm</h2>
+      <input type="hidden" id="grade-task-id" />
+      <div>
+        <label for="grade-percent">% Đánh giá</label>
+        <input id="grade-percent" type="number" min="0" max="100" />
+      </div>
+      <div>
+        <label for="grade-comment">Nội dung đánh giá</label>
+        <textarea id="grade-comment"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="grade-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
