@@ -1,6 +1,9 @@
 # backlog-manager
 
-Quản lý backlog công việc theo team, theo tháng — CRUD, cập nhật tiến độ, xuất Excel theo mẫu.
+Quản lý backlog công việc theo team, theo tháng — nhập/theo dõi nhiệm vụ, chấm
+điểm, dữ liệu CSKH, hồ sơ nhân sự, và bảng tổng hợp/ranking điểm theo tháng.
+Backend Node.js/Express/TypeScript + SQLite, frontend vanilla JS/HTML/CSS
+(không framework, không build step).
 
 ## Yêu cầu
 - Node.js (cài qua nvm: `nvm use`)
@@ -12,84 +15,63 @@ Quản lý backlog công việc theo team, theo tháng — CRUD, cập nhật ti
 - `npm start` — chạy bản đã build
 - `npm test` — chạy test (vitest)
 
+Sau khi chạy `npm run dev`, mở `http://localhost:3001`.
+
 ## Cấu trúc
 ```
 src/
-  routes/
-  controllers/
+  routes/         # 1 file route theo từng nhóm chức năng
+  controllers/     # xử lý request/response
+  services/        # nghiệp vụ + truy vấn SQLite
   middleware/
-  services/       # period (tháng backlog), task (CRUD + cập nhật tiến độ), export Excel
-  db/              # SQLite (better-sqlite3), file tại data/backlog.db
+  db/              # khởi tạo schema SQLite (better-sqlite3), file tại data/backlog.db
   types/
-  app.ts
-  index.ts
-public/            # UI web đơn giản (vanilla JS)
-tests/
-data/              # DB (không commit, xem .gitignore)
+  app.ts           # gắn toàn bộ route vào Express app
+  index.ts         # entrypoint, start server
+public/            # UI (vanilla JS/HTML/CSS, không build step)
+tests/             # vitest + supertest, gọi thẳng qua createApp()
+data/              # DB thật (không commit, xem .gitignore)
 ```
 
-## Luồng sử dụng
+## Các trang trong ứng dụng
 
-### 1. Tạo backlog theo tháng
-```
-POST /api/periods
-Body: { "year": 2026, "month": 8, "label"? }
-```
-Mỗi (năm, tháng) chỉ có một period — tạo lại với cùng năm/tháng sẽ trả về period đã có.
-```
-GET  /api/periods
-GET  /api/periods/:id
-DELETE /api/periods/:id
-```
+**🏠 Home** — dashboard theo tháng: tổng hợp điểm theo team (Sprint Goal, Sự
+cố, tỷ lệ xử lý ticket, tỷ lệ khởi tạo, các khoản trừ/cộng), tỉ lệ hoàn thành
+nhiệm vụ, và Ranking (leaderboard team + tra cứu KI từng thành viên theo bảng
+Ranking team ở Cấu hình).
 
-### 2. Khai báo team & nhân sự (dùng chung cho mọi tháng)
-```
-POST   /api/teams                Body: { "name": "CRM" }
-GET    /api/teams
-DELETE /api/teams/:id
+**📋 Backlog** — quản lý tháng backlog (period) và nhiệm vụ (task) theo team:
+CRUD, cập nhật tiến độ/trạng thái, chấm điểm CPO, chuyển task sang tháng sau
+(tự đánh dấu "Nhiệm vụ tồn" nếu Deadline sớm hơn tháng đích; mỗi task chỉ
+chuyển được 1 lần), xuất Excel, và banner cảnh báo (task chưa chấm điểm / đã
+quá deadline / sắp đến hạn trong 5 ngày).
 
-POST   /api/teams/:teamId/members   Body: { "name": "Nguyễn Văn A" }
-GET    /api/teams/:teamId/members
-DELETE /api/members/:id
-```
-Team và nhân sự không gắn theo tháng — khai báo một lần, dùng lại cho mọi
-period. `POST /api/teams` idempotent theo tên.
+**👥 Team & Nhân sự** — team và nhân sự gắn theo từng tháng (thêm/xóa ở tháng
+nào chỉ ảnh hưởng tháng đó; tháng mới kế thừa danh sách từ tháng gần nhất);
+các tab Tuân thủ, Nội quy (kèm "Không tính công"), Đào tạo, Hỗ trợ, Đánh giá,
+Chấm công (import Excel).
 
-### 3. Nhập task theo team trong tháng đó
-```
-POST /api/periods/:periodId/tasks
-Body: {
-  "team": "CRM",
-  "nhiem_vu": "Xây dựng quy trình CI/CD",
-  "tinh_chat"?, "dod"?, "ngay_thuc_hien"?, "deadline"?, "nvtt"?,
-  "phan_tram_hoan_thanh"?, "trang_thai"?, "tien_do"?, "cpo_danh_gia"?, "cpo_comment"?
-}
-```
-`stt` tự tăng theo thứ tự nhập trong từng tháng. `trang_thai` mặc định `"Chưa thực hiện"`.
+**🎧 CSKH** — số liệu theo team/tháng: Sự cố, Ticket (tổng/vượt hạn/đúng hạn),
+Tỉ lệ khởi tạo dịch vụ thành công.
 
-```
-GET /api/periods/:periodId/tasks           # ?team= để lọc theo team
-GET /api/tasks/:id
-```
+**⚙️ Cấu hình** — Tiêu chí tính điểm (nhóm/cách tính/điểm chuẩn/chỉ tiêu theo
+team, dùng chung mọi tháng) và Ranking team (bảng vị trí xếp hạng × kịch bản
+xếp hạng, dùng để tra KI thành viên ở Home).
 
-### 4. Cập nhật tiến độ / nội dung task
-```
-PUT /api/tasks/:id
-Body: bất kỳ trường nào ở trên (partial update) — dùng để cập nhật
-      % hoàn thành, trạng thái, tiến độ, đánh giá CPO định kỳ.
-```
-```
-DELETE /api/tasks/:id
-```
+## API
 
-### 5. Xuất Excel
-```
-GET /api/periods/:periodId/tasks/export     # ?team= để xuất riêng 1 team
-```
-Trả file `.xlsx` với các cột: STT, Tính chất, Team, Nhiệm vụ, DoD, Ngày thực
-hiện, Deadline, NVTT, % Hoàn thành, Trạng thái, Tiến độ, CPO đánh giá, CPO
-Comment — tô màu theo trạng thái, tương tự mẫu backlog theo team.
+Toàn bộ endpoint nằm dưới `/api`, phần lớn lọc theo `period_id` (tháng
+backlog). Xem chi tiết ở từng file `src/routes/*.routes.ts` — tên file khớp
+với nhóm chức năng tương ứng (`period`, `task`, `team`, `member`, `cskh`,
+`compliance`, `training`, `attendance`, `noiquy`, `support`, `danhgia`,
+`tieuchi`, `ranking`). `GET /health` để kiểm tra server sống.
 
-## UI
-Mở `http://localhost:3001` sau khi chạy `npm run dev`: chọn/tạo tháng backlog,
-lọc theo team, nhập/sửa/xóa task, và xuất Excel.
+## Test
+
+`npm test` chạy vitest + supertest, gọi thẳng qua `createApp()` — **dùng
+chung file SQLite với dev server** (`data/backlog.db`), không có DB test
+riêng biệt. Chạy test nhiều lần liên tiếp có thể để lại dữ liệu thừa (period,
+tieu_chi_configs, ranking_columns...); các bảng cấu hình toàn cục
+(`tieu_chi_configs`, `ranking_rows/columns/cells`) không gắn `period_id` nên
+cần các test tự dọn dẹp dữ liệu đã tạo (xem `tests/tieuchi.test.ts`,
+`tests/ranking.test.ts` làm mẫu).
