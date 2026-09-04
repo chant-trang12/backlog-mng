@@ -18,7 +18,7 @@ function isNonEmptyText(value: unknown): value is string {
 // 1.3 Nhập mới task cho một team trong tháng backlog `periodId`.
 export async function createTaskHandler(req: Request, res: Response) {
   const periodId = Number(req.params.periodId);
-  const period = getPeriod(periodId);
+  const period = await getPeriod(periodId);
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
   const { team, nhiem_vu } = req.body ?? {};
@@ -26,21 +26,21 @@ export async function createTaskHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'team' và 'nhiem_vu' là bắt buộc" });
   }
 
-  const task = createTask(periodId, req.body ?? {});
+  const task = await createTask(periodId, req.body ?? {});
   res.status(201).json(task);
 }
 
 export async function listTasksHandler(req: Request, res: Response) {
   const periodId = Number(req.params.periodId);
-  const period = getPeriod(periodId);
+  const period = await getPeriod(periodId);
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
   const team = typeof req.query.team === "string" ? req.query.team : undefined;
-  res.json(listTasks({ period_id: periodId, team }));
+  res.json(await listTasks({ period_id: periodId, team }));
 }
 
 export async function getTaskHandler(req: Request, res: Response) {
-  const task = getTask(Number(req.params.id));
+  const task = await getTask(Number(req.params.id));
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }
@@ -48,13 +48,13 @@ export async function getTaskHandler(req: Request, res: Response) {
 // 1.4 Cập nhật task (sửa nội dung hoặc cập nhật tiến độ: % hoàn thành, trạng
 // thái, tiến độ, đánh giá CPO...).
 export async function updateTaskHandler(req: Request, res: Response) {
-  const task = updateTask(Number(req.params.id), req.body ?? {});
+  const task = await updateTask(Number(req.params.id), req.body ?? {});
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }
 
 export async function deleteTaskHandler(req: Request, res: Response) {
-  const ok = deleteTask(Number(req.params.id));
+  const ok = await deleteTask(Number(req.params.id));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy task" });
   res.status(204).send();
 }
@@ -68,7 +68,7 @@ export async function moveTasksToNextMonthHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
 
-  const result = moveTasksToNextMonth(periodId, ids.map((id: unknown) => Number(id)));
+  const result = await moveTasksToNextMonth(periodId, ids.map((id: unknown) => Number(id)));
   if (!result) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
   res.json(result);
 }
@@ -79,7 +79,7 @@ export async function markTasksNoScoreHandler(req: Request, res: Response) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const updated = markTasksNoScore(ids.map((id: unknown) => Number(id)));
+  const updated = await markTasksNoScore(ids.map((id: unknown) => Number(id)));
   res.json({ updated });
 }
 

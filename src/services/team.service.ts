@@ -6,37 +6,47 @@ import type { Team } from "../types/backlog.js";
 // trùng tên do gõ sai chính tả). Idempotent theo (period_id, name) — thêm
 // team ở tháng nào chỉ hiển thị từ tháng đó trở đi, không ảnh hưởng các
 // tháng đã tạo trước đó.
-export function createTeam(name: string, periodId: number): Team {
+export async function createTeam(name: string, periodId: number): Promise<Team> {
   const trimmed = name.trim();
-  const existing = db.prepare(`SELECT * FROM teams WHERE period_id = ? AND name = ?`).get(periodId, trimmed) as
-    | Team
-    | undefined;
-  if (existing) return existing;
+  const existing = await db("teams").where({ period_id: periodId, name: trimmed }).first();
+  if (existing) return existing as Team;
 
-  return db
-    .prepare(`INSERT INTO teams (period_id, name) VALUES (?, ?) RETURNING *`)
-    .get(periodId, trimmed) as Team;
+  const [created] = await db("teams")
+    .insert({ period_id: periodId, name: trimmed })
+    .returning("*");
+  return created as Team;
 }
 
-export function getTeam(id: number): Team | undefined {
-  return db.prepare(`SELECT * FROM teams WHERE id = ?`).get(id) as Team | undefined;
+export async function getTeam(id: number): Promise<Team | undefined> {
+  const row = await db("teams").where({ id }).first();
+  return row as Team | undefined;
 }
 
-export function listTeams(periodId: number): Team[] {
-  return db.prepare(`SELECT * FROM teams WHERE period_id = ? ORDER BY name ASC`).all(periodId) as Team[];
+export async function listTeams(periodId: number): Promise<Team[]> {
+  const rows = await db("teams").where({ period_id: periodId }).orderBy("name", "asc");
+  return rows as Team[];
 }
 
-export function deleteTeam(id: number): boolean {
-  const result = db.prepare(`DELETE FROM teams WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteTeam(id: number): Promise<boolean> {
+  return await db.transaction(async (trx) => {
+    await trx("members").where({ team_id: id }).delete();
+    await trx("incidents").where({ team_id: id }).delete();
+    await trx("tickets").where({ team_id: id }).delete();
+    await trx("creation_rates").where({ team_id: id }).delete();
+    await trx("support_records").where({ team_nhan_ho_tro_id: id }).delete();
+    const count = await trx("teams").where({ id }).delete();
+    return count > 0;
+  });
 }
 
 // Tháng mới tạo kế thừa danh sách team từ tháng gần nhất (giống nhân sự) —
 // idempotent theo (period_id, name) nên gọi lại không tạo trùng.
-export function cloneTeamsFromPeriod(fromPeriodId: number, toPeriodId: number): void {
-  db.prepare(
-    `INSERT INTO teams (period_id, name)
-     SELECT ?, name FROM teams WHERE period_id = ?
-     ON CONFLICT(period_id, name) DO NOTHING`,
-  ).run(toPeriodId, fromPeriodId);
+export async function cloneTeamsFromPeriod(fromPeriodId: number, toPeriodId: number): Promise<void> {
+  const sourceTeams = await db("teams").where({ period_id: fromPeriodId });
+  for (const t of sourceTeams) {
+    const existing = await db("teams").where({ period_id: toPeriodId, name: t.name }).first();
+    if (!existing) {
+      await db("teams").insert({ period_id: toPeriodId, name: t.name });
+    }
+  }
 }

@@ -14,25 +14,27 @@ export async function createTeamHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'name' là bắt buộc" });
   }
   const periodId = Number(period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const team = createTeam(name, periodId);
+  const team = await createTeam(name, periodId);
   res.status(201).json(team);
 }
 
 // GET /api/teams?period_id=X — danh sách team của đúng tháng backlog đang chọn.
 export async function listTeamsHandler(req: Request, res: Response) {
   const periodId = Number(req.query.period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(listTeams(periodId));
+  res.json(await listTeams(periodId));
 }
 
 export async function deleteTeamHandler(req: Request, res: Response) {
-  const ok = deleteTeam(Number(req.params.id));
+  const ok = await deleteTeam(Number(req.params.id));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy team" });
   res.status(204).send();
 }

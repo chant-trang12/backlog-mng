@@ -17,43 +17,45 @@ function withTotals(
   };
 }
 
-export function createCreationRate(input: CreateCreationRateInput): CreationRate {
-  return db
-    .prepare(
-      `INSERT INTO creation_rates (period_id, team_id, so_luong_thanh_cong, so_luong_that_bai) VALUES (?, ?, ?, ?) RETURNING *`,
-    )
-    .get(
-      input.period_id,
-      input.team_id,
-      input.so_luong_thanh_cong ?? 0,
-      input.so_luong_that_bai ?? 0,
-    ) as CreationRate;
+export async function createCreationRate(input: CreateCreationRateInput): Promise<CreationRate> {
+  const [created] = await db("creation_rates")
+    .insert({
+      period_id: input.period_id,
+      team_id: input.team_id,
+      so_luong_thanh_cong: input.so_luong_thanh_cong ?? 0,
+      so_luong_that_bai: input.so_luong_that_bai ?? 0,
+    })
+    .returning("*");
+  return created as CreationRate;
 }
 
-export function getCreationRate(id: number): CreationRate | undefined {
-  return db.prepare(`SELECT * FROM creation_rates WHERE id = ?`).get(id) as
-    | CreationRate
-    | undefined;
+export async function getCreationRate(id: number): Promise<CreationRate | undefined> {
+  const row = await db("creation_rates").where({ id }).first();
+  return row as CreationRate | undefined;
 }
 
-export function listCreationRates(): CreationRateWithTeam[] {
-  const rows = db
-    .prepare(
-      `SELECT creation_rates.*, teams.name AS team_name, periods.label AS period_label
-       FROM creation_rates
-       JOIN teams ON teams.id = creation_rates.team_id
-       JOIN periods ON periods.id = creation_rates.period_id
-       ORDER BY periods.year DESC, periods.month DESC, teams.name ASC, creation_rates.id DESC`,
+export async function listCreationRates(): Promise<CreationRateWithTeam[]> {
+  const rows = (await db("creation_rates")
+    .join("teams", "teams.id", "creation_rates.team_id")
+    .join("periods", "periods.id", "creation_rates.period_id")
+    .select(
+      "creation_rates.*",
+      "teams.name as team_name",
+      "periods.label as period_label",
     )
-    .all() as (CreationRate & { team_name: string; period_label: string })[];
+    .orderBy("periods.year", "desc")
+    .orderBy("periods.month", "desc")
+    .orderBy("teams.name", "asc")
+    .orderBy("creation_rates.id", "desc")) as (CreationRate & { team_name: string; period_label: string })[];
+
   return rows.map(withTotals);
 }
 
-export function updateCreationRate(
+export async function updateCreationRate(
   id: number,
   input: UpdateCreationRateInput,
-): CreationRate | undefined {
-  const existing = getCreationRate(id);
+): Promise<CreationRate | undefined> {
+  const existing = await getCreationRate(id);
   if (!existing) return undefined;
 
   const merged = {
@@ -63,21 +65,18 @@ export function updateCreationRate(
     so_luong_that_bai: input.so_luong_that_bai ?? existing.so_luong_that_bai,
   };
 
-  return db
-    .prepare(
-      `UPDATE creation_rates SET period_id = ?, team_id = ?, so_luong_thanh_cong = ?, so_luong_that_bai = ?, updated_at = datetime('now')
-       WHERE id = ? RETURNING *`,
-    )
-    .get(
-      merged.period_id,
-      merged.team_id,
-      merged.so_luong_thanh_cong,
-      merged.so_luong_that_bai,
-      id,
-    ) as CreationRate;
+  const [updated] = await db("creation_rates")
+    .where({ id })
+    .update({
+      ...merged,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+
+  return updated as CreationRate;
 }
 
-export function deleteCreationRate(id: number): boolean {
-  const result = db.prepare(`DELETE FROM creation_rates WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteCreationRate(id: number): Promise<boolean> {
+  const count = await db("creation_rates").where({ id }).delete();
+  return count > 0;
 }

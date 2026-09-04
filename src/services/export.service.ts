@@ -47,10 +47,10 @@ export async function exportBacklogToExcel(filter: {
   period_id: number;
   team?: string;
 }): Promise<ExcelJS.Buffer> {
-  const period = getPeriod(filter.period_id);
+  const period = await getPeriod(filter.period_id);
   if (!period) throw new Error("Không tìm thấy tháng backlog");
 
-  const tasks = listTasks(filter);
+  const tasks = await listTasks(filter);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "backlog-manager";

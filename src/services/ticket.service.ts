@@ -13,39 +13,43 @@ function withRate(row: Ticket & { team_name: string; period_label: string }): Ti
   };
 }
 
-export function createTicket(input: CreateTicketInput): Ticket {
-  return db
-    .prepare(
-      `INSERT INTO tickets (period_id, team_id, tong_ticket, ticket_vuot, dung_han) VALUES (?, ?, ?, ?, ?) RETURNING *`,
-    )
-    .get(
-      input.period_id,
-      input.team_id,
-      input.tong_ticket ?? 0,
-      input.ticket_vuot ?? 0,
-      input.dung_han ?? 0,
-    ) as Ticket;
+export async function createTicket(input: CreateTicketInput): Promise<Ticket> {
+  const [created] = await db("tickets")
+    .insert({
+      period_id: input.period_id,
+      team_id: input.team_id,
+      tong_ticket: input.tong_ticket ?? 0,
+      ticket_vuot: input.ticket_vuot ?? 0,
+      dung_han: input.dung_han ?? 0,
+    })
+    .returning("*");
+  return created as Ticket;
 }
 
-export function getTicket(id: number): Ticket | undefined {
-  return db.prepare(`SELECT * FROM tickets WHERE id = ?`).get(id) as Ticket | undefined;
+export async function getTicket(id: number): Promise<Ticket | undefined> {
+  const row = await db("tickets").where({ id }).first();
+  return row as Ticket | undefined;
 }
 
-export function listTickets(): TicketWithTeam[] {
-  const rows = db
-    .prepare(
-      `SELECT tickets.*, teams.name AS team_name, periods.label AS period_label
-       FROM tickets
-       JOIN teams ON teams.id = tickets.team_id
-       JOIN periods ON periods.id = tickets.period_id
-       ORDER BY periods.year DESC, periods.month DESC, teams.name ASC, tickets.id DESC`,
+export async function listTickets(): Promise<TicketWithTeam[]> {
+  const rows = (await db("tickets")
+    .join("teams", "teams.id", "tickets.team_id")
+    .join("periods", "periods.id", "tickets.period_id")
+    .select(
+      "tickets.*",
+      "teams.name as team_name",
+      "periods.label as period_label",
     )
-    .all() as (Ticket & { team_name: string; period_label: string })[];
+    .orderBy("periods.year", "desc")
+    .orderBy("periods.month", "desc")
+    .orderBy("teams.name", "asc")
+    .orderBy("tickets.id", "desc")) as (Ticket & { team_name: string; period_label: string })[];
+
   return rows.map(withRate);
 }
 
-export function updateTicket(id: number, input: UpdateTicketInput): Ticket | undefined {
-  const existing = getTicket(id);
+export async function updateTicket(id: number, input: UpdateTicketInput): Promise<Ticket | undefined> {
+  const existing = await getTicket(id);
   if (!existing) return undefined;
 
   const merged = {
@@ -56,22 +60,18 @@ export function updateTicket(id: number, input: UpdateTicketInput): Ticket | und
     dung_han: input.dung_han ?? existing.dung_han,
   };
 
-  return db
-    .prepare(
-      `UPDATE tickets SET period_id = ?, team_id = ?, tong_ticket = ?, ticket_vuot = ?, dung_han = ?, updated_at = datetime('now')
-       WHERE id = ? RETURNING *`,
-    )
-    .get(
-      merged.period_id,
-      merged.team_id,
-      merged.tong_ticket,
-      merged.ticket_vuot,
-      merged.dung_han,
-      id,
-    ) as Ticket;
+  const [updated] = await db("tickets")
+    .where({ id })
+    .update({
+      ...merged,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+
+  return updated as Ticket;
 }
 
-export function deleteTicket(id: number): boolean {
-  const result = db.prepare(`DELETE FROM tickets WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteTicket(id: number): Promise<boolean> {
+  const count = await db("tickets").where({ id }).delete();
+  return count > 0;
 }

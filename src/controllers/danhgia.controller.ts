@@ -15,11 +15,13 @@ import { getTeam } from "../services/team.service.js";
 export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Response) {
   const { period_id, team_id, entries } = req.body ?? {};
   const periodId = Number(period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
   const teamId = Number(team_id);
-  if (!getTeam(teamId)) {
+  const team = await getTeam(teamId);
+  if (!team) {
     return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
   }
   if (!Array.isArray(entries) || entries.length === 0) {
@@ -29,7 +31,7 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
   const parsedEntries: { member_id: number; so_thu_tu: number }[] = [];
   for (const entry of entries) {
     const memberId = Number(entry?.member_id);
-    const member = getMember(memberId);
+    const member = await getMember(memberId);
     if (!member || member.team_id !== teamId || member.period_id !== periodId) {
       return res.status(400).json({ error: `Nhân sự (member_id=${entry?.member_id}) không hợp lệ hoặc không thuộc team/tháng đã chọn` });
     }
@@ -40,17 +42,18 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
     parsedEntries.push({ member_id: memberId, so_thu_tu: soThuTu });
   }
 
-  upsertDanhGiaRecords(periodId, parsedEntries);
-  res.status(201).json(listDanhGiaRecords(periodId));
+  await upsertDanhGiaRecords(periodId, parsedEntries);
+  res.status(201).json(await listDanhGiaRecords(periodId));
 }
 
 // GET /api/danh-gia-records?period_id=X — danh sách theo tháng đang lọc.
 export async function listDanhGiaRecordsHandler(req: Request, res: Response) {
   const periodId = Number(req.query.period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(listDanhGiaRecords(periodId));
+  res.json(await listDanhGiaRecords(periodId));
 }
 
 export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
@@ -59,13 +62,13 @@ export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
   if (!Number.isFinite(soThuTu)) {
     return res.status(400).json({ error: "Trường 'so_thu_tu' phải là số" });
   }
-  const record = updateDanhGiaRecord(Number(req.params.id), soThuTu);
+  const record = await updateDanhGiaRecord(Number(req.params.id), soThuTu);
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }
 
 export async function deleteDanhGiaRecordHandler(req: Request, res: Response) {
-  const ok = deleteDanhGiaRecord(Number(req.params.id));
+  const ok = await deleteDanhGiaRecord(Number(req.params.id));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

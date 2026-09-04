@@ -6,14 +6,44 @@ Backend Node.js/Express/TypeScript + SQLite, frontend vanilla JS/HTML/CSS
 (không framework, không build step).
 
 ## Yêu cầu
-- Node.js (cài qua nvm: `nvm use`)
+- Node.js >= 22 (cài qua nvm: `nvm use` hoặc tải Node 22 LTS)
+
+## Cấu hình Database (SQLite / SQL Server)
+
+Dự án hỗ trợ linh hoạt 2 môi trường lưu trữ qua Knex:
+- **Dev / Local**: Mặc định dùng **SQLite** (file lưu tại `data/backlog.db`), không cần cài đặt database server.
+- **Production (Win Server / MSSQL)**: Kết nối trực tiếp đến **Microsoft SQL Server**.
+
+Tạo file `.env` từ `.env.example`:
+```bash
+cp .env.example .env
+```
+
+### 1. Dùng SQLite (Mặc định cho Dev)
+```env
+DB_CLIENT=sqlite
+SQLITE_FILENAME=./data/backlog.db
+```
+
+### 2. Dùng SQL Server (Cho Production / Win Server)
+```env
+DB_CLIENT=mssql
+MSSQL_SERVER=127.0.0.1
+MSSQL_PORT=1433
+MSSQL_USER=sa
+MSSQL_PASSWORD=YourStrongPassword!
+MSSQL_DATABASE=backlog_mng
+MSSQL_ENCRYPT=false
+MSSQL_TRUST_SERVER_CERTIFICATE=true
+```
+*Ghi chú cho DBA*: Có thể dùng script SQL tạo bảng thủ công tại `scripts/schema-sqlserver.sql`, hoặc để app tự động khởi tạo bảng (auto-migration) khi khởi động.
 
 ## Lệnh
 - `npm install` — cài dependencies
 - `npm run dev` — chạy dev server (tsx watch), mặc định cổng 3001
 - `npm run build` — build ra `dist/`
 - `npm start` — chạy bản đã build
-- `npm test` — chạy test (vitest)
+- `npm test` — chạy test (vitest, dùng test DB riêng biệt)
 
 Sau khi chạy `npm run dev`, mở `http://localhost:3001`.
 
@@ -22,15 +52,16 @@ Sau khi chạy `npm run dev`, mở `http://localhost:3001`.
 src/
   routes/         # 1 file route theo từng nhóm chức năng
   controllers/     # xử lý request/response
-  services/        # nghiệp vụ + truy vấn SQLite
+  services/        # nghiệp vụ + truy vấn Knex đa CSDL
   middleware/
-  db/              # khởi tạo schema SQLite (better-sqlite3), file tại data/backlog.db
+  db/              # cấu hình Knex và auto-migration (SQLite / SQL Server)
   types/
   app.ts           # gắn toàn bộ route vào Express app
   index.ts         # entrypoint, start server
 public/            # UI (vanilla JS/HTML/CSS, không build step)
 tests/             # vitest + supertest, gọi thẳng qua createApp()
-data/              # DB thật (không commit, xem .gitignore)
+data/              # DB SQLite local (không commit, xem .gitignore)
+scripts/           # Script DDL SQL Server (scripts/schema-sqlserver.sql)
 ```
 
 ## Các trang trong ứng dụng
