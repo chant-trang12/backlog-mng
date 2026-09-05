@@ -158,20 +158,7 @@
             <p class="muted" style="margin:0 0 12px">Tỉ lệ % hoàn thành = Tổng tỉ lệ đã được đánh giá / Tổng đầu việc.</p>
             <div class="table-wrap" style="margin-bottom:24px">
               <table id="home-completion-rate-table">
-                <thead>
-                  <tr>
-                    <th>Team</th>
-                    <th class="home-tag-head"><span class="status-badge tag-so-hoa">Số hoá</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-dau-tu">Đầu tư</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-clc-dich-vu">Chất lượng dịch vụ</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-trai-nghiem-kh">Trải nghiệm khách hàng</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-quan-ly-clc">Quản lý chất lượng</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-iso">ISO</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-quy-trinh">Quy trình</span></th>
-                    <th class="home-tag-head"><span class="status-badge tag-nv-ky-thuat">Nhiệm vụ kỹ thuật</span></th>
-                    <th>Tổng</th>
-                  </tr>
-                </thead>
+                <thead id="home-completion-rate-thead"></thead>
                 <tbody id="home-completion-rate-tbody"></tbody>
               </table>
             </div>
@@ -180,31 +167,7 @@
             <p class="muted" style="margin:0 0 12px">Tổng hợp từ Backlog theo Team và Tag — không tính các nhiệm vụ đánh dấu Hủy hoặc Không tính điểm.</p>
             <div class="table-wrap">
               <table id="home-completion-table">
-                <thead>
-                  <tr>
-                    <th rowspan="2">Team</th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-so-hoa">Số hoá</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-dau-tu">Đầu tư</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-clc-dich-vu">Chất lượng dịch vụ</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-trai-nghiem-kh">Trải nghiệm khách hàng</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-quan-ly-clc">Quản lý chất lượng</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-iso">ISO</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-quy-trinh">Quy trình</span></th>
-                    <th colspan="2" class="home-tag-head"><span class="status-badge tag-nv-ky-thuat">Nhiệm vụ kỹ thuật</span></th>
-                    <th colspan="2">Tổng</th>
-                  </tr>
-                  <tr>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                    <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
-                  </tr>
-                </thead>
+                <thead id="home-completion-thead"></thead>
                 <tbody id="home-completion-tbody"></tbody>
               </table>
             </div>
@@ -246,11 +209,6 @@
                   <label for="filter-tinh-chat">Phân loại</label>
                   <select id="filter-tinh-chat">
                     <option value="">Tất cả</option>
-                    <option value="NVKH">NVKH</option>
-                    <option value="NVPS">NVPS</option>
-                    <option value="NVTT">NVTT</option>
-                    <option value="NV được giao từ BGĐ">NV được giao từ BGĐ</option>
-                    <option value="Nhiệm vụ tồn">Nhiệm vụ tồn</option>
                   </select>
                 </div>
                 <div>
@@ -824,6 +782,7 @@
           <div class="chrome-tabs" id="config-subnav">
             <span class="pill active" data-tab="tieuchi">Tiêu chí</span>
             <span class="pill" data-tab="ranking">Ranking team</span>
+            <span class="pill" data-tab="tagphanloai">Cấu hình</span>
           </div>
 
           <section class="card" id="config-tab-tieuchi">
@@ -874,6 +833,68 @@
               <p class="muted" id="ranking-empty" hidden style="padding:16px;text-align:center">Chưa có dòng xếp hạng nào — bấm "+ Thêm dòng" để bắt đầu.</p>
             </div>
           </section>
+
+          <div class="row-split" id="config-tab-tagphanloai" hidden>
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Tag</h2>
+                <button id="add-tag-btn" class="primary">+ Thêm tag</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Tag dùng ở form nhập nhiệm vụ Backlog — màu badge gán tự động theo thứ tự, bấm vào tên để đổi.</p>
+              <div class="table-wrap">
+                <table id="tag-config-table">
+                  <thead><tr><th>Tag</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="tag-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="tag-config-empty" hidden style="padding:16px;text-align:center">Chưa có tag nào — bấm "+ Thêm tag" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Phân loại</h2>
+                <button id="add-phanloai-btn" class="primary">+ Thêm phân loại</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Phân loại dùng ở form nhập nhiệm vụ Backlog. "Nhiệm vụ tồn" do hệ thống tự gắn khi chuyển task sang tháng sau, không quản lý ở đây.</p>
+              <div class="table-wrap">
+                <table id="phanloai-config-table">
+                  <thead><tr><th>Phân loại</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="phanloai-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="phanloai-config-empty" hidden style="padding:16px;text-align:center">Chưa có phân loại nào — bấm "+ Thêm phân loại" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Nhóm</h2>
+                <button id="add-nhom-btn" class="primary">+ Thêm nhóm</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Nhóm hiển thị ở cột "Nhóm" của tab Tiêu chí.</p>
+              <div class="table-wrap">
+                <table id="nhom-config-table">
+                  <thead><tr><th>Nhóm</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="nhom-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="nhom-config-empty" hidden style="padding:16px;text-align:center">Chưa có nhóm nào — bấm "+ Thêm nhóm" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Chức vụ</h2>
+                <button id="add-chucvu-btn" class="primary">+ Thêm chức vụ</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Chức vụ ở dropdown khi thêm/sửa nhân sự (Team &amp; Nhân sự).</p>
+              <div class="table-wrap">
+                <table id="chucvu-config-table">
+                  <thead><tr><th>Chức vụ</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="chucvu-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="chucvu-config-empty" hidden style="padding:16px;text-align:center">Chưa có chức vụ nào — bấm "+ Thêm chức vụ" để bắt đầu.</p>
+              </div>
+            </section>
+          </div>
           </div>
         </div>
       </main>
@@ -1053,8 +1074,7 @@
       <div class="field-row">
         <div>
           <label for="tc-nhom">Nhóm *</label>
-          <input id="tc-nhom" required list="tc-nhom-options" />
-          <datalist id="tc-nhom-options"></datalist>
+          <select id="tc-nhom" required></select>
         </div>
         <div>
           <label for="tc-ten">Tiêu chí *</label>
@@ -1154,26 +1174,6 @@
           <label for="m-chuc-vu">Chức vụ</label>
           <select id="m-chuc-vu">
             <option value="">-- Chọn chức vụ --</option>
-            <option>Trưởng phòng</option>
-            <option>Chuyên gia</option>
-            <option>Trưởng nhóm</option>
-            <option>Trưởng nhóm (Nội bộ)</option>
-            <option>Trưởng nhóm (ATM + Billing)</option>
-            <option>Nghiệp vụ sản phẩm (BA)</option>
-            <option>Nhân viên Nghiệp vụ Kỹ thuật</option>
-            <option>Chuyên gia Nghiên cứu Phát triển dịch vụ</option>
-            <option>Kỹ sư Phần mềm</option>
-            <option>Kỹ sư kiểm thử &amp; Quản lý chất lượng</option>
-            <option>Chuyên viên Quy trình - ISO</option>
-            <option>Nhân viên quản lý phát triển bền vững</option>
-            <option>Kỹ sư Phân tích Dữ liệu (DA)</option>
-            <option>Nhân viên quản lý chất lượng</option>
-            <option>Kỹ sư dữ liệu (DE)</option>
-            <option>Nhân viên thiết kế, đồ họa (UI/UX Designer)</option>
-            <option>Nhân viên quy trình - ISO</option>
-            <option>Nhân viên Scrum Master</option>
-            <option>Nhân viên phân tích nghiệp vụ</option>
-            <option>Chuyên viên Trí tuệ nhân tạo</option>
           </select>
         </div>
         <div>
@@ -1199,27 +1199,12 @@
         </div>
         <div>
           <label for="f-tag">Tag</label>
-          <select id="f-tag">
-            <option value="">-- Không chọn --</option>
-            <option value="Số hoá">Số hoá</option>
-            <option value="Đầu tư">Đầu tư</option>
-            <option value="Chất lượng dịch vụ">Chất lượng dịch vụ</option>
-            <option value="Trải nghiệm khách hàng">Trải nghiệm khách hàng</option>
-            <option value="Quản lý chất lượng">Quản lý chất lượng</option>
-            <option value="ISO">ISO</option>
-            <option value="Quy trình">Quy trình</option>
-            <option value="Nhiệm vụ kỹ thuật">Nhiệm vụ kỹ thuật</option>
-          </select>
+          <select id="f-tag"></select>
         </div>
       </div>
       <div>
         <label>Phân loại</label>
-        <div class="checkbox-group" id="f-tinh-chat-group">
-          <label class="checkbox-option"><input type="checkbox" value="NVKH" /> NVKH</label>
-          <label class="checkbox-option"><input type="checkbox" value="NVPS" /> NVPS</label>
-          <label class="checkbox-option"><input type="checkbox" value="NVTT" /> NVTT</label>
-          <label class="checkbox-option"><input type="checkbox" value="NV được giao từ BGĐ" /> NV được giao từ BGĐ</label>
-        </div>
+        <div class="checkbox-group" id="f-tinh-chat-group"></div>
       </div>
       <div>
         <label for="f-nhiem-vu">Nhiệm vụ *</label>

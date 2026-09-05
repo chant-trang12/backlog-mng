@@ -130,6 +130,7 @@ main {
   flex-wrap: wrap;
   align-items: stretch;
 }
+.row-split[hidden] { display: none; }
 
 .row-split-narrow {
   flex: 0 1 280px;
@@ -556,11 +557,9 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
 
-/* Tính chất — các sắc độ hồng khác nhau + 1 tông kem-nâu để phân biệt. */
-.tinh-chat-nvkh { background: #dbeafe; color: #1e40af; }
-.tinh-chat-nvps { background: #fce7f3; color: #9d174d; }
-.tinh-chat-nvtt { background: #ede9fe; color: #5b21b6; }
-.tinh-chat-bgd { background: #ffedd5; color: #9a3412; }
+/* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân
+   loại quản lý ở Cấu hình), giữ màu cố định riêng. Các phân loại khác lấy màu
+   theo palette động ở app.js (TAG_PALETTE/PHAN_LOAI_PALETTE, áp qua style="..."). */
 .tinh-chat-ton { background: #e3e9d5; color: var(--maroon); }
 .tinh-chat-khong-tinh-diem { background: var(--border); color: var(--muted); }
 .tinh-chat-da-chuyen { background: #d6ebf5; color: #1f5f80; }
@@ -714,16 +713,6 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 #home-ranking-team-table tbody tr.active { background: var(--bg); font-weight: 700; }
 #home-ranking-detail-table tr.home-nhom-row td { background: var(--bg); font-weight: 600; text-align: left; }
 #home-ranking-detail-table tr.home-tongdiem-row td { background: var(--bg); font-weight: 700; border-top: 2px solid var(--border); }
-
-/* Tag — mỗi lựa chọn trong danh sách cố định 1 màu riêng, nổi bật. */
-.tag-so-hoa { background: #d7f0ee; color: #0e6e64; }
-.tag-dau-tu { background: #f6e6bd; color: #8a5a12; }
-.tag-clc-dich-vu { background: #dbe4f5; color: #2c4a8a; }
-.tag-trai-nghiem-kh { background: #f8dbe6; color: #93265a; }
-.tag-quan-ly-clc { background: #e6dcf5; color: #5c3494; }
-.tag-iso { background: #d6ebf5; color: #1f5f80; }
-.tag-quy-trinh { background: #dfe8cf; color: #4a5f2e; }
-.tag-nv-ky-thuat { background: #ecdccb; color: #7a4a28; }
 
 /* Loại (tab Đào tạo) — Đào tạo / Chứng chỉ QT. */
 .loai-dao-tao { background: #d3ede8; color: #0f6656; }

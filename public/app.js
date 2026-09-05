@@ -22,6 +22,10 @@ const state = {
   danhGiaRecords: [],
   tieuChiConfigs: [],
   rankingConfig: { rows: [], columns: [], cells: [] },
+  tags: [],
+  phanLoaiOptions: [],
+  nhomOptions: [],
+  chucVuOptions: [],
   homePeriodId: null, // Tháng đang xem ở trang Home — độc lập với period đang chọn ở Backlog/Team
   homeTeamFilter: "", // "" = tất cả team
   homeTeams: [],
@@ -145,6 +149,18 @@ const el = {
   rankingTheadRow: document.getElementById("ranking-thead-row"),
   rankingTbody: document.getElementById("ranking-tbody"),
   rankingEmpty: document.getElementById("ranking-empty"),
+  addTagBtn: document.getElementById("add-tag-btn"),
+  tagConfigTbody: document.getElementById("tag-config-tbody"),
+  tagConfigEmpty: document.getElementById("tag-config-empty"),
+  addPhanLoaiBtn: document.getElementById("add-phanloai-btn"),
+  phanLoaiConfigTbody: document.getElementById("phanloai-config-tbody"),
+  phanLoaiConfigEmpty: document.getElementById("phanloai-config-empty"),
+  addNhomBtn: document.getElementById("add-nhom-btn"),
+  nhomConfigTbody: document.getElementById("nhom-config-tbody"),
+  nhomConfigEmpty: document.getElementById("nhom-config-empty"),
+  addChucVuBtn: document.getElementById("add-chucvu-btn"),
+  chucVuConfigTbody: document.getElementById("chucvu-config-tbody"),
+  chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
   attendanceSearch: document.getElementById("attendance-search"),
@@ -183,13 +199,54 @@ const STATUS_CLASS = {
   "Hủy": "status-huy",
 };
 
-const TINH_CHAT_CLASS = {
-  "NVKH": "tinh-chat-nvkh",
-  "NVPS": "tinh-chat-nvps",
-  "NVTT": "tinh-chat-nvtt",
-  "NV được giao từ BGĐ": "tinh-chat-bgd",
-  "Nhiệm vụ tồn": "tinh-chat-ton",
-};
+// Màu badge Tag/Phân loại gán tự động theo VỊ TRÍ trong danh mục (state.tags /
+// state.phanLoaiOptions, quản lý ở Cấu hình → Tag & Phân loại) — không lưu
+// màu trong DB. 4/8 màu đầu giữ đúng như bảng màu cố định trước đây để không
+// đổi giao diện của các giá trị gốc; các màu sau dùng khi thêm tag/phân loại
+// mới, lặp lại theo chu kỳ nếu vượt quá độ dài palette.
+const TAG_PALETTE = [
+  { bg: "#d7f0ee", text: "#0e6e64" },
+  { bg: "#f6e6bd", text: "#8a5a12" },
+  { bg: "#dbe4f5", text: "#2c4a8a" },
+  { bg: "#f8dbe6", text: "#93265a" },
+  { bg: "#e6dcf5", text: "#5c3494" },
+  { bg: "#d6ebf5", text: "#1f5f80" },
+  { bg: "#dfe8cf", text: "#4a5f2e" },
+  { bg: "#ecdccb", text: "#7a4a28" },
+  { bg: "#fde2d0", text: "#9a4a12" },
+  { bg: "#d9f0d3", text: "#2f6e3a" },
+  { bg: "#e0e0f5", text: "#3d3d8a" },
+  { bg: "#fbe3ec", text: "#8a2f5c" },
+];
+
+const PHAN_LOAI_PALETTE = [
+  { bg: "#dbeafe", text: "#1e40af" },
+  { bg: "#fce7f3", text: "#9d174d" },
+  { bg: "#ede9fe", text: "#5b21b6" },
+  { bg: "#ffedd5", text: "#9a3412" },
+  { bg: "#d7f0ee", text: "#0e6e64" },
+  { bg: "#dfe8cf", text: "#4a5f2e" },
+  { bg: "#f6e6bd", text: "#8a5a12" },
+  { bg: "#e6dcf5", text: "#5c3494" },
+];
+
+// "Nhiệm vụ tồn" là giá trị hệ thống tự gắn khi chuyển task sang tháng sau
+// (task.service.ts::addTinhChatTon) — không nằm trong danh mục Phân loại có
+// thể sửa/xóa ở Cấu hình, luôn giữ màu cố định riêng (.tinh-chat-ton).
+function tagBadgeAttrs(value) {
+  const idx = state.tags.findIndex((t) => t.ten_tag === value);
+  if (idx === -1) return `class="status-badge status-default"`;
+  const c = TAG_PALETTE[idx % TAG_PALETTE.length];
+  return `class="status-badge" style="background:${c.bg};color:${c.text}"`;
+}
+
+function phanLoaiBadgeAttrs(value) {
+  if (value === "Nhiệm vụ tồn") return `class="status-badge tinh-chat-ton"`;
+  const idx = state.phanLoaiOptions.findIndex((p) => p.ten_phan_loai === value);
+  if (idx === -1) return `class="status-badge status-default"`;
+  const c = PHAN_LOAI_PALETTE[idx % PHAN_LOAI_PALETTE.length];
+  return `class="status-badge" style="background:${c.bg};color:${c.text}"`;
+}
 
 // Hiển thị Tính chất dạng badge giống cột Trạng thái — mỗi giá trị đã chọn là
 // 1 badge, mỗi loại 1 màu riêng để dễ phân biệt.
@@ -198,26 +255,8 @@ function renderTinhChatBadges(value) {
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
-  const badges = items
-    .map((item) => `<span class="status-badge ${TINH_CHAT_CLASS[item] || "status-default"}">${item}</span>`)
-    .join("");
+  const badges = items.map((item) => `<span ${phanLoaiBadgeAttrs(item)}>${item}</span>`).join("");
   return badges ? `<div class="badge-group">${badges}</div>` : "";
-}
-
-// Tag — mỗi giá trị trong danh sách cố định 1 màu riêng, nổi bật giống các badge khác.
-const TAG_CLASS = {
-  "Số hoá": "tag-so-hoa",
-  "Đầu tư": "tag-dau-tu",
-  "Chất lượng dịch vụ": "tag-clc-dich-vu",
-  "Trải nghiệm khách hàng": "tag-trai-nghiem-kh",
-  "Quản lý chất lượng": "tag-quan-ly-clc",
-  "ISO": "tag-iso",
-  "Quy trình": "tag-quy-trinh",
-  "Nhiệm vụ kỹ thuật": "tag-nv-ky-thuat",
-};
-
-function tagColorClass(value) {
-  return TAG_CLASS[value] || "status-default";
 }
 
 // Loại (tab Đào tạo) — "Đào tạo" / "Chứng chỉ QT", mỗi loại 1 màu riêng.
@@ -241,11 +280,10 @@ function teamColorClass(teamName) {
   return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
 }
 
-// Mỗi Nhóm tiêu chí (trang Cấu hình) 1 màu riêng, theo thứ tự xuất hiện lần
-// đầu trong state.tieuChiConfigs — cùng bảng màu với team-color-N.
+// Mỗi Nhóm tiêu chí (trang Cấu hình → Cấu hình → Nhóm) 1 màu riêng, theo vị
+// trí trong danh mục state.nhomOptions — cùng bảng màu với team-color-N.
 function nhomColorClass(nhom) {
-  const uniqueNhom = [...new Set(state.tieuChiConfigs.map((c) => c.nhom))];
-  const index = uniqueNhom.indexOf(nhom);
+  const index = state.nhomOptions.findIndex((n) => n.ten_nhom === nhom);
   const safeIndex = index === -1 ? 0 : index;
   return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
 }
@@ -725,6 +763,18 @@ function renderFilterTeamOptions() {
   el.filterTeam.value = state.taskFilters.team;
 }
 
+// Dropdown "Phân loại" trong bộ lọc Danh sách task (trang Backlog) — lấy
+// theo danh mục Phân loại ở Cấu hình, cộng thêm "Nhiệm vụ tồn" (giá trị hệ
+// thống tự gắn, không nằm trong danh mục) để vẫn lọc được.
+function renderFilterTinhChatOptions() {
+  const options = [`<option value="">Tất cả</option>`]
+    .concat(state.phanLoaiOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`))
+    .concat([`<option value="Nhiệm vụ tồn">Nhiệm vụ tồn</option>`])
+    .join("");
+  el.filterTinhChat.innerHTML = options;
+  el.filterTinhChat.value = state.taskFilters.tinhChat;
+}
+
 el.filterTinhChat.addEventListener("change", () => {
   state.taskFilters.tinhChat = el.filterTinhChat.value;
   applyTaskFilters();
@@ -953,7 +1003,11 @@ function openMemberDialog(member) {
   teamSelectEl.value = String(member?.team_id ?? state.currentTeamId ?? state.teams[0]?.id ?? "");
 
   document.getElementById("m-name").value = member?.name ?? "";
-  document.getElementById("m-chuc-vu").value = member?.chuc_vu ?? "";
+  const chucVuSelect = document.getElementById("m-chuc-vu");
+  chucVuSelect.innerHTML =
+    `<option value="">-- Chọn chức vụ --</option>` +
+    state.chucVuOptions.map((c) => `<option value="${c.ten_chuc_vu}">${c.ten_chuc_vu}</option>`).join("");
+  chucVuSelect.value = member?.chuc_vu ?? "";
   el.memberDialog.showModal();
 }
 
@@ -1049,7 +1103,7 @@ function renderTasks() {
     <tr data-id="${t.id}">
       <td><input type="checkbox" class="task-row-checkbox" ${state.selectedTaskIds.has(t.id) ? "checked" : ""} /></td>
       <td>${t.stt}</td>
-      <td>${t.tag ? `<span class="status-badge ${tagColorClass(t.tag)}">${t.tag}</span>` : ""}</td>
+      <td>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
       <td>${renderTinhChatBadges(t.tinh_chat)}</td>
       <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
@@ -1219,8 +1273,17 @@ function openTaskDialog(task) {
     .join("");
   const chosenTeam = task?.team || state.taskFilters.team || state.currentTeam || state.teams[0]?.name || "";
   teamSelect.value = chosenTeam;
+
+  const tagSelect = document.getElementById("f-tag");
+  tagSelect.innerHTML =
+    `<option value="">-- Không chọn --</option>` +
+    state.tags.map((t) => `<option value="${t.ten_tag}">${t.ten_tag}</option>`).join("");
+  tagSelect.value = task?.tag ?? "";
+
+  document.getElementById("f-tinh-chat-group").innerHTML = state.phanLoaiOptions
+    .map((p) => `<label class="checkbox-option"><input type="checkbox" value="${p.ten_phan_loai}" /> ${p.ten_phan_loai}</label>`)
+    .join("");
   setTinhChatValue(task?.tinh_chat ?? "");
-  document.getElementById("f-tag").value = task?.tag ?? "";
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
   document.getElementById("f-dod").value = task?.dod ?? "";
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
@@ -1351,7 +1414,7 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#config-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["tieuchi", "ranking"].forEach((tab) => {
+    ["tieuchi", "ranking", "tagphanloai"].forEach((tab) => {
       document.getElementById(`config-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
   });
@@ -2765,11 +2828,9 @@ function openTieuChiDialog(config) {
   document.getElementById("tc-id").value = config?.id ?? "";
   el.tieuChiDialogTitle.textContent = config ? "Sửa tiêu chí" : "Thêm tiêu chí";
 
-  const nhomOptionsEl = document.getElementById("tc-nhom-options");
-  const uniqueNhom = [...new Set(state.tieuChiConfigs.map((c) => c.nhom))];
-  nhomOptionsEl.innerHTML = uniqueNhom.map((n) => `<option value="${n}"></option>`).join("");
-
-  document.getElementById("tc-nhom").value = config?.nhom ?? "";
+  const nhomSelect = document.getElementById("tc-nhom");
+  nhomSelect.innerHTML = state.nhomOptions.map((n) => `<option value="${n.ten_nhom}">${n.ten_nhom}</option>`).join("");
+  nhomSelect.value = config?.nhom ?? state.nhomOptions[0]?.ten_nhom ?? "";
   document.getElementById("tc-ten").value = config?.ten_tieu_chi ?? "";
   document.getElementById("tc-cach-tinh").value = config?.cach_tinh_diem ?? "";
   document.getElementById("tc-co-chi-tieu").checked = Boolean(config?.co_chi_tieu);
@@ -2926,6 +2987,273 @@ el.addRankingColumnBtn.addEventListener("click", async () => {
       body: JSON.stringify({ ten_cot: "Cột mới" }),
     });
     await loadRanking();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Cấu hình: Tag & Phân loại ----
+// Danh mục dùng ở form nhập task Backlog (select Tag, checkbox Phân loại) và
+// bộ lọc — thay cho danh sách cố định cứng trước đây. Đổi ở đây ảnh hưởng
+// ngay lập tức tới màu badge, dropdown/checkbox nhập task, bộ lọc Backlog, và
+// các cột theo Tag ở Home (renderHomeCompletionRateTable/renderHomeCompletionTable).
+
+async function loadTags() {
+  state.tags = await api("/api/tags");
+  renderTagConfig();
+  renderTasks();
+  renderFilterTagDependents();
+}
+
+async function loadPhanLoai() {
+  state.phanLoaiOptions = await api("/api/phan-loai");
+  renderPhanLoaiConfig();
+  renderTasks();
+  renderFilterTinhChatOptions();
+}
+
+// Các phần phụ thuộc vào state.tags ngoài chính bảng cấu hình: bộ lọc Backlog
+// hiện chưa có lọc theo Tag, nhưng Home (bảng Tỉ lệ hoàn thành nhiệm vụ) dùng
+// state.tags để dựng cột — render lại khi danh mục Tag đổi.
+function renderFilterTagDependents() {
+  renderHomeDashboard();
+}
+
+function renderTagConfig() {
+  if (!el.tagConfigTbody) return;
+  el.tagConfigEmpty.hidden = state.tags.length > 0;
+  el.tagConfigTbody.innerHTML = state.tags
+    .map(
+      (t) => `
+    <tr data-id="${t.id}">
+      <td>
+        <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
+          <span ${tagBadgeAttrs(t.ten_tag)}>&nbsp;</span>
+          <input class="inline-cell-input tag-name-input" data-id="${t.id}" value="${t.ten_tag}" style="flex:1" />
+        </div>
+      </td>
+      <td><span class="pill-x delete-tag-btn" data-id="${t.id}" title="Xóa tag">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  el.tagConfigTbody.querySelectorAll(".tag-name-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const value = input.value.trim();
+      if (!value) {
+        showToast("Tên tag không được để trống.");
+        input.value = state.tags.find((t) => t.id === Number(input.dataset.id))?.ten_tag ?? "";
+        return;
+      }
+      try {
+        await api(`/api/tags/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ten_tag: value }) });
+        await loadTags();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  el.tagConfigTbody.querySelectorAll(".delete-tag-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Xóa tag này? Các task đang gắn tag này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      try {
+        await api(`/api/tags/${btn.dataset.id}`, { method: "DELETE" });
+        await loadTags();
+        showToast("Đã xóa tag.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+function renderPhanLoaiConfig() {
+  if (!el.phanLoaiConfigTbody) return;
+  el.phanLoaiConfigEmpty.hidden = state.phanLoaiOptions.length > 0;
+  el.phanLoaiConfigTbody.innerHTML = state.phanLoaiOptions
+    .map(
+      (p) => `
+    <tr data-id="${p.id}">
+      <td>
+        <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
+          <span ${phanLoaiBadgeAttrs(p.ten_phan_loai)}>&nbsp;</span>
+          <input class="inline-cell-input phanloai-name-input" data-id="${p.id}" value="${p.ten_phan_loai}" style="flex:1" />
+        </div>
+      </td>
+      <td><span class="pill-x delete-phanloai-btn" data-id="${p.id}" title="Xóa phân loại">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  el.phanLoaiConfigTbody.querySelectorAll(".phanloai-name-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const value = input.value.trim();
+      if (!value) {
+        showToast("Tên phân loại không được để trống.");
+        input.value = state.phanLoaiOptions.find((p) => p.id === Number(input.dataset.id))?.ten_phan_loai ?? "";
+        return;
+      }
+      try {
+        await api(`/api/phan-loai/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ ten_phan_loai: value }),
+        });
+        await loadPhanLoai();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  el.phanLoaiConfigTbody.querySelectorAll(".delete-phanloai-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Xóa phân loại này? Các task đang gắn phân loại này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      try {
+        await api(`/api/phan-loai/${btn.dataset.id}`, { method: "DELETE" });
+        await loadPhanLoai();
+        showToast("Đã xóa phân loại.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+el.addTagBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/tags", { method: "POST", body: JSON.stringify({ ten_tag: "Tag mới" }) });
+    await loadTags();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+el.addPhanLoaiBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/phan-loai", { method: "POST", body: JSON.stringify({ ten_phan_loai: "Phân loại mới" }) });
+    await loadPhanLoai();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Danh mục Nhóm hiển thị ở cột "Nhóm" của tab Tiêu chí — đổi ở đây ảnh hưởng
+// ngay tới màu badge (nhomColorClass) và dropdown "Nhóm" ở dialog Thêm/Sửa
+// tiêu chí.
+async function loadNhom() {
+  state.nhomOptions = await api("/api/nhom");
+  renderNhomConfig();
+  renderTieuChi();
+}
+
+function renderNhomConfig() {
+  if (!el.nhomConfigTbody) return;
+  el.nhomConfigEmpty.hidden = state.nhomOptions.length > 0;
+  el.nhomConfigTbody.innerHTML = state.nhomOptions
+    .map(
+      (n) => `
+    <tr data-id="${n.id}">
+      <td>
+        <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
+          <span class="status-badge ${nhomColorClass(n.ten_nhom)}">&nbsp;</span>
+          <input class="inline-cell-input nhom-name-input" data-id="${n.id}" value="${n.ten_nhom}" style="flex:1" />
+        </div>
+      </td>
+      <td><span class="pill-x delete-nhom-btn" data-id="${n.id}" title="Xóa nhóm">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  el.nhomConfigTbody.querySelectorAll(".nhom-name-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const value = input.value.trim();
+      if (!value) {
+        showToast("Tên nhóm không được để trống.");
+        input.value = state.nhomOptions.find((n) => n.id === Number(input.dataset.id))?.ten_nhom ?? "";
+        return;
+      }
+      try {
+        await api(`/api/nhom/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ten_nhom: value }) });
+        await loadNhom();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  el.nhomConfigTbody.querySelectorAll(".delete-nhom-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Xóa nhóm này? Các tiêu chí đang gắn nhóm này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      try {
+        await api(`/api/nhom/${btn.dataset.id}`, { method: "DELETE" });
+        await loadNhom();
+        showToast("Đã xóa nhóm.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+el.addNhomBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/nhom", { method: "POST", body: JSON.stringify({ ten_nhom: "Nhóm mới" }) });
+    await loadNhom();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Danh mục Chức vụ ở dropdown "Chức vụ" khi thêm/sửa nhân sự (Team & Nhân sự).
+async function loadChucVu() {
+  state.chucVuOptions = await api("/api/chuc-vu");
+  renderChucVuConfig();
+}
+
+function renderChucVuConfig() {
+  if (!el.chucVuConfigTbody) return;
+  el.chucVuConfigEmpty.hidden = state.chucVuOptions.length > 0;
+  el.chucVuConfigTbody.innerHTML = state.chucVuOptions
+    .map(
+      (c) => `
+    <tr data-id="${c.id}">
+      <td><input class="inline-cell-input chucvu-name-input" data-id="${c.id}" value="${c.ten_chuc_vu}" style="width:100%" /></td>
+      <td><span class="pill-x delete-chucvu-btn" data-id="${c.id}" title="Xóa chức vụ">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  el.chucVuConfigTbody.querySelectorAll(".chucvu-name-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const value = input.value.trim();
+      if (!value) {
+        showToast("Tên chức vụ không được để trống.");
+        input.value = state.chucVuOptions.find((c) => c.id === Number(input.dataset.id))?.ten_chuc_vu ?? "";
+        return;
+      }
+      try {
+        await api(`/api/chuc-vu/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ten_chuc_vu: value }) });
+        await loadChucVu();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  el.chucVuConfigTbody.querySelectorAll(".delete-chucvu-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Xóa chức vụ này? Các nhân sự đang gắn chức vụ này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      try {
+        await api(`/api/chuc-vu/${btn.dataset.id}`, { method: "DELETE" });
+        await loadChucVu();
+        showToast("Đã xóa chức vụ.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+el.addChucVuBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/chuc-vu", { method: "POST", body: JSON.stringify({ ten_chuc_vu: "Chức vụ mới" }) });
+    await loadChucVu();
   } catch (err) {
     showToast(err.message);
   }
@@ -3193,18 +3521,13 @@ function renderHomeVBarChart(rankingData) {
   calloutEl.innerHTML = `<div class="big">${top.value.toFixed(1)}</div><div class="small">Team dẫn đầu: ${top.team}</div>`;
 }
 
-// Danh sách Tag (đúng tên như trong dropdown "Tag" khi nhập task ở Backlog)
-// — dùng làm nhóm cột trong bảng tổng hợp "Tỉ lệ hoàn thành nhiệm vụ" ở Home.
-const HOME_COMPLETION_TAG_CATEGORIES = [
-  "Số hoá",
-  "Đầu tư",
-  "Chất lượng dịch vụ",
-  "Trải nghiệm khách hàng",
-  "Quản lý chất lượng",
-  "ISO",
-  "Quy trình",
-  "Nhiệm vụ kỹ thuật",
-];
+// Danh sách Tag (theo danh mục Tag ở Cấu hình → Tag & Phân loại) — dùng làm
+// nhóm cột trong bảng tổng hợp "Tỉ lệ hoàn thành nhiệm vụ" ở Home. Đọc trực
+// tiếp từ state.tags mỗi lần dùng để luôn khớp danh mục hiện tại (thêm/xóa/
+// đổi tên tag ở Cấu hình phản ánh ngay ở Home).
+function homeCompletionTagCategories() {
+  return state.tags.map((t) => t.ten_tag);
+}
 
 // Làm tròn 2 chữ số thập phân và bỏ số 0 thừa ở cuối (0.79 → "0.79", 1 → "1").
 function formatHomeRatio(value) {
@@ -3578,11 +3901,22 @@ function renderHomeRankingTab(rankingData, eligible) {
 // Khung "Tổng hợp tỉ lệ hoàn thành nhiệm vụ" — mỗi dòng 1 team, mỗi cột 1 Tag,
 // giá trị = Tổng tỉ lệ đã được đánh giá / Tổng đầu việc (cùng điều kiện lọc
 // Hủy/Không tính điểm như bảng chi tiết bên dưới).
+function renderHomeCompletionRateThead(tagCategories) {
+  const thead = document.getElementById("home-completion-rate-thead");
+  if (!thead) return;
+  const tagHeadCells = tagCategories
+    .map((tag) => `<th class="home-tag-head"><span ${tagBadgeAttrs(tag)}>${tag}</span></th>`)
+    .join("");
+  thead.innerHTML = `<tr><th>Team</th>${tagHeadCells}<th>Tổng</th></tr>`;
+}
+
 function renderHomeCompletionRateTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-rate-tbody");
   if (!tbody) return;
 
-  const colCount = 1 + HOME_COMPLETION_TAG_CATEGORIES.length + 1;
+  const tagCategories = homeCompletionTagCategories();
+  renderHomeCompletionRateThead(tagCategories);
+  const colCount = 1 + tagCategories.length + 1;
   const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
@@ -3598,7 +3932,7 @@ function renderHomeCompletionRateTable(teamNames, tasksInScope) {
 
   const teamRows = teamNames
     .map((team) => {
-      const cells = HOME_COMPLETION_TAG_CATEGORIES.map((tag) => {
+      const cells = tagCategories.map((tag) => {
         const tasks = eligible.filter((t) => t.team === team && t.tag === tag);
         return `<td>${rateCell(tasks)}</td>`;
       }).join("");
@@ -3612,7 +3946,7 @@ function renderHomeCompletionRateTable(teamNames, tasksInScope) {
     })
     .join("");
 
-  const totalCells = HOME_COMPLETION_TAG_CATEGORIES.map((tag) => {
+  const totalCells = tagCategories.map((tag) => {
     const tasks = eligible.filter((t) => teamNames.includes(t.team) && t.tag === tag);
     return `<td>${rateCell(tasks)}</td>`;
   }).join("");
@@ -3640,11 +3974,34 @@ function homeCompletionPairCells(tasks) {
   return `<td>${homeCompletionCell(sumRatio, formatHomeRatio(sumRatio))}</td><td>${homeCompletionCell(tasks.length)}</td>`;
 }
 
+function renderHomeCompletionThead(tagCategories) {
+  const thead = document.getElementById("home-completion-thead");
+  if (!thead) return;
+  const tagHeadCells = tagCategories
+    .map((tag) => `<th colspan="2" class="home-tag-head"><span ${tagBadgeAttrs(tag)}>${tag}</span></th>`)
+    .join("");
+  const subHeadCells = tagCategories
+    .map(() => `<th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>`)
+    .join("");
+  thead.innerHTML = `
+    <tr>
+      <th rowspan="2">Team</th>
+      ${tagHeadCells}
+      <th colspan="2">Tổng</th>
+    </tr>
+    <tr>
+      ${subHeadCells}
+      <th>Tổng tỉ lệ đã được đánh giá</th><th>Tổng đầu việc</th>
+    </tr>`;
+}
+
 function renderHomeCompletionTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-tbody");
   if (!tbody) return;
 
-  const colCount = 1 + (HOME_COMPLETION_TAG_CATEGORIES.length + 1) * 2;
+  const tagCategories = homeCompletionTagCategories();
+  renderHomeCompletionThead(tagCategories);
+  const colCount = 1 + (tagCategories.length + 1) * 2;
   const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
@@ -3654,7 +4011,7 @@ function renderHomeCompletionTable(teamNames, tasksInScope) {
 
   const teamRows = teamNames
     .map((team) => {
-      const cells = HOME_COMPLETION_TAG_CATEGORIES.map((tag) => homeCompletionPairCells(eligible.filter((t) => t.team === team && t.tag === tag))).join("");
+      const cells = tagCategories.map((tag) => homeCompletionPairCells(eligible.filter((t) => t.team === team && t.tag === tag))).join("");
       const teamTotalCells = homeCompletionPairCells(eligible.filter((t) => t.team === team));
       return `
       <tr>
@@ -3665,7 +4022,7 @@ function renderHomeCompletionTable(teamNames, tasksInScope) {
     })
     .join("");
 
-  const totalCells = HOME_COMPLETION_TAG_CATEGORIES.map((tag) =>
+  const totalCells = tagCategories.map((tag) =>
     homeCompletionPairCells(eligible.filter((t) => teamNames.includes(t.team) && t.tag === tag)),
   ).join("");
   const grandTotalCells = homeCompletionPairCells(eligible.filter((t) => teamNames.includes(t.team)));
@@ -3712,5 +4069,9 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     loadCreationRates(),
     loadTieuChi(),
     loadRanking(),
+    loadTags(),
+    loadPhanLoai(),
+    loadNhom(),
+    loadChucVu(),
   ]).catch((err) => showToast(err.message));
 })();
