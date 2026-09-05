@@ -502,3 +502,104 @@ db.exec(`
     UNIQUE (vi_tri, column_id)
   );
 `);
+
+// Trang Cấu hình, tab Tag & Phân loại — danh mục Tag và Phân loại dùng ở form
+// nhập task Backlog, DÙNG CHUNG cho mọi tháng backlog (không gắn period_id),
+// giống tieu_chi_configs/ranking_columns.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten_tag TEXT NOT NULL UNIQUE,
+    thu_tu INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS phan_loai_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten_phan_loai TEXT NOT NULL UNIQUE,
+    thu_tu INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS nhom_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten_nhom TEXT NOT NULL UNIQUE,
+    thu_tu INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS chuc_vu_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ten_chuc_vu TEXT NOT NULL UNIQUE,
+    thu_tu INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+// Seed danh mục Tag/Phân loại từ danh sách vốn cố định cứng ở frontend trước
+// đây — chỉ chạy 1 lần khi bảng còn rỗng, giữ đúng thứ tự cũ để không đổi
+// màu badge của các task đã có sẵn.
+{
+  const tagCount = (db.prepare(`SELECT COUNT(*) AS c FROM tags`).get() as { c: number }).c;
+  if (tagCount === 0) {
+    const insertTag = db.prepare(`INSERT INTO tags (ten_tag, thu_tu) VALUES (?, ?)`);
+    const seedTags = [
+      "Số hoá",
+      "Đầu tư",
+      "Chất lượng dịch vụ",
+      "Trải nghiệm khách hàng",
+      "Quản lý chất lượng",
+      "ISO",
+      "Quy trình",
+      "Nhiệm vụ kỹ thuật",
+    ];
+    seedTags.forEach((ten, i) => insertTag.run(ten, i));
+  }
+
+  const phanLoaiCount = (db.prepare(`SELECT COUNT(*) AS c FROM phan_loai_options`).get() as { c: number }).c;
+  if (phanLoaiCount === 0) {
+    const insertPhanLoai = db.prepare(`INSERT INTO phan_loai_options (ten_phan_loai, thu_tu) VALUES (?, ?)`);
+    const seedPhanLoai = ["NVKH", "NVPS", "NVTT", "NV được giao từ BGĐ"];
+    seedPhanLoai.forEach((ten, i) => insertPhanLoai.run(ten, i));
+  }
+
+  // Seed danh mục Nhóm từ chính các giá trị "nhom" đang có trong
+  // tieu_chi_configs (không hardcode) — giữ đúng dữ liệu thật đã cấu hình,
+  // theo thứ tự xuất hiện lần đầu (MIN(id)).
+  const nhomCount = (db.prepare(`SELECT COUNT(*) AS c FROM nhom_options`).get() as { c: number }).c;
+  if (nhomCount === 0) {
+    const existingNhom = db
+      .prepare(`SELECT nhom FROM tieu_chi_configs GROUP BY nhom ORDER BY MIN(id) ASC`)
+      .all() as { nhom: string }[];
+    const insertNhom = db.prepare(`INSERT INTO nhom_options (ten_nhom, thu_tu) VALUES (?, ?)`);
+    existingNhom.forEach((row, i) => insertNhom.run(row.nhom, i));
+  }
+
+  const chucVuCount = (db.prepare(`SELECT COUNT(*) AS c FROM chuc_vu_options`).get() as { c: number }).c;
+  if (chucVuCount === 0) {
+    const insertChucVu = db.prepare(`INSERT INTO chuc_vu_options (ten_chuc_vu, thu_tu) VALUES (?, ?)`);
+    const seedChucVu = [
+      "Trưởng phòng",
+      "Chuyên gia",
+      "Trưởng nhóm",
+      "Trưởng nhóm (Nội bộ)",
+      "Trưởng nhóm (ATM + Billing)",
+      "Nghiệp vụ sản phẩm (BA)",
+      "Nhân viên Nghiệp vụ Kỹ thuật",
+      "Chuyên gia Nghiên cứu Phát triển dịch vụ",
+      "Kỹ sư Phần mềm",
+      "Kỹ sư kiểm thử & Quản lý chất lượng",
+      "Chuyên viên Quy trình - ISO",
+      "Nhân viên quản lý phát triển bền vững",
+      "Kỹ sư Phân tích Dữ liệu (DA)",
+      "Nhân viên quản lý chất lượng",
+      "Kỹ sư dữ liệu (DE)",
+      "Nhân viên thiết kế, đồ họa (UI/UX Designer)",
+      "Nhân viên quy trình - ISO",
+      "Nhân viên Scrum Master",
+      "Nhân viên phân tích nghiệp vụ",
+      "Chuyên viên Trí tuệ nhân tạo",
+    ];
+    seedChucVu.forEach((ten, i) => insertChucVu.run(ten, i));
+  }
+}

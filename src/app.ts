@@ -15,6 +15,7 @@ import supportRoutes from "./routes/support.routes.js";
 import danhgiaRoutes from "./routes/danhgia.routes.js";
 import tieuchiRoutes from "./routes/tieuchi.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
+import catalogRoutes from "./routes/catalog.routes.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import "./db/database.js";
 
@@ -39,6 +40,7 @@ export function createApp() {
   app.use("/api", danhgiaRoutes);
   app.use("/api", tieuchiRoutes);
   app.use("/api", rankingRoutes);
+  app.use("/api", catalogRoutes);
   app.use(notFound);
 
   return app;

@@ -302,3 +302,74 @@ export interface NoiQuyOverride {
   member_name: string;
   created_at: string;
 }
+
+// Trang Cấu hình, tab Tag & Phân loại — danh mục Tag và Phân loại (tinh_chat)
+// dùng ở form nhập task Backlog, dùng chung mọi tháng backlog. Màu badge được
+// gán tự động theo vị trí (thu_tu) ở phía client, không lưu trong DB.
+export interface TagOption {
+  id: number;
+  ten_tag: string;
+  thu_tu: number;
+  created_at: string;
+}
+
+export interface CreateTagInput {
+  ten_tag: string;
+}
+
+export interface UpdateTagInput {
+  ten_tag?: string;
+  thu_tu?: number;
+}
+
+// Trang Cấu hình, tab Cấu hình (Tag & Phân loại & Nhóm) — danh mục Nhóm hiển
+// thị ở cột "Nhóm" của tab Tiêu chí, dùng chung mọi tháng backlog.
+export interface NhomOption {
+  id: number;
+  ten_nhom: string;
+  thu_tu: number;
+  created_at: string;
+}
+
+export interface CreateNhomInput {
+  ten_nhom: string;
+}
+
+export interface UpdateNhomInput {
+  ten_nhom?: string;
+  thu_tu?: number;
+}
+
+// Trang Cấu hình, tab Cấu hình — danh mục Chức vụ hiển thị ở dropdown "Chức
+// vụ" khi thêm/sửa nhân sự (Team & Nhân sự), dùng chung mọi tháng backlog.
+export interface ChucVuOption {
+  id: number;
+  ten_chuc_vu: string;
+  thu_tu: number;
+  created_at: string;
+}
+
+export interface CreateChucVuInput {
+  ten_chuc_vu: string;
+}
+
+export interface UpdateChucVuInput {
+  ten_chuc_vu?: string;
+  thu_tu?: number;
+}
+
+export interface PhanLoaiOption {
+  id: number;
+  ten_phan_loai: string;
+  thu_tu: number;
+  created_at: string;
+}
+
+export interface CreatePhanLoaiInput {
+  ten_phan_loai: string;
+}
+
+export interface UpdatePhanLoaiInput {
+  ten_phan_loai?: string;
+  thu_tu?: number;
+}
