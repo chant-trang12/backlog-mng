@@ -182,3 +182,24 @@ export async function markTasksNoScore(taskIds: number[]): Promise<Task[]> {
     .returning("*");
   return updated as Task[];
 }
+
+// Đánh dấu "Nhiệm vụ tồn" cho các task đã chọn (không chuyển tháng): thêm
+// "Nhiệm vụ tồn" vào cột Tính chất và đồng thời đánh dấu Không tính điểm.
+export async function markTasksTon(taskIds: number[]): Promise<Task[]> {
+  if (taskIds.length === 0) return [];
+  const updated: Task[] = [];
+  for (const id of taskIds) {
+    const task = await getTask(id);
+    if (!task) continue;
+    const [row] = await db("tasks")
+      .where({ id })
+      .update({
+        tinh_chat: addTinhChatTon(task.tinh_chat),
+        khong_tinh_diem: KHONG_TINH_DIEM,
+        updated_at: db.fn.now(),
+      })
+      .returning("*");
+    updated.push(row as Task);
+  }
+  return updated;
+}
