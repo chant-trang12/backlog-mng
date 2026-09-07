@@ -10,7 +10,8 @@ const state = {
   selectedMemberIds: new Set(),
   tasksAll: [], // toàn bộ task của tháng đang chọn (chưa lọc)
   tasks: [], // task sau khi áp bộ lọc (Tính chất / Team / Trạng thái)
-  taskFilters: { tinhChat: "", khongTinhDiem: "", team: "", trangThai: "" },
+  taskFilters: { tinhChat: "", khongTinhDiem: "", team: "", trangThai: "", tag: "" },
+  taskSearch: "",
   taskWarningFilter: "", // "" | "no-score" | "overdue" | "upcoming" — bấm vào 1 cảnh báo để lọc nhanh
   selectedTaskIds: new Set(),
   incidents: [],
@@ -67,6 +68,7 @@ const el = {
   filterKhongTinhDiem: document.getElementById("filter-khong-tinh-diem"),
   filterTeam: document.getElementById("filter-team"),
   filterTrangThai: document.getElementById("filter-trang-thai"),
+  filterTag: document.getElementById("filter-tag"),
   addMemberBtn: document.getElementById("add-member-btn"),
   memberTbody: document.getElementById("member-tbody"),
   memberSearch: document.getElementById("member-search"),
@@ -79,6 +81,7 @@ const el = {
   memberForm: document.getElementById("member-form"),
   memberCancelBtn: document.getElementById("member-cancel-btn"),
   addTaskBtn: document.getElementById("add-task-btn"),
+  taskSearch: document.getElementById("task-search"),
   taskWarningsCard: document.getElementById("task-warnings-card"),
   warningChipNoScore: document.getElementById("warning-chip-no-score"),
   warningCountNoScore: document.getElementById("warning-count-no-score"),
@@ -775,6 +778,16 @@ function renderFilterTinhChatOptions() {
   el.filterTinhChat.value = state.taskFilters.tinhChat;
 }
 
+// Dropdown "Tag" trong bộ lọc Danh sách task (trang Backlog) — lấy theo danh
+// mục Tag ở Cấu hình.
+function renderFilterTagOptions() {
+  const options = [`<option value="">Tất cả</option>`]
+    .concat(state.tags.map((t) => `<option value="${t.ten_tag}">${t.ten_tag}</option>`))
+    .join("");
+  el.filterTag.innerHTML = options;
+  el.filterTag.value = state.taskFilters.tag;
+}
+
 el.filterTinhChat.addEventListener("change", () => {
   state.taskFilters.tinhChat = el.filterTinhChat.value;
   applyTaskFilters();
@@ -795,13 +808,26 @@ el.filterTrangThai.addEventListener("change", () => {
   applyTaskFilters();
   renderTasks();
 });
+el.filterTag.addEventListener("change", () => {
+  state.taskFilters.tag = el.filterTag.value;
+  applyTaskFilters();
+  renderTasks();
+});
+el.taskSearch.addEventListener("input", () => {
+  state.taskSearch = el.taskSearch.value;
+  applyTaskFilters();
+  renderTasks();
+});
 
 function applyTaskFilters() {
-  const { tinhChat, khongTinhDiem, team, trangThai } = state.taskFilters;
+  const { tinhChat, khongTinhDiem, team, trangThai, tag } = state.taskFilters;
+  const term = state.taskSearch.trim().toLowerCase();
   state.tasks = state.tasksAll.filter((t) => {
     if (team && t.team !== team) return false;
     if (trangThai && t.trang_thai !== trangThai) return false;
-    if (khongTinhDiem && t.khong_tinh_diem !== khongTinhDiem) return false;
+    if (tag && t.tag !== tag) return false;
+    if (khongTinhDiem === "Đã chuyển" && !t.da_chuyen_thang) return false;
+    if (khongTinhDiem === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
     if (tinhChat) {
       const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
       if (!items.includes(tinhChat)) return false;
@@ -809,6 +835,13 @@ function applyTaskFilters() {
     if (state.taskWarningFilter === "no-score" && !isTaskNotGraded(t)) return false;
     if (state.taskWarningFilter === "overdue" && !isTaskOverdue(t)) return false;
     if (state.taskWarningFilter === "upcoming" && !isTaskUpcomingDeadline(t)) return false;
+    if (term) {
+      const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
+        .filter(Boolean)
+        .join(" \n ")
+        .toLowerCase();
+      if (!haystack.includes(term)) return false;
+    }
     return true;
   });
   taskPagination.reset();
@@ -3001,6 +3034,7 @@ el.addRankingColumnBtn.addEventListener("click", async () => {
 async function loadTags() {
   state.tags = await api("/api/tags");
   renderTagConfig();
+  renderFilterTagOptions();
   renderTasks();
   renderFilterTagDependents();
 }

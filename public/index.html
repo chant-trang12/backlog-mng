@@ -216,6 +216,7 @@
                   <select id="filter-khong-tinh-diem">
                     <option value="">Tất cả</option>
                     <option value="Không tính điểm">Không tính điểm</option>
+                    <option value="Đã chuyển">Đã chuyển</option>
                   </select>
                 </div>
                 <div>
@@ -224,15 +225,23 @@
                     <option value="">Tất cả</option>
                   </select>
                 </div>
-                <div>
-                  <label for="filter-trang-thai">Trạng thái</label>
-                  <select id="filter-trang-thai">
-                    <option value="">Tất cả</option>
-                    <option>Chưa thực hiện</option>
-                    <option>Đang thực hiện</option>
-                    <option>Hoàn thành</option>
-                    <option>Hủy</option>
-                  </select>
+                <div class="filter-inline-group">
+                  <div>
+                    <label for="filter-trang-thai">Trạng thái</label>
+                    <select id="filter-trang-thai">
+                      <option value="">Tất cả</option>
+                      <option>Chưa thực hiện</option>
+                      <option>Đang thực hiện</option>
+                      <option>Hoàn thành</option>
+                      <option>Hủy</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="filter-tag">Tag</label>
+                    <select id="filter-tag">
+                      <option value="">Tất cả</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               <p class="muted" id="team-filter-empty" hidden style="margin:8px 0 0">
@@ -267,6 +276,10 @@
                 <button id="export-btn" class="btn-export">⬇ Xuất Excel</button>
                 <button id="add-task-btn" class="primary">+ Nhập task mới</button>
               </div>
+            </div>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="task-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="task-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
             <div class="table-wrap">
               <table id="task-table">
