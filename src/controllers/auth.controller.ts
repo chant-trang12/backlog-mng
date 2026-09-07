@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import {
   generateAuthUrl,
   getLogoutUrl,
+  getRequestBaseUrl,
   handleOidcCallback,
   isSsoEnabled,
 } from "../services/auth.service.js";
@@ -13,7 +14,8 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const { url, state, codeVerifier } = await generateAuthUrl();
+    const baseUrl = getRequestBaseUrl(req);
+    const { url, state, codeVerifier } = await generateAuthUrl(baseUrl);
 
     if (req.session) {
       req.session.state = state;
@@ -85,7 +87,8 @@ export function meHandler(req: Request, res: Response): void {
 
 export async function logoutHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const logoutUrl = await getLogoutUrl();
+    const baseUrl = getRequestBaseUrl(req);
+    const logoutUrl = await getLogoutUrl(baseUrl);
 
     if (req.session) {
       req.session.destroy((err) => {

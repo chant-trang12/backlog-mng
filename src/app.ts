@@ -23,9 +23,26 @@ import catalogRoutes from "./routes/catalog.routes.js";
 import { requireAuth } from "./middleware/auth.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
+import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
 import "./db/database.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// SSO startup check — validate IdP reachability at boot so misconfiguration
+// surfaces immediately instead of failing on first login.
+async function checkSsoAtStartup(): Promise<void> {
+  if (!isSsoEnabled()) return;
+  if (process.env.NODE_ENV === "test") return;
+  try {
+    await getOidcConfig();
+    console.log("[SSO] ✓ Startup discovery OK");
+  } catch (err) {
+    console.error(
+      "[SSO] ✗ Startup discovery FAILED — login will not work until this is fixed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
 
 export function createApp() {
   const app = express();
@@ -81,6 +98,9 @@ export function createApp() {
   app.use(notFound);
   // Global error handler — must be last, after notFound
   app.use(errorHandler);
+
+  // Fire-and-forget SSO startup check
+  void checkSsoAtStartup();
 
   return app;
 }

@@ -10,6 +10,9 @@ export default defineConfig({
     env: {
       SQLITE_FILENAME: "./data/test-backlog.db",
       DB_CLIENT: "sqlite",
+      // Force SSO off in tests even if .env has SSO_ENABLED=true.
+      // dotenv won't override existing process.env values, so this sticks.
+      SSO_ENABLED: "false",
     },
     globalSetup: "./tests/globalSetup.ts",
   },
