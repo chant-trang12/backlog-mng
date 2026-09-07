@@ -865,6 +865,18 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 }
 .filter-inline-group > * { min-width: 0; }
 
+/* Không cho bất kỳ nội dung nào (bảng rộng, chữ dài) đẩy cả trang cuộn ngang —
+   bảng vẫn cuộn ngang bình thường trong .table-wrap của nó. Đặt trên .app-shell
+   thay vì body để không biến body thành vùng cuộn (giữ nguyên sticky th). */
+.app-shell { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 1100px) {
+  /* Hàng 3 card đầu trang Home (Tìm kiếm / Nhiệm vụ / Ranking Team) xếp dọc
+     sớm hơn để không bị bóp hẹp gây vỡ biểu đồ. */
+  #page-home > .row-split > .card { flex: 1 1 100%; }
+  #page-home > .row-split > .card .home-vbar-chart { max-width: 100%; }
+}
+
 @media (max-width: 900px) {
   /* Sidebar thu thành thanh điều hướng ngang phía trên nội dung. */
   .app-shell { flex-direction: column; }
@@ -886,6 +898,25 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
   main { padding: 16px 14px 32px; }
   .card { padding: 14px; }
+
+  /* Tab của mọi trang xuống dòng khi hết bề ngang thay vì tràn. */
+  .chrome-tabs { flex-wrap: wrap; }
+
+  /* Callout trong tiêu đề card Ranking Team (Home) — bỏ margin phải cố định,
+     xuống dòng gọn dưới tiêu đề. */
+  .row[style*="space-between"] { row-gap: 8px; }
+  .home-vbar-callout { margin-right: 0 !important; }
+}
+
+@media (max-width: 720px) {
+  /* Các cặp/nhóm card cạnh nhau (row-split) trên mọi trang xếp dọc:
+     Home (chi tiết + thành viên), Cấu hình (Tag/Phân loại/Nhóm/Chức vụ/Hệ
+     thống), Backlog/Team (bộ lọc + danh sách). */
+  .row-split > * { flex: 1 1 100%; }
+
+  /* Thanh công cụ "tiêu đề + nút" của mọi card: nút xuống dòng canh trái,
+     không bị đẩy dạt sang phải khi wrap. */
+  .card > .row[style*="space-between"] { justify-content: flex-start; }
 }
 
 @media (max-width: 600px) {
@@ -900,8 +931,13 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   /* Bộ lọc Team + Trạng thái + Tag xuống dòng thay vì tràn ngang màn hình nhỏ. */
   .filter-inline-group { flex-wrap: wrap; }
 
-  /* Tab (Home / Team & Nhân sự) xuống dòng khi chữ dài vượt bề ngang. */
-  .chrome-tabs { flex-wrap: wrap; }
+  /* Các ô lọc (label + select/input) chiếm trọn bề ngang, dễ bấm trên điện
+     thoại; select bỏ giới hạn 220px để canh đều theo hàng. */
+  .row > div { flex: 1 1 100%; }
+  .row select, .row input[type="text"], .row input[type="search"] { width: 100%; max-width: none; }
+  [style*="min-width:280px"] { min-width: 0 !important; }
+
+  .pill { padding: 5px 11px; font-size: 0.8rem; }
 
   /* Dialog nhập liệu: các cột field-row xếp thành 1 cột, cho phép cuộn dọc. */
   dialog { width: 94vw; max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
@@ -909,11 +945,13 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
   .table-wrap { -webkit-overflow-scrolling: touch; }
 
+  /* Phân trang: cụm nút và thông tin trang giãn đều 2 bên khi xuống dòng. */
+  .pagination-bar { justify-content: center; }
+
   /* Toast chiếm trọn bề ngang để không bị cắt trên điện thoại. */
   .toast-container { left: 12px; right: 12px; top: 12px; }
   .toast { max-width: none; }
 
-  /* Ghi đè margin-right:32px đặt inline trên callout Home. */
-  .home-vbar-callout { margin-right: 0 !important; }
   .home-donut-center .big { font-size: 1.5rem; }
+  .home-legend-grid { grid-template-columns: auto; }
 }
