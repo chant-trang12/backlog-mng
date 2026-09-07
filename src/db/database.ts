@@ -1,605 +1,457 @@
-import Database from "better-sqlite3";
+import "dotenv/config";
+import knex, { type Knex } from "knex";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "../../data");
-fs.mkdirSync(dataDir, { recursive: true });
 
-export const db = new Database(path.join(dataDir, "backlog.db"));
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+const isMssql = process.env.DB_CLIENT === "mssql";
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS periods (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    year INTEGER NOT NULL,
-    month INTEGER NOT NULL,
-    label TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (year, month)
-  );
-
-  -- Team gắn theo từng tháng backlog (period_id) — thêm/xóa ở tháng nào chỉ
-  -- ảnh hưởng tháng đó; tháng mới tạo sẽ kế thừa danh sách team từ tháng gần
-  -- nhất, giống nhân sự.
-  CREATE TABLE IF NOT EXISTS teams (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (period_id, name)
-  );
-
-  -- Nhân sự gắn theo từng tháng backlog (period_id) — xóa/sửa ở tháng nào chỉ
-  -- ảnh hưởng tháng đó; tháng mới tạo sẽ kế thừa danh sách từ tháng gần nhất.
-  CREATE TABLE IF NOT EXISTS members (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    chuc_vu TEXT,
-    tuan_thu TEXT,
-    noi_quy TEXT,
-    dao_tao TEXT,
-    ho_tro TEXT,
-    danh_gia TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (period_id, team_id, name)
-  );
-
-  CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    stt INTEGER NOT NULL,
-    tinh_chat TEXT,
-    khong_tinh_diem TEXT,
-    tag TEXT,
-    team TEXT NOT NULL,
-    nhiem_vu TEXT NOT NULL,
-    dod TEXT,
-    ngay_thuc_hien TEXT,
-    deadline TEXT,
-    nvtt TEXT,
-    phan_tram_hoan_thanh INTEGER NOT NULL DEFAULT 0,
-    trang_thai TEXT NOT NULL DEFAULT 'Chưa thực hiện',
-    tien_do TEXT,
-    cpo_danh_gia INTEGER,
-    cpo_comment TEXT,
-    da_chuyen_thang INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_tasks_period ON tasks(period_id);
-  CREATE INDEX IF NOT EXISTS idx_tasks_team ON tasks(team);
-
-  -- Trang CSKH: Sự cố, Hỗ trợ ticket, Tỉ lệ khởi tạo — theo team và theo tháng backlog.
-  CREATE TABLE IF NOT EXISTS incidents (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    su_co TEXT NOT NULL,
-    tinh_chat TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS tickets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    tong_ticket INTEGER NOT NULL DEFAULT 0,
-    ticket_vuot INTEGER NOT NULL DEFAULT 0,
-    dung_han INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS creation_rates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    so_luong_thanh_cong INTEGER NOT NULL DEFAULT 0,
-    so_luong_that_bai INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Migration cho DB đã tồn tại trước khi có cột chuc_vu (Chức vụ) ở members.
-const memberColumns = new Set(
-  (db.prepare(`PRAGMA table_info(members)`).all() as { name: string }[]).map((c) => c.name),
-);
-if (!memberColumns.has("chuc_vu")) {
-  db.exec(`ALTER TABLE members ADD COLUMN chuc_vu TEXT`);
+// Fail fast on startup if MSSQL credentials are missing
+if (isMssql && !process.env.MSSQL_PASSWORD) {
+  console.error("FATAL: MSSQL_PASSWORD is required when DB_CLIENT=mssql");
+  process.exit(1);
 }
 
-// Migration cho DB đã tồn tại trước khi có cột period_id ở members — trước đây
-// nhân sự dùng chung cho mọi tháng nên xóa ở 1 tháng sẽ mất ở tất cả các tháng.
-// Chuyển sang gắn theo period: nhân bản danh sách nhân sự hiện có sang từng
-// tháng đã tồn tại để giữ nguyên trạng thái hiển thị, từ nay xóa/sửa ở tháng
-// nào chỉ ảnh hưởng tháng đó.
-if (!memberColumns.has("period_id")) {
-  const existingPeriods = db
-    .prepare(`SELECT id FROM periods ORDER BY year ASC, month ASC`)
-    .all() as { id: number }[];
+let dbInstance: Knex;
 
-  db.exec(`ALTER TABLE members RENAME TO members_old`);
-  db.exec(`
-    CREATE TABLE members (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-      team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      chuc_vu TEXT,
-      tuan_thu TEXT,
-      noi_quy TEXT,
-      dao_tao TEXT,
-      ho_tro TEXT,
-      danh_gia TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE (period_id, team_id, name)
-    )
-  `);
+if (isMssql) {
+  dbInstance = knex({
+    client: "mssql",
+    connection: {
+      server: process.env.MSSQL_SERVER || "localhost",
+      port: Number(process.env.MSSQL_PORT || 1433),
+      user: process.env.MSSQL_USER || "sa",
+      password: process.env.MSSQL_PASSWORD || "",
+      database: process.env.MSSQL_DATABASE || "backlog_mng",
+      requestTimeout: Number(process.env.MSSQL_REQUEST_TIMEOUT || 30000),
+      options: {
+        encrypt: process.env.MSSQL_ENCRYPT === "true",
+        trustServerCertificate: process.env.MSSQL_TRUST_SERVER_CERTIFICATE !== "false",
+      },
+    },
+    pool: {
+      min: Number(process.env.MSSQL_POOL_MIN || 2),
+      max: Number(process.env.MSSQL_POOL_MAX || 10),
+    },
+  });
+} else {
+  fs.mkdirSync(dataDir, { recursive: true });
+  const sqliteFile = path.resolve(process.env.SQLITE_FILENAME || path.join(dataDir, "backlog.db"));
 
-  const cloneInto = db.prepare(
-    `INSERT INTO members (period_id, team_id, name, chuc_vu, created_at)
-     SELECT ?, team_id, name, chuc_vu, created_at FROM members_old`,
-  );
-  for (const period of existingPeriods) {
-    cloneInto.run(period.id);
-  }
-
-  db.exec(`DROP TABLE members_old`);
-}
-
-// Migration cho DB đã tồn tại trước khi có các cột Tuân thủ / Nội quy / Đào
-// tạo / Hỗ trợ / Đánh giá ở bảng Nhân sự.
-const memberColumnsAfterPeriod = new Set(
-  (db.prepare(`PRAGMA table_info(members)`).all() as { name: string }[]).map((c) => c.name),
-);
-for (const col of ["tuan_thu", "noi_quy", "dao_tao", "ho_tro", "danh_gia"]) {
-  if (!memberColumnsAfterPeriod.has(col)) {
-    db.exec(`ALTER TABLE members ADD COLUMN ${col} TEXT`);
-  }
-}
-
-// Migration cho DB đã tồn tại trước khi có cột khong_tinh_diem (cột "Tính
-// chất" mới — đánh dấu "Không tính điểm" cho task, tách biệt với cột "Phân
-// loại" cũ vốn tên là tinh_chat).
-const taskColumns = new Set(
-  (db.prepare(`PRAGMA table_info(tasks)`).all() as { name: string }[]).map((c) => c.name),
-);
-if (!taskColumns.has("khong_tinh_diem")) {
-  db.exec(`ALTER TABLE tasks ADD COLUMN khong_tinh_diem TEXT`);
-}
-
-// Migration cho DB đã tồn tại trước khi có cột tag (nhãn phân loại nhiệm vụ,
-// hiển thị ở cột Tag ngay sau STT).
-if (!taskColumns.has("tag")) {
-  db.exec(`ALTER TABLE tasks ADD COLUMN tag TEXT`);
-}
-
-// Migration cho DB đã tồn tại trước khi có cột da_chuyen_thang — đánh dấu
-// task gốc đã được chuyển sang tháng sau 1 lần rồi, chặn không cho chuyển
-// tiếp lần nữa (mỗi task chỉ chuyển được đúng 1 lần).
-if (!taskColumns.has("da_chuyen_thang")) {
-  db.exec(`ALTER TABLE tasks ADD COLUMN da_chuyen_thang INTEGER NOT NULL DEFAULT 0`);
-}
-
-// Migration cho DB đã tồn tại trước khi có cột period_id (Tháng) ở 3 bảng CSKH.
-// Dữ liệu CSKH cũ (nếu có) chưa gắn tháng nên không thể migrate hợp lệ — xóa và
-// tạo lại bảng theo schema mới, người dùng nhập lại (dữ liệu CSKH còn ít/mới).
-for (const table of ["incidents", "tickets", "creation_rates"]) {
-  const columns = new Set(
-    (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((c) => c.name),
-  );
-  if (columns.size > 0 && !columns.has("period_id")) {
-    db.exec(`DROP TABLE ${table}`);
-  }
-}
-db.exec(`
-  CREATE TABLE IF NOT EXISTS incidents (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    su_co TEXT NOT NULL,
-    tinh_chat TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS tickets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    tong_ticket INTEGER NOT NULL DEFAULT 0,
-    ticket_vuot INTEGER NOT NULL DEFAULT 0,
-    dung_han INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS creation_rates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    so_luong_thanh_cong INTEGER NOT NULL DEFAULT 0,
-    so_luong_that_bai INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Trang Team & Nhân sự, tab Tuân thủ — vi phạm quy trình/kế hoạch chung của
-// từng nhân sự theo tháng theo dõi (period_id).
-db.exec(`
-  CREATE TABLE IF NOT EXISTS compliance_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    vi_pham INTEGER NOT NULL DEFAULT 0,
-    noi_dung TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Trang Team & Nhân sự, tab Đào tạo nội bộ và Chứng chỉ quốc tế — từng đợt
-// đào tạo/chứng chỉ của nhân sự theo tháng theo dõi (period_id).
-db.exec(`
-  CREATE TABLE IF NOT EXISTS training_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    loai TEXT,
-    ngay_thuc_hien TEXT,
-    nguoi_xac_nhan TEXT,
-    noi_dung TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Migration: đổi schema training_records — bỏ ten_dao_tao (nhập tự do), thay
-// bằng loai (Đào tạo / Chứng chỉ QT, chọn từ list) + noi_dung (textarea).
-// Bảng vừa tạo gần đây, chưa có dữ liệu thật ở schema cũ nên xóa và tạo lại.
-const trainingColumns = new Set(
-  (db.prepare(`PRAGMA table_info(training_records)`).all() as { name: string }[]).map((c) => c.name),
-);
-if (!trainingColumns.has("loai")) {
-  db.exec(`DROP TABLE training_records`);
-  db.exec(`
-    CREATE TABLE training_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-      member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-      loai TEXT,
-      ngay_thuc_hien TEXT,
-      nguoi_xac_nhan TEXT,
-      noi_dung TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
-}
-
-// Trang Team & Nhân sự, tab Chấm công — import file Excel, lưu mỗi dòng dạng
-// JSON (row_data) vì cột động theo file người dùng tải lên, không cố định
-// schema. Mỗi lần import mới sẽ thay thế toàn bộ dữ liệu Chấm công của đúng
-// tháng theo dõi (period_id) đó.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS attendance_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    row_index INTEGER NOT NULL,
-    row_data TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// "Không tính công" ở tab Chấm công — đánh dấu 1 dòng Chấm công không được
-// tính vào Lượt đi muộn ở tab Nội quy nữa, không xóa dữ liệu gốc.
-{
-  const columns = new Set(
-    (db.prepare(`PRAGMA table_info(attendance_records)`).all() as { name: string }[]).map((c) => c.name),
-  );
-  if (!columns.has("excluded_from_late")) {
-    db.exec(`ALTER TABLE attendance_records ADD COLUMN excluded_from_late INTEGER NOT NULL DEFAULT 0`);
-  }
-}
-
-// "Không tính công" ở tab Nội quy — ép Lượt đi muộn/Total của 1 nhân sự
-// trong 1 tháng theo dõi về 0, tách biệt với cờ excluded_from_late ở
-// attendance_records (đánh dấu theo cả người, không phải theo từng dòng).
-db.exec(`
-  CREATE TABLE IF NOT EXISTS noiquy_overrides (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    member_name TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(period_id, member_name)
-  );
-`);
-
-// Trang Team & Nhân sự, tab Hỗ trợ — nhân sự (và team của nhân sự đó = team
-// thực hiện hỗ trợ) hỗ trợ cho 1 team khác (team_nhan_ho_tro_id) theo tháng
-// theo dõi (period_id).
-db.exec(`
-  CREATE TABLE IF NOT EXISTS support_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    team_nhan_ho_tro_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    noi_dung TEXT,
-    ngay_ho_tro TEXT,
-    nguoi_xac_nhan TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
-
-// Trang Team & Nhân sự, tab Đánh giá — thêm theo cả 1 team cùng lúc (chọn
-// team, nhập Số thứ tự cho từng nhân sự trong team đó). 1 nhân sự chỉ có
-// đúng 1 bản ghi Đánh giá / tháng theo dõi (UNIQUE period_id + member_id) —
-// bấm "+ Thêm Đánh giá" lại cho cùng team sẽ cập nhật (upsert), không tạo
-// trùng; sửa/xóa từng dòng thực hiện ngoài bảng.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS danh_gia_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-    member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-    so_thu_tu INTEGER,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(period_id, member_id)
-  );
-`);
-
-// Migration cho DB đã tồn tại trước khi có cột period_id ở teams — trước đây
-// team dùng chung cho mọi tháng nên thêm team mới ở tháng nào cũng hiện ra ở
-// TẤT CẢ các tháng khác (kể cả tháng cũ đã qua). Chuyển sang gắn theo period,
-// giống nhân sự: nhân bản toàn bộ team hiện có sang từng tháng đã tồn tại để
-// giữ nguyên đúng trạng thái hiển thị hiện tại (không tháng nào bị mất team),
-// nhưng từ nay thêm/xóa team ở tháng nào chỉ ảnh hưởng tháng đó trở đi — team
-// mới thêm sẽ không xuất hiện ngược ở các tháng đã tạo trước đó, chỉ được kế
-// thừa vào các tháng MỚI tạo sau này (qua cloneTeamsFromPeriod khi tạo period).
-{
-  const teamColumns = new Set(
-    (db.prepare(`PRAGMA table_info(teams)`).all() as { name: string }[]).map((c) => c.name),
-  );
-  if (!teamColumns.has("period_id")) {
-    db.pragma("foreign_keys = OFF");
-    // Mặc định SQLite tự viết lại mọi "REFERENCES teams(...)" ở các bảng
-    // khác thành "REFERENCES teams_old(...)" khi rename teams -> teams_old
-    // (kể cả khi teams_old bị DROP sau đó) — để lại tham chiếu treo, khiến
-    // các câu lệnh sau này trên members/incidents/tickets/creation_rates/
-    // support_records báo lỗi "no such table: teams_old". Tắt hành vi tự
-    // viết lại này trước khi rename.
-    db.pragma("legacy_alter_table = ON");
-    const migrateTeams = db.transaction(() => {
-      const existingPeriods = db.prepare(`SELECT id FROM periods ORDER BY year ASC, month ASC`).all() as {
-        id: number;
-      }[];
-      const oldTeams = db.prepare(`SELECT id, name, created_at FROM teams`).all() as {
-        id: number;
-        name: string;
-        created_at: string;
-      }[];
-
-      db.exec(`ALTER TABLE teams RENAME TO teams_old`);
-      db.exec(`
-        CREATE TABLE teams (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          period_id INTEGER NOT NULL REFERENCES periods(id) ON DELETE CASCADE,
-          name TEXT NOT NULL,
-          created_at TEXT NOT NULL DEFAULT (datetime('now')),
-          UNIQUE (period_id, name)
-        )
-      `);
-
-      const insertTeam = db.prepare(
-        `INSERT INTO teams (period_id, name, created_at) VALUES (?, ?, ?) RETURNING id`,
-      );
-      // periodId -> (tên team -> id mới) — dùng để remap các bảng con còn
-      // tham chiếu team_id theo id cũ (members/incidents/tickets/
-      // creation_rates/support_records.team_nhan_ho_tro_id).
-      const idMapByPeriod = new Map<number, Map<string, number>>();
-      for (const period of existingPeriods) {
-        const nameToNewId = new Map<string, number>();
-        for (const t of oldTeams) {
-          const row = insertTeam.get(period.id, t.name, t.created_at) as { id: number };
-          nameToNewId.set(t.name, row.id);
+  dbInstance = knex({
+    client: "better-sqlite3",
+    connection: {
+      filename: sqliteFile,
+    },
+    useNullAsDefault: true,
+    pool: {
+      afterCreate: (conn: any, done: any) => {
+        try {
+          conn.pragma("journal_mode = WAL");
+          conn.pragma("foreign_keys = ON");
+          done(null, conn);
+        } catch (err) {
+          done(err, conn);
         }
-        idMapByPeriod.set(period.id, nameToNewId);
-      }
-
-      const oldIdToName = new Map(oldTeams.map((t) => [t.id, t.name]));
-
-      function remapTeamId(table: string, column: string) {
-        const tableExists = db
-          .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
-          .get(table);
-        if (!tableExists) return;
-        const rows = db.prepare(`SELECT id, period_id, ${column} AS old_team_id FROM ${table}`).all() as {
-          id: number;
-          period_id: number;
-          old_team_id: number;
-        }[];
-        const update = db.prepare(`UPDATE ${table} SET ${column} = ? WHERE id = ?`);
-        for (const row of rows) {
-          const teamName = oldIdToName.get(row.old_team_id);
-          if (!teamName) continue;
-          const newTeamId = idMapByPeriod.get(row.period_id)?.get(teamName);
-          if (newTeamId) update.run(newTeamId, row.id);
-        }
-      }
-
-      remapTeamId("members", "team_id");
-      remapTeamId("incidents", "team_id");
-      remapTeamId("tickets", "team_id");
-      remapTeamId("creation_rates", "team_id");
-      remapTeamId("support_records", "team_nhan_ho_tro_id");
-
-      db.exec(`DROP TABLE teams_old`);
-    });
-    migrateTeams();
-    db.pragma("legacy_alter_table = OFF");
-    db.pragma("foreign_keys = ON");
-  }
+      },
+    },
+  });
 }
 
-// Trang Cấu hình, tab Tiêu chí — cấu hình tiêu chí + công thức tính điểm cho
-// team, DÙNG CHUNG cho mọi tháng backlog (không gắn period_id). Điểm chuẩn /
-// chỉ tiêu lưu theo team_name (không phải team_id) vì team giờ gắn theo
-// period — khớp theo tên với danh sách team của tháng đang xem.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tieu_chi_configs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nhom TEXT NOT NULL,
-    ten_tieu_chi TEXT NOT NULL,
-    cach_tinh_diem TEXT,
-    co_chi_tieu INTEGER NOT NULL DEFAULT 0,
-    thu_tu INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+export const db = dbInstance;
 
-  CREATE TABLE IF NOT EXISTS tieu_chi_diem_chuan (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tieu_chi_id INTEGER NOT NULL REFERENCES tieu_chi_configs(id) ON DELETE CASCADE,
-    team_name TEXT NOT NULL,
-    diem_chuan TEXT,
-    chi_tieu TEXT,
-    UNIQUE (tieu_chi_id, team_name)
-  );
+let initPromise: Promise<void> | null = null;
 
-`);
+export async function initDatabase(): Promise<void> {
+  if (initPromise) return initPromise;
 
-// Trang Cấu hình, tab Ranking team — bảng cấu hình tự do: hàng = vị trí xếp
-// hạng (vi_tri), cột = các kịch bản xếp hạng (VD "Rank", "Rank gần cuối",
-// "Rank cuối"), ô = giá trị (VD A/B/C). Cho phép thêm/xóa cả hàng và cột.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS ranking_rows (
-    vi_tri INTEGER PRIMARY KEY,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+  initPromise = (async () => {
+    // 1. periods
+    const hasPeriods = await db.schema.hasTable("periods");
+    if (!hasPeriods) {
+      await db.schema.createTable("periods", (table) => {
+        table.increments("id").primary();
+        table.integer("year").notNullable();
+        table.integer("month").notNullable();
+        table.string("label", 255).notNullable();
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["year", "month"]);
+      });
+    }
 
-  CREATE TABLE IF NOT EXISTS ranking_columns (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ten_cot TEXT NOT NULL UNIQUE,
-    thu_tu INTEGER NOT NULL DEFAULT 0
-  );
+    // 2. teams
+    const hasTeams = await db.schema.hasTable("teams");
+    if (!hasTeams) {
+      await db.schema.createTable("teams", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.string("name", 255).notNullable();
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["period_id", "name"]);
+      });
+    }
 
-  CREATE TABLE IF NOT EXISTS ranking_cells (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    vi_tri INTEGER NOT NULL REFERENCES ranking_rows(vi_tri) ON DELETE CASCADE,
-    column_id INTEGER NOT NULL REFERENCES ranking_columns(id) ON DELETE CASCADE,
-    gia_tri TEXT,
-    UNIQUE (vi_tri, column_id)
-  );
-`);
+    // 3. members
+    const hasMembers = await db.schema.hasTable("members");
+    if (!hasMembers) {
+      await db.schema.createTable("members", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("team_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
+        table.string("name", 255).notNullable();
+        table.string("chuc_vu", 255);
+        table.string("tuan_thu", 255);
+        table.string("noi_quy", 255);
+        table.string("dao_tao", 255);
+        table.string("ho_tro", 255);
+        table.string("danh_gia", 255);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["period_id", "team_id", "name"]);
+      });
+    }
 
-// Trang Cấu hình, tab Tag & Phân loại — danh mục Tag và Phân loại dùng ở form
-// nhập task Backlog, DÙNG CHUNG cho mọi tháng backlog (không gắn period_id),
-// giống tieu_chi_configs/ranking_columns.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tags (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ten_tag TEXT NOT NULL UNIQUE,
-    thu_tu INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+    // 4. tasks
+    const hasTasks = await db.schema.hasTable("tasks");
+    if (!hasTasks) {
+      await db.schema.createTable("tasks", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("stt").notNullable();
+        table.text("tinh_chat");
+        table.text("khong_tinh_diem");
+        table.text("tag");
+        table.string("team", 255).notNullable();
+        table.text("nhiem_vu").notNullable();
+        table.text("dod");
+        table.string("ngay_thuc_hien", 50);
+        table.string("deadline", 50);
+        table.string("nvtt", 255);
+        table.integer("phan_tram_hoan_thanh").notNullable().defaultTo(0);
+        table.string("trang_thai", 50).notNullable().defaultTo("Chưa thực hiện");
+        table.text("tien_do");
+        table.integer("cpo_danh_gia");
+        table.text("cpo_comment");
+        table.integer("da_chuyen_thang").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+        table.index(["period_id"]);
+        table.index(["team"]);
+      });
+    }
 
-  CREATE TABLE IF NOT EXISTS phan_loai_options (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ten_phan_loai TEXT NOT NULL UNIQUE,
-    thu_tu INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+    // 5. incidents
+    const hasIncidents = await db.schema.hasTable("incidents");
+    if (!hasIncidents) {
+      await db.schema.createTable("incidents", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("team_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
+        table.text("su_co").notNullable();
+        table.string("tinh_chat", 255);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-  CREATE TABLE IF NOT EXISTS nhom_options (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ten_nhom TEXT NOT NULL UNIQUE,
-    thu_tu INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+    // 6. tickets
+    const hasTickets = await db.schema.hasTable("tickets");
+    if (!hasTickets) {
+      await db.schema.createTable("tickets", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("team_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
+        table.integer("tong_ticket").notNullable().defaultTo(0);
+        table.integer("ticket_vuot").notNullable().defaultTo(0);
+        table.integer("dung_han").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-  CREATE TABLE IF NOT EXISTS chuc_vu_options (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ten_chuc_vu TEXT NOT NULL UNIQUE,
-    thu_tu INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+    // 7. creation_rates
+    const hasCreationRates = await db.schema.hasTable("creation_rates");
+    if (!hasCreationRates) {
+      await db.schema.createTable("creation_rates", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("team_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
+        table.integer("so_luong_thanh_cong").notNullable().defaultTo(0);
+        table.integer("so_luong_that_bai").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-// Seed danh mục Tag/Phân loại từ danh sách vốn cố định cứng ở frontend trước
-// đây — chỉ chạy 1 lần khi bảng còn rỗng, giữ đúng thứ tự cũ để không đổi
-// màu badge của các task đã có sẵn.
-{
-  const tagCount = (db.prepare(`SELECT COUNT(*) AS c FROM tags`).get() as { c: number }).c;
-  if (tagCount === 0) {
-    const insertTag = db.prepare(`INSERT INTO tags (ten_tag, thu_tu) VALUES (?, ?)`);
-    const seedTags = [
-      "Số hoá",
-      "Đầu tư",
-      "Chất lượng dịch vụ",
-      "Trải nghiệm khách hàng",
-      "Quản lý chất lượng",
-      "ISO",
-      "Quy trình",
-      "Nhiệm vụ kỹ thuật",
-    ];
-    seedTags.forEach((ten, i) => insertTag.run(ten, i));
-  }
+    // 8. compliance_records
+    const hasCompliance = await db.schema.hasTable("compliance_records");
+    if (!hasCompliance) {
+      await db.schema.createTable("compliance_records", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
+        table.integer("vi_pham").notNullable().defaultTo(0);
+        table.text("noi_dung");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-  const phanLoaiCount = (db.prepare(`SELECT COUNT(*) AS c FROM phan_loai_options`).get() as { c: number }).c;
-  if (phanLoaiCount === 0) {
-    const insertPhanLoai = db.prepare(`INSERT INTO phan_loai_options (ten_phan_loai, thu_tu) VALUES (?, ?)`);
-    const seedPhanLoai = ["NVKH", "NVPS", "NVTT", "NV được giao từ BGĐ"];
-    seedPhanLoai.forEach((ten, i) => insertPhanLoai.run(ten, i));
-  }
+    // 9. training_records
+    const hasTraining = await db.schema.hasTable("training_records");
+    if (!hasTraining) {
+      await db.schema.createTable("training_records", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
+        table.string("loai", 255);
+        table.string("ngay_thuc_hien", 50);
+        table.string("nguoi_xac_nhan", 255);
+        table.text("noi_dung");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-  // Seed danh mục Nhóm từ chính các giá trị "nhom" đang có trong
-  // tieu_chi_configs (không hardcode) — giữ đúng dữ liệu thật đã cấu hình,
-  // theo thứ tự xuất hiện lần đầu (MIN(id)).
-  const nhomCount = (db.prepare(`SELECT COUNT(*) AS c FROM nhom_options`).get() as { c: number }).c;
-  if (nhomCount === 0) {
-    const existingNhom = db
-      .prepare(`SELECT nhom FROM tieu_chi_configs GROUP BY nhom ORDER BY MIN(id) ASC`)
-      .all() as { nhom: string }[];
-    const insertNhom = db.prepare(`INSERT INTO nhom_options (ten_nhom, thu_tu) VALUES (?, ?)`);
-    existingNhom.forEach((row, i) => insertNhom.run(row.nhom, i));
-  }
+    // 10. attendance_records
+    const hasAttendance = await db.schema.hasTable("attendance_records");
+    if (!hasAttendance) {
+      await db.schema.createTable("attendance_records", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("row_index").notNullable();
+        table.text("row_data").notNullable();
+        table.integer("excluded_from_late").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
 
-  const chucVuCount = (db.prepare(`SELECT COUNT(*) AS c FROM chuc_vu_options`).get() as { c: number }).c;
-  if (chucVuCount === 0) {
-    const insertChucVu = db.prepare(`INSERT INTO chuc_vu_options (ten_chuc_vu, thu_tu) VALUES (?, ?)`);
-    const seedChucVu = [
-      "Trưởng phòng",
-      "Chuyên gia",
-      "Trưởng nhóm",
-      "Trưởng nhóm (Nội bộ)",
-      "Trưởng nhóm (ATM + Billing)",
-      "Nghiệp vụ sản phẩm (BA)",
-      "Nhân viên Nghiệp vụ Kỹ thuật",
-      "Chuyên gia Nghiên cứu Phát triển dịch vụ",
-      "Kỹ sư Phần mềm",
-      "Kỹ sư kiểm thử & Quản lý chất lượng",
-      "Chuyên viên Quy trình - ISO",
-      "Nhân viên quản lý phát triển bền vững",
-      "Kỹ sư Phân tích Dữ liệu (DA)",
-      "Nhân viên quản lý chất lượng",
-      "Kỹ sư dữ liệu (DE)",
-      "Nhân viên thiết kế, đồ họa (UI/UX Designer)",
-      "Nhân viên quy trình - ISO",
-      "Nhân viên Scrum Master",
-      "Nhân viên phân tích nghiệp vụ",
-      "Chuyên viên Trí tuệ nhân tạo",
-    ];
-    seedChucVu.forEach((ten, i) => insertChucVu.run(ten, i));
-  }
+    // 11. noiquy_overrides
+    const hasNoiQuy = await db.schema.hasTable("noiquy_overrides");
+    if (!hasNoiQuy) {
+      await db.schema.createTable("noiquy_overrides", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.string("member_name", 255).notNullable();
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["period_id", "member_name"]);
+      });
+    }
+
+    // 12. support_records
+    const hasSupport = await db.schema.hasTable("support_records");
+    if (!hasSupport) {
+      await db.schema.createTable("support_records", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
+        table.integer("team_nhan_ho_tro_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
+        table.text("noi_dung");
+        table.string("ngay_ho_tro", 50);
+        table.string("nguoi_xac_nhan", 255);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 13. danh_gia_records
+    const hasDanhGia = await db.schema.hasTable("danh_gia_records");
+    if (!hasDanhGia) {
+      await db.schema.createTable("danh_gia_records", (table) => {
+        table.increments("id").primary();
+        table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
+        table.integer("so_thu_tu");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["period_id", "member_id"]);
+      });
+    }
+
+    // 14. tieu_chi_configs
+    const hasTieuChi = await db.schema.hasTable("tieu_chi_configs");
+    if (!hasTieuChi) {
+      await db.schema.createTable("tieu_chi_configs", (table) => {
+        table.increments("id").primary();
+        table.string("nhom", 255).notNullable();
+        table.string("ten_tieu_chi", 255).notNullable();
+        table.text("cach_tinh_diem");
+        table.integer("co_chi_tieu").notNullable().defaultTo(0);
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 15. tieu_chi_diem_chuan
+    const hasTieuChiDiemChuan = await db.schema.hasTable("tieu_chi_diem_chuan");
+    if (!hasTieuChiDiemChuan) {
+      await db.schema.createTable("tieu_chi_diem_chuan", (table) => {
+        table.increments("id").primary();
+        table.integer("tieu_chi_id").notNullable().references("id").inTable("tieu_chi_configs").onDelete("CASCADE");
+        table.string("team_name", 255).notNullable();
+        table.string("diem_chuan", 255);
+        table.string("chi_tieu", 255);
+        table.unique(["tieu_chi_id", "team_name"]);
+      });
+    }
+
+    // 16. ranking_rows
+    const hasRankingRows = await db.schema.hasTable("ranking_rows");
+    if (!hasRankingRows) {
+      await db.schema.createTable("ranking_rows", (table) => {
+        table.integer("vi_tri").primary();
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 17. ranking_columns
+    const hasRankingColumns = await db.schema.hasTable("ranking_columns");
+    if (!hasRankingColumns) {
+      await db.schema.createTable("ranking_columns", (table) => {
+        table.increments("id").primary();
+        table.string("ten_cot", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+      });
+    }
+
+    // 18. ranking_cells
+    const hasRankingCells = await db.schema.hasTable("ranking_cells");
+    if (!hasRankingCells) {
+      await db.schema.createTable("ranking_cells", (table) => {
+        table.increments("id").primary();
+        table.integer("vi_tri").notNullable().references("vi_tri").inTable("ranking_rows").onDelete("CASCADE");
+        table.integer("column_id").notNullable().references("id").inTable("ranking_columns").onDelete("CASCADE");
+        table.string("gia_tri", 255);
+        table.unique(["vi_tri", "column_id"]);
+      });
+    }
+
+    // 19. tags
+    const hasTags = await db.schema.hasTable("tags");
+    if (!hasTags) {
+      await db.schema.createTable("tags", (table) => {
+        table.increments("id").primary();
+        table.string("ten_tag", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 20. phan_loai_options
+    const hasPhanLoai = await db.schema.hasTable("phan_loai_options");
+    if (!hasPhanLoai) {
+      await db.schema.createTable("phan_loai_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_phan_loai", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 21. nhom_options
+    const hasNhom = await db.schema.hasTable("nhom_options");
+    if (!hasNhom) {
+      await db.schema.createTable("nhom_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_nhom", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // 22. chuc_vu_options
+    const hasChucVu = await db.schema.hasTable("chuc_vu_options");
+    if (!hasChucVu) {
+      await db.schema.createTable("chuc_vu_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_chuc_vu", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // Seed danh mục Tag
+    const tagCountRes = await db("tags").count({ c: "*" }).first();
+    const tagCount = Number((tagCountRes as any)?.c ?? 0);
+    if (tagCount === 0) {
+      const seedTags = [
+        "Số hoá",
+        "Đầu tư",
+        "Chất lượng dịch vụ",
+        "Trải nghiệm khách hàng",
+        "Quản lý chất lượng",
+        "ISO",
+        "Quy trình",
+        "Nhiệm vụ kỹ thuật",
+      ];
+      for (let i = 0; i < seedTags.length; i++) {
+        await db("tags").insert({ ten_tag: seedTags[i], thu_tu: i });
+      }
+    }
+
+    // Seed danh mục Phân loại
+    const phanLoaiCountRes = await db("phan_loai_options").count({ c: "*" }).first();
+    const phanLoaiCount = Number((phanLoaiCountRes as any)?.c ?? 0);
+    if (phanLoaiCount === 0) {
+      const seedPhanLoai = ["NVKH", "NVPS", "NVTT", "NV được giao từ BGĐ"];
+      for (let i = 0; i < seedPhanLoai.length; i++) {
+        await db("phan_loai_options").insert({ ten_phan_loai: seedPhanLoai[i], thu_tu: i });
+      }
+    }
+
+    // Seed danh mục Nhóm từ tieu_chi_configs
+    const nhomCountRes = await db("nhom_options").count({ c: "*" }).first();
+    const nhomCount = Number((nhomCountRes as any)?.c ?? 0);
+    if (nhomCount === 0) {
+      const existingNhom = await db("tieu_chi_configs")
+        .select("nhom")
+        .min({ min_id: "id" })
+        .groupBy("nhom")
+        .orderBy("min_id", "asc");
+      for (let i = 0; i < existingNhom.length; i++) {
+        await db("nhom_options").insert({ ten_nhom: (existingNhom[i] as any).nhom, thu_tu: i });
+      }
+    }
+
+    // Seed danh mục Chức vụ
+    const chucVuCountRes = await db("chuc_vu_options").count({ c: "*" }).first();
+    const chucVuCount = Number((chucVuCountRes as any)?.c ?? 0);
+    if (chucVuCount === 0) {
+      const seedChucVu = [
+        "Trưởng phòng",
+        "Chuyên gia",
+        "Trưởng nhóm",
+        "Trưởng nhóm (Nội bộ)",
+        "Trưởng nhóm (ATM + Billing)",
+        "Nghiệp vụ sản phẩm (BA)",
+        "Nhân viên Nghiệp vụ Kỹ thuật",
+        "Chuyên gia Nghiên cứu Phát triển dịch vụ",
+        "Kỹ sư Phần mềm",
+        "Kỹ sư kiểm thử & Quản lý chất lượng",
+        "Chuyên viên Quy trình - ISO",
+        "Nhân viên quản lý phát triển bền vững",
+        "Kỹ sư Phân tích Dữ liệu (DA)",
+        "Nhân viên quản lý chất lượng",
+        "Kỹ sư dữ liệu (DE)",
+        "Nhân viên thiết kế, đồ họa (UI/UX Designer)",
+        "Nhân viên quy trình - ISO",
+        "Nhân viên Scrum Master",
+        "Nhân viên phân tích nghiệp vụ",
+        "Chuyên viên Trí tuệ nhân tạo",
+      ];
+      for (let i = 0; i < seedChucVu.length; i++) {
+        await db("chuc_vu_options").insert({ ten_chuc_vu: seedChucVu[i], thu_tu: i });
+      }
+    }
+  })();
+
+  return initPromise;
 }
+
+// Khởi tạo schema khi module được import
+await initDatabase();
+

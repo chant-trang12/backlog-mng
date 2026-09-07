@@ -2,19 +2,22 @@ import type { Request, Response } from "express";
 import { createTicket, deleteTicket, listTickets, updateTicket } from "../services/ticket.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 export async function createTicketHandler(req: Request, res: Response) {
   const { tong_ticket, ticket_vuot, dung_han, team_id, period_id } = req.body ?? {};
   const teamId = Number(team_id);
-  if (!getTeam(teamId)) {
+  const team = await getTeam(teamId);
+  if (!team) {
     return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
   }
   const periodId = Number(period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const ticket = createTicket({
+  const ticket = await createTicket({
     period_id: periodId,
     team_id: teamId,
     tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
@@ -25,19 +28,25 @@ export async function createTicketHandler(req: Request, res: Response) {
 }
 
 export async function listTicketsHandler(_req: Request, res: Response) {
-  res.json(listTickets());
+  res.json(await listTickets());
 }
 
 export async function updateTicketHandler(req: Request, res: Response) {
   const { tong_ticket, ticket_vuot, dung_han, team_id, period_id } = req.body ?? {};
-  if (team_id !== undefined && !getTeam(Number(team_id))) {
-    return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
+  if (team_id !== undefined) {
+    const team = await getTeam(Number(team_id));
+    if (!team) {
+      return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
+    }
   }
-  if (period_id !== undefined && !getPeriod(Number(period_id))) {
-    return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
+  if (period_id !== undefined) {
+    const period = await getPeriod(Number(period_id));
+    if (!period) {
+      return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
+    }
   }
 
-  const ticket = updateTicket(Number(req.params.id), {
+  const ticket = await updateTicket(parsePositiveInt(req.params.id), {
     team_id: team_id !== undefined ? Number(team_id) : undefined,
     period_id: period_id !== undefined ? Number(period_id) : undefined,
     tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
@@ -49,7 +58,9 @@ export async function updateTicketHandler(req: Request, res: Response) {
 }
 
 export async function deleteTicketHandler(req: Request, res: Response) {
-  const ok = deleteTicket(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteTicket(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy ticket" });
   res.status(204).send();
 }

@@ -57,51 +57,48 @@ export async function parseAttendanceWorkbook(
 
 // Import thay thế toàn bộ dữ liệu Chấm công của 1 tháng theo dõi (period_id)
 // — xóa dữ liệu cũ của tháng đó rồi ghi lại theo file mới tải lên.
-export function replaceAttendanceRecords(
+export async function replaceAttendanceRecords(
   periodId: number,
   rows: Record<string, string>[],
-): AttendanceRecord[] {
-  const deleteExisting = db.prepare(`DELETE FROM attendance_records WHERE period_id = ?`);
-  const insert = db.prepare(
-    `INSERT INTO attendance_records (period_id, row_index, row_data) VALUES (?, ?, ?) RETURNING *`,
-  );
-
-  const tx = db.transaction((rowsToInsert: Record<string, string>[]) => {
-    deleteExisting.run(periodId);
+): Promise<AttendanceRecord[]> {
+  return await db.transaction(async (trx) => {
+    await trx("attendance_records").where({ period_id: periodId }).delete();
     const inserted: AttendanceRecord[] = [];
-    rowsToInsert.forEach((rowData, index) => {
-      const raw = insert.get(periodId, index, JSON.stringify(rowData)) as {
-        id: number;
-        period_id: number;
-        row_index: number;
-        row_data: string;
-        excluded_from_late: number;
-        created_at: string;
-      };
-      inserted.push({ ...raw, row_data: JSON.parse(raw.row_data), excluded_from_late: false });
-    });
+    for (let index = 0; index < rows.length; index++) {
+      const rowData = rows[index];
+      const [raw] = (await trx("attendance_records")
+        .insert({
+          period_id: periodId,
+          row_index: index,
+          row_data: JSON.stringify(rowData),
+          excluded_from_late: 0,
+        })
+        .returning("*")) as any[];
+      inserted.push({
+        id: raw.id,
+        period_id: raw.period_id,
+        row_index: raw.row_index,
+        row_data: JSON.parse(raw.row_data),
+        excluded_from_late: false,
+        created_at: raw.created_at,
+      });
+    }
     return inserted;
   });
-
-  return tx(rows);
 }
 
-export function listAttendanceRecords(periodId: number): ImportAttendanceResult {
-  const raws = db
-    .prepare(`SELECT * FROM attendance_records WHERE period_id = ? ORDER BY row_index ASC`)
-    .all(periodId) as {
-    id: number;
-    period_id: number;
-    row_index: number;
-    row_data: string;
-    excluded_from_late: number;
-    created_at: string;
-  }[];
+export async function listAttendanceRecords(periodId: number): Promise<ImportAttendanceResult> {
+  const raws = await db("attendance_records")
+    .where({ period_id: periodId })
+    .orderBy("row_index", "asc");
 
-  const rows: AttendanceRecord[] = raws.map((raw) => ({
-    ...raw,
+  const rows: AttendanceRecord[] = raws.map((raw: any) => ({
+    id: raw.id,
+    period_id: raw.period_id,
+    row_index: raw.row_index,
     row_data: JSON.parse(raw.row_data),
     excluded_from_late: raw.excluded_from_late === 1,
+    created_at: raw.created_at,
   }));
   const headers = rows.length > 0 ? Object.keys(rows[0].row_data) : [];
   return { headers, rows };
@@ -109,23 +106,19 @@ export function listAttendanceRecords(periodId: number): ImportAttendanceResult 
 
 // "Không tính công" — không xóa dữ liệu, chỉ đánh dấu để tab Nội quy bỏ qua
 // khi tính Lượt đi muộn.
-export function setAttendanceExcluded(ids: number[], excluded: boolean): number {
+export async function setAttendanceExcluded(ids: number[], excluded: boolean): Promise<number> {
   if (ids.length === 0) return 0;
-  const placeholders = ids.map(() => "?").join(", ");
-  const result = db
-    .prepare(`UPDATE attendance_records SET excluded_from_late = ? WHERE id IN (${placeholders})`)
-    .run(excluded ? 1 : 0, ...ids);
-  return result.changes;
+  return await db("attendance_records")
+    .whereIn("id", ids)
+    .update({ excluded_from_late: excluded ? 1 : 0 });
 }
 
-export function deleteAttendanceRecord(id: number): boolean {
-  const result = db.prepare(`DELETE FROM attendance_records WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteAttendanceRecord(id: number): Promise<boolean> {
+  const count = await db("attendance_records").where({ id }).delete();
+  return count > 0;
 }
 
-export function deleteAttendanceRecords(ids: number[]): number {
+export async function deleteAttendanceRecords(ids: number[]): Promise<number> {
   if (ids.length === 0) return 0;
-  const placeholders = ids.map(() => "?").join(", ");
-  const result = db.prepare(`DELETE FROM attendance_records WHERE id IN (${placeholders})`).run(...ids);
-  return result.changes;
+  return await db("attendance_records").whereIn("id", ids).delete();
 }

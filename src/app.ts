@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import healthRoutes from "./routes/health.routes.js";
@@ -17,6 +19,7 @@ import tieuchiRoutes from "./routes/tieuchi.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
 import { notFound } from "./middleware/notFound.middleware.js";
+import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import "./db/database.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,7 +27,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createApp() {
   const app = express();
 
-  app.use(express.json());
+  // Security headers
+  app.use(helmet({ contentSecurityPolicy: false }));
+
+  // HTTP request logging (skip in test env to keep test output clean)
+  if (process.env.NODE_ENV !== "test") {
+    app.use(morgan("combined"));
+  }
+
+  // Limit JSON payload size
+  app.use(express.json({ limit: "1mb" }));
   app.use(express.static(path.join(__dirname, "../public")));
   app.use(healthRoutes);
   app.use("/api", periodRoutes);
@@ -42,6 +54,8 @@ export function createApp() {
   app.use("/api", rankingRoutes);
   app.use("/api", catalogRoutes);
   app.use(notFound);
+  // Global error handler — must be last, after notFound
+  app.use(errorHandler);
 
   return app;
 }

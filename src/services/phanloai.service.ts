@@ -1,33 +1,43 @@
 import { db } from "../db/database.js";
 import type { CreatePhanLoaiInput, PhanLoaiOption, UpdatePhanLoaiInput } from "../types/cskh.js";
 
-export function listPhanLoai(): PhanLoaiOption[] {
-  return db.prepare(`SELECT * FROM phan_loai_options ORDER BY thu_tu ASC, id ASC`).all() as PhanLoaiOption[];
+export async function listPhanLoai(): Promise<PhanLoaiOption[]> {
+  const rows = await db("phan_loai_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
+  return rows as PhanLoaiOption[];
 }
 
-export function getPhanLoai(id: number): PhanLoaiOption | undefined {
-  return db.prepare(`SELECT * FROM phan_loai_options WHERE id = ?`).get(id) as PhanLoaiOption | undefined;
+export async function getPhanLoai(id: number): Promise<PhanLoaiOption | undefined> {
+  const row = await db("phan_loai_options").where({ id }).first();
+  return row as PhanLoaiOption | undefined;
 }
 
-export function createPhanLoai(input: CreatePhanLoaiInput): PhanLoaiOption {
-  const maxRow = db.prepare(`SELECT COALESCE(MAX(thu_tu), -1) AS max_thu_tu FROM phan_loai_options`).get() as {
-    max_thu_tu: number;
-  };
-  return db
-    .prepare(`INSERT INTO phan_loai_options (ten_phan_loai, thu_tu) VALUES (?, ?) RETURNING *`)
-    .get(input.ten_phan_loai.trim(), maxRow.max_thu_tu + 1) as PhanLoaiOption;
+export async function createPhanLoai(input: CreatePhanLoaiInput): Promise<PhanLoaiOption> {
+  const maxRow = await db("phan_loai_options").max({ max_thu_tu: "thu_tu" }).first();
+  const maxThuTu = maxRow && (maxRow as any).max_thu_tu !== null && (maxRow as any).max_thu_tu !== undefined
+    ? Number((maxRow as any).max_thu_tu)
+    : -1;
+  const [created] = await db("phan_loai_options")
+    .insert({
+      ten_phan_loai: input.ten_phan_loai.trim(),
+      thu_tu: maxThuTu + 1,
+    })
+    .returning("*");
+  return created as PhanLoaiOption;
 }
 
-export function updatePhanLoai(id: number, input: UpdatePhanLoaiInput): PhanLoaiOption | undefined {
-  const existing = getPhanLoai(id);
+export async function updatePhanLoai(id: number, input: UpdatePhanLoaiInput): Promise<PhanLoaiOption | undefined> {
+  const existing = await getPhanLoai(id);
   if (!existing) return undefined;
   const tenPhanLoai = input.ten_phan_loai?.trim() ?? existing.ten_phan_loai;
-  const thuTu = input.thu_tu ?? existing.thu_tu;
-  return db
-    .prepare(`UPDATE phan_loai_options SET ten_phan_loai = ?, thu_tu = ? WHERE id = ? RETURNING *`)
-    .get(tenPhanLoai, thuTu, id) as PhanLoaiOption;
+  const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
+  const [updated] = await db("phan_loai_options")
+    .where({ id })
+    .update({ ten_phan_loai: tenPhanLoai, thu_tu: thuTu })
+    .returning("*");
+  return updated as PhanLoaiOption;
 }
 
-export function deletePhanLoai(id: number): boolean {
-  return db.prepare(`DELETE FROM phan_loai_options WHERE id = ?`).run(id).changes > 0;
+export async function deletePhanLoai(id: number): Promise<boolean> {
+  const count = await db("phan_loai_options").where({ id }).delete();
+  return count > 0;
 }

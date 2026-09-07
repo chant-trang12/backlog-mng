@@ -6,10 +6,7 @@ import {
   setTieuChiDiemChuan,
   updateTieuChiConfig,
 } from "../services/tieuchi.service.js";
-
-function isNonEmptyText(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
+import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 export async function createTieuChiConfigHandler(req: Request, res: Response) {
   const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu } = req.body ?? {};
@@ -20,7 +17,7 @@ export async function createTieuChiConfigHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'ten_tieu_chi' là bắt buộc" });
   }
 
-  const config = createTieuChiConfig({
+  const config = await createTieuChiConfig({
     nhom,
     ten_tieu_chi,
     cach_tinh_diem,
@@ -31,12 +28,12 @@ export async function createTieuChiConfigHandler(req: Request, res: Response) {
 }
 
 export async function listTieuChiConfigsHandler(_req: Request, res: Response) {
-  res.json(listTieuChiConfigs());
+  res.json(await listTieuChiConfigs());
 }
 
 export async function updateTieuChiConfigHandler(req: Request, res: Response) {
   const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu } = req.body ?? {};
-  const config = updateTieuChiConfig(Number(req.params.id), {
+  const config = await updateTieuChiConfig(Number(req.params.id), {
     nhom,
     ten_tieu_chi,
     cach_tinh_diem,
@@ -48,7 +45,9 @@ export async function updateTieuChiConfigHandler(req: Request, res: Response) {
 }
 
 export async function deleteTieuChiConfigHandler(req: Request, res: Response) {
-  const ok = deleteTieuChiConfig(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteTieuChiConfig(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy tiêu chí" });
   res.status(204).send();
 }
@@ -59,6 +58,7 @@ export async function setTieuChiDiemChuanHandler(req: Request, res: Response) {
   if (!isNonEmptyText(team_name)) {
     return res.status(400).json({ error: "Trường 'team_name' là bắt buộc" });
   }
-  setTieuChiDiemChuan(Number(req.params.id), team_name, diem_chuan ?? null, chi_tieu ?? null);
-  res.json(listTieuChiConfigs().find((c) => c.id === Number(req.params.id)));
+  await setTieuChiDiemChuan(Number(req.params.id), team_name, diem_chuan ?? null, chi_tieu ?? null);
+  const configs = await listTieuChiConfigs();
+  res.json(configs.find((c) => c.id === Number(req.params.id)));
 }

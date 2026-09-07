@@ -6,37 +6,42 @@ import type {
   UpdateIncidentInput,
 } from "../types/cskh.js";
 
-export function createIncident(input: CreateIncidentInput): Incident {
-  return db
-    .prepare(
-      `INSERT INTO incidents (period_id, team_id, su_co, tinh_chat) VALUES (?, ?, ?, ?) RETURNING *`,
+export async function createIncident(input: CreateIncidentInput): Promise<Incident> {
+  const [created] = await db("incidents")
+    .insert({
+      period_id: input.period_id,
+      team_id: input.team_id,
+      su_co: input.su_co.trim(),
+      tinh_chat: input.tinh_chat?.trim() || null,
+    })
+    .returning("*");
+  return created as Incident;
+}
+
+export async function getIncident(id: number): Promise<Incident | undefined> {
+  const row = await db("incidents").where({ id }).first();
+  return row as Incident | undefined;
+}
+
+export async function listIncidents(): Promise<IncidentWithTeam[]> {
+  const rows = await db("incidents")
+    .join("teams", "teams.id", "incidents.team_id")
+    .join("periods", "periods.id", "incidents.period_id")
+    .select(
+      "incidents.*",
+      "teams.name as team_name",
+      "periods.label as period_label",
     )
-    .get(
-      input.period_id,
-      input.team_id,
-      input.su_co.trim(),
-      input.tinh_chat?.trim() || null,
-    ) as Incident;
+    .orderBy("periods.year", "desc")
+    .orderBy("periods.month", "desc")
+    .orderBy("teams.name", "asc")
+    .orderBy("incidents.id", "desc");
+
+  return rows as IncidentWithTeam[];
 }
 
-export function getIncident(id: number): Incident | undefined {
-  return db.prepare(`SELECT * FROM incidents WHERE id = ?`).get(id) as Incident | undefined;
-}
-
-export function listIncidents(): IncidentWithTeam[] {
-  return db
-    .prepare(
-      `SELECT incidents.*, teams.name AS team_name, periods.label AS period_label
-       FROM incidents
-       JOIN teams ON teams.id = incidents.team_id
-       JOIN periods ON periods.id = incidents.period_id
-       ORDER BY periods.year DESC, periods.month DESC, teams.name ASC, incidents.id DESC`,
-    )
-    .all() as IncidentWithTeam[];
-}
-
-export function updateIncident(id: number, input: UpdateIncidentInput): Incident | undefined {
-  const existing = getIncident(id);
+export async function updateIncident(id: number, input: UpdateIncidentInput): Promise<Incident | undefined> {
+  const existing = await getIncident(id);
   if (!existing) return undefined;
 
   const merged = {
@@ -46,15 +51,18 @@ export function updateIncident(id: number, input: UpdateIncidentInput): Incident
     tinh_chat: input.tinh_chat !== undefined ? input.tinh_chat.trim() || null : existing.tinh_chat,
   };
 
-  return db
-    .prepare(
-      `UPDATE incidents SET period_id = ?, team_id = ?, su_co = ?, tinh_chat = ?, updated_at = datetime('now')
-       WHERE id = ? RETURNING *`,
-    )
-    .get(merged.period_id, merged.team_id, merged.su_co, merged.tinh_chat, id) as Incident;
+  const [updated] = await db("incidents")
+    .where({ id })
+    .update({
+      ...merged,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+
+  return updated as Incident;
 }
 
-export function deleteIncident(id: number): boolean {
-  const result = db.prepare(`DELETE FROM incidents WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteIncident(id: number): Promise<boolean> {
+  const count = await db("incidents").where({ id }).delete();
+  return count > 0;
 }

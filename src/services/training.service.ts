@@ -6,52 +6,53 @@ import type {
   UpdateTrainingRecordInput,
 } from "../types/cskh.js";
 
-export function createTrainingRecord(input: CreateTrainingRecordInput): TrainingRecord {
-  return db
-    .prepare(
-      `INSERT INTO training_records (period_id, member_id, loai, ngay_thuc_hien, nguoi_xac_nhan, noi_dung)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
-    )
-    .get(
-      input.period_id,
-      input.member_id,
-      input.loai?.trim() || null,
-      input.ngay_thuc_hien?.trim() || null,
-      input.nguoi_xac_nhan?.trim() || null,
-      input.noi_dung?.trim() || null,
-    ) as TrainingRecord;
+export async function createTrainingRecord(input: CreateTrainingRecordInput): Promise<TrainingRecord> {
+  const [created] = await db("training_records")
+    .insert({
+      period_id: input.period_id,
+      member_id: input.member_id,
+      loai: input.loai?.trim() || null,
+      ngay_thuc_hien: input.ngay_thuc_hien?.trim() || null,
+      nguoi_xac_nhan: input.nguoi_xac_nhan?.trim() || null,
+      noi_dung: input.noi_dung?.trim() || null,
+    })
+    .returning("*");
+  return created as TrainingRecord;
 }
 
-export function getTrainingRecord(id: number): TrainingRecord | undefined {
-  return db.prepare(`SELECT * FROM training_records WHERE id = ?`).get(id) as
-    | TrainingRecord
-    | undefined;
+export async function getTrainingRecord(id: number): Promise<TrainingRecord | undefined> {
+  const row = await db("training_records").where({ id }).first();
+  return row as TrainingRecord | undefined;
 }
 
 // Danh sách bản ghi Đào tạo của 1 tháng theo dõi (period_id), kèm tên nhân sự
 // / team / nhãn tháng — hiển thị dạng bảng Tháng theo dõi / Team / Nhân sự /
 // Loại / Ngày thực hiện / Người xác nhận / Nội dung. Lọc theo tháng đang chọn
 // ở Bộ lọc, giống bảng Nhân sự.
-export function listTrainingRecords(periodId: number): TrainingRecordWithDetails[] {
-  return db
-    .prepare(
-      `SELECT training_records.*, members.name AS member_name, members.team_id AS team_id,
-              teams.name AS team_name, periods.label AS period_label
-       FROM training_records
-       JOIN members ON members.id = training_records.member_id
-       JOIN teams ON teams.id = members.team_id
-       JOIN periods ON periods.id = training_records.period_id
-       WHERE training_records.period_id = ?
-       ORDER BY teams.name ASC, training_records.id DESC`,
+export async function listTrainingRecords(periodId: number): Promise<TrainingRecordWithDetails[]> {
+  const rows = await db("training_records")
+    .join("members", "members.id", "training_records.member_id")
+    .join("teams", "teams.id", "members.team_id")
+    .join("periods", "periods.id", "training_records.period_id")
+    .where("training_records.period_id", periodId)
+    .select(
+      "training_records.*",
+      "members.name as member_name",
+      "members.team_id as team_id",
+      "teams.name as team_name",
+      "periods.label as period_label",
     )
-    .all(periodId) as TrainingRecordWithDetails[];
+    .orderBy("teams.name", "asc")
+    .orderBy("training_records.id", "desc");
+
+  return rows as TrainingRecordWithDetails[];
 }
 
-export function updateTrainingRecord(
+export async function updateTrainingRecord(
   id: number,
   input: UpdateTrainingRecordInput,
-): TrainingRecord | undefined {
-  const existing = getTrainingRecord(id);
+): Promise<TrainingRecord | undefined> {
+  const existing = await getTrainingRecord(id);
   if (!existing) return undefined;
 
   const merged = {
@@ -64,23 +65,18 @@ export function updateTrainingRecord(
     noi_dung: input.noi_dung !== undefined ? input.noi_dung.trim() || null : existing.noi_dung,
   };
 
-  return db
-    .prepare(
-      `UPDATE training_records
-       SET member_id = ?, loai = ?, ngay_thuc_hien = ?, nguoi_xac_nhan = ?, noi_dung = ?, updated_at = datetime('now')
-       WHERE id = ? RETURNING *`,
-    )
-    .get(
-      merged.member_id,
-      merged.loai,
-      merged.ngay_thuc_hien,
-      merged.nguoi_xac_nhan,
-      merged.noi_dung,
-      id,
-    ) as TrainingRecord;
+  const [updated] = await db("training_records")
+    .where({ id })
+    .update({
+      ...merged,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+
+  return updated as TrainingRecord;
 }
 
-export function deleteTrainingRecord(id: number): boolean {
-  const result = db.prepare(`DELETE FROM training_records WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteTrainingRecord(id: number): Promise<boolean> {
+  const count = await db("training_records").where({ id }).delete();
+  return count > 0;
 }

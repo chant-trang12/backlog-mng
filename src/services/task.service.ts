@@ -5,106 +5,99 @@ import { createPeriod, getPeriod } from "./period.service.js";
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
 
-function nextStt(periodId: number): number {
-  const row = db
-    .prepare(`SELECT COALESCE(MAX(stt), 0) AS max_stt FROM tasks WHERE period_id = ?`)
-    .get(periodId) as { max_stt: number };
-  return row.max_stt + 1;
+async function nextStt(periodId: number): Promise<number> {
+  const row = await db("tasks")
+    .where({ period_id: periodId })
+    .max({ max_stt: "stt" })
+    .first();
+  const max = Number(row?.max_stt ?? 0);
+  return max + 1;
 }
 
 // 1.3 Nhập mới task cho một team trong một tháng (period) — STT tự tăng theo
 // thứ tự nhập trong từng period, dùng làm cột STT khi xuất Excel.
-export function createTask(periodId: number, input: CreateTaskInput): Task {
-  const stt = nextStt(periodId);
+export async function createTask(periodId: number, input: CreateTaskInput): Promise<Task> {
+  const stt = await nextStt(periodId);
   const trangThai = input.trang_thai ?? "Chưa thực hiện";
   // Trạng thái Hủy mặc định đánh dấu Không tính điểm ở cột Tính chất.
   const khongTinhDiem = trangThai === "Hủy" ? KHONG_TINH_DIEM : null;
-  return db
-    .prepare(
-      `INSERT INTO tasks (
-         period_id, stt, tinh_chat, tag, team, nhiem_vu, dod, ngay_thuc_hien, deadline,
-         nvtt, phan_tram_hoan_thanh, trang_thai, tien_do, cpo_danh_gia, cpo_comment, khong_tinh_diem
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       RETURNING *`,
-    )
-    .get(
-      periodId,
+
+  const [created] = await db("tasks")
+    .insert({
+      period_id: periodId,
       stt,
-      input.tinh_chat ?? null,
-      input.tag ?? null,
-      input.team,
-      input.nhiem_vu,
-      input.dod ?? null,
-      input.ngay_thuc_hien ?? null,
-      input.deadline ?? null,
-      input.nvtt ?? null,
-      input.phan_tram_hoan_thanh ?? 0,
-      trangThai,
-      input.tien_do ?? null,
-      input.cpo_danh_gia ?? null,
-      input.cpo_comment ?? null,
-      khongTinhDiem,
-    ) as Task;
+      tinh_chat: input.tinh_chat ?? null,
+      tag: input.tag ?? null,
+      team: input.team,
+      nhiem_vu: input.nhiem_vu,
+      dod: input.dod ?? null,
+      ngay_thuc_hien: input.ngay_thuc_hien ?? null,
+      deadline: input.deadline ?? null,
+      nvtt: input.nvtt ?? null,
+      phan_tram_hoan_thanh: input.phan_tram_hoan_thanh ?? 0,
+      trang_thai: trangThai,
+      tien_do: input.tien_do ?? null,
+      cpo_danh_gia: input.cpo_danh_gia ?? null,
+      cpo_comment: input.cpo_comment ?? null,
+      khong_tinh_diem: khongTinhDiem,
+    })
+    .returning("*");
+
+  return created as Task;
 }
 
-export function listTasks(filter: { period_id: number; team?: string }): Task[] {
+export async function listTasks(filter: { period_id: number; team?: string }): Promise<Task[]> {
+  const query = db("tasks").where({ period_id: filter.period_id });
   if (filter.team) {
-    return db
-      .prepare(
-        `SELECT * FROM tasks WHERE period_id = ? AND team = ? ORDER BY stt ASC`,
-      )
-      .all(filter.period_id, filter.team) as Task[];
+    query.where({ team: filter.team });
   }
-  return db
-    .prepare(`SELECT * FROM tasks WHERE period_id = ? ORDER BY stt ASC`)
-    .all(filter.period_id) as Task[];
+  const rows = await query.orderBy("stt", "asc");
+  return rows as Task[];
 }
 
-export function getTask(id: number): Task | undefined {
-  return db.prepare(`SELECT * FROM tasks WHERE id = ?`).get(id) as Task | undefined;
+export async function getTask(id: number): Promise<Task | undefined> {
+  const row = await db("tasks").where({ id }).first();
+  return row as Task | undefined;
 }
 
 // 1.4 Cập nhật task — dùng chung cho sửa nội dung lẫn cập nhật tiến độ định kỳ
 // (chỉ gửi các trường thay đổi, các trường còn lại giữ nguyên).
-export function updateTask(id: number, input: UpdateTaskInput): Task | undefined {
-  const existing = getTask(id);
+export async function updateTask(id: number, input: UpdateTaskInput): Promise<Task | undefined> {
+  const existing = await getTask(id);
   if (!existing) return undefined;
 
   const merged = { ...existing, ...input };
   // Trạng thái Hủy mặc định đánh dấu Không tính điểm ở cột Tính chất; các
   // trạng thái khác giữ nguyên giá trị Không tính điểm đã có (nếu có).
   const khongTinhDiem = merged.trang_thai === "Hủy" ? KHONG_TINH_DIEM : existing.khong_tinh_diem;
-  return db
-    .prepare(
-      `UPDATE tasks
-       SET tinh_chat = ?, tag = ?, team = ?, nhiem_vu = ?, dod = ?, ngay_thuc_hien = ?, deadline = ?,
-           nvtt = ?, phan_tram_hoan_thanh = ?, trang_thai = ?, tien_do = ?, cpo_danh_gia = ?,
-           cpo_comment = ?, khong_tinh_diem = ?, updated_at = datetime('now')
-       WHERE id = ?
-       RETURNING *`,
-    )
-    .get(
-      merged.tinh_chat,
-      merged.tag,
-      merged.team,
-      merged.nhiem_vu,
-      merged.dod,
-      merged.ngay_thuc_hien,
-      merged.deadline,
-      merged.nvtt,
-      merged.phan_tram_hoan_thanh,
-      merged.trang_thai,
-      merged.tien_do,
-      merged.cpo_danh_gia,
-      merged.cpo_comment,
-      khongTinhDiem,
-      id,
-    ) as Task;
+
+  const [updated] = await db("tasks")
+    .where({ id })
+    .update({
+      tinh_chat: merged.tinh_chat,
+      tag: merged.tag,
+      team: merged.team,
+      nhiem_vu: merged.nhiem_vu,
+      dod: merged.dod,
+      ngay_thuc_hien: merged.ngay_thuc_hien,
+      deadline: merged.deadline,
+      nvtt: merged.nvtt,
+      phan_tram_hoan_thanh: merged.phan_tram_hoan_thanh,
+      trang_thai: merged.trang_thai,
+      tien_do: merged.tien_do,
+      cpo_danh_gia: merged.cpo_danh_gia,
+      cpo_comment: merged.cpo_comment,
+      khong_tinh_diem: khongTinhDiem,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+
+  return updated as Task;
 }
 
-export function deleteTask(id: number): boolean {
-  const result = db.prepare(`DELETE FROM tasks WHERE id = ?`).run(id);
-  return result.changes > 0;
+export async function deleteTask(id: number): Promise<boolean> {
+  const count = await db("tasks").where({ id }).delete();
+  return count > 0;
 }
 
 function addTinhChatTon(tinhChat: string | null): string {
@@ -116,11 +109,6 @@ function addTinhChatTon(tinhChat: string | null): string {
   return items.join(", ");
 }
 
-// Deadline (YYYY-MM-DD) có tháng/năm SỚM HƠN tháng đích (chuyển sang) thì
-// mới coi là "tồn đọng" — deadline null/không đọc được cũng coi là tồn đọng
-// (an toàn, giữ hành vi đánh dấu như cũ khi thiếu dữ liệu). Deadline có
-// tháng/năm >= tháng đích thì KHÔNG phải nhiệm vụ tồn — vẫn tính điểm bình
-// thường, không tự đánh dấu "Không tính điểm".
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {
   if (!deadline || deadline.length < 7) return true;
   const year = Number(deadline.slice(0, 4));
@@ -129,19 +117,11 @@ function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, tar
   return year < targetYear || (year === targetYear && month < targetMonth);
 }
 
-// Nhân bản các task đã chọn (checkbox) sang tháng kế tiếp của tháng đang xem —
-// tự tạo tháng đích nếu chưa có. Nếu Deadline của task có tháng/năm sớm hơn
-// tháng đích thì bản sao được gắn thêm "Nhiệm vụ tồn" vào Tính chất và đánh
-// dấu "Không tính điểm"; ngược lại (Deadline cùng tháng đích hoặc muộn hơn)
-// giữ nguyên Tính chất/Không tính điểm gốc — vẫn tính điểm bình thường. Bản
-// ghi gốc ở tháng cũ được giữ nguyên (không xóa hay chỉnh sửa nội dung) nhưng
-// được đánh dấu da_chuyen_thang = 1 để chặn không cho chuyển tiếp lần nữa —
-// task nào đã chuyển 1 lần rồi thì bị bỏ qua (trả về trong skippedAlreadyMoved).
-export function moveTasksToNextMonth(
+export async function moveTasksToNextMonth(
   fromPeriodId: number,
   taskIds: number[],
-): { targetPeriod: ReturnType<typeof createPeriod>; moved: Task[]; skippedAlreadyMoved: Task[] } | undefined {
-  const fromPeriod = getPeriod(fromPeriodId);
+): Promise<{ targetPeriod: Awaited<ReturnType<typeof createPeriod>>; moved: Task[]; skippedAlreadyMoved: Task[] } | undefined> {
+  const fromPeriod = await getPeriod(fromPeriodId);
   if (!fromPeriod) return undefined;
 
   let nextYear = fromPeriod.year;
@@ -150,67 +130,55 @@ export function moveTasksToNextMonth(
     nextMonth = 1;
     nextYear += 1;
   }
-  const targetPeriod = createPeriod({ year: nextYear, month: nextMonth });
-
-  const cloneOne = db.prepare(
-    `INSERT INTO tasks (
-       period_id, stt, tinh_chat, tag, team, nhiem_vu, dod, ngay_thuc_hien, deadline,
-       nvtt, phan_tram_hoan_thanh, trang_thai, tien_do, cpo_danh_gia, cpo_comment, khong_tinh_diem
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     RETURNING *`,
-  );
-  const markMoved = db.prepare(
-    `UPDATE tasks SET da_chuyen_thang = 1, updated_at = datetime('now') WHERE id = ?`,
-  );
+  const targetPeriod = await createPeriod({ year: nextYear, month: nextMonth });
 
   const moved: Task[] = [];
   const skippedAlreadyMoved: Task[] = [];
   for (const id of taskIds) {
-    const task = getTask(id);
+    const task = await getTask(id);
     if (!task || task.period_id !== fromPeriodId) continue;
     if (task.da_chuyen_thang) {
       skippedAlreadyMoved.push(task);
       continue;
     }
-    const stt = nextStt(targetPeriod.id);
+    const stt = await nextStt(targetPeriod.id);
     const isTon = isDeadlineBeforeTarget(task.deadline, targetPeriod.year, targetPeriod.month);
     const tinhChat = isTon ? addTinhChatTon(task.tinh_chat) : task.tinh_chat;
     const khongTinhDiem = isTon ? KHONG_TINH_DIEM : task.khong_tinh_diem;
-    const clone = cloneOne.get(
-      targetPeriod.id,
-      stt,
-      tinhChat,
-      task.tag,
-      task.team,
-      task.nhiem_vu,
-      task.dod,
-      task.ngay_thuc_hien,
-      task.deadline,
-      task.nvtt,
-      task.phan_tram_hoan_thanh,
-      task.trang_thai,
-      task.tien_do,
-      task.cpo_danh_gia,
-      task.cpo_comment,
-      khongTinhDiem,
-    ) as Task;
-    markMoved.run(task.id);
-    moved.push(clone);
+
+    const [clone] = await db("tasks")
+      .insert({
+        period_id: targetPeriod.id,
+        stt,
+        tinh_chat: tinhChat,
+        tag: task.tag,
+        team: task.team,
+        nhiem_vu: task.nhiem_vu,
+        dod: task.dod,
+        ngay_thuc_hien: task.ngay_thuc_hien,
+        deadline: task.deadline,
+        nvtt: task.nvtt,
+        phan_tram_hoan_thanh: task.phan_tram_hoan_thanh,
+        trang_thai: task.trang_thai,
+        tien_do: task.tien_do,
+        cpo_danh_gia: task.cpo_danh_gia,
+        cpo_comment: task.cpo_comment,
+        khong_tinh_diem: khongTinhDiem,
+      })
+      .returning("*");
+
+    await db("tasks").where({ id: task.id }).update({ da_chuyen_thang: 1, updated_at: db.fn.now() });
+    moved.push(clone as Task);
   }
 
   return { targetPeriod, moved, skippedAlreadyMoved };
 }
 
-// Đánh dấu các task đã chọn (checkbox) là "Không tính điểm" — hiển thị badge
-// ở cột Tính chất (khác với cột Phân loại/tinh_chat).
-export function markTasksNoScore(taskIds: number[]): Task[] {
+export async function markTasksNoScore(taskIds: number[]): Promise<Task[]> {
   if (taskIds.length === 0) return [];
-  const placeholders = taskIds.map(() => "?").join(", ");
-  return db
-    .prepare(
-      `UPDATE tasks SET khong_tinh_diem = ?, updated_at = datetime('now')
-       WHERE id IN (${placeholders})
-       RETURNING *`,
-    )
-    .all(KHONG_TINH_DIEM, ...taskIds) as Task[];
+  const updated = await db("tasks")
+    .whereIn("id", taskIds)
+    .update({ khong_tinh_diem: KHONG_TINH_DIEM, updated_at: db.fn.now() })
+    .returning("*");
+  return updated as Task[];
 }

@@ -1,33 +1,43 @@
 import { db } from "../db/database.js";
 import type { CreateNhomInput, NhomOption, UpdateNhomInput } from "../types/cskh.js";
 
-export function listNhom(): NhomOption[] {
-  return db.prepare(`SELECT * FROM nhom_options ORDER BY thu_tu ASC, id ASC`).all() as NhomOption[];
+export async function listNhom(): Promise<NhomOption[]> {
+  const rows = await db("nhom_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
+  return rows as NhomOption[];
 }
 
-export function getNhom(id: number): NhomOption | undefined {
-  return db.prepare(`SELECT * FROM nhom_options WHERE id = ?`).get(id) as NhomOption | undefined;
+export async function getNhom(id: number): Promise<NhomOption | undefined> {
+  const row = await db("nhom_options").where({ id }).first();
+  return row as NhomOption | undefined;
 }
 
-export function createNhom(input: CreateNhomInput): NhomOption {
-  const maxRow = db.prepare(`SELECT COALESCE(MAX(thu_tu), -1) AS max_thu_tu FROM nhom_options`).get() as {
-    max_thu_tu: number;
-  };
-  return db
-    .prepare(`INSERT INTO nhom_options (ten_nhom, thu_tu) VALUES (?, ?) RETURNING *`)
-    .get(input.ten_nhom.trim(), maxRow.max_thu_tu + 1) as NhomOption;
+export async function createNhom(input: CreateNhomInput): Promise<NhomOption> {
+  const maxRow = await db("nhom_options").max({ max_thu_tu: "thu_tu" }).first();
+  const maxThuTu = maxRow && (maxRow as any).max_thu_tu !== null && (maxRow as any).max_thu_tu !== undefined
+    ? Number((maxRow as any).max_thu_tu)
+    : -1;
+  const [created] = await db("nhom_options")
+    .insert({
+      ten_nhom: input.ten_nhom.trim(),
+      thu_tu: maxThuTu + 1,
+    })
+    .returning("*");
+  return created as NhomOption;
 }
 
-export function updateNhom(id: number, input: UpdateNhomInput): NhomOption | undefined {
-  const existing = getNhom(id);
+export async function updateNhom(id: number, input: UpdateNhomInput): Promise<NhomOption | undefined> {
+  const existing = await getNhom(id);
   if (!existing) return undefined;
   const tenNhom = input.ten_nhom?.trim() ?? existing.ten_nhom;
-  const thuTu = input.thu_tu ?? existing.thu_tu;
-  return db
-    .prepare(`UPDATE nhom_options SET ten_nhom = ?, thu_tu = ? WHERE id = ? RETURNING *`)
-    .get(tenNhom, thuTu, id) as NhomOption;
+  const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
+  const [updated] = await db("nhom_options")
+    .where({ id })
+    .update({ ten_nhom: tenNhom, thu_tu: thuTu })
+    .returning("*");
+  return updated as NhomOption;
 }
 
-export function deleteNhom(id: number): boolean {
-  return db.prepare(`DELETE FROM nhom_options WHERE id = ?`).run(id).changes > 0;
+export async function deleteNhom(id: number): Promise<boolean> {
+  const count = await db("nhom_options").where({ id }).delete();
+  return count > 0;
 }

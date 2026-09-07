@@ -1,33 +1,43 @@
 import { db } from "../db/database.js";
 import type { CreateTagInput, TagOption, UpdateTagInput } from "../types/cskh.js";
 
-export function listTags(): TagOption[] {
-  return db.prepare(`SELECT * FROM tags ORDER BY thu_tu ASC, id ASC`).all() as TagOption[];
+export async function listTags(): Promise<TagOption[]> {
+  const rows = await db("tags").orderBy("thu_tu", "asc").orderBy("id", "asc");
+  return rows as TagOption[];
 }
 
-export function getTag(id: number): TagOption | undefined {
-  return db.prepare(`SELECT * FROM tags WHERE id = ?`).get(id) as TagOption | undefined;
+export async function getTag(id: number): Promise<TagOption | undefined> {
+  const row = await db("tags").where({ id }).first();
+  return row as TagOption | undefined;
 }
 
-export function createTag(input: CreateTagInput): TagOption {
-  const maxRow = db.prepare(`SELECT COALESCE(MAX(thu_tu), -1) AS max_thu_tu FROM tags`).get() as {
-    max_thu_tu: number;
-  };
-  return db
-    .prepare(`INSERT INTO tags (ten_tag, thu_tu) VALUES (?, ?) RETURNING *`)
-    .get(input.ten_tag.trim(), maxRow.max_thu_tu + 1) as TagOption;
+export async function createTag(input: CreateTagInput): Promise<TagOption> {
+  const maxRow = await db("tags").max({ max_thu_tu: "thu_tu" }).first();
+  const maxThuTu = maxRow && (maxRow as any).max_thu_tu !== null && (maxRow as any).max_thu_tu !== undefined
+    ? Number((maxRow as any).max_thu_tu)
+    : -1;
+  const [created] = await db("tags")
+    .insert({
+      ten_tag: input.ten_tag.trim(),
+      thu_tu: maxThuTu + 1,
+    })
+    .returning("*");
+  return created as TagOption;
 }
 
-export function updateTag(id: number, input: UpdateTagInput): TagOption | undefined {
-  const existing = getTag(id);
+export async function updateTag(id: number, input: UpdateTagInput): Promise<TagOption | undefined> {
+  const existing = await getTag(id);
   if (!existing) return undefined;
   const tenTag = input.ten_tag?.trim() ?? existing.ten_tag;
-  const thuTu = input.thu_tu ?? existing.thu_tu;
-  return db
-    .prepare(`UPDATE tags SET ten_tag = ?, thu_tu = ? WHERE id = ? RETURNING *`)
-    .get(tenTag, thuTu, id) as TagOption;
+  const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
+  const [updated] = await db("tags")
+    .where({ id })
+    .update({ ten_tag: tenTag, thu_tu: thuTu })
+    .returning("*");
+  return updated as TagOption;
 }
 
-export function deleteTag(id: number): boolean {
-  return db.prepare(`DELETE FROM tags WHERE id = ?`).run(id).changes > 0;
+export async function deleteTag(id: number): Promise<boolean> {
+  const count = await db("tags").where({ id }).delete();
+  return count > 0;
 }

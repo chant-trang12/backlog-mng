@@ -8,6 +8,7 @@ import {
 import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { getTeam } from "../services/team.service.js";
+import { parsePositiveInt } from "../utils/validate.js";
 
 // Thêm mới bản ghi Hỗ trợ — Tháng theo dõi lấy từ period_id do client gửi
 // (gán theo Bộ lọc "Tháng" đang chọn ở trang Team & Nhân sự, không cho người
@@ -16,19 +17,22 @@ import { getTeam } from "../services/team.service.js";
 export async function createSupportRecordHandler(req: Request, res: Response) {
   const { member_id, team_nhan_ho_tro_id, period_id, noi_dung, ngay_ho_tro, nguoi_xac_nhan } = req.body ?? {};
   const memberId = Number(member_id);
-  if (!getMember(memberId)) {
+  const member = await getMember(memberId);
+  if (!member) {
     return res.status(400).json({ error: "Trường 'member_id' không hợp lệ" });
   }
   const teamNhanHoTroId = Number(team_nhan_ho_tro_id);
-  if (!getTeam(teamNhanHoTroId)) {
+  const teamNhan = await getTeam(teamNhanHoTroId);
+  if (!teamNhan) {
     return res.status(400).json({ error: "Trường 'team_nhan_ho_tro_id' không hợp lệ" });
   }
   const periodId = Number(period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const record = createSupportRecord({
+  const record = await createSupportRecord({
     period_id: periodId,
     member_id: memberId,
     team_nhan_ho_tro_id: teamNhanHoTroId,
@@ -42,22 +46,29 @@ export async function createSupportRecordHandler(req: Request, res: Response) {
 // GET /api/support-records?period_id=X — danh sách theo tháng đang lọc.
 export async function listSupportRecordsHandler(req: Request, res: Response) {
   const periodId = Number(req.query.period_id);
-  if (!getPeriod(periodId)) {
+  const period = await getPeriod(periodId);
+  if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(listSupportRecords(periodId));
+  res.json(await listSupportRecords(periodId));
 }
 
 export async function updateSupportRecordHandler(req: Request, res: Response) {
   const { member_id, team_nhan_ho_tro_id, noi_dung, ngay_ho_tro, nguoi_xac_nhan } = req.body ?? {};
-  if (member_id !== undefined && !getMember(Number(member_id))) {
-    return res.status(400).json({ error: "Trường 'member_id' không hợp lệ" });
+  if (member_id !== undefined) {
+    const member = await getMember(Number(member_id));
+    if (!member) {
+      return res.status(400).json({ error: "Trường 'member_id' không hợp lệ" });
+    }
   }
-  if (team_nhan_ho_tro_id !== undefined && !getTeam(Number(team_nhan_ho_tro_id))) {
-    return res.status(400).json({ error: "Trường 'team_nhan_ho_tro_id' không hợp lệ" });
+  if (team_nhan_ho_tro_id !== undefined) {
+    const team = await getTeam(Number(team_nhan_ho_tro_id));
+    if (!team) {
+      return res.status(400).json({ error: "Trường 'team_nhan_ho_tro_id' không hợp lệ" });
+    }
   }
 
-  const record = updateSupportRecord(Number(req.params.id), {
+  const record = await updateSupportRecord(Number(req.params.id), {
     member_id: member_id !== undefined ? Number(member_id) : undefined,
     team_nhan_ho_tro_id: team_nhan_ho_tro_id !== undefined ? Number(team_nhan_ho_tro_id) : undefined,
     noi_dung,
@@ -69,7 +80,9 @@ export async function updateSupportRecordHandler(req: Request, res: Response) {
 }
 
 export async function deleteSupportRecordHandler(req: Request, res: Response) {
-  const ok = deleteSupportRecord(Number(req.params.id));
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const ok = await deleteSupportRecord(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

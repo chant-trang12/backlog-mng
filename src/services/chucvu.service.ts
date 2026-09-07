@@ -1,33 +1,43 @@
 import { db } from "../db/database.js";
 import type { ChucVuOption, CreateChucVuInput, UpdateChucVuInput } from "../types/cskh.js";
 
-export function listChucVu(): ChucVuOption[] {
-  return db.prepare(`SELECT * FROM chuc_vu_options ORDER BY thu_tu ASC, id ASC`).all() as ChucVuOption[];
+export async function listChucVu(): Promise<ChucVuOption[]> {
+  const rows = await db("chuc_vu_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
+  return rows as ChucVuOption[];
 }
 
-export function getChucVu(id: number): ChucVuOption | undefined {
-  return db.prepare(`SELECT * FROM chuc_vu_options WHERE id = ?`).get(id) as ChucVuOption | undefined;
+export async function getChucVu(id: number): Promise<ChucVuOption | undefined> {
+  const row = await db("chuc_vu_options").where({ id }).first();
+  return row as ChucVuOption | undefined;
 }
 
-export function createChucVu(input: CreateChucVuInput): ChucVuOption {
-  const maxRow = db.prepare(`SELECT COALESCE(MAX(thu_tu), -1) AS max_thu_tu FROM chuc_vu_options`).get() as {
-    max_thu_tu: number;
-  };
-  return db
-    .prepare(`INSERT INTO chuc_vu_options (ten_chuc_vu, thu_tu) VALUES (?, ?) RETURNING *`)
-    .get(input.ten_chuc_vu.trim(), maxRow.max_thu_tu + 1) as ChucVuOption;
+export async function createChucVu(input: CreateChucVuInput): Promise<ChucVuOption> {
+  const maxRow = await db("chuc_vu_options").max({ max_thu_tu: "thu_tu" }).first();
+  const maxThuTu = maxRow && (maxRow as any).max_thu_tu !== null && (maxRow as any).max_thu_tu !== undefined
+    ? Number((maxRow as any).max_thu_tu)
+    : -1;
+  const [created] = await db("chuc_vu_options")
+    .insert({
+      ten_chuc_vu: input.ten_chuc_vu.trim(),
+      thu_tu: maxThuTu + 1,
+    })
+    .returning("*");
+  return created as ChucVuOption;
 }
 
-export function updateChucVu(id: number, input: UpdateChucVuInput): ChucVuOption | undefined {
-  const existing = getChucVu(id);
+export async function updateChucVu(id: number, input: UpdateChucVuInput): Promise<ChucVuOption | undefined> {
+  const existing = await getChucVu(id);
   if (!existing) return undefined;
   const tenChucVu = input.ten_chuc_vu?.trim() ?? existing.ten_chuc_vu;
-  const thuTu = input.thu_tu ?? existing.thu_tu;
-  return db
-    .prepare(`UPDATE chuc_vu_options SET ten_chuc_vu = ?, thu_tu = ? WHERE id = ? RETURNING *`)
-    .get(tenChucVu, thuTu, id) as ChucVuOption;
+  const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
+  const [updated] = await db("chuc_vu_options")
+    .where({ id })
+    .update({ ten_chuc_vu: tenChucVu, thu_tu: thuTu })
+    .returning("*");
+  return updated as ChucVuOption;
 }
 
-export function deleteChucVu(id: number): boolean {
-  return db.prepare(`DELETE FROM chuc_vu_options WHERE id = ?`).run(id).changes > 0;
+export async function deleteChucVu(id: number): Promise<boolean> {
+  const count = await db("chuc_vu_options").where({ id }).delete();
+  return count > 0;
 }
