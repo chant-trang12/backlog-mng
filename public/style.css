@@ -855,8 +855,8 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
 
 /* ===================== Responsive (tablet / mobile) ===================== */
 
-/* Nhóm bộ lọc Trạng thái + Tag — luôn cùng dòng trên desktop, cho phép xuống
-   dòng trên màn hình hẹp để không tràn ngang. */
+/* Nhóm bộ lọc Team + Trạng thái + Tag — luôn cùng dòng trên desktop, cho phép
+   xuống dòng trên màn hình hẹp để không tràn ngang. */
 .filter-inline-group {
   display: flex;
   flex-wrap: nowrap;
@@ -897,7 +897,7 @@ dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
 
-  /* Bộ lọc Trạng thái + Tag xuống dòng thay vì tràn ngang màn hình nhỏ. */
+  /* Bộ lọc Team + Trạng thái + Tag xuống dòng thay vì tràn ngang màn hình nhỏ. */
   .filter-inline-group { flex-wrap: wrap; }
 
   /* Tab (Home / Team & Nhân sự) xuống dòng khi chữ dài vượt bề ngang. */
