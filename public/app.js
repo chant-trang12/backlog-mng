@@ -368,6 +368,13 @@ async function api(path, options) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
+  if (res.status === 401) {
+    const body = await res.json().catch(() => ({}));
+    if (body.loginUrl) {
+      window.location.href = body.loginUrl;
+      return null;
+    }
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Lỗi ${res.status}`);
@@ -4056,9 +4063,34 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
   });
 });
 
-// ---- Init ----
+// ---- Init & Auth ----
+
+async function checkAuth() {
+  try {
+    const res = await fetch("/auth/me");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.ssoEnabled) {
+      if (!data.authenticated) {
+        window.location.href = "/auth/login";
+        return;
+      }
+      const sidebarUser = document.getElementById("sidebar-user");
+      const userName = document.getElementById("user-name");
+      const userEmail = document.getElementById("user-email");
+      if (sidebarUser && data.user) {
+        sidebarUser.style.display = "flex";
+        if (userName) userName.textContent = data.user.name || data.user.username;
+        if (userEmail) userEmail.textContent = data.user.email || data.user.username;
+      }
+    }
+  } catch (err) {
+    console.warn("Auth check error:", err);
+  }
+}
 
 (function init() {
+  checkAuth();
   const now = today();
   el.newYear.value = now.getFullYear();
   el.newMonth.value = now.getMonth() + 1;

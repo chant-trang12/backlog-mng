@@ -70,6 +70,60 @@ h1 { margin: 0 0 4px; font-size: 1.3rem; }
   flex-direction: column;
   gap: 2px;
   padding: 8px;
+  flex: 1;
+}
+
+.sidebar-user {
+  padding: 12px 14px;
+  margin: 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-user .user-avatar {
+  font-size: 1.2rem;
+}
+
+.sidebar-user .user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-user .user-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user .user-email {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user .btn-logout {
+  display: inline-block;
+  color: var(--delete);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+  padding-top: 4px;
+}
+
+.sidebar-user .btn-logout:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .nav-item {
