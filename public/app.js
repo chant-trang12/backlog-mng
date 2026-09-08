@@ -93,14 +93,10 @@ const el = {
   warningChipUpcoming: document.getElementById("warning-chip-upcoming"),
   warningCountUpcoming: document.getElementById("warning-count-upcoming"),
   taskSelectAll: document.getElementById("task-select-all"),
-  moveNextMonthBtn: document.getElementById("move-next-month-btn"),
+  bulkActions: document.getElementById("bulk-actions"),
+  bulkActionsBtn: document.getElementById("bulk-actions-btn"),
+  bulkActionsMenu: document.getElementById("bulk-actions-menu"),
   selectedTaskCount: document.getElementById("selected-task-count"),
-  markNoScoreBtn: document.getElementById("mark-no-score-btn"),
-  selectedTaskCount2: document.getElementById("selected-task-count-2"),
-  unmarkNoScoreBtn: document.getElementById("unmark-no-score-btn"),
-  selectedTaskCount4: document.getElementById("selected-task-count-4"),
-  markTonBtn: document.getElementById("mark-ton-btn"),
-  selectedTaskCount3: document.getElementById("selected-task-count-3"),
   taskTbody: document.getElementById("task-tbody"),
   emptyState: document.getElementById("empty-state"),
   taskDialog: document.getElementById("task-dialog"),
@@ -1272,24 +1268,91 @@ function renderTasks() {
 function updateTaskSelectionUI() {
   const visible = state.tasks;
   const visibleSelectedCount = visible.filter((t) => state.selectedTaskIds.has(t.id)).length;
-  const hasAlreadyMovedSelected = state.tasksAll.some(
-    (t) => state.selectedTaskIds.has(t.id) && t.da_chuyen_thang,
-  );
-  el.moveNextMonthBtn.hidden = state.selectedTaskIds.size === 0;
-  el.moveNextMonthBtn.disabled = hasAlreadyMovedSelected;
-  el.moveNextMonthBtn.title = hasAlreadyMovedSelected
-    ? "Trong lựa chọn có task đã được chuyển sang tháng sau — bỏ chọn task đó để tiếp tục."
-    : "";
-  el.selectedTaskCount.textContent = String(state.selectedTaskIds.size);
-  el.markNoScoreBtn.hidden = state.selectedTaskIds.size === 0;
-  el.selectedTaskCount2.textContent = String(state.selectedTaskIds.size);
-  el.unmarkNoScoreBtn.hidden = state.selectedTaskIds.size === 0;
-  el.selectedTaskCount4.textContent = String(state.selectedTaskIds.size);
-  el.markTonBtn.hidden = state.selectedTaskIds.size === 0;
-  el.selectedTaskCount3.textContent = String(state.selectedTaskIds.size);
+  const count = state.selectedTaskIds.size;
+
+  el.bulkActions.hidden = count === 0;
+  el.selectedTaskCount.textContent = String(count);
+  if (count === 0) closeBulkMenu();
+  else updateBulkMenuItems();
+
   el.taskSelectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
   el.taskSelectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
 }
+
+function selectedTasks() {
+  return state.tasksAll.filter((t) => state.selectedTaskIds.has(t.id));
+}
+
+function taskHasTinhChatTon(t) {
+  return (t.tinh_chat ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .includes("Nhiệm vụ tồn");
+}
+
+// Ẩn/khóa các mục menu không áp dụng cho lựa chọn hiện tại — chỉ hiện thao
+// tác có ý nghĩa để menu gọn và không gây nhầm.
+function updateBulkMenuItems() {
+  const sel = selectedTasks();
+  const anyMoved = sel.some((t) => t.da_chuyen_thang);
+  const allNoScore = sel.length > 0 && sel.every((t) => t.khong_tinh_diem);
+  const anyNoScore = sel.some((t) => t.khong_tinh_diem);
+  const allTon = sel.length > 0 && sel.every(taskHasTinhChatTon);
+
+  const setItem = (action, { hidden = false, disabled = false, title = "" }) => {
+    const item = el.bulkActionsMenu.querySelector(`[data-bulk-action="${action}"]`);
+    if (!item) return;
+    item.hidden = hidden;
+    item.disabled = disabled;
+    item.title = title;
+  };
+
+  setItem("move", {
+    disabled: anyMoved,
+    title: anyMoved
+      ? "Trong lựa chọn có task đã được chuyển sang tháng sau — bỏ chọn task đó để tiếp tục."
+      : "",
+  });
+  setItem("ton", { hidden: allTon });
+  setItem("no-score", { hidden: allNoScore });
+  setItem("unmark-no-score", { hidden: !anyNoScore });
+}
+
+function openBulkMenu() {
+  updateBulkMenuItems();
+  el.bulkActionsMenu.hidden = false;
+  el.bulkActionsBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeBulkMenu() {
+  el.bulkActionsMenu.hidden = true;
+  el.bulkActionsBtn.setAttribute("aria-expanded", "false");
+}
+
+el.bulkActionsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (el.bulkActionsMenu.hidden) openBulkMenu();
+  else closeBulkMenu();
+});
+
+document.addEventListener("click", (e) => {
+  if (!el.bulkActions.hidden && !el.bulkActions.contains(e.target)) closeBulkMenu();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeBulkMenu();
+});
+
+el.bulkActionsMenu.addEventListener("click", async (e) => {
+  const item = e.target.closest("[data-bulk-action]");
+  if (!item || item.disabled) return;
+  closeBulkMenu();
+  const action = item.dataset.bulkAction;
+  if (action === "move") await doMoveTasksToNextMonth();
+  else if (action === "ton") await doMarkTasksTon();
+  else if (action === "no-score") await doMarkTasksNoScore();
+  else if (action === "unmark-no-score") await doUnmarkTasksNoScore();
+});
 
 el.taskSelectAll.addEventListener("change", (e) => {
   if (e.target.checked) {
@@ -1300,7 +1363,7 @@ el.taskSelectAll.addEventListener("change", (e) => {
   renderTasks();
 });
 
-el.moveNextMonthBtn.addEventListener("click", async () => {
+async function doMoveTasksToNextMonth() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (
@@ -1323,9 +1386,9 @@ el.moveNextMonthBtn.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message);
   }
-});
+}
 
-el.markNoScoreBtn.addEventListener("click", async () => {
+async function doMarkTasksNoScore() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (!confirm(`Đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`)) return;
@@ -1340,9 +1403,9 @@ el.markNoScoreBtn.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message);
   }
-});
+}
 
-el.unmarkNoScoreBtn.addEventListener("click", async () => {
+async function doUnmarkTasksNoScore() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (!confirm(`Bỏ đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`)) return;
@@ -1357,9 +1420,9 @@ el.unmarkNoScoreBtn.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message);
   }
-});
+}
 
-el.markTonBtn.addEventListener("click", async () => {
+async function doMarkTasksTon() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (
@@ -1380,7 +1443,7 @@ el.markTonBtn.addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message);
   }
-});
+}
 
 // ---- Task dialog (create / update — dùng chung cho nhập mới và cập nhật tiến độ) ----
 

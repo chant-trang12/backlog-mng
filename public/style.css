@@ -252,6 +252,45 @@ button.btn-move-month { background: var(--primary); border-color: var(--primary)
 button.btn-move-month:hover { background: var(--primary-hover); }
 button.btn-move-month:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 
+/* Cụm "Thao tác với N task đã chọn" — 1 nút mở menu xổ xuống, gom các thao
+   tác hàng loạt thay vì bày hết ra thanh công cụ. */
+.bulk-actions { position: relative; display: inline-block; }
+.bulk-actions[hidden] { display: none; }
+#bulk-actions-btn { display: inline-flex; align-items: center; gap: 6px; }
+#bulk-actions-btn .caret { font-size: 0.7em; line-height: 1; }
+
+.bulk-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  min-width: 240px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(56, 66, 43, 0.18);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.bulk-menu[hidden] { display: none; }
+
+.bulk-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.bulk-menu-item:hover:not(:disabled) { background: var(--bg); }
+.bulk-menu-item:disabled { color: var(--muted); cursor: not-allowed; }
+.bulk-menu-item[hidden] { display: none; }
+
 /* Banner cảnh báo ở trang Backlog — chưa chấm điểm / quá hạn / sắp đến hạn. */
 .task-warnings-row {
   display: flex;
