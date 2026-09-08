@@ -70,6 +70,9 @@ const el = {
   filterTrangThai: document.getElementById("filter-trang-thai"),
   filterTag: document.getElementById("filter-tag"),
   addMemberBtn: document.getElementById("add-member-btn"),
+  downloadMemberTemplateBtn: document.getElementById("download-member-template-btn"),
+  importMembersBtn: document.getElementById("import-members-btn"),
+  memberFileInput: document.getElementById("member-file-input"),
   memberTbody: document.getElementById("member-tbody"),
   memberSearch: document.getElementById("member-search"),
   memberEmpty: document.getElementById("member-empty"),
@@ -1066,6 +1069,56 @@ el.addMemberBtn.addEventListener("click", () => {
 });
 
 el.memberCancelBtn.addEventListener("click", () => el.memberDialog.close());
+
+el.downloadMemberTemplateBtn.addEventListener("click", () => {
+  window.location.href = "/api/members/import-template";
+});
+
+el.importMembersBtn.addEventListener("click", () => {
+  if (!state.currentPeriodId) {
+    showToast("Hãy chọn một tháng backlog trước.");
+    return;
+  }
+  el.memberFileInput.click();
+});
+
+el.memberFileInput.addEventListener("change", async () => {
+  const file = el.memberFileInput.files[0];
+  el.memberFileInput.value = "";
+  if (!file) return;
+  try {
+    const buffer = await file.arrayBuffer();
+    const res = await fetch(`/api/members/import?period_id=${state.currentPeriodId}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Lỗi ${res.status}`);
+    }
+    const result = await res.json();
+    await loadTeams();
+    await loadMembers();
+
+    let msg = `Đã nhập ${result.imported} nhân sự.`;
+    if (result.teamsCreated?.length) {
+      msg += ` Tạo mới ${result.teamsCreated.length} team: ${result.teamsCreated.join(", ")}.`;
+    }
+    if (result.skipped?.length) {
+      const detail = result.skipped
+        .slice(0, 5)
+        .map((s) => `dòng ${s.row}${s.name ? ` (${s.name})` : ""}: ${s.reason}`)
+        .join("; ");
+      const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+      showToast(`${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`, "error");
+    } else {
+      showToast(msg, "success");
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 el.memberForm.addEventListener("submit", async (e) => {
   e.preventDefault();

@@ -386,9 +386,13 @@
               <h2 style="margin:0">Nhân sự</h2>
               <div class="row">
                 <button id="delete-selected-members-btn" class="danger" hidden>Xóa đã chọn (<span id="selected-member-count">0</span>)</button>
+                <button id="download-member-template-btn" class="btn-export">⬇ File mẫu</button>
+                <input type="file" id="member-file-input" accept=".xlsx,.xls" hidden />
+                <button id="import-members-btn" class="btn-export">⬆ Nhập Excel</button>
                 <button id="add-member-btn" class="primary">+ Thêm nhân sự</button>
               </div>
             </div>
+            <p class="muted" style="margin:12px 0">Nhập Excel để thêm nhanh nhiều nhân sự vào tháng đang chọn — file mẫu gồm 3 cột <strong>Họ và Tên</strong> (bắt buộc), <strong>Chức vụ</strong>, <strong>Team</strong>. Chỉ thêm mới, không xóa nhân sự sẵn có; Team chưa có sẽ được tạo tự động.</p>
             <div class="row" style="margin-bottom:12px;align-items:center">
               <label for="member-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="member-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
