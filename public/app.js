@@ -1290,8 +1290,8 @@ function taskHasTinhChatTon(t) {
     .includes("Nhiệm vụ tồn");
 }
 
-// Ẩn/khóa các mục menu không áp dụng cho lựa chọn hiện tại — chỉ hiện thao
-// tác có ý nghĩa để menu gọn và không gây nhầm.
+// Luôn liệt kê đủ 4 thao tác cho menu ổn định, dễ đoán; chỉ khóa (disabled)
+// kèm tooltip khi thao tác không áp dụng cho lựa chọn hiện tại.
 function updateBulkMenuItems() {
   const sel = selectedTasks();
   const anyMoved = sel.some((t) => t.da_chuyen_thang);
@@ -1299,10 +1299,9 @@ function updateBulkMenuItems() {
   const anyNoScore = sel.some((t) => t.khong_tinh_diem);
   const allTon = sel.length > 0 && sel.every(taskHasTinhChatTon);
 
-  const setItem = (action, { hidden = false, disabled = false, title = "" }) => {
+  const setItem = (action, { disabled = false, title = "" }) => {
     const item = el.bulkActionsMenu.querySelector(`[data-bulk-action="${action}"]`);
     if (!item) return;
-    item.hidden = hidden;
     item.disabled = disabled;
     item.title = title;
   };
@@ -1313,9 +1312,18 @@ function updateBulkMenuItems() {
       ? "Trong lựa chọn có task đã được chuyển sang tháng sau — bỏ chọn task đó để tiếp tục."
       : "",
   });
-  setItem("ton", { hidden: allTon });
-  setItem("no-score", { hidden: allNoScore });
-  setItem("unmark-no-score", { hidden: !anyNoScore });
+  setItem("ton", {
+    disabled: allTon,
+    title: allTon ? 'Mọi task đã chọn đều đã có "Nhiệm vụ tồn".' : "",
+  });
+  setItem("no-score", {
+    disabled: allNoScore,
+    title: allNoScore ? 'Mọi task đã chọn đều đã "Không tính điểm".' : "",
+  });
+  setItem("unmark-no-score", {
+    disabled: !anyNoScore,
+    title: !anyNoScore ? 'Không task nào đang "Không tính điểm".' : "",
+  });
 }
 
 function openBulkMenu() {
