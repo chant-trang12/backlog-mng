@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
+import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
+
+// Dựng buffer .xlsx từ tiêu đề + các dòng dữ liệu, để test route import.
+async function xlsxBuffer(headers: string[], rows: (string | undefined)[][]): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const sheet = wb.addWorksheet("Sheet1");
+  sheet.addRow(headers);
+  rows.forEach((r) => sheet.addRow(r));
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
 
 async function makePeriod(app: ReturnType<typeof createApp>, year: number, month: number) {
   const res = await request(app).post("/api/periods").send({ year, month });
@@ -97,6 +107,82 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
   it("rejects delete-selected with an empty ids array", async () => {
     const app = createApp();
     const res = await request(app).post("/api/members/delete-selected").send({ ids: [] });
+    expect(res.status).toBe(400);
+  });
+
+  it("serves an .xlsx import template", async () => {
+    const app = createApp();
+    const res = await request(app).get("/api/members/import-template").buffer(true);
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("spreadsheetml");
+    expect(res.headers["content-disposition"]).toContain(".xlsx");
+    expect(Number(res.headers["content-length"])).toBeGreaterThan(0);
+  });
+
+  it("imports members from an Excel file: creates missing teams, skips rows without a name/team, is additive", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2053, 5);
+    await makeTeam(app, "CRM", periodId);
+
+    const buf = await xlsxBuffer(
+      ["Họ và Tên", "Chức vụ", "Team"],
+      [
+        ["Nguyễn Văn A", "Trưởng nhóm", "CRM"], // team đã có
+        ["Trần Thị B", "", "CSKH"], // team mới -> tự tạo
+        ["", "Nhân viên", "CRM"], // thiếu tên -> bỏ qua
+        ["Lê Văn C", "Nhân viên", ""], // thiếu team -> bỏ qua
+      ],
+    );
+
+    const res = await request(app)
+      .post(`/api/members/import?period_id=${periodId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(2);
+    expect(res.body.teamsCreated).toEqual(["CSKH"]);
+    expect(res.body.skipped).toHaveLength(2);
+    expect(res.body.skipped.map((s: { reason: string }) => s.reason).sort()).toEqual([
+      "Thiếu Họ và Tên",
+      "Thiếu Team",
+    ]);
+
+    const list = await request(app).get(`/api/members?period_id=${periodId}`);
+    const a = list.body.find((m: { name: string }) => m.name === "Nguyễn Văn A");
+    expect(a.chuc_vu).toBe("Trưởng nhóm");
+    expect(a.team_name).toBe("CRM");
+    expect(list.body.some((m: { name: string }) => m.name === "Trần Thị B")).toBe(true);
+
+    // Nhập lại: idempotent theo (period, team, name) — không nhân đôi.
+    const res2 = await request(app)
+      .post(`/api/members/import?period_id=${periodId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res2.status).toBe(201);
+    const listAfter = await request(app).get(`/api/members?period_id=${periodId}`);
+    expect(listAfter.body.filter((m: { name: string }) => m.name === "Nguyễn Văn A")).toHaveLength(1);
+  });
+
+  it("rejects an import file missing the Họ và Tên column", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2053, 6);
+    const buf = await xlsxBuffer(["Tên đầy đủ", "Team"], [["X", "CRM"]]);
+    const res = await request(app)
+      .post(`/api/members/import?period_id=${periodId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Họ và Tên");
+  });
+
+  it("rejects an import with an invalid period_id", async () => {
+    const app = createApp();
+    const buf = await xlsxBuffer(["Họ và Tên", "Team"], [["X", "CRM"]]);
+    const res = await request(app)
+      .post(`/api/members/import?period_id=999999`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
     expect(res.status).toBe(400);
   });
 
