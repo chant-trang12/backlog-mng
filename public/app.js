@@ -94,6 +94,8 @@ const el = {
   selectedTaskCount: document.getElementById("selected-task-count"),
   markNoScoreBtn: document.getElementById("mark-no-score-btn"),
   selectedTaskCount2: document.getElementById("selected-task-count-2"),
+  markTonBtn: document.getElementById("mark-ton-btn"),
+  selectedTaskCount3: document.getElementById("selected-task-count-3"),
   taskTbody: document.getElementById("task-tbody"),
   emptyState: document.getElementById("empty-state"),
   taskDialog: document.getElementById("task-dialog"),
@@ -1226,6 +1228,8 @@ function updateTaskSelectionUI() {
   el.selectedTaskCount.textContent = String(state.selectedTaskIds.size);
   el.markNoScoreBtn.hidden = state.selectedTaskIds.size === 0;
   el.selectedTaskCount2.textContent = String(state.selectedTaskIds.size);
+  el.markTonBtn.hidden = state.selectedTaskIds.size === 0;
+  el.selectedTaskCount3.textContent = String(state.selectedTaskIds.size);
   el.taskSelectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
   el.taskSelectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
 }
@@ -1276,6 +1280,29 @@ el.markNoScoreBtn.addEventListener("click", async () => {
     state.selectedTaskIds.clear();
     await loadTasks();
     showToast(`Đã đánh dấu "Không tính điểm" cho ${ids.length} task.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+el.markTonBtn.addEventListener("click", async () => {
+  const ids = [...state.selectedTaskIds];
+  if (ids.length === 0) return;
+  if (
+    !confirm(
+      `Đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task đã chọn? Task sẽ được gắn Tính chất "Nhiệm vụ tồn" và Không tính điểm.`,
+    )
+  ) {
+    return;
+  }
+  try {
+    await api("/api/tasks/mark-ton", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedTaskIds.clear();
+    await loadTasks();
+    showToast(`Đã đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task.`, "success");
   } catch (err) {
     showToast(err.message);
   }

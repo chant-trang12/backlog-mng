@@ -207,6 +207,48 @@ describe("Backlog CRUD", () => {
     expect(res.status).toBe(400);
   });
 
+  it("marks selected tasks as Nhiệm vụ tồn: adds to Tính chất and sets Không tính điểm", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2043, month: 6 });
+    const periodId = period.body.id;
+
+    // t1 đã có sẵn 1 giá trị Tính chất -> "Nhiệm vụ tồn" được thêm vào, không ghi đè.
+    const t1 = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Tồn task A", tinh_chat: "NVKH" });
+    const t2 = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Tồn task B" });
+
+    const mark = await request(app)
+      .post("/api/tasks/mark-ton")
+      .send({ ids: [t1.body.id, t2.body.id] });
+    expect(mark.status).toBe(200);
+    expect(mark.body.updated).toHaveLength(2);
+
+    const list = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const a = list.body.find((t: { id: number }) => t.id === t1.body.id);
+    expect(a.tinh_chat).toBe("NVKH, Nhiệm vụ tồn");
+    expect(a.khong_tinh_diem).toBe("Không tính điểm");
+
+    const b = list.body.find((t: { id: number }) => t.id === t2.body.id);
+    expect(b.tinh_chat).toBe("Nhiệm vụ tồn");
+    expect(b.khong_tinh_diem).toBe("Không tính điểm");
+
+    // Đánh dấu lần 2 không nhân đôi "Nhiệm vụ tồn".
+    await request(app).post("/api/tasks/mark-ton").send({ ids: [t1.body.id] });
+    const list2 = await request(app).get(`/api/periods/${periodId}/tasks`);
+    expect(list2.body.find((t: { id: number }) => t.id === t1.body.id).tinh_chat).toBe(
+      "NVKH, Nhiệm vụ tồn",
+    );
+  });
+
+  it("rejects mark-ton with an empty ids array", async () => {
+    const app = createApp();
+    const res = await request(app).post("/api/tasks/mark-ton").send({ ids: [] });
+    expect(res.status).toBe(400);
+  });
+
   it("rolls over December to January of the next year", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2035, month: 12 });

@@ -5,6 +5,7 @@ import {
   getTask,
   listTasks,
   markTasksNoScore,
+  markTasksTon,
   moveTasksToNextMonth,
   updateTask,
 } from "../services/task.service.js";
@@ -86,6 +87,17 @@ export async function markTasksNoScoreHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
   const updated = await markTasksNoScore(ids.map((id: unknown) => Number(id)));
+  res.json({ updated });
+}
+
+// Đánh dấu "Nhiệm vụ tồn" cho các task đã chọn — thêm "Nhiệm vụ tồn" vào cột
+// Tính chất và đánh dấu Không tính điểm (không chuyển sang tháng sau).
+export async function markTasksTonHandler(req: Request, res: Response) {
+  const { ids } = req.body ?? {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
+  }
+  const updated = await markTasksTon(ids.map((id: unknown) => Number(id)));
   res.json({ updated });
 }
 
