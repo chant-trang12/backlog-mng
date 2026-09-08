@@ -97,6 +97,8 @@ const el = {
   selectedTaskCount: document.getElementById("selected-task-count"),
   markNoScoreBtn: document.getElementById("mark-no-score-btn"),
   selectedTaskCount2: document.getElementById("selected-task-count-2"),
+  unmarkNoScoreBtn: document.getElementById("unmark-no-score-btn"),
+  selectedTaskCount4: document.getElementById("selected-task-count-4"),
   markTonBtn: document.getElementById("mark-ton-btn"),
   selectedTaskCount3: document.getElementById("selected-task-count-3"),
   taskTbody: document.getElementById("task-tbody"),
@@ -1281,6 +1283,8 @@ function updateTaskSelectionUI() {
   el.selectedTaskCount.textContent = String(state.selectedTaskIds.size);
   el.markNoScoreBtn.hidden = state.selectedTaskIds.size === 0;
   el.selectedTaskCount2.textContent = String(state.selectedTaskIds.size);
+  el.unmarkNoScoreBtn.hidden = state.selectedTaskIds.size === 0;
+  el.selectedTaskCount4.textContent = String(state.selectedTaskIds.size);
   el.markTonBtn.hidden = state.selectedTaskIds.size === 0;
   el.selectedTaskCount3.textContent = String(state.selectedTaskIds.size);
   el.taskSelectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
@@ -1333,6 +1337,23 @@ el.markNoScoreBtn.addEventListener("click", async () => {
     state.selectedTaskIds.clear();
     await loadTasks();
     showToast(`Đã đánh dấu "Không tính điểm" cho ${ids.length} task.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+el.unmarkNoScoreBtn.addEventListener("click", async () => {
+  const ids = [...state.selectedTaskIds];
+  if (ids.length === 0) return;
+  if (!confirm(`Bỏ đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`)) return;
+  try {
+    await api("/api/tasks/unmark-no-score", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedTaskIds.clear();
+    await loadTasks();
+    showToast(`Đã bỏ đánh dấu "Không tính điểm" cho ${ids.length} task.`, "success");
   } catch (err) {
     showToast(err.message);
   }

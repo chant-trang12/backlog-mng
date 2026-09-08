@@ -207,6 +207,41 @@ describe("Backlog CRUD", () => {
     expect(res.status).toBe(400);
   });
 
+  it("unmarks Không tính điểm for selected tasks without touching Tính chất", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2044, month: 7 });
+    const periodId = period.body.id;
+
+    const t1 = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Unmark A", tinh_chat: "NVKH" });
+    const t2 = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Unmark B" });
+
+    await request(app)
+      .post("/api/tasks/mark-no-score")
+      .send({ ids: [t1.body.id, t2.body.id] });
+
+    const unmark = await request(app)
+      .post("/api/tasks/unmark-no-score")
+      .send({ ids: [t1.body.id, t2.body.id] });
+    expect(unmark.status).toBe(200);
+    expect(unmark.body.updated).toHaveLength(2);
+    expect(unmark.body.updated[0].khong_tinh_diem).toBeNull();
+
+    const list = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const a = list.body.find((t: { id: number }) => t.id === t1.body.id);
+    expect(a.khong_tinh_diem).toBeNull();
+    expect(a.tinh_chat).toBe("NVKH"); // Tính chất giữ nguyên
+  });
+
+  it("rejects unmark-no-score with an empty ids array", async () => {
+    const app = createApp();
+    const res = await request(app).post("/api/tasks/unmark-no-score").send({ ids: [] });
+    expect(res.status).toBe(400);
+  });
+
   it("marks selected tasks as Nhiệm vụ tồn: adds to Tính chất and sets Không tính điểm", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2043, month: 6 });

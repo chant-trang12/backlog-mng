@@ -183,6 +183,18 @@ export async function markTasksNoScore(taskIds: number[]): Promise<Task[]> {
   return updated as Task[];
 }
 
+// Bỏ đánh dấu "Không tính điểm" cho các task đã chọn — xóa giá trị ở cột
+// Tính chất, không đụng tới "Nhiệm vụ tồn" hay trạng thái. Lưu ý: nếu task
+// đang ở trạng thái Hủy, lần cập nhật task sau đó sẽ tự gắn lại.
+export async function unmarkTasksNoScore(taskIds: number[]): Promise<Task[]> {
+  if (taskIds.length === 0) return [];
+  const updated = await db("tasks")
+    .whereIn("id", taskIds)
+    .update({ khong_tinh_diem: null, updated_at: db.fn.now() })
+    .returning("*");
+  return updated as Task[];
+}
+
 // Đánh dấu "Nhiệm vụ tồn" cho các task đã chọn (không chuyển tháng): thêm
 // "Nhiệm vụ tồn" vào cột Tính chất và đồng thời đánh dấu Không tính điểm.
 export async function markTasksTon(taskIds: number[]): Promise<Task[]> {
