@@ -656,9 +656,11 @@ th {
 #compliance-table th,
 #training-table th,
 #support-table th,
-#danhgia-table th {
+#danhgia-table th,
+#roadmap-table th {
   text-align: center;
 }
+#roadmap-table td { vertical-align: top; }
 
 #incident-table td:nth-child(1), /* Tháng */
 #incident-table td:nth-child(2), /* Team */

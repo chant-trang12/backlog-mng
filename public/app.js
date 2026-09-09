@@ -3880,21 +3880,32 @@ async function loadRoadmap() {
   renderRoadmap();
 }
 
+function heThongColorClass(value) {
+  const i = state.heThongOptions.findIndex((h) => h.ten_he_thong === value);
+  return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+}
+function mucTieuColorClass(value) {
+  const i = state.mucTieuOptions.findIndex((m) => m.ten_muc_tieu === value);
+  return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+}
+
 function renderRoadmap() {
   el.roadmapEmpty.hidden = state.roadmapItems.length > 0;
   const nl2br = (s) => (s ?? "").replace(/\n/g, "<br>");
+  const badge = (value, attrs) =>
+    value ? `<span ${attrs}>${value}</span>` : "";
   el.roadmapTbody.innerHTML = state.roadmapItems
     .map((it, i) => {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
       return `<tr data-id="${it.id}">
       <td style="text-align:center">${i + 1}</td>
-      <td>${it.team ?? ""}</td>
-      <td>${it.he_thong ?? ""}</td>
-      <td>${it.muc_tieu ?? ""}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${mucTieuColorClass(it.muc_tieu)}"`)}</td>
       <td>${nl2br(it.nhiem_vu)}</td>
       <td>${nl2br(it.dod)}</td>
       <td>${nl2br(it.dieu_kien_dam_bao)}</td>
-      <td>${it.phan_loai ?? ""}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, phanLoaiBadgeAttrs(it.phan_loai))}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_bat_dau)}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_ket_thuc)}</td>
       <td style="text-align:center">${quyFromDate(it.thoi_gian_ket_thuc)}</td>
