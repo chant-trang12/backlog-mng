@@ -484,7 +484,7 @@ function renderDeptSwitcher() {
       )
       .join("") +
     `<div class="dept-panel-sep"></div>` +
-    `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1">
+    `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1" title="Quản lý phòng ban">
       <span class="dept-mono" style="background:var(--border);color:var(--muted)">⚙</span>
       <span class="dept-option-name">Quản lý phòng ban…</span>
     </button>`;
@@ -495,7 +495,10 @@ function renderDeptSwitcher() {
     btn.addEventListener("mouseenter", () => showDeptTip(btn, deptFullLabel(dept)));
     btn.addEventListener("mouseleave", hideDeptTip);
   });
-  el.deptPanel.querySelector("[data-dept-manage]").addEventListener("click", () => {
+  const manageBtn = el.deptPanel.querySelector("[data-dept-manage]");
+  manageBtn.addEventListener("mouseenter", () => showDeptTip(manageBtn, "Quản lý phòng ban"));
+  manageBtn.addEventListener("mouseleave", hideDeptTip);
+  manageBtn.addEventListener("click", () => {
     closeDeptPanel();
     document.querySelector('.nav-item[data-page="config"]')?.click();
     document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
@@ -3653,8 +3656,8 @@ function renderDepartmentConfig(allTeams) {
       (d, i) => `
     <tr data-id="${d.id}">
       <td style="text-align:center">${i + 1}</td>
-      <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" style="width:100%;text-align:left" /></td>
-      <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" style="width:100%" /></td>
+      <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" title="${d.name}" style="width:100%;text-align:left" /></td>
+      <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" title="${d.code ?? ""}" style="width:100%" /></td>
       <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
       <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
     </tr>`,
@@ -3672,6 +3675,11 @@ function renderDepartmentConfig(allTeams) {
     }
   };
 
+  el.departmentConfigTbody.querySelectorAll(".dept-name-input, .dept-code-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      input.title = input.value;
+    });
+  });
   el.departmentConfigTbody.querySelectorAll(".dept-name-input").forEach((input) => {
     input.addEventListener("change", () => {
       const value = input.value.trim();
