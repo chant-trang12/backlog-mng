@@ -56,6 +56,7 @@ const el = {
   deptTriggerMono: document.getElementById("dept-trigger-mono"),
   deptTriggerName: document.getElementById("dept-trigger-name"),
   deptPanel: document.getElementById("dept-panel"),
+  deptTip: document.getElementById("dept-tip"),
   periodSelect: document.getElementById("period-select"),
   teamPeriodSelect: document.getElementById("team-period-select"),
   homeFilterPeriod: document.getElementById("home-filter-period"),
@@ -436,12 +437,25 @@ async function loadDepartments() {
   renderDeptSwitcher();
 }
 
-// Tên phòng (kèm mã) dùng cho tooltip title — đọc đủ chữ khi tên bị cắt "…".
+// Tên phòng (kèm mã) — hiện đầy đủ ở tooltip khi tên trong panel bị cắt "…".
 function deptFullLabel(d) {
   return d.code ? `${d.name} (${d.code})` : d.name;
 }
-function escAttr(s) {
-  return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+// Tooltip đọc đủ tên: hiện ngay khi rê chuột vào 1 dòng có tên bị cắt.
+function showDeptTip(optionEl, text) {
+  const nameEl = optionEl.querySelector(".dept-option-name");
+  if (nameEl && nameEl.scrollWidth <= nameEl.clientWidth) return; // không bị cắt -> khỏi cần
+  const s = el.deptSwitcher.getBoundingClientRect();
+  const o = optionEl.getBoundingClientRect();
+  el.deptTip.textContent = text;
+  el.deptTip.style.top = `${o.top - s.top}px`;
+  el.deptTip.hidden = false;
+  requestAnimationFrame(() => el.deptTip.classList.add("show"));
+}
+function hideDeptTip() {
+  el.deptTip.classList.remove("show");
+  el.deptTip.hidden = true;
 }
 
 function renderDeptSwitcher() {
@@ -462,7 +476,7 @@ function renderDeptSwitcher() {
     state.departments
       .map(
         (d) => `
-      <button type="button" class="dept-option${d.id === state.currentDepartmentId ? " active" : ""}" role="menuitem" data-dept-id="${d.id}" title="${escAttr(deptFullLabel(d))}">
+      <button type="button" class="dept-option${d.id === state.currentDepartmentId ? " active" : ""}" role="menuitem" data-dept-id="${d.id}">
         <span class="dept-mono" style="background:${deptColor(d)}">${deptMonogram(d)}</span>
         <span class="dept-option-name">${d.name}</span>
         <span class="dept-option-check">✓</span>
@@ -476,7 +490,10 @@ function renderDeptSwitcher() {
     </button>`;
 
   el.deptPanel.querySelectorAll("[data-dept-id]").forEach((btn) => {
+    const dept = state.departments.find((d) => d.id === Number(btn.dataset.deptId));
     btn.addEventListener("click", () => selectDepartment(Number(btn.dataset.deptId)));
+    btn.addEventListener("mouseenter", () => showDeptTip(btn, deptFullLabel(dept)));
+    btn.addEventListener("mouseleave", hideDeptTip);
   });
   el.deptPanel.querySelector("[data-dept-manage]").addEventListener("click", () => {
     closeDeptPanel();
@@ -492,6 +509,7 @@ function openDeptPanel() {
 function closeDeptPanel() {
   el.deptPanel.hidden = true;
   el.deptTrigger.setAttribute("aria-expanded", "false");
+  hideDeptTip();
 }
 
 el.deptTrigger.addEventListener("click", (e) => {
