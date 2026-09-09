@@ -516,13 +516,11 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 .year-stepper button:hover:not(:disabled),
 .year-stepper button:focus-visible:not(:disabled) {
-  background: var(--primary);
-  color: #fff;
+  color: var(--primary-hover);
   outline: none;
 }
 .year-stepper button:active:not(:disabled) {
-  background: var(--primary-hover);
-  color: #fff;
+  color: var(--maroon);
 }
 .year-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
 .year-stepper-value {
