@@ -63,6 +63,8 @@ const el = {
   deptTip: document.getElementById("dept-tip"),
   periodSelect: document.getElementById("period-select"),
   teamPeriodSelect: document.getElementById("team-period-select"),
+  configTeamPeriod: document.getElementById("config-team-period"),
+  configTeamDept: document.getElementById("config-team-dept"),
   homeFilterPeriod: document.getElementById("home-filter-period"),
   homeFilterTeam: document.getElementById("home-filter-team"),
   teamFilterTeam: document.getElementById("team-filter-team"),
@@ -652,6 +654,7 @@ async function loadPeriods() {
   const optionsHtml = state.periods.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
   el.periodSelect.innerHTML = optionsHtml;
   el.teamPeriodSelect.innerHTML = optionsHtml;
+  el.configTeamPeriod.innerHTML = optionsHtml;
 
   if (state.periods.length === 0) {
     state.currentPeriodId = null;
@@ -672,6 +675,7 @@ async function loadPeriods() {
   }
   el.periodSelect.value = String(state.currentPeriodId);
   el.teamPeriodSelect.value = String(state.currentPeriodId);
+  el.configTeamPeriod.value = String(state.currentPeriodId);
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -799,9 +803,15 @@ el.createPeriodBtn.addEventListener("click", async () => {
   }
 });
 
-el.periodSelect.addEventListener("change", async () => {
-  state.currentPeriodId = Number(el.periodSelect.value);
-  el.teamPeriodSelect.value = el.periodSelect.value;
+// Đổi tháng đang chọn — dùng chung cho 3 ô: "Chọn tháng" (Backlog), "Tháng"
+// (Team & Nhân sự) và "Đang khai báo cho tháng" (Cấu hình → Team). Đổi ở đâu
+// cũng đồng bộ cả ba và nạp lại toàn bộ dữ liệu theo tháng.
+async function switchPeriod(newId) {
+  state.currentPeriodId = Number(newId);
+  const v = String(state.currentPeriodId);
+  el.periodSelect.value = v;
+  el.teamPeriodSelect.value = v;
+  el.configTeamPeriod.value = v;
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -809,21 +819,11 @@ el.periodSelect.addEventListener("change", async () => {
   await loadSupportRecords();
   await loadDanhGiaRecords();
   await loadAttendanceRecords();
-});
+}
 
-// Bộ lọc "Tháng" ở trang Team & Nhân sự — dùng chung state.currentPeriodId
-// với "Chọn tháng" ở trang Backlog, đổi ở đâu cũng đồng bộ hai nơi.
-el.teamPeriodSelect.addEventListener("change", async () => {
-  state.currentPeriodId = Number(el.teamPeriodSelect.value);
-  el.periodSelect.value = el.teamPeriodSelect.value;
-  await loadTeams();
-  await loadMembers();
-  await loadComplianceRecords();
-  await loadTrainingRecords();
-  await loadSupportRecords();
-  await loadDanhGiaRecords();
-  await loadAttendanceRecords();
-});
+el.periodSelect.addEventListener("change", () => switchPeriod(el.periodSelect.value));
+el.teamPeriodSelect.addEventListener("change", () => switchPeriod(el.teamPeriodSelect.value));
+el.configTeamPeriod.addEventListener("change", () => switchPeriod(el.configTeamPeriod.value));
 
 el.deletePeriodBtn.addEventListener("click", async () => {
   if (!state.currentPeriodId) {
@@ -914,6 +914,9 @@ el.teamForm.addEventListener("submit", async (e) => {
 // click "×" để xóa team.
 function renderTeamList() {
   el.teamEmpty.hidden = state.teams.length > 0;
+  if (state.currentPeriodId != null) el.configTeamPeriod.value = String(state.currentPeriodId);
+  const dept = state.departments.find((d) => d.id === state.currentDepartmentId);
+  el.configTeamDept.textContent = dept ? dept.name : "—";
   el.teamList.innerHTML = state.teams
     .map(
       (t) =>

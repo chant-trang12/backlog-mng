@@ -1019,7 +1019,17 @@
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Team</h2>
               </div>
-              <p class="muted" style="margin:12px 0">Team của <strong>tháng đang chọn</strong> (ở Backlog) và <strong>phòng ban đang chọn</strong>. Tháng mới kế thừa danh sách từ tháng gần nhất; xóa team sẽ xóa nhân sự của team đó.</p>
+              <p class="muted" style="margin:12px 0">Team khai báo <strong>theo từng tháng</strong> — mỗi tháng có danh sách riêng, số lượng có thể khác nhau. Tháng mới kế thừa từ tháng gần nhất; xóa team sẽ xóa nhân sự của team đó.</p>
+              <div class="row" style="align-items:flex-end;gap:16px;margin-bottom:4px">
+                <div>
+                  <label for="config-team-period">Đang khai báo cho tháng</label>
+                  <select id="config-team-period"></select>
+                </div>
+                <div>
+                  <label style="margin:0">Phòng ban</label>
+                  <div id="config-team-dept" style="font-weight:700;padding:8px 0">—</div>
+                </div>
+              </div>
               <form id="team-form" class="row" style="align-items:flex-end">
                 <div style="flex:1">
                   <label for="new-team-name">Khai báo team mới</label>
