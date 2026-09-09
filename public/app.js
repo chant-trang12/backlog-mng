@@ -187,7 +187,9 @@ const el = {
   addMucTieuBtn: document.getElementById("add-muctieu-btn"),
   mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
   mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
-  roadmapYearSelect: document.getElementById("roadmap-year"),
+  roadmapYearValue: document.getElementById("roadmap-year-value"),
+  roadmapYearPrev: document.getElementById("roadmap-year-prev"),
+  roadmapYearNext: document.getElementById("roadmap-year-next"),
   addRoadmapBtn: document.getElementById("add-roadmap-btn"),
   roadmapTbody: document.getElementById("roadmap-tbody"),
   roadmapEmpty: document.getElementById("roadmap-empty"),
@@ -3848,18 +3850,25 @@ function quyFromDate(dateStr) {
   return `Quý ${Math.ceil(m / 3)}/${dateStr.slice(0, 4)}`;
 }
 
-function populateRoadmapYearOptions() {
-  const cur = new Date().getFullYear();
-  const usedYears = state.roadmapItems.map((it) => it.year);
-  const years = [...new Set([cur - 1, cur, cur + 1, cur + 2, state.roadmapYear, ...usedYears])].sort(
-    (a, b) => a - b,
-  );
-  el.roadmapYearSelect.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
-  el.roadmapYearSelect.value = String(state.roadmapYear);
+const ROADMAP_YEAR_MIN = 2015;
+const ROADMAP_YEAR_MAX = new Date().getFullYear() + 10;
+
+function renderRoadmapYear() {
+  el.roadmapYearValue.textContent = String(state.roadmapYear);
+  el.roadmapYearPrev.disabled = state.roadmapYear <= ROADMAP_YEAR_MIN;
+  el.roadmapYearNext.disabled = state.roadmapYear >= ROADMAP_YEAR_MAX;
+}
+
+function stepRoadmapYear(delta) {
+  const next = state.roadmapYear + delta;
+  if (next < ROADMAP_YEAR_MIN || next > ROADMAP_YEAR_MAX) return;
+  state.roadmapYear = next;
+  renderRoadmapYear();
+  loadRoadmap().catch((err) => showToast(err.message));
 }
 
 async function loadRoadmap() {
-  populateRoadmapYearOptions();
+  renderRoadmapYear();
   if (state.currentDepartmentId == null) {
     state.roadmapItems = [];
     renderRoadmap();
@@ -3868,7 +3877,6 @@ async function loadRoadmap() {
   state.roadmapItems = await api(
     `/api/roadmap-items?year=${state.roadmapYear}&department_id=${state.currentDepartmentId}`,
   );
-  populateRoadmapYearOptions();
   renderRoadmap();
 }
 
@@ -3968,10 +3976,8 @@ el.addRoadmapBtn.addEventListener("click", () => {
   openRoadmapDialog(null);
 });
 el.roadmapCancelBtn.addEventListener("click", () => el.roadmapDialog.close());
-el.roadmapYearSelect.addEventListener("change", () => {
-  state.roadmapYear = Number(el.roadmapYearSelect.value);
-  loadRoadmap().catch((err) => showToast(err.message));
-});
+el.roadmapYearPrev.addEventListener("click", () => stepRoadmapYear(-1));
+el.roadmapYearNext.addEventListener("click", () => stepRoadmapYear(1));
 
 el.roadmapForm.addEventListener("submit", async (e) => {
   e.preventDefault();

@@ -827,11 +827,12 @@
         <div id="page-roadmap" hidden>
           <section class="card">
             <div class="row" style="justify-content:space-between">
-              <div class="row" style="align-items:center">
+              <div class="row" style="align-items:center;gap:14px">
                 <h2 style="margin:0">Roadmap năm</h2>
-                <div>
-                  <label for="roadmap-year" style="margin:0">Năm</label>
-                  <select id="roadmap-year"></select>
+                <div class="year-stepper" role="group" aria-label="Chọn năm">
+                  <button type="button" id="roadmap-year-prev" aria-label="Năm trước">‹</button>
+                  <span class="year-stepper-value" id="roadmap-year-value">—</span>
+                  <button type="button" id="roadmap-year-next" aria-label="Năm sau">›</button>
                 </div>
               </div>
               <button id="add-roadmap-btn" class="primary">+ Thêm dòng roadmap</button>

@@ -491,6 +491,35 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 .actions-cell button.small + button.small { margin-left: 0; }
 
+/* Bộ chọn năm (Roadmap) — pill viền gọn, 2 mũi tên tăng/giảm. */
+.year-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+.year-stepper button {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+.year-stepper button:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+.year-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+.year-stepper-value {
+  min-width: 56px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  padding: 0 4px;
+}
+
 .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .pill {
