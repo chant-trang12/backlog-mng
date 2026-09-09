@@ -616,6 +616,7 @@ th {
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
 
 #task-table th { text-align: center; }
+#task-table td { vertical-align: middle; }
 #task-table td:nth-child(1), /* checkbox */
 #task-table td:nth-child(2), /* STT */
 #task-table td:nth-child(3), /* Tag */
