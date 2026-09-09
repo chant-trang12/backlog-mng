@@ -21,6 +21,7 @@ import danhgiaRoutes from "./routes/danhgia.routes.js";
 import tieuchiRoutes from "./routes/tieuchi.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
+import roadmapRoutes from "./routes/roadmap.routes.js";
 import { requireAuth } from "./middleware/auth.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
@@ -96,6 +97,7 @@ export function createApp() {
   app.use("/api", tieuchiRoutes);
   app.use("/api", rankingRoutes);
   app.use("/api", catalogRoutes);
+  app.use("/api", roadmapRoutes);
 
   app.use(notFound);
   // Global error handler — must be last, after notFound

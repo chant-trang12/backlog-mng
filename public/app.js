@@ -29,6 +29,10 @@ const state = {
   phanLoaiOptions: [],
   nhomOptions: [],
   chucVuOptions: [],
+  heThongOptions: [],
+  mucTieuOptions: [],
+  roadmapItems: [],
+  roadmapYear: new Date().getFullYear(),
   homePeriodId: null, // Tháng đang xem ở trang Home — độc lập với period đang chọn ở Backlog/Team
   homeTeamFilter: "", // "" = tất cả team
   homeTeams: [],
@@ -177,6 +181,20 @@ const el = {
   addDepartmentBtn: document.getElementById("add-department-btn"),
   departmentConfigTbody: document.getElementById("department-config-tbody"),
   departmentConfigEmpty: document.getElementById("department-config-empty"),
+  addHeThongBtn: document.getElementById("add-hethong-btn"),
+  heThongConfigTbody: document.getElementById("hethong-config-tbody"),
+  heThongConfigEmpty: document.getElementById("hethong-config-empty"),
+  addMucTieuBtn: document.getElementById("add-muctieu-btn"),
+  mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
+  mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
+  roadmapYearSelect: document.getElementById("roadmap-year"),
+  addRoadmapBtn: document.getElementById("add-roadmap-btn"),
+  roadmapTbody: document.getElementById("roadmap-tbody"),
+  roadmapEmpty: document.getElementById("roadmap-empty"),
+  roadmapDialog: document.getElementById("roadmap-dialog"),
+  roadmapForm: document.getElementById("roadmap-form"),
+  roadmapDialogTitle: document.getElementById("roadmap-dialog-title"),
+  roadmapCancelBtn: document.getElementById("roadmap-cancel-btn"),
   chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
@@ -541,6 +559,7 @@ async function selectDepartment(id) {
   try {
     await loadTeams(); // kéo theo loadTasks()
     await loadMembers();
+    await loadRoadmap();
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -3726,6 +3745,7 @@ async function refreshAfterDeptChange() {
   try {
     await loadTeams();
     await loadMembers();
+    await loadRoadmap();
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -3739,6 +3759,247 @@ el.addDepartmentBtn.addEventListener("click", async () => {
     await api("/api/departments", { method: "POST", body: JSON.stringify({ name: name.trim() }) });
     await loadDepartmentConfig();
     showToast("Đã thêm phòng.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Cấu hình > Hệ thống / Mục tiêu (danh mục đơn, dùng ở Roadmap năm) ----
+
+function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload, label) {
+  if (!tbodyEl) return;
+  emptyEl.hidden = items.length > 0;
+  tbodyEl.innerHTML = items
+    .map(
+      (it) => `
+    <tr data-id="${it.id}">
+      <td><input class="inline-cell-input sc-name-input" data-id="${it.id}" value="${it[valueKey]}" style="width:100%;text-align:left" /></td>
+      <td><span class="pill-x sc-del-btn" data-id="${it.id}" title="Xóa">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  tbodyEl.querySelectorAll(".sc-name-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const value = input.value.trim();
+      if (!value) {
+        showToast(`Tên ${label} không được để trống.`);
+        input.value = items.find((x) => x.id === Number(input.dataset.id))?.[valueKey] ?? "";
+        return;
+      }
+      try {
+        await api(`${endpoint}/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ [valueKey]: value }),
+        });
+        await reload();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  tbodyEl.querySelectorAll(".sc-del-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm(`Xóa ${label} này? Các dòng roadmap đang dùng sẽ giữ giá trị cũ nhưng không còn khớp danh mục.`)) return;
+      try {
+        await api(`${endpoint}/${btn.dataset.id}`, { method: "DELETE" });
+        await reload();
+        showToast(`Đã xóa ${label}.`, "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+async function loadHeThong() {
+  state.heThongOptions = await api("/api/he-thong");
+  renderSimpleCatalog(el.heThongConfigTbody, el.heThongConfigEmpty, state.heThongOptions, "ten_he_thong", "/api/he-thong", loadHeThong, "hệ thống");
+}
+async function loadMucTieu() {
+  state.mucTieuOptions = await api("/api/muc-tieu");
+  renderSimpleCatalog(el.mucTieuConfigTbody, el.mucTieuConfigEmpty, state.mucTieuOptions, "ten_muc_tieu", "/api/muc-tieu", loadMucTieu, "mục tiêu");
+}
+
+el.addHeThongBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/he-thong", { method: "POST", body: JSON.stringify({ ten_he_thong: "Hệ thống mới" }) });
+    await loadHeThong();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+el.addMucTieuBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/muc-tieu", { method: "POST", body: JSON.stringify({ ten_muc_tieu: "Mục tiêu mới" }) });
+    await loadMucTieu();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Roadmap năm (theo phòng ban + năm) ----
+
+// 1 năm 4 quý, 3 tháng = 1 quý — suy ra từ Thời gian kết thúc.
+function quyFromDate(dateStr) {
+  if (!dateStr || dateStr.length < 7) return "";
+  const m = Number(dateStr.slice(5, 7));
+  if (!m) return "";
+  return `Quý ${Math.ceil(m / 3)}/${dateStr.slice(0, 4)}`;
+}
+
+function populateRoadmapYearOptions() {
+  const cur = new Date().getFullYear();
+  const usedYears = state.roadmapItems.map((it) => it.year);
+  const years = [...new Set([cur - 1, cur, cur + 1, cur + 2, state.roadmapYear, ...usedYears])].sort(
+    (a, b) => a - b,
+  );
+  el.roadmapYearSelect.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+  el.roadmapYearSelect.value = String(state.roadmapYear);
+}
+
+async function loadRoadmap() {
+  populateRoadmapYearOptions();
+  if (state.currentDepartmentId == null) {
+    state.roadmapItems = [];
+    renderRoadmap();
+    return;
+  }
+  state.roadmapItems = await api(
+    `/api/roadmap-items?year=${state.roadmapYear}&department_id=${state.currentDepartmentId}`,
+  );
+  populateRoadmapYearOptions();
+  renderRoadmap();
+}
+
+function renderRoadmap() {
+  el.roadmapEmpty.hidden = state.roadmapItems.length > 0;
+  const nl2br = (s) => (s ?? "").replace(/\n/g, "<br>");
+  el.roadmapTbody.innerHTML = state.roadmapItems
+    .map((it, i) => {
+      const sc = STATUS_CLASS[it.trang_thai] || "status-default";
+      return `<tr data-id="${it.id}">
+      <td style="text-align:center">${i + 1}</td>
+      <td>${it.team ?? ""}</td>
+      <td>${it.he_thong ?? ""}</td>
+      <td>${it.muc_tieu ?? ""}</td>
+      <td>${nl2br(it.nhiem_vu)}</td>
+      <td>${nl2br(it.dod)}</td>
+      <td>${nl2br(it.dieu_kien_dam_bao)}</td>
+      <td>${it.phan_loai ?? ""}</td>
+      <td style="text-align:center">${formatDateDisplay(it.thoi_gian_bat_dau)}</td>
+      <td style="text-align:center">${formatDateDisplay(it.thoi_gian_ket_thuc)}</td>
+      <td style="text-align:center">${quyFromDate(it.thoi_gian_ket_thuc)}</td>
+      <td style="text-align:center"><span class="status-badge ${sc}">${it.trang_thai}</span></td>
+      <td>${nl2br(it.ghi_chu)}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="small btn-edit rm-edit-btn" data-id="${it.id}">Sửa</button>
+          <button class="small btn-delete rm-del-btn" data-id="${it.id}">Xóa</button>
+        </div>
+      </td>
+    </tr>`;
+    })
+    .join("");
+
+  el.roadmapTbody.querySelectorAll(".rm-edit-btn").forEach((b) => {
+    b.addEventListener("click", () =>
+      openRoadmapDialog(state.roadmapItems.find((x) => x.id === Number(b.dataset.id))),
+    );
+  });
+  el.roadmapTbody.querySelectorAll(".rm-del-btn").forEach((b) => {
+    b.addEventListener("click", async () => {
+      if (!confirm("Xóa dòng roadmap này?")) return;
+      try {
+        await api(`/api/roadmap-items/${b.dataset.id}`, { method: "DELETE" });
+        await loadRoadmap();
+        showToast("Đã xóa dòng roadmap.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+function rmFillSelect(selectEl, values, current, placeholder) {
+  selectEl.innerHTML =
+    (placeholder ? `<option value="">${placeholder}</option>` : "") +
+    values.map((v) => `<option value="${v}">${v}</option>`).join("");
+  selectEl.value = current ?? "";
+}
+
+function openRoadmapDialog(item) {
+  el.roadmapForm.reset();
+  document.getElementById("rm-id").value = item?.id ?? "";
+  el.roadmapDialogTitle.textContent = item ? "Sửa dòng roadmap" : "Thêm dòng roadmap";
+  rmFillSelect(
+    document.getElementById("rm-team"),
+    state.teams.map((t) => t.name),
+    item?.team ?? state.currentTeam ?? state.teams[0]?.name ?? "",
+    null,
+  );
+  rmFillSelect(document.getElementById("rm-he-thong"), state.heThongOptions.map((h) => h.ten_he_thong), item?.he_thong, "— Không —");
+  rmFillSelect(document.getElementById("rm-muc-tieu"), state.mucTieuOptions.map((m) => m.ten_muc_tieu), item?.muc_tieu, "— Không —");
+  rmFillSelect(document.getElementById("rm-phan-loai"), state.phanLoaiOptions.map((p) => p.ten_phan_loai), item?.phan_loai, "— Không —");
+  document.getElementById("rm-nhiem-vu").value = item?.nhiem_vu ?? "";
+  document.getElementById("rm-dod").value = item?.dod ?? "";
+  document.getElementById("rm-dieu-kien").value = item?.dieu_kien_dam_bao ?? "";
+  document.getElementById("rm-bat-dau").value = formatDateInput(item?.thoi_gian_bat_dau);
+  document.getElementById("rm-ket-thuc").value = formatDateInput(item?.thoi_gian_ket_thuc);
+  document.getElementById("rm-trang-thai").value = item?.trang_thai ?? "Chưa thực hiện";
+  document.getElementById("rm-ghi-chu").value = item?.ghi_chu ?? "";
+  document.getElementById("rm-quy").value = quyFromDate(document.getElementById("rm-ket-thuc").value);
+  el.roadmapDialog.showModal();
+}
+
+document.getElementById("rm-ket-thuc").addEventListener("change", (e) => {
+  document.getElementById("rm-quy").value = quyFromDate(e.target.value);
+});
+
+el.addRoadmapBtn.addEventListener("click", () => {
+  if (state.currentDepartmentId == null) {
+    showToast("Chưa có phòng ban nào.");
+    return;
+  }
+  if (state.teams.length === 0) {
+    showToast("Phòng này chưa có team — hãy khai báo team trước.");
+    return;
+  }
+  openRoadmapDialog(null);
+});
+el.roadmapCancelBtn.addEventListener("click", () => el.roadmapDialog.close());
+el.roadmapYearSelect.addEventListener("change", () => {
+  state.roadmapYear = Number(el.roadmapYearSelect.value);
+  loadRoadmap().catch((err) => showToast(err.message));
+});
+
+el.roadmapForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("rm-id").value;
+  const payload = {
+    year: state.roadmapYear,
+    department_id: state.currentDepartmentId,
+    team: document.getElementById("rm-team").value,
+    he_thong: document.getElementById("rm-he-thong").value || undefined,
+    muc_tieu: document.getElementById("rm-muc-tieu").value || undefined,
+    phan_loai: document.getElementById("rm-phan-loai").value || undefined,
+    nhiem_vu: document.getElementById("rm-nhiem-vu").value.trim(),
+    dod: document.getElementById("rm-dod").value.trim() || undefined,
+    dieu_kien_dam_bao: document.getElementById("rm-dieu-kien").value.trim() || undefined,
+    thoi_gian_bat_dau: document.getElementById("rm-bat-dau").value || undefined,
+    thoi_gian_ket_thuc: document.getElementById("rm-ket-thuc").value || undefined,
+    trang_thai: document.getElementById("rm-trang-thai").value,
+    ghi_chu: document.getElementById("rm-ghi-chu").value.trim() || undefined,
+  };
+  try {
+    if (id) {
+      await api(`/api/roadmap-items/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      await api("/api/roadmap-items", { method: "POST", body: JSON.stringify(payload) });
+    }
+    el.roadmapDialog.close();
+    await loadRoadmap();
+    showToast(id ? "Đã cập nhật dòng roadmap." : "Đã thêm dòng roadmap.", "success");
   } catch (err) {
     showToast(err.message);
   }
@@ -4528,6 +4789,7 @@ const pages = {
   backlog: document.getElementById("page-backlog"),
   team: document.getElementById("page-team"),
   cskh: document.getElementById("page-cskh"),
+  roadmap: document.getElementById("page-roadmap"),
   config: document.getElementById("page-config"),
 };
 
@@ -4538,6 +4800,7 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     Object.entries(pages).forEach(([key, section]) => {
       section.hidden = key !== btn.dataset.page;
     });
+    if (btn.dataset.page === "roadmap") loadRoadmap().catch((err) => showToast(err.message));
   });
 });
 
@@ -4588,6 +4851,9 @@ async function checkAuth() {
         loadNhom(),
         loadChucVu(),
         loadDepartmentConfig(),
+        loadHeThong(),
+        loadMucTieu(),
+        loadRoadmap(),
       ]),
     )
     .catch((err) => showToast(err.message));

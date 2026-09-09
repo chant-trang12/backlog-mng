@@ -29,6 +29,7 @@
         <button class="nav-item" data-page="backlog">📋 Backlog</button>
         <button class="nav-item" data-page="team">👥 Team &amp; Nhân sự</button>
         <button class="nav-item" data-page="cskh">🎧 CSKH</button>
+        <button class="nav-item" data-page="roadmap">🗺️ Roadmap năm</button>
         <button class="nav-item" data-page="config">⚙️ Cấu hình</button>
       </nav>
       <div class="sidebar-user" id="sidebar-user" style="display: none;">
@@ -822,6 +823,47 @@
           </div>
         </div>
 
+        <!-- ---- Trang Roadmap năm ---- -->
+        <div id="page-roadmap" hidden>
+          <section class="card">
+            <div class="row" style="justify-content:space-between">
+              <div class="row" style="align-items:center">
+                <h2 style="margin:0">Roadmap năm</h2>
+                <div>
+                  <label for="roadmap-year" style="margin:0">Năm</label>
+                  <select id="roadmap-year"></select>
+                </div>
+              </div>
+              <button id="add-roadmap-btn" class="primary">+ Thêm dòng roadmap</button>
+            </div>
+            <p class="muted" style="margin:12px 0">Kế hoạch theo năm của phòng đang chọn. "Quý kết thúc" tự tính theo Thời gian kết thúc (3 tháng = 1 quý).</p>
+            <div class="table-wrap">
+              <table id="roadmap-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:44px">STT</th>
+                    <th style="min-width:110px">Team</th>
+                    <th style="min-width:120px">Hệ thống</th>
+                    <th style="min-width:130px">Mục tiêu</th>
+                    <th style="min-width:220px">Nhiệm vụ</th>
+                    <th style="min-width:200px">DOD</th>
+                    <th style="min-width:200px">Điều kiện đảm bảo</th>
+                    <th style="min-width:120px">Phân loại</th>
+                    <th style="min-width:120px">Bắt đầu</th>
+                    <th style="min-width:120px">Kết thúc</th>
+                    <th style="min-width:110px">Quý kết thúc</th>
+                    <th style="min-width:130px">Trạng thái</th>
+                    <th style="min-width:180px">Ghi chú</th>
+                    <th style="min-width:130px"></th>
+                  </tr>
+                </thead>
+                <tbody id="roadmap-tbody"></tbody>
+              </table>
+              <p class="muted" id="roadmap-empty" hidden style="padding:16px;text-align:center">Chưa có dòng roadmap nào cho năm này — bấm "+ Thêm dòng roadmap".</p>
+            </div>
+          </section>
+        </div>
+
         <!-- ---- Trang Cấu hình ---- -->
         <div id="page-config" hidden>
           <div class="tab-panel-group">
@@ -962,13 +1004,28 @@
                 <h2 style="margin:0">Hệ thống</h2>
                 <button id="add-hethong-btn" class="primary">+ Thêm hệ thống</button>
               </div>
-              <p class="muted" style="margin:12px 0">Danh sách Hệ thống dùng ở form nhập nhiệm vụ Backlog — chọn hệ thống liên quan khi tạo nhiệm vụ mới.</p>
+              <p class="muted" style="margin:12px 0">Danh sách Hệ thống (VD: Website, Nội bộ…) — dùng ở cột "Hệ thống" của Roadmap năm.</p>
               <div class="table-wrap">
                 <table id="hethong-config-table">
                   <thead><tr><th>Hệ thống</th><th style="width:56px"></th></tr></thead>
                   <tbody id="hethong-config-tbody"></tbody>
                 </table>
                 <p class="muted" id="hethong-config-empty" hidden style="padding:16px;text-align:center">Chưa có hệ thống nào — bấm "+ Thêm hệ thống" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Mục tiêu</h2>
+                <button id="add-muctieu-btn" class="primary">+ Thêm mục tiêu</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Mục tiêu (VD: Tính năng mới, Nâng cấp tính năng…) — dùng ở cột "Mục tiêu" của Roadmap năm.</p>
+              <div class="table-wrap">
+                <table id="muctieu-config-table">
+                  <thead><tr><th>Mục tiêu</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="muctieu-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="muctieu-config-empty" hidden style="padding:16px;text-align:center">Chưa có mục tiêu nào — bấm "+ Thêm mục tiêu" để bắt đầu.</p>
               </div>
             </section>
           </div>
@@ -1335,6 +1392,78 @@
       </div>
       <div class="actions">
         <button type="button" id="grade-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="roadmap-dialog">
+    <form id="roadmap-form">
+      <h2 id="roadmap-dialog-title" style="margin:0">Thêm dòng roadmap</h2>
+      <input type="hidden" id="rm-id" />
+      <div class="field-row">
+        <div>
+          <label for="rm-team">Team *</label>
+          <select id="rm-team" required></select>
+        </div>
+        <div>
+          <label for="rm-he-thong">Hệ thống</label>
+          <select id="rm-he-thong"></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="rm-muc-tieu">Mục tiêu</label>
+          <select id="rm-muc-tieu"></select>
+        </div>
+        <div>
+          <label for="rm-phan-loai">Phân loại</label>
+          <select id="rm-phan-loai"></select>
+        </div>
+      </div>
+      <div>
+        <label for="rm-nhiem-vu">Nhiệm vụ *</label>
+        <textarea id="rm-nhiem-vu" required></textarea>
+      </div>
+      <div>
+        <label for="rm-dod">DOD</label>
+        <textarea id="rm-dod"></textarea>
+      </div>
+      <div>
+        <label for="rm-dieu-kien">Điều kiện đảm bảo</label>
+        <textarea id="rm-dieu-kien"></textarea>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="rm-bat-dau">Thời gian bắt đầu</label>
+          <input id="rm-bat-dau" type="date" />
+        </div>
+        <div>
+          <label for="rm-ket-thuc">Thời gian kết thúc</label>
+          <input id="rm-ket-thuc" type="date" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="rm-quy">Quý kết thúc (tự tính)</label>
+          <input id="rm-quy" type="text" readonly />
+        </div>
+        <div>
+          <label for="rm-trang-thai">Trạng thái</label>
+          <select id="rm-trang-thai">
+            <option>Chưa thực hiện</option>
+            <option>Đang thực hiện</option>
+            <option>Hoàn thành</option>
+            <option>Hủy</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="rm-ghi-chu">Ghi chú</label>
+        <textarea id="rm-ghi-chu"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="roadmap-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
       </div>
     </form>

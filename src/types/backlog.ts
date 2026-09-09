@@ -115,3 +115,41 @@ export interface CreateTaskInput {
 // Cập nhật tiến độ: mọi trường đều optional, dùng chung cho cả sửa thông tin
 // task lẫn cập nhật tiến độ định kỳ (% hoàn thành, trạng thái, tiến độ, CPO...).
 export type UpdateTaskInput = Partial<CreateTaskInput>;
+
+// ---- Roadmap năm (theo department_id + year) ----
+export interface RoadmapItem {
+  id: number;
+  department_id: number | null;
+  year: number;
+  team: string;
+  he_thong: string | null;
+  muc_tieu: string | null;
+  nhiem_vu: string;
+  dod: string | null;
+  dieu_kien_dam_bao: string | null;
+  phan_loai: string | null;
+  thoi_gian_bat_dau: string | null;
+  thoi_gian_ket_thuc: string | null;
+  trang_thai: TaskStatus;
+  ghi_chu: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateRoadmapItemInput {
+  department_id?: number | null;
+  year: number;
+  team: string;
+  he_thong?: string;
+  muc_tieu?: string;
+  nhiem_vu: string;
+  dod?: string;
+  dieu_kien_dam_bao?: string;
+  phan_loai?: string;
+  thoi_gian_bat_dau?: string;
+  thoi_gian_ket_thuc?: string;
+  trang_thai?: TaskStatus;
+  ghi_chu?: string;
+}
+
+export type UpdateRoadmapItemInput = Partial<CreateRoadmapItemInput>;

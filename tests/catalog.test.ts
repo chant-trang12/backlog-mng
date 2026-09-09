@@ -129,4 +129,36 @@ describe("Cấu hình: Tag & Phân loại", () => {
     const res = await request(app).post("/api/chuc-vu").send({});
     expect(res.status).toBe(400);
   });
+
+  it("creates, lists, updates, and deletes a hệ thống option", async () => {
+    const app = createApp();
+    const created = await request(app).post("/api/he-thong").send({ ten_he_thong: "Test Hệ thống A" });
+    expect(created.status).toBe(201);
+    const list = await request(app).get("/api/he-thong");
+    expect(list.body.some((h: { id: number }) => h.id === created.body.id)).toBe(true);
+    const updated = await request(app)
+      .put(`/api/he-thong/${created.body.id}`)
+      .send({ ten_he_thong: "Test Hệ thống A (sửa)" });
+    expect(updated.body.ten_he_thong).toBe("Test Hệ thống A (sửa)");
+    expect((await request(app).delete(`/api/he-thong/${created.body.id}`)).status).toBe(204);
+  });
+
+  it("creates, lists, updates, and deletes a mục tiêu option", async () => {
+    const app = createApp();
+    const created = await request(app).post("/api/muc-tieu").send({ ten_muc_tieu: "Test Mục tiêu A" });
+    expect(created.status).toBe(201);
+    const list = await request(app).get("/api/muc-tieu");
+    expect(list.body.some((m: { id: number }) => m.id === created.body.id)).toBe(true);
+    const updated = await request(app)
+      .put(`/api/muc-tieu/${created.body.id}`)
+      .send({ ten_muc_tieu: "Test Mục tiêu A (sửa)" });
+    expect(updated.body.ten_muc_tieu).toBe("Test Mục tiêu A (sửa)");
+    expect((await request(app).delete(`/api/muc-tieu/${created.body.id}`)).status).toBe(204);
+  });
+
+  it("rejects hệ thống / mục tiêu missing name", async () => {
+    const app = createApp();
+    expect((await request(app).post("/api/he-thong").send({})).status).toBe(400);
+    expect((await request(app).post("/api/muc-tieu").send({})).status).toBe(400);
+  });
 });

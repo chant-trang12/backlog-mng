@@ -373,3 +373,33 @@ export interface UpdatePhanLoaiInput {
   ten_phan_loai?: string;
   thu_tu?: number;
 }
+
+// Danh mục Hệ thống (Website, Nội bộ...) — dùng ở Roadmap năm.
+export interface HeThongOption {
+  id: number;
+  ten_he_thong: string;
+  thu_tu: number;
+  created_at: string;
+}
+export interface CreateHeThongInput {
+  ten_he_thong: string;
+}
+export interface UpdateHeThongInput {
+  ten_he_thong?: string;
+  thu_tu?: number;
+}
+
+// Danh mục Mục tiêu (Tính năng mới, Nâng cấp tính năng...) — dùng ở Roadmap năm.
+export interface MucTieuOption {
+  id: number;
+  ten_muc_tieu: string;
+  thu_tu: number;
+  created_at: string;
+}
+export interface CreateMucTieuInput {
+  ten_muc_tieu: string;
+}
+export interface UpdateMucTieuInput {
+  ten_muc_tieu?: string;
+  thu_tu?: number;
+}

@@ -13,6 +13,18 @@ import {
   listChucVuHandler,
   updateChucVuHandler,
 } from "../controllers/chucvu.controller.js";
+import {
+  createHeThongHandler,
+  deleteHeThongHandler,
+  listHeThongHandler,
+  updateHeThongHandler,
+} from "../controllers/hethong.controller.js";
+import {
+  createMucTieuHandler,
+  deleteMucTieuHandler,
+  listMucTieuHandler,
+  updateMucTieuHandler,
+} from "../controllers/muctieu.controller.js";
 
 const router = Router();
 
@@ -35,5 +47,15 @@ router.get("/chuc-vu", listChucVuHandler);
 router.post("/chuc-vu", createChucVuHandler);
 router.put("/chuc-vu/:id", updateChucVuHandler);
 router.delete("/chuc-vu/:id", deleteChucVuHandler);
+
+router.get("/he-thong", listHeThongHandler);
+router.post("/he-thong", createHeThongHandler);
+router.put("/he-thong/:id", updateHeThongHandler);
+router.delete("/he-thong/:id", deleteHeThongHandler);
+
+router.get("/muc-tieu", listMucTieuHandler);
+router.post("/muc-tieu", createMucTieuHandler);
+router.put("/muc-tieu/:id", updateMucTieuHandler);
+router.delete("/muc-tieu/:id", deleteMucTieuHandler);
 
 export default router;
