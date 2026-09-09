@@ -491,33 +491,41 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 .actions-cell button.small + button.small { margin-left: 0; }
 
-/* Bộ chọn năm (Roadmap) — pill viền gọn, 2 mũi tên tăng/giảm. */
+/* Bộ chọn năm (Roadmap) — nổi bật: viền + mũi tên màu chủ đạo, số năm là
+   chip nền accent. */
 .year-stepper {
   display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border);
+  align-items: stretch;
+  border: 2px solid var(--primary);
   border-radius: 999px;
   background: var(--card-bg);
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(122, 148, 99, 0.25);
 }
 .year-stepper button {
   border: none;
   background: transparent;
-  padding: 6px 12px;
-  font-size: 1rem;
+  padding: 6px 14px;
+  font-size: 1.1rem;
+  font-weight: 800;
   line-height: 1;
-  color: var(--muted);
+  color: var(--primary);
   cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.year-stepper button:hover:not(:disabled) { background: var(--bg); color: var(--text); }
-.year-stepper button:disabled { opacity: 0.35; cursor: not-allowed; }
+.year-stepper button:hover:not(:disabled) { background: var(--primary); color: #fff; }
+.year-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
 .year-stepper-value {
-  min-width: 56px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text);
-  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 6px 8px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
 }
 
 .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
