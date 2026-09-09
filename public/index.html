@@ -371,22 +371,7 @@
                   </select>
                 </div>
               </div>
-            </section>
-
-            <section class="card row-split-wide">
-              <h2>Team</h2>
-              <p class="muted" style="margin:-4px 0 12px">Team và nhân sự khai báo theo từng tháng — tháng mới tạo sẽ kế thừa danh sách từ tháng gần nhất, thêm/xóa ở tháng nào chỉ ảnh hưởng tháng đó.</p>
-              <form id="team-form" class="row">
-                <div>
-                  <label for="new-team-name">Khai báo team mới</label>
-                  <input id="new-team-name" placeholder="VD: CRM, NVKH, NVPS..." />
-                </div>
-                <div style="align-self:flex-end">
-                  <button type="submit" class="primary">+ Thêm team</button>
-                </div>
-              </form>
-              <div class="pill-group" id="team-list" style="margin-top:12px"></div>
-              <p class="muted" id="team-empty" hidden style="margin:8px 0 0">Chưa có team nào — hãy khai báo team trước khi nhập task.</p>
+              <p class="muted" style="margin:12px 0 0">Khai báo team ở <strong>Cấu hình → Cấu hình → Team</strong>.</p>
             </section>
           </div>
 
@@ -1028,6 +1013,22 @@
                 </table>
                 <p class="muted" id="muctieu-config-empty" hidden style="padding:16px;text-align:center">Chưa có mục tiêu nào — bấm "+ Thêm mục tiêu" để bắt đầu.</p>
               </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Team</h2>
+              </div>
+              <p class="muted" style="margin:12px 0">Team của <strong>tháng đang chọn</strong> (ở Backlog) và <strong>phòng ban đang chọn</strong>. Tháng mới kế thừa danh sách từ tháng gần nhất; xóa team sẽ xóa nhân sự của team đó.</p>
+              <form id="team-form" class="row" style="align-items:flex-end">
+                <div style="flex:1">
+                  <label for="new-team-name">Khai báo team mới</label>
+                  <input id="new-team-name" placeholder="VD: CRM, NVKH, NVPS..." style="width:100%" />
+                </div>
+                <button type="submit" class="primary">+ Thêm team</button>
+              </form>
+              <div class="pill-group" id="team-list" style="margin-top:12px"></div>
+              <p class="muted" id="team-empty" hidden style="margin:8px 0 0">Chưa có team nào cho tháng + phòng này.</p>
             </section>
           </div>
           </div>

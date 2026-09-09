@@ -3768,14 +3768,19 @@ el.addDepartmentBtn.addEventListener("click", async () => {
 
 // ---- Cấu hình > Hệ thống / Mục tiêu (danh mục đơn, dùng ở Roadmap năm) ----
 
-function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload, label) {
+function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload, label, colorClassFn) {
   if (!tbodyEl) return;
   emptyEl.hidden = items.length > 0;
   tbodyEl.innerHTML = items
     .map(
       (it) => `
     <tr data-id="${it.id}">
-      <td><input class="inline-cell-input sc-name-input" data-id="${it.id}" value="${it[valueKey]}" style="width:100%;text-align:left" /></td>
+      <td>
+        <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
+          ${colorClassFn ? `<span class="status-badge ${colorClassFn(it[valueKey])}">&nbsp;</span>` : ""}
+          <input class="inline-cell-input sc-name-input" data-id="${it.id}" value="${it[valueKey]}" style="flex:1;text-align:left" />
+        </div>
+      </td>
       <td><span class="pill-x sc-del-btn" data-id="${it.id}" title="Xóa">×</span></td>
     </tr>`,
     )
@@ -3816,11 +3821,13 @@ function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload
 
 async function loadHeThong() {
   state.heThongOptions = await api("/api/he-thong");
-  renderSimpleCatalog(el.heThongConfigTbody, el.heThongConfigEmpty, state.heThongOptions, "ten_he_thong", "/api/he-thong", loadHeThong, "hệ thống");
+  renderSimpleCatalog(el.heThongConfigTbody, el.heThongConfigEmpty, state.heThongOptions, "ten_he_thong", "/api/he-thong", loadHeThong, "hệ thống", heThongColorClass);
+  renderRoadmap();
 }
 async function loadMucTieu() {
   state.mucTieuOptions = await api("/api/muc-tieu");
-  renderSimpleCatalog(el.mucTieuConfigTbody, el.mucTieuConfigEmpty, state.mucTieuOptions, "ten_muc_tieu", "/api/muc-tieu", loadMucTieu, "mục tiêu");
+  renderSimpleCatalog(el.mucTieuConfigTbody, el.mucTieuConfigEmpty, state.mucTieuOptions, "ten_muc_tieu", "/api/muc-tieu", loadMucTieu, "mục tiêu", mucTieuColorClass);
+  renderRoadmap();
 }
 
 el.addHeThongBtn.addEventListener("click", async () => {
