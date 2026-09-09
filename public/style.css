@@ -504,16 +504,26 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 .year-stepper button {
   border: none;
-  background: transparent;
-  padding: 6px 14px;
-  font-size: 1.1rem;
+  background: var(--card-bg);
+  padding: 6px 16px;
+  min-width: 40px;
+  font-size: 1.15rem;
   font-weight: 800;
   line-height: 1;
   color: var(--primary);
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.year-stepper button:hover:not(:disabled) { background: var(--primary); color: #fff; }
+.year-stepper button:hover:not(:disabled),
+.year-stepper button:focus-visible:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  outline: none;
+}
+.year-stepper button:active:not(:disabled) {
+  background: var(--primary-hover);
+  color: #fff;
+}
 .year-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
 .year-stepper-value {
   display: flex;
