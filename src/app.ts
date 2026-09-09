@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import departmentRoutes from "./routes/department.routes.js";
 import periodRoutes from "./routes/period.routes.js";
 import teamRoutes from "./routes/team.routes.js";
 import memberRoutes from "./routes/member.routes.js";
@@ -80,6 +81,7 @@ export function createApp() {
 
   // Protected API routes
   app.use("/api", requireAuth);
+  app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
   app.use("/api", memberRoutes);

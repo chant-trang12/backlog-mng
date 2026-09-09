@@ -41,7 +41,10 @@ export async function getMember(id: number): Promise<Member | undefined> {
 // "Đào tạo" và "Hỗ trợ" tính từ số lượng bản ghi tương ứng (training_records
 // / support_records), "Đánh giá" lấy Ranking (so_thu_tu) từ danh_gia_records
 // — tất cả map theo member_id của nhân sự đó trong đúng tháng đang xem.
-export async function listMembers(periodId: number): Promise<MemberWithTeam[]> {
+export async function listMembers(
+  periodId: number,
+  departmentId?: number | null,
+): Promise<MemberWithTeam[]> {
   const crSub = db("compliance_records")
     .select("member_id")
     .sum({ total_vi_pham: "vi_pham" })
@@ -68,13 +71,16 @@ export async function listMembers(periodId: number): Promise<MemberWithTeam[]> {
     .where("period_id", periodId)
     .as("dg");
 
-  const rows = await db("members")
+  const baseQuery = db("members")
     .join("teams", "teams.id", "members.team_id")
     .leftJoin(crSub, "cr.member_id", "members.id")
     .leftJoin(trSub, "tr.member_id", "members.id")
     .leftJoin(srSub, "sr.member_id", "members.id")
     .leftJoin(dgSub, "dg.member_id", "members.id")
-    .where("members.period_id", periodId)
+    .where("members.period_id", periodId);
+  if (departmentId != null) baseQuery.where("teams.department_id", departmentId);
+
+  const rows = await baseQuery
     .select(
       "members.id",
       "members.period_id",

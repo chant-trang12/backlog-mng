@@ -13,9 +13,18 @@ export interface CreatePeriodInput {
   label?: string;
 }
 
+export interface Department {
+  id: number;
+  name: string;
+  code: string | null;
+  thu_tu: number;
+  created_at: string;
+}
+
 export interface Team {
   id: number;
   name: string;
+  department_id: number | null;
   created_at: string;
 }
 
@@ -65,6 +74,7 @@ export type TaskStatus = "Chưa thực hiện" | "Đang thực hiện" | "Hoàn 
 export interface Task {
   id: number;
   period_id: number;
+  department_id: number | null;
   stt: number;
   tinh_chat: string | null;
   khong_tinh_diem: string | null;
@@ -86,6 +96,7 @@ export interface Task {
 }
 
 export interface CreateTaskInput {
+  department_id?: number;
   tinh_chat?: string;
   tag?: string;
   team: string;

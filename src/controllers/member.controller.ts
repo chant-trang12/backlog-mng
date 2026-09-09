@@ -55,7 +55,8 @@ export async function listMembersHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listMembers(periodId));
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  res.json(await listMembers(periodId, departmentId));
 }
 
 export async function updateMemberHandler(req: Request, res: Response) {
@@ -121,8 +122,10 @@ export async function importMembersHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "File vượt quá 20MB" });
   }
 
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+
   try {
-    const result = await importMembersFromWorkbook(periodId, buffer);
+    const result = await importMembersFromWorkbook(periodId, buffer, departmentId);
     res.status(201).json(result);
   } catch (err) {
     const message =

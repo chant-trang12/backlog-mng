@@ -25,6 +25,7 @@ export async function createTask(periodId: number, input: CreateTaskInput): Prom
   const [created] = await db("tasks")
     .insert({
       period_id: periodId,
+      department_id: input.department_id ?? null,
       stt,
       tinh_chat: input.tinh_chat ?? null,
       tag: input.tag ?? null,
@@ -46,10 +47,17 @@ export async function createTask(periodId: number, input: CreateTaskInput): Prom
   return created as Task;
 }
 
-export async function listTasks(filter: { period_id: number; team?: string }): Promise<Task[]> {
+export async function listTasks(filter: {
+  period_id: number;
+  team?: string;
+  department_id?: number | null;
+}): Promise<Task[]> {
   const query = db("tasks").where({ period_id: filter.period_id });
   if (filter.team) {
     query.where({ team: filter.team });
+  }
+  if (filter.department_id != null) {
+    query.where({ department_id: filter.department_id });
   }
   const rows = await query.orderBy("stt", "asc");
   return rows as Task[];
@@ -149,6 +157,7 @@ export async function moveTasksToNextMonth(
     const [clone] = await db("tasks")
       .insert({
         period_id: targetPeriod.id,
+        department_id: task.department_id ?? null,
         stt,
         tinh_chat: tinhChat,
         tag: task.tag,

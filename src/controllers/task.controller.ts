@@ -37,7 +37,8 @@ export async function listTasksHandler(req: Request, res: Response) {
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
   const team = typeof req.query.team === "string" ? req.query.team : undefined;
-  res.json(await listTasks({ period_id: periodId, team }));
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  res.json(await listTasks({ period_id: periodId, team, department_id: departmentId }));
 }
 
 export async function getTaskHandler(req: Request, res: Response) {

@@ -6,7 +6,7 @@ import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 // Khai báo team mới cho 1 tháng backlog (period_id) — chỉ hiển thị từ tháng
 // đó trở đi, không hiển thị ngược ở các tháng đã tạo trước đó.
 export async function createTeamHandler(req: Request, res: Response) {
-  const { name, period_id } = req.body ?? {};
+  const { name, period_id, department_id } = req.body ?? {};
   if (!isNonEmptyText(name)) {
     return res.status(400).json({ error: "Trường 'name' là bắt buộc" });
   }
@@ -15,8 +15,9 @@ export async function createTeamHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
+  const departmentId = department_id != null ? Number(department_id) : null;
 
-  const team = await createTeam(name, periodId);
+  const team = await createTeam(name, periodId, departmentId);
   res.status(201).json(team);
 }
 
@@ -27,7 +28,8 @@ export async function listTeamsHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listTeams(periodId));
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  res.json(await listTeams(periodId, departmentId));
 }
 
 export async function deleteTeamHandler(req: Request, res: Response) {

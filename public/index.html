@@ -11,7 +11,18 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h1>Backlog Manager</h1>
-        <p class="subtitle">Theo team, theo tháng</p>
+        <p class="subtitle">Theo phòng · team · tháng</p>
+        <div class="dept-switcher" id="dept-switcher">
+          <button type="button" class="dept-trigger" id="dept-trigger" aria-haspopup="true" aria-expanded="false">
+            <span class="dept-mono" id="dept-trigger-mono">--</span>
+            <span class="dept-trigger-text">
+              <span class="dept-trigger-label">Phòng ban</span>
+              <span class="dept-trigger-name" id="dept-trigger-name">—</span>
+            </span>
+            <span class="dept-trigger-chev" aria-hidden="true">⌄</span>
+          </button>
+          <div class="dept-panel" id="dept-panel" role="menu" hidden></div>
+        </div>
       </div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-page="home">🏠 Home</button>
@@ -818,7 +829,23 @@
             <span class="pill active" data-tab="tieuchi">Tiêu chí</span>
             <span class="pill" data-tab="ranking">Ranking team</span>
             <span class="pill" data-tab="tagphanloai">Cấu hình</span>
+            <span class="pill" data-tab="phongban">Phòng ban</span>
           </div>
+
+          <section class="card" id="config-tab-phongban" hidden>
+            <div class="row" style="justify-content:space-between">
+              <h2 style="margin:0">Phòng ban</h2>
+              <button id="add-department-btn" class="primary">+ Thêm phòng</button>
+            </div>
+            <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
+            <div class="table-wrap">
+              <table id="department-config-table">
+                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:140px"></th></tr></thead>
+                <tbody id="department-config-tbody"></tbody>
+              </table>
+              <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>
+            </div>
+          </section>
 
           <section class="card" id="config-tab-tieuchi">
             <div class="row" style="justify-content:space-between">

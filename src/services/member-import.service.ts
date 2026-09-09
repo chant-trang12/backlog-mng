@@ -70,6 +70,7 @@ export async function buildMemberImportTemplate(): Promise<ExcelJS.Buffer> {
 export async function importMembersFromWorkbook(
   periodId: number,
   buffer: Buffer,
+  departmentId?: number | null,
 ): Promise<ImportMembersResult> {
   let parsed: Awaited<ReturnType<typeof parseFirstSheet>>;
   try {
@@ -89,7 +90,7 @@ export async function importMembersFromWorkbook(
   const chucVuCol = pickColumn(headers, CHUC_VU_KEYS);
   const teamCol = pickColumn(headers, TEAM_KEYS);
 
-  const teams = await listTeams(periodId);
+  const teams = await listTeams(periodId, departmentId ?? null);
   const teamByName = new Map(teams.map((t) => [t.name.trim().toLowerCase(), t.id]));
   const teamsCreated: string[] = [];
 
@@ -113,7 +114,7 @@ export async function importMembersFromWorkbook(
 
     let teamId = teamByName.get(teamName.toLowerCase());
     if (!teamId) {
-      const team = await createTeam(teamName, periodId);
+      const team = await createTeam(teamName, periodId, departmentId ?? null);
       teamId = team.id;
       teamByName.set(teamName.toLowerCase(), teamId);
       teamsCreated.push(team.name);

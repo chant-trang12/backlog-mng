@@ -1,4 +1,6 @@
 const state = {
+  departments: [],
+  currentDepartmentId: null,
   periods: [],
   currentPeriodId: null,
   teams: [],
@@ -49,6 +51,11 @@ const state = {
 };
 
 const el = {
+  deptSwitcher: document.getElementById("dept-switcher"),
+  deptTrigger: document.getElementById("dept-trigger"),
+  deptTriggerMono: document.getElementById("dept-trigger-mono"),
+  deptTriggerName: document.getElementById("dept-trigger-name"),
+  deptPanel: document.getElementById("dept-panel"),
   periodSelect: document.getElementById("period-select"),
   teamPeriodSelect: document.getElementById("team-period-select"),
   homeFilterPeriod: document.getElementById("home-filter-period"),
@@ -166,6 +173,9 @@ const el = {
   nhomConfigEmpty: document.getElementById("nhom-config-empty"),
   addChucVuBtn: document.getElementById("add-chucvu-btn"),
   chucVuConfigTbody: document.getElementById("chucvu-config-tbody"),
+  addDepartmentBtn: document.getElementById("add-department-btn"),
+  departmentConfigTbody: document.getElementById("department-config-tbody"),
+  departmentConfigEmpty: document.getElementById("department-config-empty"),
   chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
@@ -389,6 +399,133 @@ async function api(path, options) {
   return res.json();
 }
 
+// ---- Phòng ban (department scoping) ----
+const DEPT_LS_KEY = "backlog.currentDepartmentId";
+
+// Trả về "&department_id=X" (hoặc "?..." tuỳ prefix) để nối vào URL API. Rỗng
+// khi chưa chọn phòng.
+function deptParam(prefix = "&") {
+  return state.currentDepartmentId != null
+    ? `${prefix}department_id=${state.currentDepartmentId}`
+    : "";
+}
+
+// Bảng màu monogram cho phòng — cùng họ với --team-bar-N của theme.
+const DEPT_COLORS = ["#7c9b5c", "#b3452f", "#c9a24c", "#546b41", "#4f8a7c", "#8a5a75"];
+
+function deptColor(dept) {
+  const i = Math.max(0, state.departments.findIndex((d) => d.id === dept.id));
+  return DEPT_COLORS[i % DEPT_COLORS.length];
+}
+
+function deptMonogram(dept) {
+  if (dept.code) return dept.code.trim().slice(0, 3).toUpperCase();
+  const words = dept.name.replace(/^Phòng\s+/i, "").trim().split(/\s+/);
+  const letters = words.length >= 2 ? words[0][0] + words[1][0] : dept.name.slice(0, 2);
+  return letters.toUpperCase();
+}
+
+async function loadDepartments() {
+  state.departments = await api("/api/departments");
+  let saved = null;
+  try {
+    saved = Number(localStorage.getItem(DEPT_LS_KEY));
+  } catch {}
+  const exists = state.departments.some((d) => d.id === saved);
+  state.currentDepartmentId = exists ? saved : state.departments[0]?.id ?? null;
+  renderDeptSwitcher();
+}
+
+// Tên phòng (kèm mã) dùng cho tooltip title — đọc đủ chữ khi tên bị cắt "…".
+function deptFullLabel(d) {
+  return d.code ? `${d.name} (${d.code})` : d.name;
+}
+function escAttr(s) {
+  return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+function renderDeptSwitcher() {
+  const current = state.departments.find((d) => d.id === state.currentDepartmentId);
+  if (current) {
+    el.deptTriggerMono.textContent = deptMonogram(current);
+    el.deptTriggerMono.style.background = deptColor(current);
+    el.deptTriggerName.textContent = current.name;
+    el.deptTrigger.title = deptFullLabel(current);
+  } else {
+    el.deptTriggerMono.textContent = "--";
+    el.deptTriggerName.textContent = "—";
+    el.deptTrigger.title = "";
+  }
+
+  el.deptPanel.innerHTML =
+    `<div class="dept-panel-title">Chuyển phòng ban</div>` +
+    state.departments
+      .map(
+        (d) => `
+      <button type="button" class="dept-option${d.id === state.currentDepartmentId ? " active" : ""}" role="menuitem" data-dept-id="${d.id}" title="${escAttr(deptFullLabel(d))}">
+        <span class="dept-mono" style="background:${deptColor(d)}">${deptMonogram(d)}</span>
+        <span class="dept-option-name">${d.name}</span>
+        <span class="dept-option-check">✓</span>
+      </button>`,
+      )
+      .join("") +
+    `<div class="dept-panel-sep"></div>` +
+    `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1">
+      <span class="dept-mono" style="background:var(--border);color:var(--muted)">⚙</span>
+      <span class="dept-option-name">Quản lý phòng ban…</span>
+    </button>`;
+
+  el.deptPanel.querySelectorAll("[data-dept-id]").forEach((btn) => {
+    btn.addEventListener("click", () => selectDepartment(Number(btn.dataset.deptId)));
+  });
+  el.deptPanel.querySelector("[data-dept-manage]").addEventListener("click", () => {
+    closeDeptPanel();
+    document.querySelector('.nav-item[data-page="config"]')?.click();
+    document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
+  });
+}
+
+function openDeptPanel() {
+  el.deptPanel.hidden = false;
+  el.deptTrigger.setAttribute("aria-expanded", "true");
+}
+function closeDeptPanel() {
+  el.deptPanel.hidden = true;
+  el.deptTrigger.setAttribute("aria-expanded", "false");
+}
+
+el.deptTrigger.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (el.deptPanel.hidden) openDeptPanel();
+  else closeDeptPanel();
+});
+document.addEventListener("click", (e) => {
+  if (!el.deptSwitcher.contains(e.target)) closeDeptPanel();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDeptPanel();
+});
+
+async function selectDepartment(id) {
+  closeDeptPanel();
+  if (id === state.currentDepartmentId) return;
+  state.currentDepartmentId = id;
+  try {
+    localStorage.setItem(DEPT_LS_KEY, String(id));
+  } catch {}
+  state.currentTeam = "";
+  state.currentTeamId = null;
+  state.memberFilterTeam = "";
+  renderDeptSwitcher();
+  try {
+    await loadTeams(); // kéo theo loadTasks()
+    await loadMembers();
+    syncHomeFromCurrentIfNeeded();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
 function formatDateInput(value) {
   return value ? value.slice(0, 10) : "";
 }
@@ -539,8 +676,8 @@ async function refreshHomeForPeriod(periodId) {
     state.homeDanhGiaRecords = state.danhGiaRecords;
   } else {
     const [teams, members, tasks, compliance, attendance, noiQuyOverrides, support, training, danhGia] = await Promise.all([
-      api(`/api/teams?period_id=${periodId}`),
-      api(`/api/members?period_id=${periodId}`),
+      api(`/api/teams?period_id=${periodId}${deptParam()}`),
+      api(`/api/members?period_id=${periodId}${deptParam()}`),
       api(`/api/periods/${periodId}/tasks`),
       api(`/api/compliance-records?period_id=${periodId}`),
       api(`/api/attendance-records?period_id=${periodId}`),
@@ -684,7 +821,7 @@ async function loadTeams() {
     await loadTasks();
     return;
   }
-  state.teams = await api(`/api/teams?period_id=${state.currentPeriodId}`);
+  state.teams = await api(`/api/teams?period_id=${state.currentPeriodId}${deptParam()}`);
 
   const stillExists = state.teams.find((t) => t.name === state.currentTeam);
   if (stillExists) {
@@ -720,7 +857,7 @@ el.teamForm.addEventListener("submit", async (e) => {
   try {
     await api("/api/teams", {
       method: "POST",
-      body: JSON.stringify({ name, period_id: state.currentPeriodId }),
+      body: JSON.stringify({ name, period_id: state.currentPeriodId, department_id: state.currentDepartmentId ?? undefined }),
     });
     el.newTeamName.value = "";
     await loadTeams();
@@ -867,7 +1004,7 @@ async function loadMembers() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.members = await api(`/api/members?period_id=${state.currentPeriodId}`);
+  state.members = await api(`/api/members?period_id=${state.currentPeriodId}${deptParam()}`);
   const memberIds = new Set(state.members.map((m) => m.id));
   state.selectedMemberIds.forEach((id) => {
     if (!memberIds.has(id)) state.selectedMemberIds.delete(id);
@@ -1086,7 +1223,7 @@ el.memberFileInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     const buffer = await file.arrayBuffer();
-    const res = await fetch(`/api/members/import?period_id=${state.currentPeriodId}`, {
+    const res = await fetch(`/api/members/import?period_id=${state.currentPeriodId}${deptParam()}`, {
       method: "POST",
       headers: { "Content-Type": file.type || "application/octet-stream" },
       body: buffer,
@@ -1156,7 +1293,7 @@ async function loadTasks() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.tasksAll = await api(`/api/periods/${state.currentPeriodId}/tasks`);
+  state.tasksAll = await api(`/api/periods/${state.currentPeriodId}/tasks?_=1${deptParam()}`);
   const taskIds = new Set(state.tasksAll.map((t) => t.id));
   state.selectedTaskIds.forEach((id) => {
     if (!taskIds.has(id)) state.selectedTaskIds.delete(id);
@@ -1543,7 +1680,7 @@ el.taskForm.addEventListener("submit", async (e) => {
     } else {
       await api(`/api/periods/${state.currentPeriodId}/tasks`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, department_id: state.currentDepartmentId ?? undefined }),
       });
       el.taskDialog.close();
       await loadTasks();
@@ -1626,9 +1763,10 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#config-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["tieuchi", "ranking", "tagphanloai"].forEach((tab) => {
+    ["tieuchi", "ranking", "tagphanloai", "phongban"].forEach((tab) => {
       document.getElementById(`config-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
+    if (pill.dataset.tab === "phongban") loadDepartmentConfig().catch((err) => showToast(err.message));
   });
 });
 
@@ -1822,7 +1960,7 @@ async function openComplianceDialog(record) {
   teamSelectEl.innerHTML = teamOptionsHtml();
 
   const membersForDialog = record
-    ? await api(`/api/members?period_id=${record.period_id}`)
+    ? await api(`/api/members?period_id=${record.period_id}${deptParam()}`)
     : state.members;
 
   function refreshMemberOptions() {
@@ -1959,7 +2097,7 @@ async function openTrainingDialog(record) {
   teamSelectEl.innerHTML = teamOptionsHtml();
 
   const membersForDialog = record
-    ? await api(`/api/members?period_id=${record.period_id}`)
+    ? await api(`/api/members?period_id=${record.period_id}${deptParam()}`)
     : state.members;
 
   function refreshMemberOptions() {
@@ -2109,7 +2247,7 @@ async function openSupportDialog(record) {
   teamNhanSelectEl.innerHTML = teamOptionsHtml();
 
   const membersForDialog = record
-    ? await api(`/api/members?period_id=${record.period_id}`)
+    ? await api(`/api/members?period_id=${record.period_id}${deptParam()}`)
     : state.members;
 
   function refreshMemberOptions() {
@@ -3472,6 +3610,114 @@ el.addChucVuBtn.addEventListener("click", async () => {
   }
 });
 
+// ---- Cấu hình > Phòng ban ----
+
+async function loadDepartmentConfig() {
+  if (!el.departmentConfigTbody) return;
+  const [departments, teamCounts] = await Promise.all([
+    api("/api/departments"),
+    api(`/api/teams?period_id=${state.currentPeriodId ?? state.periods[0]?.id ?? 0}`).catch(() => []),
+  ]);
+  state.departments = departments;
+  renderDeptSwitcher();
+  renderDepartmentConfig(teamCounts || []);
+}
+
+function renderDepartmentConfig(allTeams) {
+  const countByDept = new Map();
+  (allTeams || []).forEach((t) => {
+    countByDept.set(t.department_id, (countByDept.get(t.department_id) ?? 0) + 1);
+  });
+
+  el.departmentConfigEmpty.hidden = state.departments.length > 0;
+  el.departmentConfigTbody.innerHTML = state.departments
+    .map(
+      (d, i) => `
+    <tr data-id="${d.id}">
+      <td style="text-align:center">${i + 1}</td>
+      <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" style="width:100%;text-align:left" /></td>
+      <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" style="width:100%" /></td>
+      <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
+      <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  const save = async (id, patch, revertEl, revertVal) => {
+    try {
+      await api(`/api/departments/${id}`, { method: "PUT", body: JSON.stringify(patch) });
+      await loadDepartmentConfig();
+      await refreshAfterDeptChange();
+    } catch (err) {
+      showToast(err.message);
+      if (revertEl) revertEl.value = revertVal;
+    }
+  };
+
+  el.departmentConfigTbody.querySelectorAll(".dept-name-input").forEach((input) => {
+    input.addEventListener("change", () => {
+      const value = input.value.trim();
+      const original = state.departments.find((d) => d.id === Number(input.dataset.id));
+      if (!value) {
+        showToast("Tên phòng không được để trống.");
+        input.value = original?.name ?? "";
+        return;
+      }
+      save(input.dataset.id, { name: value }, input, original?.name ?? "");
+    });
+  });
+  el.departmentConfigTbody.querySelectorAll(".dept-code-input").forEach((input) => {
+    input.addEventListener("change", () => {
+      save(input.dataset.id, { code: input.value.trim() });
+    });
+  });
+  el.departmentConfigTbody.querySelectorAll(".delete-dept-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Xóa phòng này? Chỉ xóa được khi phòng không còn team nào.")) return;
+      try {
+        await api(`/api/departments/${btn.dataset.id}`, { method: "DELETE" });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+        showToast("Đã xóa phòng.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+// Sau khi danh sách phòng đổi (thêm/sửa/xóa): nếu phòng đang chọn không còn
+// thì chuyển về phòng đầu tiên, rồi nạp lại dữ liệu.
+async function refreshAfterDeptChange() {
+  const stillExists = state.departments.some((d) => d.id === state.currentDepartmentId);
+  if (!stillExists) {
+    state.currentDepartmentId = state.departments[0]?.id ?? null;
+    try {
+      localStorage.setItem(DEPT_LS_KEY, String(state.currentDepartmentId));
+    } catch {}
+  }
+  renderDeptSwitcher();
+  try {
+    await loadTeams();
+    await loadMembers();
+    syncHomeFromCurrentIfNeeded();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+el.addDepartmentBtn.addEventListener("click", async () => {
+  const name = prompt("Tên phòng mới:");
+  if (!name || !name.trim()) return;
+  try {
+    await api("/api/departments", { method: "POST", body: JSON.stringify({ name: name.trim() }) });
+    await loadDepartmentConfig();
+    showToast("Đã thêm phòng.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // ---- Home (dashboard) ----
 // Ranking Team lấy đúng theo cột Tổng điểm ở tab Tổng hợp (homeComputeTeamScores);
 // gọi lại renderHomeDashboard() mỗi khi state.teams/tieuChiConfigs/members đổi
@@ -4300,16 +4546,23 @@ async function checkAuth() {
   const now = today();
   el.newYear.value = now.getFullYear();
   el.newMonth.value = now.getMonth() + 1;
-  Promise.all([
-    loadPeriods(),
-    loadIncidents(),
-    loadTickets(),
-    loadCreationRates(),
-    loadTieuChi(),
-    loadRanking(),
-    loadTags(),
-    loadPhanLoai(),
-    loadNhom(),
-    loadChucVu(),
-  ]).catch((err) => showToast(err.message));
+  // Phòng ban phải nạp trước loadPeriods() vì loadTeams/loadMembers phụ thuộc
+  // state.currentDepartmentId.
+  loadDepartments()
+    .then(() =>
+      Promise.all([
+        loadPeriods(),
+        loadIncidents(),
+        loadTickets(),
+        loadCreationRates(),
+        loadTieuChi(),
+        loadRanking(),
+        loadTags(),
+        loadPhanLoai(),
+        loadNhom(),
+        loadChucVu(),
+        loadDepartmentConfig(),
+      ]),
+    )
+    .catch((err) => showToast(err.message));
 })();

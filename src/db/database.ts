@@ -374,6 +374,58 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 23. departments — tầng "Phòng" trên team. Mỗi phòng có nhiều team; team
+    // (và qua đó nhân sự, task, CSKH...) thuộc đúng 1 phòng. Period vẫn dùng
+    // chung mọi phòng.
+    const hasDepartments = await db.schema.hasTable("departments");
+    if (!hasDepartments) {
+      await db.schema.createTable("departments", (table) => {
+        table.increments("id").primary();
+        table.string("name", 255).notNullable().unique();
+        table.string("code", 50);
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // Seed 1 phòng mặc định (dữ liệu cũ nếu có sẽ gán vào phòng này).
+    const deptCountRes = await db("departments").count({ c: "*" }).first();
+    if (Number((deptCountRes as any)?.c ?? 0) === 0) {
+      await db("departments").insert([
+        { name: "Phòng Công nghệ thông tin", code: "CNTT", thu_tu: 0 },
+        { name: "Phòng Vận hành", code: "VH", thu_tu: 1 },
+      ]);
+    }
+
+    const firstDept = await db("departments").orderBy("thu_tu", "asc").first();
+    const firstDeptId = Number((firstDept as any)?.id ?? 1);
+
+    // teams.department_id — thêm cột nếu chưa có, backfill dữ liệu cũ về phòng
+    // đầu tiên.
+    if (!(await db.schema.hasColumn("teams", "department_id"))) {
+      await db.schema.alterTable("teams", (table) => {
+        table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
+      });
+      await db("teams").whereNull("department_id").update({ department_id: firstDeptId });
+    }
+
+    // tasks.department_id — tương tự. Backfill: khớp tasks.team (chuỗi) với
+    // team cùng period để lấy phòng; không khớp thì về phòng đầu tiên.
+    if (!(await db.schema.hasColumn("tasks", "department_id"))) {
+      await db.schema.alterTable("tasks", (table) => {
+        table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
+      });
+      const staleTasks = await db("tasks").whereNull("department_id").select("id", "period_id", "team");
+      for (const t of staleTasks) {
+        const team = await db("teams")
+          .where({ period_id: (t as any).period_id, name: (t as any).team })
+          .first();
+        await db("tasks")
+          .where({ id: (t as any).id })
+          .update({ department_id: Number((team as any)?.department_id ?? firstDeptId) });
+      }
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

@@ -6,13 +6,17 @@ import type { Team } from "../types/backlog.js";
 // trùng tên do gõ sai chính tả). Idempotent theo (period_id, name) — thêm
 // team ở tháng nào chỉ hiển thị từ tháng đó trở đi, không ảnh hưởng các
 // tháng đã tạo trước đó.
-export async function createTeam(name: string, periodId: number): Promise<Team> {
+export async function createTeam(
+  name: string,
+  periodId: number,
+  departmentId?: number | null,
+): Promise<Team> {
   const trimmed = name.trim();
   const existing = await db("teams").where({ period_id: periodId, name: trimmed }).first();
   if (existing) return existing as Team;
 
   const [created] = await db("teams")
-    .insert({ period_id: periodId, name: trimmed })
+    .insert({ period_id: periodId, name: trimmed, department_id: departmentId ?? null })
     .returning("*");
   return created as Team;
 }
@@ -22,8 +26,10 @@ export async function getTeam(id: number): Promise<Team | undefined> {
   return row as Team | undefined;
 }
 
-export async function listTeams(periodId: number): Promise<Team[]> {
-  const rows = await db("teams").where({ period_id: periodId }).orderBy("name", "asc");
+export async function listTeams(periodId: number, departmentId?: number | null): Promise<Team[]> {
+  const query = db("teams").where({ period_id: periodId });
+  if (departmentId != null) query.where({ department_id: departmentId });
+  const rows = await query.orderBy("name", "asc");
   return rows as Team[];
 }
 
@@ -46,7 +52,7 @@ export async function cloneTeamsFromPeriod(fromPeriodId: number, toPeriodId: num
   for (const t of sourceTeams) {
     const existing = await db("teams").where({ period_id: toPeriodId, name: t.name }).first();
     if (!existing) {
-      await db("teams").insert({ period_id: toPeriodId, name: t.name });
+      await db("teams").insert({ period_id: toPeriodId, name: t.name, department_id: t.department_id ?? null });
     }
   }
 }
