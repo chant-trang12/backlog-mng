@@ -649,6 +649,7 @@ th {
 .grade-history-list {
   margin-top: 4px;
   font-size: 0.72rem;
+  text-align: left;
   border-top: 1px dashed var(--border);
   padding-top: 4px;
 }

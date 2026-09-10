@@ -602,7 +602,7 @@ function formatDateDisplay(value) {
 
 // Toàn bộ lịch sử đánh giá của 1 task (kể cả các tháng trước khi nó là NV
 // tồn) — nút "Lịch sử (N)" bung ra danh sách từng tháng.
-function renderGradingHistory(t) {
+function gradingEntries(t) {
   let past = [];
   try {
     past = t.grading_history ? JSON.parse(t.grading_history) : [];
@@ -619,17 +619,26 @@ function renderGradingHistory(t) {
       graded_at: t.cpo_graded_at,
     });
   }
-  if (entries.length <= 1) return ""; // chỉ có 1 lần -> đã hiện ở trên, khỏi cần lịch sử
+  return entries;
+}
 
+// mode: "percent" (cột % Đánh giá) hoặc "content" (cột Nội dung đánh giá).
+function renderGradingHistory(t, mode) {
+  const entries = gradingEntries(t);
+  if (entries.length <= 1) return ""; // chỉ 1 lần -> đã hiện ở trên
+
+  const pct = (e) =>
+    e.cpo_danh_gia !== null && e.cpo_danh_gia !== undefined ? e.cpo_danh_gia + "%" : "—";
   const rows = entries
-    .map(
-      (e) => `<div><span class="gh-period">${e.period_label}</span>
-        <b>${e.cpo_danh_gia !== null && e.cpo_danh_gia !== undefined ? e.cpo_danh_gia + "%" : "—"}</b>
-        ${e.cpo_comment ? " · " + String(e.cpo_comment).replace(/\n/g, " ") : ""}
-        ${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}</span>` : ""}</div>`,
+    .map((e) =>
+      mode === "percent"
+        ? `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b></div>`
+        : `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b>${
+            e.cpo_comment ? " · " + String(e.cpo_comment).replace(/\n/g, " ") : ""
+          }${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}</span>` : ""}</div>`,
     )
     .join("");
-  return `<button type="button" class="grade-hist-toggle">Lịch sử đánh giá (${entries.length}) ▾</button>
+  return `<button type="button" class="grade-hist-toggle">Lịch sử (${entries.length}) ▾</button>
     <div class="grade-history-list" hidden>${rows}</div>`;
 }
 
@@ -1531,11 +1540,12 @@ function renderTasks() {
             : ""
         }
         ${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}
+        ${renderGradingHistory(t, "percent")}
       </td>
       <td>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
         ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
-        ${renderGradingHistory(t)}
+        ${renderGradingHistory(t, "content")}
       </td>
       <td><div class="actions-cell">
         <button class="small btn-edit edit-btn">Sửa</button>
