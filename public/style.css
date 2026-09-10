@@ -635,17 +635,31 @@ th {
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 
+/* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
+#task-table td:nth-child(13),
+#task-table td:nth-child(14) {
+  position: relative;
+  padding-top: 20px;
+}
 .grade-hist-toggle {
-  margin-top: 6px;
-  padding: 1px 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  position: absolute;
+  top: 2px;
+  padding: 0 5px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.5;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   color: var(--delete);
   cursor: pointer;
+  white-space: nowrap;
 }
+.grade-hist-toggle.left { left: 3px; }
+.grade-hist-toggle.right { right: 3px; }
+.grade-hist-toggle.mini { padding: 0 4px; }
+.grade-hist-toggle.open { background: var(--delete); color: #fff; border-color: var(--delete); }
+
 .grade-history-list {
   margin-top: 4px;
   font-size: 0.72rem;

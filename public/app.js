@@ -569,6 +569,13 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDeptPanel();
 });
 
+// Bấm ra ngoài -> đóng mọi popover Lịch sử đánh giá đang mở.
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".grade-hist-toggle") || e.target.closest(".grade-history-list")) return;
+  document.querySelectorAll(".grade-history-list:not([hidden])").forEach((l) => (l.hidden = true));
+  document.querySelectorAll(".grade-hist-toggle.open").forEach((b) => b.classList.remove("open"));
+});
+
 async function selectDepartment(id) {
   closeDeptPanel();
   if (id === state.currentDepartmentId) return;
@@ -640,8 +647,14 @@ function renderGradingHistory(t, mode) {
           }${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}</span>` : ""}</div>`,
     )
     .join("");
-  return `<button type="button" class="grade-hist-toggle">Lịch sử (${entries.length}) ▾</button>
-    <div class="grade-history-list" hidden>${rows}</div>`;
+  const hid = `hist-${t.id}-${mode}`;
+  // % Đánh giá: nút gọn ở góc trên TRÁI (góc phải đã có badge ↩). Nội dung
+  // đánh giá: nút ở góc trên PHẢI.
+  const btn =
+    mode === "percent"
+      ? `<button type="button" class="grade-hist-toggle mini left" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">🕘 ${entries.length}</button>`
+      : `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">Lịch sử ${entries.length} ▾</button>`;
+  return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
 }
 
 // "YYYY-MM-DD HH:MM:SS" -> "dd/mm/yyyy HH:MM:SS" (thời điểm chấm điểm).
@@ -1582,10 +1595,17 @@ function renderTasks() {
     });
   });
   el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const list = btn.nextElementSibling;
-      list.hidden = !list.hidden;
-      btn.textContent = btn.textContent.replace(list.hidden ? "▴" : "▾", list.hidden ? "▾" : "▴");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const list = document.getElementById(btn.dataset.histTarget);
+      const willOpen = list.hidden;
+      // đóng các popover lịch sử khác
+      el.taskTbody.querySelectorAll(".grade-history-list").forEach((l) => {
+        if (l !== list) l.hidden = true;
+      });
+      el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((b) => b.classList.remove("open"));
+      list.hidden = !willOpen;
+      btn.classList.toggle("open", willOpen);
     });
   });
   el.taskTbody.querySelectorAll(".delete-btn").forEach((btn) => {
