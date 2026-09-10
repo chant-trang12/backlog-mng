@@ -844,6 +844,18 @@
               </table>
               <p class="muted" id="roadmap-empty" hidden style="padding:16px;text-align:center">Chưa có dòng roadmap nào cho năm này — bấm "+ Thêm dòng roadmap".</p>
             </div>
+            <p class="muted" style="margin:8px 0 0">Bấm vào 1 dòng để xem &amp; quản lý chi tiết công việc theo từng tháng.</p>
+          </section>
+
+          <section class="card" id="roadmap-detail-card" hidden style="margin-top:16px">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h2 style="margin:0" id="roadmap-detail-title">Chi tiết công việc</h2>
+                <p class="muted" id="roadmap-detail-sub" style="margin:6px 0 0"></p>
+              </div>
+              <button type="button" id="roadmap-detail-close" class="small">✕ Đóng</button>
+            </div>
+            <div id="roadmap-detail-months" style="margin-top:14px"></div>
           </section>
         </div>
 
@@ -1473,6 +1485,41 @@
       </div>
       <div class="actions">
         <button type="button" id="roadmap-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="roadmap-detail-dialog">
+    <form id="roadmap-detail-form">
+      <h2 id="roadmap-detail-dialog-title" style="margin:0">Thêm việc</h2>
+      <input type="hidden" id="rd-id" />
+      <input type="hidden" id="rd-item-id" />
+      <div class="field-row">
+        <div>
+          <label for="rd-month">Tháng *</label>
+          <select id="rd-month" required></select>
+        </div>
+        <div>
+          <label for="rd-trang-thai">Trạng thái</label>
+          <select id="rd-trang-thai">
+            <option>Chưa thực hiện</option>
+            <option>Đang thực hiện</option>
+            <option>Hoàn thành</option>
+            <option>Hủy</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="rd-noi-dung">Nội dung công việc *</label>
+        <textarea id="rd-noi-dung" required></textarea>
+      </div>
+      <div>
+        <label for="rd-ghi-chu">Ghi chú</label>
+        <textarea id="rd-ghi-chu"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="roadmap-detail-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
       </div>
     </form>

@@ -1,5 +1,12 @@
 import { db } from "../db/database.js";
-import type { CreateRoadmapItemInput, RoadmapItem, UpdateRoadmapItemInput } from "../types/backlog.js";
+import type {
+  CreateRoadmapDetailInput,
+  CreateRoadmapItemInput,
+  RoadmapDetail,
+  RoadmapItem,
+  UpdateRoadmapDetailInput,
+  UpdateRoadmapItemInput,
+} from "../types/backlog.js";
 
 const FIELDS = [
   "team",
@@ -72,5 +79,55 @@ export async function updateRoadmapItem(
 
 export async function deleteRoadmapItem(id: number): Promise<boolean> {
   const count = await db("roadmap_items").where({ id }).delete();
+  return count > 0;
+}
+
+// ---- Chi tiết công việc theo tháng ----
+
+export async function listRoadmapDetails(itemId: number): Promise<RoadmapDetail[]> {
+  const rows = await db("roadmap_details")
+    .where({ roadmap_item_id: itemId })
+    .orderBy("month", "asc")
+    .orderBy("id", "asc");
+  return rows as RoadmapDetail[];
+}
+
+export async function createRoadmapDetail(
+  itemId: number,
+  input: CreateRoadmapDetailInput,
+): Promise<RoadmapDetail> {
+  const [created] = await db("roadmap_details")
+    .insert({
+      roadmap_item_id: itemId,
+      month: input.month,
+      noi_dung: input.noi_dung.trim(),
+      trang_thai: input.trang_thai ?? "Chưa thực hiện",
+      ghi_chu: input.ghi_chu?.trim() || null,
+    })
+    .returning("*");
+  return created as RoadmapDetail;
+}
+
+export async function updateRoadmapDetail(
+  id: number,
+  input: UpdateRoadmapDetailInput,
+): Promise<RoadmapDetail | undefined> {
+  const existing = await db("roadmap_details").where({ id }).first();
+  if (!existing) return undefined;
+  const [updated] = await db("roadmap_details")
+    .where({ id })
+    .update({
+      month: input.month ?? existing.month,
+      noi_dung: input.noi_dung?.trim() ?? existing.noi_dung,
+      trang_thai: input.trang_thai ?? existing.trang_thai,
+      ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+  return updated as RoadmapDetail;
+}
+
+export async function deleteRoadmapDetail(id: number): Promise<boolean> {
+  const count = await db("roadmap_details").where({ id }).delete();
   return count > 0;
 }

@@ -662,6 +662,14 @@ th {
   text-align: center;
 }
 #roadmap-table td { vertical-align: middle; }
+#roadmap-table tbody tr { cursor: pointer; }
+#roadmap-table tbody tr:hover { background: var(--bg); }
+#roadmap-table tbody tr.rm-row-selected { background: var(--bg); box-shadow: inset 3px 0 0 var(--primary); }
+
+.rm-month-block { padding: 12px 0; border-top: 1px solid var(--border); }
+.rm-month-block:first-child { border-top: none; padding-top: 0; }
+.rm-detail-table { margin-top: 8px; }
+.rm-detail-table td { vertical-align: middle; }
 
 #incident-table td:nth-child(1), /* Tháng */
 #incident-table td:nth-child(2), /* Team */

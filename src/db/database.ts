@@ -485,6 +485,25 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 27. roadmap_details — chi tiết công việc theo tháng của 1 dòng roadmap.
+    if (!(await db.schema.hasTable("roadmap_details"))) {
+      await db.schema.createTable("roadmap_details", (table) => {
+        table.increments("id").primary();
+        table
+          .integer("roadmap_item_id")
+          .notNullable()
+          .references("id")
+          .inTable("roadmap_items")
+          .onDelete("CASCADE");
+        table.integer("month").notNullable(); // 1..12
+        table.text("noi_dung").notNullable();
+        table.string("trang_thai", 100).notNullable().defaultTo("Chưa thực hiện");
+        table.text("ghi_chu");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

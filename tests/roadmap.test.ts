@@ -67,4 +67,65 @@ describe("Roadmap năm", () => {
     const app = createApp();
     expect((await request(app).get("/api/roadmap-items?year=abc")).status).toBe(400);
   });
+
+  it("manages chi tiết công việc theo tháng: add / list / update / delete, cascades on item delete", async () => {
+    const app = createApp();
+    const item = await request(app)
+      .post("/api/roadmap-items")
+      .send({
+        year: 2097,
+        department_id: 1,
+        team: "CRM",
+        nhiem_vu: "Detail CRUD",
+        thoi_gian_bat_dau: "2097-01-02",
+        thoi_gian_ket_thuc: "2097-03-15",
+      });
+    const itemId = item.body.id;
+
+    const d1 = await request(app)
+      .post(`/api/roadmap-items/${itemId}/details`)
+      .send({ month: 1, noi_dung: "Phân tích", trang_thai: "Hoàn thành" });
+    expect(d1.status).toBe(201);
+    expect(d1.body.month).toBe(1);
+
+    await request(app)
+      .post(`/api/roadmap-items/${itemId}/details`)
+      .send({ month: 2, noi_dung: "Code", ghi_chu: "2 sprint" });
+
+    const list = await request(app).get(`/api/roadmap-items/${itemId}/details`);
+    expect(list.body).toHaveLength(2);
+    expect(list.body[0].month).toBe(1);
+
+    const upd = await request(app)
+      .put(`/api/roadmap-details/${d1.body.id}`)
+      .send({ trang_thai: "Đang thực hiện" });
+    expect(upd.body.trang_thai).toBe("Đang thực hiện");
+    expect(upd.body.noi_dung).toBe("Phân tích"); // giữ nguyên field không gửi
+
+    expect((await request(app).delete(`/api/roadmap-details/${d1.body.id}`)).status).toBe(204);
+    expect((await request(app).get(`/api/roadmap-items/${itemId}/details`)).body).toHaveLength(1);
+
+    // Xóa dòng roadmap -> chi tiết cũng bị xóa (CASCADE).
+    await request(app).delete(`/api/roadmap-items/${itemId}`);
+    expect((await request(app).get(`/api/roadmap-items/${itemId}/details`)).body).toHaveLength(0);
+  });
+
+  it("rejects a detail with month out of 1..12 or missing noi_dung", async () => {
+    const app = createApp();
+    const item = await request(app)
+      .post("/api/roadmap-items")
+      .send({ year: 2096, department_id: 1, team: "CRM", nhiem_vu: "x" });
+    const itemId = item.body.id;
+    expect(
+      (await request(app).post(`/api/roadmap-items/${itemId}/details`).send({ month: 0, noi_dung: "a" }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await request(app).post(`/api/roadmap-items/${itemId}/details`).send({ month: 13, noi_dung: "a" }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await request(app).post(`/api/roadmap-items/${itemId}/details`).send({ month: 3 })).status,
+    ).toBe(400);
+  });
 });

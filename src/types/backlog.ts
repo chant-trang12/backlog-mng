@@ -153,3 +153,24 @@ export interface CreateRoadmapItemInput {
 }
 
 export type UpdateRoadmapItemInput = Partial<CreateRoadmapItemInput>;
+
+// Chi tiết công việc theo tháng của 1 dòng roadmap.
+export interface RoadmapDetail {
+  id: number;
+  roadmap_item_id: number;
+  month: number;
+  noi_dung: string;
+  trang_thai: TaskStatus;
+  ghi_chu: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateRoadmapDetailInput {
+  month: number;
+  noi_dung: string;
+  trang_thai?: TaskStatus;
+  ghi_chu?: string;
+}
+
+export type UpdateRoadmapDetailInput = Partial<CreateRoadmapDetailInput>;

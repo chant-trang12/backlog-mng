@@ -33,6 +33,8 @@ const state = {
   mucTieuOptions: [],
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
+  roadmapSelectedId: null,
+  roadmapDetails: [],
   homePeriodId: null, // Tháng đang xem ở trang Home — độc lập với period đang chọn ở Backlog/Team
   homeTeamFilter: "", // "" = tất cả team
   homeTeams: [],
@@ -199,6 +201,15 @@ const el = {
   roadmapForm: document.getElementById("roadmap-form"),
   roadmapDialogTitle: document.getElementById("roadmap-dialog-title"),
   roadmapCancelBtn: document.getElementById("roadmap-cancel-btn"),
+  roadmapDetailCard: document.getElementById("roadmap-detail-card"),
+  roadmapDetailTitle: document.getElementById("roadmap-detail-title"),
+  roadmapDetailSub: document.getElementById("roadmap-detail-sub"),
+  roadmapDetailMonths: document.getElementById("roadmap-detail-months"),
+  roadmapDetailClose: document.getElementById("roadmap-detail-close"),
+  roadmapDetailDialog: document.getElementById("roadmap-detail-dialog"),
+  roadmapDetailForm: document.getElementById("roadmap-detail-form"),
+  roadmapDetailDialogTitle: document.getElementById("roadmap-detail-dialog-title"),
+  roadmapDetailCancelBtn: document.getElementById("roadmap-detail-cancel-btn"),
   chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
@@ -3887,7 +3898,11 @@ async function loadRoadmap() {
   state.roadmapItems = await api(
     `/api/roadmap-items?year=${state.roadmapYear}&department_id=${state.currentDepartmentId}`,
   );
+  if (state.roadmapSelectedId != null && !state.roadmapItems.some((x) => x.id === state.roadmapSelectedId)) {
+    closeRoadmapDetail();
+  }
   renderRoadmap();
+  if (state.roadmapSelectedId != null) renderRoadmapDetail();
 }
 
 function heThongColorClass(value) {
@@ -3907,7 +3922,8 @@ function renderRoadmap() {
   el.roadmapTbody.innerHTML = state.roadmapItems
     .map((it, i) => {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
-      return `<tr data-id="${it.id}">
+      const selCls = it.id === state.roadmapSelectedId ? " class=\"rm-row-selected\"" : "";
+      return `<tr data-id="${it.id}"${selCls}>
       <td style="text-align:center">${i + 1}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
@@ -3931,6 +3947,12 @@ function renderRoadmap() {
     })
     .join("");
 
+  el.roadmapTbody.querySelectorAll("tr").forEach((tr) => {
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return; // bỏ qua khi bấm Sửa/Xóa
+      selectRoadmapRow(Number(tr.dataset.id));
+    });
+  });
   el.roadmapTbody.querySelectorAll(".rm-edit-btn").forEach((b) => {
     b.addEventListener("click", () =>
       openRoadmapDialog(state.roadmapItems.find((x) => x.id === Number(b.dataset.id))),
@@ -3938,7 +3960,7 @@ function renderRoadmap() {
   });
   el.roadmapTbody.querySelectorAll(".rm-del-btn").forEach((b) => {
     b.addEventListener("click", async () => {
-      if (!confirm("Xóa dòng roadmap này?")) return;
+      if (!confirm("Xóa dòng roadmap này? Chi tiết công việc theo tháng cũng bị xóa.")) return;
       try {
         await api(`/api/roadmap-items/${b.dataset.id}`, { method: "DELETE" });
         await loadRoadmap();
@@ -3949,6 +3971,174 @@ function renderRoadmap() {
     });
   });
 }
+
+// ---- Chi tiết công việc theo tháng của 1 dòng roadmap ----
+
+// Các tháng cần hiển thị: từ tháng Bắt đầu tới tháng Kết thúc (thiếu ngày
+// nào thì lấy biên: bắt đầu = 1, kết thúc = 12), giới hạn trong năm roadmap.
+function roadmapMonths(item) {
+  const y = item.year;
+  const monthOf = (d, fallback) => {
+    if (!d || d.length < 7) return fallback;
+    if (Number(d.slice(0, 4)) < y) return 1;
+    if (Number(d.slice(0, 4)) > y) return 12;
+    return Number(d.slice(5, 7)) || fallback;
+  };
+  let a = monthOf(item.thoi_gian_bat_dau, 1);
+  let b = monthOf(item.thoi_gian_ket_thuc, 12);
+  if (a > b) [a, b] = [b, a];
+  const out = [];
+  for (let m = Math.max(1, a); m <= Math.min(12, b); m++) out.push(m);
+  return out;
+}
+
+async function selectRoadmapRow(id) {
+  if (state.roadmapSelectedId === id) {
+    closeRoadmapDetail();
+    renderRoadmap();
+    return;
+  }
+  state.roadmapSelectedId = id;
+  try {
+    state.roadmapDetails = await api(`/api/roadmap-items/${id}/details`);
+  } catch (err) {
+    showToast(err.message);
+    return;
+  }
+  renderRoadmap();
+  renderRoadmapDetail();
+  el.roadmapDetailCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function closeRoadmapDetail() {
+  state.roadmapSelectedId = null;
+  state.roadmapDetails = [];
+  el.roadmapDetailCard.hidden = true;
+}
+
+async function reloadRoadmapDetails() {
+  if (state.roadmapSelectedId == null) return;
+  state.roadmapDetails = await api(`/api/roadmap-items/${state.roadmapSelectedId}/details`);
+  renderRoadmapDetail();
+}
+
+function renderRoadmapDetail() {
+  const item = state.roadmapItems.find((x) => x.id === state.roadmapSelectedId);
+  if (!item) {
+    closeRoadmapDetail();
+    return;
+  }
+  el.roadmapDetailCard.hidden = false;
+  el.roadmapDetailTitle.textContent = `Chi tiết: ${item.nhiem_vu}`;
+  const range =
+    formatDateDisplay(item.thoi_gian_bat_dau) && formatDateDisplay(item.thoi_gian_ket_thuc)
+      ? `${formatDateDisplay(item.thoi_gian_bat_dau)} → ${formatDateDisplay(item.thoi_gian_ket_thuc)}`
+      : `năm ${item.year}`;
+  el.roadmapDetailSub.textContent = `${item.team}${item.he_thong ? " · " + item.he_thong : ""} · ${range}`;
+
+  const months = roadmapMonths(item);
+  const nl2br = (s) => (s ?? "").replace(/\n/g, "<br>");
+  el.roadmapDetailMonths.innerHTML = months
+    .map((m) => {
+      const rows = state.roadmapDetails.filter((d) => d.month === m);
+      const body = rows.length
+        ? `<div class="table-wrap"><table class="rm-detail-table">
+            <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
+            <tbody>${rows
+              .map(
+                (d) => `<tr>
+                  <td>${nl2br(d.noi_dung)}</td>
+                  <td style="text-align:center"><span class="status-badge ${STATUS_CLASS[d.trang_thai] || "status-default"}">${d.trang_thai}</span></td>
+                  <td>${nl2br(d.ghi_chu)}</td>
+                  <td><div class="actions-cell">
+                    <button class="small btn-edit rd-edit-btn" data-id="${d.id}">Sửa</button>
+                    <button class="small btn-delete rd-del-btn" data-id="${d.id}">Xóa</button>
+                  </div></td>
+                </tr>`,
+              )
+              .join("")}</tbody></table></div>`
+        : `<p class="muted" style="margin:6px 0 0">Chưa có việc nào cho tháng này.</p>`;
+      return `<div class="rm-month-block">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <h3 style="margin:0;font-size:1rem">Tháng ${m}/${item.year}</h3>
+          <button type="button" class="small primary rd-add-btn" data-month="${m}">+ Thêm việc</button>
+        </div>
+        ${body}
+      </div>`;
+    })
+    .join("");
+
+  el.roadmapDetailMonths.querySelectorAll(".rd-add-btn").forEach((b) => {
+    b.addEventListener("click", () => openRoadmapDetailDialog(item, Number(b.dataset.month), null));
+  });
+  el.roadmapDetailMonths.querySelectorAll(".rd-edit-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      const d = state.roadmapDetails.find((x) => x.id === Number(b.dataset.id));
+      openRoadmapDetailDialog(item, d.month, d);
+    });
+  });
+  el.roadmapDetailMonths.querySelectorAll(".rd-del-btn").forEach((b) => {
+    b.addEventListener("click", async () => {
+      if (!confirm("Xóa việc này?")) return;
+      try {
+        await api(`/api/roadmap-details/${b.dataset.id}`, { method: "DELETE" });
+        await reloadRoadmapDetails();
+        showToast("Đã xóa.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+function openRoadmapDetailDialog(item, month, detail) {
+  el.roadmapDetailForm.reset();
+  document.getElementById("rd-id").value = detail?.id ?? "";
+  document.getElementById("rd-item-id").value = item.id;
+  el.roadmapDetailDialogTitle.textContent = detail ? "Sửa việc" : "Thêm việc";
+  const months = roadmapMonths(item);
+  document.getElementById("rd-month").innerHTML = months
+    .map((m) => `<option value="${m}">Tháng ${m}/${item.year}</option>`)
+    .join("");
+  document.getElementById("rd-month").value = String(detail?.month ?? month ?? months[0]);
+  document.getElementById("rd-trang-thai").value = detail?.trang_thai ?? "Chưa thực hiện";
+  document.getElementById("rd-noi-dung").value = detail?.noi_dung ?? "";
+  document.getElementById("rd-ghi-chu").value = detail?.ghi_chu ?? "";
+  el.roadmapDetailDialog.showModal();
+}
+
+el.roadmapDetailClose.addEventListener("click", () => {
+  closeRoadmapDetail();
+  renderRoadmap();
+});
+el.roadmapDetailCancelBtn.addEventListener("click", () => el.roadmapDetailDialog.close());
+
+el.roadmapDetailForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("rd-id").value;
+  const itemId = document.getElementById("rd-item-id").value;
+  const payload = {
+    month: Number(document.getElementById("rd-month").value),
+    trang_thai: document.getElementById("rd-trang-thai").value,
+    noi_dung: document.getElementById("rd-noi-dung").value.trim(),
+    ghi_chu: document.getElementById("rd-ghi-chu").value.trim() || undefined,
+  };
+  try {
+    if (id) {
+      await api(`/api/roadmap-details/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    } else {
+      await api(`/api/roadmap-items/${itemId}/details`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    }
+    el.roadmapDetailDialog.close();
+    await reloadRoadmapDetails();
+    showToast(id ? "Đã cập nhật việc." : "Đã thêm việc.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 function rmFillSelect(selectEl, values, current, placeholder) {
   selectEl.innerHTML =
