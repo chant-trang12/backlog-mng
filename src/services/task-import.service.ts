@@ -13,7 +13,7 @@ export const TASK_IMPORT_HEADERS = [
   "Team",
   "Nhiệm vụ",
   "Tag",
-  "Tính chất",
+  "Phân loại",
   "DoD",
   "Deadline",
   "% Hoàn thành",
@@ -25,7 +25,7 @@ const KEYS = {
   team: ["team", "nhom", "doi"],
   nhiem_vu: ["nhiem vu", "cong viec", "task", "noi dung"],
   tag: ["tag", "the"],
-  tinh_chat: ["tinh chat", "phan loai"],
+  tinh_chat: ["phan loai", "tinh chat"],
   dod: ["dod", "definition of done"],
   deadline: ["deadline", "han", "ngay het han", "ngay ket thuc"],
   phan_tram: ["% hoan thanh", "phan tram hoan thanh", "hoan thanh", "progress"],
@@ -41,14 +41,21 @@ export interface ImportTasksResult {
   teamsCreated: string[];
 }
 
-export function buildTaskImportTemplate(): Promise<ExcelJS.Buffer> {
+export function buildTaskImportTemplate(opts?: {
+  teams?: string[];
+  tags?: string[];
+  phanLoai?: string[];
+}): Promise<ExcelJS.Buffer> {
+  const teams = opts?.teams ?? [];
+  const tags = opts?.tags ?? [];
+  const phanLoai = opts?.phanLoai ?? [];
   return buildTemplateWorkbook(
     "Nhiệm vụ",
     [
-      { header: "Team", width: 14 },
+      { header: "Team", width: 16 },
       { header: "Nhiệm vụ", width: 40 },
-      { header: "Tag", width: 16 },
-      { header: "Tính chất", width: 16 },
+      { header: "Tag", width: 18 },
+      { header: "Phân loại", width: 16 },
       { header: "DoD", width: 32 },
       { header: "Deadline", width: 14 },
       { header: "% Hoàn thành", width: 14 },
@@ -56,8 +63,14 @@ export function buildTaskImportTemplate(): Promise<ExcelJS.Buffer> {
       { header: "Tiến độ", width: 32 },
     ],
     [
-      ["CRM", "Xây dựng API abc", "Số hoá", "NVKH", "Chạy được trên staging", "15/03/2026", 0, "Chưa thực hiện", ""],
-      ["NVKH", "Rà soát quy trình xyz", "", "NVPS", "", "", 50, "Đang thực hiện", "Đã xong bước 1"],
+      [teams[0] ?? "CRM", "Xây dựng API abc", tags[0] ?? "", phanLoai[0] ?? "", "Chạy được trên staging", "15/03/2026", 0, "Chưa thực hiện", ""],
+      [teams[0] ?? "NVKH", "Rà soát quy trình xyz", "", phanLoai[1] ?? "", "", "", 50, "Đang thực hiện", "Đã xong bước 1"],
+    ],
+    [
+      { column: 1, options: teams }, // Team
+      { column: 3, options: tags }, // Tag
+      { column: 4, options: phanLoai }, // Phân loại
+      { column: 8, options: [...STATUSES] }, // Trạng thái
     ],
   );
 }

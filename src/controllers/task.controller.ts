@@ -13,6 +13,9 @@ import {
 import { exportBacklogToExcel } from "../services/export.service.js";
 import { buildTaskImportTemplate, importTasksFromWorkbook } from "../services/task-import.service.js";
 import { getPeriod } from "../services/period.service.js";
+import { listTeams } from "../services/team.service.js";
+import { listTags } from "../services/tag.service.js";
+import { listPhanLoai } from "../services/phanloai.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -135,9 +138,21 @@ export async function exportBacklogHandler(req: Request, res: Response) {
   }
 }
 
-// GET /api/periods/:periodId/tasks/import-template — file .xlsx mẫu nhập task.
-export async function downloadTaskTemplateHandler(_req: Request, res: Response) {
-  const buffer = await buildTaskImportTemplate();
+// GET /api/periods/:periodId/tasks/import-template?department_id=Y — file .xlsx
+// mẫu nhập task, có sẵn dropdown chọn Team / Tag / Phân loại / Trạng thái.
+export async function downloadTaskTemplateHandler(req: Request, res: Response) {
+  const periodId = parsePositiveInt(req.params.periodId);
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const [teams, tags, phanLoai] = await Promise.all([
+    Number.isFinite(periodId) ? listTeams(periodId, departmentId) : Promise.resolve([]),
+    listTags(),
+    listPhanLoai(),
+  ]);
+  const buffer = await buildTaskImportTemplate({
+    teams: teams.map((t) => t.name),
+    tags: tags.map((t) => t.ten_tag),
+    phanLoai: phanLoai.map((p) => p.ten_phan_loai),
+  });
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

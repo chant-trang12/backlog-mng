@@ -23,11 +23,14 @@ export function pickColumn(headers: string[], keys: string[]): string | undefine
 }
 
 // Dựng file .xlsx mẫu: dòng 1 tiêu đề (nền đỏ mận, chữ trắng, đóng băng),
-// kèm vài dòng ví dụ.
+// kèm vài dòng ví dụ. `dropdowns` (tuỳ chọn): mỗi phần tử gắn 1 danh sách
+// chọn (data validation) cho 1 cột — danh sách được ghi vào sheet ẩn
+// "Danh mục" rồi tham chiếu theo range.
 export async function buildTemplateWorkbook(
   sheetName: string,
   columns: { header: string; width: number }[],
   sampleRows: (string | number)[][],
+  dropdowns: { column: number; options: string[] }[] = [],
 ): Promise<ExcelJS.Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "backlog-manager";
@@ -44,6 +47,28 @@ export async function buildTemplateWorkbook(
   sheet.getRow(1).height = 24;
   sampleRows.forEach((r) => sheet.addRow(r));
   sheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  const active = dropdowns.filter((d) => d.options.length > 0);
+  if (active.length > 0) {
+    const lookup = workbook.addWorksheet("Danh mục", { state: "hidden" });
+    const VALID_ROWS = 500;
+    active.forEach((d, idx) => {
+      const colLetter = String.fromCharCode(65 + idx); // A, B, C...
+      d.options.forEach((opt, r) => {
+        lookup.getCell(`${colLetter}${r + 1}`).value = opt;
+      });
+      const ref = `'Danh mục'!$${colLetter}$1:$${colLetter}$${d.options.length}`;
+      for (let r = 2; r <= VALID_ROWS + 1; r++) {
+        sheet.getCell(r, d.column).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          showErrorMessage: false,
+          formulae: [ref],
+        };
+      }
+    });
+  }
+
   return workbook.xlsx.writeBuffer();
 }
 

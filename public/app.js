@@ -1387,7 +1387,7 @@ el.downloadTaskTemplateBtn.addEventListener("click", () => {
     showToast("Hãy chọn một tháng backlog trước.");
     return;
   }
-  window.location.href = `/api/periods/${state.currentPeriodId}/tasks/import-template`;
+  window.location.href = `/api/periods/${state.currentPeriodId}/tasks/import-template${deptParam("?")}`;
 });
 el.importTasksBtn.addEventListener("click", () => {
   if (!state.currentPeriodId) {
