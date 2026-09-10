@@ -634,13 +634,26 @@ th {
   white-space: nowrap;
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
-.cell-prev-note {
-  font-size: 0.72rem;
-  color: var(--delete);
+
+.grade-hist-toggle {
   margin-top: 6px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--delete);
+  cursor: pointer;
+}
+.grade-history-list {
+  margin-top: 4px;
+  font-size: 0.72rem;
   border-top: 1px dashed var(--border);
   padding-top: 4px;
 }
+.grade-history-list > div { margin: 3px 0; line-height: 1.35; }
+.grade-history-list .gh-period { font-weight: 700; color: var(--maroon); margin-right: 4px; }
 #task-table td:nth-child(1), /* checkbox */
 #task-table td:nth-child(2), /* STT */
 #task-table td:nth-child(3), /* Tag */

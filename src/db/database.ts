@@ -437,6 +437,13 @@ export async function initDatabase(): Promise<void> {
         table.string("prev_cpo_graded_at", 50);
       });
     }
+    // grading_history: JSON array các lần đánh giá của những THÁNG TRƯỚC (khi
+    // task được kéo qua nhiều tháng). Tháng hiện tại vẫn nằm ở cpo_* trực tiếp.
+    if (!(await db.schema.hasColumn("tasks", "grading_history"))) {
+      await db.schema.alterTable("tasks", (table) => {
+        table.text("grading_history");
+      });
+    }
 
     // 24. he_thong_options — danh mục Hệ thống (Website, Nội bộ...), dùng ở
     // Roadmap năm.

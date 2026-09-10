@@ -167,6 +167,18 @@ export async function moveTasksToNextMonth(
     const tinhChat = isTon ? addTinhChatTon(task.tinh_chat) : task.tinh_chat;
     const khongTinhDiem = isTon ? KHONG_TINH_DIEM : task.khong_tinh_diem;
 
+    // Lịch sử đánh giá: nối tiếp lịch sử tháng nguồn + (nếu tháng nguồn có
+    // chấm) 1 entry cho tháng nguồn.
+    const history: unknown[] = task.grading_history ? JSON.parse(task.grading_history) : [];
+    if (task.cpo_danh_gia !== null || (task.cpo_comment && task.cpo_comment.trim())) {
+      history.push({
+        period_label: fromPeriod.label,
+        cpo_danh_gia: task.cpo_danh_gia,
+        cpo_comment: task.cpo_comment,
+        graded_at: task.cpo_graded_at,
+      });
+    }
+
     const [clone] = await db("tasks")
       .insert({
         period_id: targetPeriod.id,
@@ -192,6 +204,7 @@ export async function moveTasksToNextMonth(
         prev_cpo_danh_gia: task.cpo_danh_gia ?? task.prev_cpo_danh_gia,
         prev_cpo_comment: task.cpo_comment ?? task.prev_cpo_comment,
         prev_cpo_graded_at: task.cpo_graded_at ?? task.prev_cpo_graded_at,
+        grading_history: history.length ? JSON.stringify(history) : null,
         khong_tinh_diem: khongTinhDiem,
       })
       .returning("*");

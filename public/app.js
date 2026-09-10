@@ -600,6 +600,39 @@ function formatDateDisplay(value) {
   return `${d}/${m}/${y}`;
 }
 
+// Toàn bộ lịch sử đánh giá của 1 task (kể cả các tháng trước khi nó là NV
+// tồn) — nút "Lịch sử (N)" bung ra danh sách từng tháng.
+function renderGradingHistory(t) {
+  let past = [];
+  try {
+    past = t.grading_history ? JSON.parse(t.grading_history) : [];
+  } catch {
+    past = [];
+  }
+  const curLabel = state.periods.find((p) => p.id === t.period_id)?.label ?? "Tháng này";
+  const entries = past.slice();
+  if (t.cpo_danh_gia !== null || (t.cpo_comment && t.cpo_comment.trim())) {
+    entries.push({
+      period_label: curLabel,
+      cpo_danh_gia: t.cpo_danh_gia,
+      cpo_comment: t.cpo_comment,
+      graded_at: t.cpo_graded_at,
+    });
+  }
+  if (entries.length <= 1) return ""; // chỉ có 1 lần -> đã hiện ở trên, khỏi cần lịch sử
+
+  const rows = entries
+    .map(
+      (e) => `<div><span class="gh-period">${e.period_label}</span>
+        <b>${e.cpo_danh_gia !== null && e.cpo_danh_gia !== undefined ? e.cpo_danh_gia + "%" : "—"}</b>
+        ${e.cpo_comment ? " · " + String(e.cpo_comment).replace(/\n/g, " ") : ""}
+        ${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}</span>` : ""}</div>`,
+    )
+    .join("");
+  return `<button type="button" class="grade-hist-toggle">Lịch sử đánh giá (${entries.length}) ▾</button>
+    <div class="grade-history-list" hidden>${rows}</div>`;
+}
+
 // "YYYY-MM-DD HH:MM:SS" -> "dd/mm/yyyy HH:MM:SS" (thời điểm chấm điểm).
 function fmtGradedAt(value) {
   if (!value) return "";
@@ -1502,11 +1535,7 @@ function renderTasks() {
       <td>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
         ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
-        ${
-          t.prev_cpo_comment || t.prev_cpo_graded_at
-            ? `<div class="cell-prev-note">↩ T.trước: ${(t.prev_cpo_comment ?? "").replace(/\n/g, "<br/>") || "—"}${t.prev_cpo_graded_at ? ` <span>(🕒 ${fmtGradedAt(t.prev_cpo_graded_at)})</span>` : ""}</div>`
-            : ""
-        }
+        ${renderGradingHistory(t)}
       </td>
       <td><div class="actions-cell">
         <button class="small btn-edit edit-btn">Sửa</button>
@@ -1538,6 +1567,13 @@ function renderTasks() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openGradeDialog(state.tasks.find((t) => t.id === id));
+    });
+  });
+  el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const list = btn.nextElementSibling;
+      list.hidden = !list.hidden;
+      btn.textContent = btn.textContent.replace(list.hidden ? "▴" : "▾", list.hidden ? "▾" : "▴");
     });
   });
   el.taskTbody.querySelectorAll(".delete-btn").forEach((btn) => {

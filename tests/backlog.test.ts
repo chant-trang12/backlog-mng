@@ -372,14 +372,28 @@ describe("Backlog CRUD", () => {
     const orig = old.body.find((t: { id: number }) => t.id === task.body.id);
     expect(orig.cpo_danh_gia).toBe(50);
 
-    // Kéo tiếp sang tháng thứ 3 mà KHÔNG chấm lại -> snapshot 50% vẫn còn.
+    // grading_history có 1 entry cho tháng nguồn.
+    const h1 = JSON.parse(clone.grading_history);
+    expect(h1).toHaveLength(1);
+    expect(h1[0].cpo_danh_gia).toBe(50);
+    expect(h1[0].period_label).toBe("Tháng 8/2047");
+
+    // Chấm lại 80% ở tháng 2 rồi kéo sang tháng 3 -> lịch sử có 2 entry.
+    await request(app).put(`/api/tasks/${clone.id}`).send({ cpo_danh_gia: 80, cpo_comment: "lần 2" });
     const move2 = await request(app)
       .post(`/api/periods/${move.body.targetPeriod.id}/tasks/move-to-next-month`)
       .send({ ids: [clone.id] });
     const clone2 = move2.body.moved[0];
     expect(clone2.cpo_danh_gia).toBeNull();
-    expect(clone2.prev_cpo_danh_gia).toBe(50);
-    expect(clone2.prev_cpo_graded_at).toBe(graded.body.cpo_graded_at);
+    expect(clone2.prev_cpo_danh_gia).toBe(80);
+    const h2 = JSON.parse(clone2.grading_history);
+    expect(h2.map((e: { cpo_danh_gia: number }) => e.cpo_danh_gia)).toEqual([50, 80]);
+
+    // Kéo tiếp mà KHÔNG chấm -> lịch sử vẫn 2 entry, không thêm entry rỗng.
+    const move3 = await request(app)
+      .post(`/api/periods/${move2.body.targetPeriod.id}/tasks/move-to-next-month`)
+      .send({ ids: [clone2.id] });
+    expect(JSON.parse(move3.body.moved[0].grading_history)).toHaveLength(2);
   });
 
   it("rejects a task import file missing the Nhiệm vụ column", async () => {
