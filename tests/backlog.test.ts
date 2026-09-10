@@ -371,6 +371,15 @@ describe("Backlog CRUD", () => {
     const old = await request(app).get(`/api/periods/${periodId}/tasks`);
     const orig = old.body.find((t: { id: number }) => t.id === task.body.id);
     expect(orig.cpo_danh_gia).toBe(50);
+
+    // Kéo tiếp sang tháng thứ 3 mà KHÔNG chấm lại -> snapshot 50% vẫn còn.
+    const move2 = await request(app)
+      .post(`/api/periods/${move.body.targetPeriod.id}/tasks/move-to-next-month`)
+      .send({ ids: [clone.id] });
+    const clone2 = move2.body.moved[0];
+    expect(clone2.cpo_danh_gia).toBeNull();
+    expect(clone2.prev_cpo_danh_gia).toBe(50);
+    expect(clone2.prev_cpo_graded_at).toBe(graded.body.cpo_graded_at);
   });
 
   it("rejects a task import file missing the Nhiệm vụ column", async () => {

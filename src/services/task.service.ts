@@ -183,13 +183,15 @@ export async function moveTasksToNextMonth(
         phan_tram_hoan_thanh: task.phan_tram_hoan_thanh,
         trang_thai: task.trang_thai,
         tien_do: task.tien_do,
-        // Reset đánh giá cho tháng mới; giữ snapshot của tháng nguồn để tham chiếu.
+        // Reset đánh giá cho tháng mới; giữ snapshot LẦN ĐÁNH GIÁ GẦN NHẤT —
+        // nếu tháng nguồn chưa chấm lại (kéo qua nhiều tháng) thì lấy tiếp
+        // snapshot mà tháng nguồn đang mang.
         cpo_danh_gia: null,
         cpo_comment: null,
         cpo_graded_at: null,
-        prev_cpo_danh_gia: task.cpo_danh_gia,
-        prev_cpo_comment: task.cpo_comment,
-        prev_cpo_graded_at: task.cpo_graded_at,
+        prev_cpo_danh_gia: task.cpo_danh_gia ?? task.prev_cpo_danh_gia,
+        prev_cpo_comment: task.cpo_comment ?? task.prev_cpo_comment,
+        prev_cpo_graded_at: task.cpo_graded_at ?? task.prev_cpo_graded_at,
         khong_tinh_diem: khongTinhDiem,
       })
       .returning("*");

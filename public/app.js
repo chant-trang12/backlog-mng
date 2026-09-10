@@ -1491,16 +1491,20 @@ function renderTasks() {
           ${t.da_chuyen_thang ? `<span class="status-badge tinh-chat-da-chuyen" title="Đã chuyển sang tháng sau, không thể chuyển tiếp">Đã chuyển</span>` : ""}
         </div>
       </td>
-      <td>
+      <td style="position:relative">
+        ${
+          t.prev_cpo_danh_gia !== null
+            ? `<span class="cell-prev-badge" title="Đánh giá gần nhất (tháng trước): ${t.prev_cpo_danh_gia}%${t.prev_cpo_graded_at ? " — " + fmtGradedAt(t.prev_cpo_graded_at) : ""}">↩ ${t.prev_cpo_danh_gia}%</span>`
+            : ""
+        }
         ${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}
-        ${t.prev_cpo_danh_gia !== null ? `<div class="muted" style="font-size:0.78rem;margin-top:4px">T.trước: ${t.prev_cpo_danh_gia}%</div>` : ""}
       </td>
       <td>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
-        ${t.cpo_graded_at ? `<div class="muted" style="font-size:0.78rem;margin-top:4px">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
+        ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
         ${
           t.prev_cpo_comment || t.prev_cpo_graded_at
-            ? `<div class="muted" style="font-size:0.78rem;margin-top:6px;border-top:1px dashed var(--border);padding-top:4px">T.trước: ${(t.prev_cpo_comment ?? "").replace(/\n/g, "<br/>") || "—"}${t.prev_cpo_graded_at ? ` <span>(🕒 ${fmtGradedAt(t.prev_cpo_graded_at)})</span>` : ""}</div>`
+            ? `<div class="cell-prev-note">↩ T.trước: ${(t.prev_cpo_comment ?? "").replace(/\n/g, "<br/>") || "—"}${t.prev_cpo_graded_at ? ` <span>(🕒 ${fmtGradedAt(t.prev_cpo_graded_at)})</span>` : ""}</div>`
             : ""
         }
       </td>
