@@ -342,6 +342,37 @@ describe("Backlog CRUD", () => {
     expect(a.tag).toBe("Số hoá");
   });
 
+  it("stamps cpo_graded_at khi chấm điểm; move sang tháng sau reset đánh giá và giữ snapshot tháng trước", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2047, month: 8 });
+    const periodId = period.body.id;
+    const task = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Chấm rồi kéo" });
+
+    const graded = await request(app)
+      .put(`/api/tasks/${task.body.id}`)
+      .send({ cpo_danh_gia: 50, cpo_comment: "Ổn" });
+    expect(graded.body.cpo_danh_gia).toBe(50);
+    expect(graded.body.cpo_graded_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+
+    const move = await request(app)
+      .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
+      .send({ ids: [task.body.id] });
+    const clone = move.body.moved[0];
+    expect(clone.cpo_danh_gia).toBeNull();
+    expect(clone.cpo_comment).toBeNull();
+    expect(clone.cpo_graded_at).toBeNull();
+    expect(clone.prev_cpo_danh_gia).toBe(50);
+    expect(clone.prev_cpo_comment).toBe("Ổn");
+    expect(clone.prev_cpo_graded_at).toBe(graded.body.cpo_graded_at);
+
+    // Bản gốc tháng cũ vẫn giữ nguyên đánh giá.
+    const old = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const orig = old.body.find((t: { id: number }) => t.id === task.body.id);
+    expect(orig.cpo_danh_gia).toBe(50);
+  });
+
   it("rejects a task import file missing the Nhiệm vụ column", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2045, month: 5 });

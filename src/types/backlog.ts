@@ -90,6 +90,10 @@ export interface Task {
   tien_do: string | null;
   cpo_danh_gia: number | null;
   cpo_comment: string | null;
+  cpo_graded_at: string | null;
+  prev_cpo_danh_gia: number | null;
+  prev_cpo_comment: string | null;
+  prev_cpo_graded_at: string | null;
   da_chuyen_thang: number;
   created_at: string;
   updated_at: string;

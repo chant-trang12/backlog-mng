@@ -600,6 +600,16 @@ function formatDateDisplay(value) {
   return `${d}/${m}/${y}`;
 }
 
+// "YYYY-MM-DD HH:MM:SS" -> "dd/mm/yyyy HH:MM:SS" (thời điểm chấm điểm).
+function fmtGradedAt(value) {
+  if (!value) return "";
+  const s = String(value).replace("T", " ");
+  const [datePart, timePart = ""] = s.split(" ");
+  const [y, m, d] = datePart.split("-");
+  if (!y || !m || !d) return String(value);
+  return `${d}/${m}/${y} ${timePart.slice(0, 8)}`.trim();
+}
+
 // ---- Cảnh báo task (Backlog): chưa chấm điểm / quá deadline / sắp đến hạn ----
 
 function todayDateOnly() {
@@ -1481,8 +1491,19 @@ function renderTasks() {
           ${t.da_chuyen_thang ? `<span class="status-badge tinh-chat-da-chuyen" title="Đã chuyển sang tháng sau, không thể chuyển tiếp">Đã chuyển</span>` : ""}
         </div>
       </td>
-      <td>${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}</td>
-      <td>${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}</td>
+      <td>
+        ${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}
+        ${t.prev_cpo_danh_gia !== null ? `<div class="muted" style="font-size:0.78rem;margin-top:4px">T.trước: ${t.prev_cpo_danh_gia}%</div>` : ""}
+      </td>
+      <td>
+        ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
+        ${t.cpo_graded_at ? `<div class="muted" style="font-size:0.78rem;margin-top:4px">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
+        ${
+          t.prev_cpo_comment || t.prev_cpo_graded_at
+            ? `<div class="muted" style="font-size:0.78rem;margin-top:6px;border-top:1px dashed var(--border);padding-top:4px">T.trước: ${(t.prev_cpo_comment ?? "").replace(/\n/g, "<br/>") || "—"}${t.prev_cpo_graded_at ? ` <span>(🕒 ${fmtGradedAt(t.prev_cpo_graded_at)})</span>` : ""}</div>`
+            : ""
+        }
+      </td>
       <td><div class="actions-cell">
         <button class="small btn-edit edit-btn">Sửa</button>
         <button class="small btn-delete delete-btn">Xóa</button>

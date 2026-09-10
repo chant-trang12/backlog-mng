@@ -79,6 +79,10 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
   // trạng thái khác giữ nguyên giá trị Không tính điểm đã có (nếu có).
   const khongTinhDiem = merged.trang_thai === "Hủy" ? KHONG_TINH_DIEM : existing.khong_tinh_diem;
 
+  // Có chấm điểm trong lần cập nhật này -> đóng dấu thời điểm.
+  const isGrading = input.cpo_danh_gia !== undefined || input.cpo_comment !== undefined;
+  const cpoGradedAt = isGrading ? localTimestamp() : existing.cpo_graded_at;
+
   const [updated] = await db("tasks")
     .where({ id })
     .update({
@@ -95,12 +99,21 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
       tien_do: merged.tien_do,
       cpo_danh_gia: merged.cpo_danh_gia,
       cpo_comment: merged.cpo_comment,
+      cpo_graded_at: cpoGradedAt,
       khong_tinh_diem: khongTinhDiem,
       updated_at: db.fn.now(),
     })
     .returning("*");
 
   return updated as Task;
+}
+
+// Chuỗi thời gian local "YYYY-MM-DD HH:MM:SS" — dùng cho cpo_graded_at, FE
+// hiển thị lại dạng dd/mm/yyyy HH:MM:SS.
+function localTimestamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 export async function deleteTask(id: number): Promise<boolean> {
@@ -170,8 +183,13 @@ export async function moveTasksToNextMonth(
         phan_tram_hoan_thanh: task.phan_tram_hoan_thanh,
         trang_thai: task.trang_thai,
         tien_do: task.tien_do,
-        cpo_danh_gia: task.cpo_danh_gia,
-        cpo_comment: task.cpo_comment,
+        // Reset đánh giá cho tháng mới; giữ snapshot của tháng nguồn để tham chiếu.
+        cpo_danh_gia: null,
+        cpo_comment: null,
+        cpo_graded_at: null,
+        prev_cpo_danh_gia: task.cpo_danh_gia,
+        prev_cpo_comment: task.cpo_comment,
+        prev_cpo_graded_at: task.cpo_graded_at,
         khong_tinh_diem: khongTinhDiem,
       })
       .returning("*");

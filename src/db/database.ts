@@ -426,6 +426,18 @@ export async function initDatabase(): Promise<void> {
       }
     }
 
+    // tasks: thời điểm chấm điểm + snapshot đánh giá của tháng trước (giữ lại
+    // khi task được chuyển sang tháng sau để user biết tháng trước chấm bao
+    // nhiêu, đồng thời reset đánh giá cho tháng mới).
+    if (!(await db.schema.hasColumn("tasks", "cpo_graded_at"))) {
+      await db.schema.alterTable("tasks", (table) => {
+        table.string("cpo_graded_at", 50);
+        table.integer("prev_cpo_danh_gia");
+        table.text("prev_cpo_comment");
+        table.string("prev_cpo_graded_at", 50);
+      });
+    }
+
     // 24. he_thong_options — danh mục Hệ thống (Website, Nội bộ...), dùng ở
     // Roadmap năm.
     if (!(await db.schema.hasTable("he_thong_options"))) {
