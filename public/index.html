@@ -820,6 +820,10 @@
               <button id="add-roadmap-btn" class="primary">+ Thêm dòng roadmap</button>
             </div>
             <p class="muted" style="margin:12px 0">Kế hoạch theo năm của phòng đang chọn — bấm vào 1 dòng để xem &amp; quản lý chi tiết công việc theo từng tháng.</p>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="roadmap-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="roadmap-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
             <div class="table-wrap">
               <table id="roadmap-table">
                 <thead>
@@ -843,6 +847,21 @@
                 <tbody id="roadmap-tbody"></tbody>
               </table>
               <p class="muted" id="roadmap-empty" hidden style="padding:16px;text-align:center">Chưa có dòng roadmap nào cho năm này — bấm "+ Thêm dòng roadmap".</p>
+            </div>
+            <div class="pagination-bar" id="roadmap-pagination">
+              <div class="row">
+                <label for="roadmap-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="roadmap-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="roadmap-page-prev" class="small">‹ Trước</button>
+                <span id="roadmap-page-info" class="muted"></span>
+                <button type="button" id="roadmap-page-next" class="small">Sau ›</button>
+              </div>
             </div>
           </section>
 

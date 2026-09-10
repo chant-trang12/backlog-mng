@@ -33,6 +33,7 @@ const state = {
   mucTieuOptions: [],
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
+  roadmapSearch: "",
   roadmapSelectedId: null,
   roadmapDetails: [],
   homePeriodId: null, // Tháng đang xem ở trang Home — độc lập với period đang chọn ở Backlog/Team
@@ -191,6 +192,7 @@ const el = {
   addMucTieuBtn: document.getElementById("add-muctieu-btn"),
   mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
   mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
+  roadmapSearch: document.getElementById("roadmap-search"),
   roadmapYearValue: document.getElementById("roadmap-year-value"),
   roadmapYearPrev: document.getElementById("roadmap-year-prev"),
   roadmapYearNext: document.getElementById("roadmap-year-next"),
@@ -394,6 +396,7 @@ const trainingPagination = createPagination("training", () => renderTrainingReco
 const supportPagination = createPagination("support", () => renderSupportRecords());
 const danhGiaPagination = createPagination("danhgia", () => renderDanhGiaRecords());
 const attendancePagination = createPagination("attendance", () => renderAttendanceTable());
+const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
 const noiQuyPagination = createPagination("noiquy", () => renderNoiQuyTable());
 
 function today() {
@@ -3901,9 +3904,37 @@ async function loadRoadmap() {
   if (state.roadmapSelectedId != null && !state.roadmapItems.some((x) => x.id === state.roadmapSelectedId)) {
     closeRoadmapDetail();
   }
+  roadmapPagination.reset();
   renderRoadmap();
   if (state.roadmapSelectedId != null) renderRoadmapDetail();
 }
+
+// Gộp mọi giá trị hiển thị của 1 dòng roadmap thành 1 chuỗi để tìm từ khoá.
+function roadmapRowText(it) {
+  return [
+    it.team,
+    it.he_thong,
+    it.muc_tieu,
+    it.nhiem_vu,
+    it.dod,
+    it.dieu_kien_dam_bao,
+    it.phan_loai,
+    formatDateDisplay(it.thoi_gian_bat_dau),
+    formatDateDisplay(it.thoi_gian_ket_thuc),
+    quyFromDate(it.thoi_gian_ket_thuc),
+    it.trang_thai,
+    it.ghi_chu,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+el.roadmapSearch.addEventListener("input", () => {
+  state.roadmapSearch = el.roadmapSearch.value;
+  roadmapPagination.reset();
+  renderRoadmap();
+});
 
 function heThongColorClass(value) {
   const i = state.heThongOptions.findIndex((h) => h.ten_he_thong === value);
@@ -3915,16 +3946,32 @@ function mucTieuColorClass(value) {
 }
 
 function renderRoadmap() {
-  el.roadmapEmpty.hidden = state.roadmapItems.length > 0;
+  const term = state.roadmapSearch.trim().toLowerCase();
+  const filtered = term
+    ? state.roadmapItems.filter((it) => roadmapRowText(it).includes(term))
+    : state.roadmapItems;
+
+  if (state.roadmapItems.length === 0) {
+    el.roadmapEmpty.textContent = 'Chưa có dòng roadmap nào cho năm này — bấm "+ Thêm dòng roadmap".';
+    el.roadmapEmpty.hidden = false;
+  } else if (filtered.length === 0) {
+    el.roadmapEmpty.textContent = "Không tìm thấy dòng nào khớp từ khoá.";
+    el.roadmapEmpty.hidden = false;
+  } else {
+    el.roadmapEmpty.hidden = true;
+  }
+
+  const pageItems = roadmapPagination.slice(filtered);
+  const offset = (roadmapPagination.page - 1) * roadmapPagination.pageSize;
   const nl2br = (s) => (s ?? "").replace(/\n/g, "<br>");
   const badge = (value, attrs) =>
     value ? `<span ${attrs}>${value}</span>` : "";
-  el.roadmapTbody.innerHTML = state.roadmapItems
+  el.roadmapTbody.innerHTML = pageItems
     .map((it, i) => {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
       const selCls = it.id === state.roadmapSelectedId ? " class=\"rm-row-selected\"" : "";
       return `<tr data-id="${it.id}"${selCls}>
-      <td style="text-align:center">${i + 1}</td>
+      <td style="text-align:center">${offset + i + 1}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${mucTieuColorClass(it.muc_tieu)}"`)}</td>
