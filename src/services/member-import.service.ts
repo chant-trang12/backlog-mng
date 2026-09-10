@@ -1,33 +1,14 @@
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { createMember } from "./member.service.js";
 import { createTeam, listTeams } from "./team.service.js";
-import { parseFirstSheet } from "./workbook.util.js";
+import { buildTemplateWorkbook, parseFirstSheet, pickColumn } from "./workbook.util.js";
 
 // 3 cột của file mẫu nhập nhân sự — chỉ "Họ và Tên" là bắt buộc.
 export const MEMBER_IMPORT_HEADERS = ["Họ và Tên", "Chức vụ", "Team"] as const;
 
-const HEADER_FILL = "FF632423"; // đỏ mận đậm — đồng bộ với export Backlog
-const HEADER_FONT = "FFFFFFFF";
-
-// Bỏ dấu tiếng Việt + hạ chữ thường + gộp khoảng trắng, để so khớp tên cột
-// linh hoạt (người dùng có thể gõ "Ho va ten", "HỌ VÀ TÊN"...).
-function normalizeHeader(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/gi, "d")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-const NAME_KEYS = ["ho va ten", "ho ten", "hoten", "name", "full name"].map(normalizeHeader);
-const CHUC_VU_KEYS = ["chuc vu", "chucvu", "position", "role", "title"].map(normalizeHeader);
-const TEAM_KEYS = ["team", "nhom", "doi", "bo phan"].map(normalizeHeader);
-
-function pickColumn(headers: string[], keys: string[]): string | undefined {
-  return headers.find((h) => keys.includes(normalizeHeader(h)));
-}
+const NAME_KEYS = ["ho va ten", "ho ten", "hoten", "name", "full name"];
+const CHUC_VU_KEYS = ["chuc vu", "chucvu", "position", "role", "title"];
+const TEAM_KEYS = ["team", "nhom", "doi", "bo phan"];
 
 export interface ImportMembersResult {
   imported: number;
@@ -35,33 +16,20 @@ export interface ImportMembersResult {
   teamsCreated: string[];
 }
 
-// Tạo file .xlsx mẫu: dòng 1 tiêu đề 3 cột, kèm 1 dòng ví dụ để người dùng
-// biết định dạng. Không có dữ liệu thật.
-export async function buildMemberImportTemplate(): Promise<ExcelJS.Buffer> {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "backlog-manager";
-  workbook.created = new Date();
-
-  const sheet = workbook.addWorksheet("Nhân sự");
-  sheet.columns = [
-    { header: MEMBER_IMPORT_HEADERS[0], width: 28 },
-    { header: MEMBER_IMPORT_HEADERS[1], width: 22 },
-    { header: MEMBER_IMPORT_HEADERS[2], width: 18 },
-  ];
-
-  const headerRow = sheet.getRow(1);
-  headerRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: HEADER_FONT } };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_FILL } };
-  });
-  headerRow.height = 22;
-
-  sheet.addRow(["Nguyễn Văn A", "Trưởng nhóm", "CRM"]);
-  sheet.addRow(["Trần Thị B", "", "CSKH"]);
-
-  sheet.views = [{ state: "frozen", ySplit: 1 }];
-  return workbook.xlsx.writeBuffer();
+// Tạo file .xlsx mẫu: dòng 1 tiêu đề 3 cột, kèm 2 dòng ví dụ.
+export function buildMemberImportTemplate(): Promise<ExcelJS.Buffer> {
+  return buildTemplateWorkbook(
+    "Nhân sự",
+    [
+      { header: MEMBER_IMPORT_HEADERS[0], width: 28 },
+      { header: MEMBER_IMPORT_HEADERS[1], width: 22 },
+      { header: MEMBER_IMPORT_HEADERS[2], width: 18 },
+    ],
+    [
+      ["Nguyễn Văn A", "Trưởng nhóm", "CRM"],
+      ["Trần Thị B", "", "CSKH"],
+    ],
+  );
 }
 
 // Import nhân sự từ bytes file Excel vào 1 tháng backlog. Chỉ thêm mới —

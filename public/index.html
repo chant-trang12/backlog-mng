@@ -304,6 +304,9 @@
                   </div>
                 </div>
                 <button id="export-btn" class="btn-export">⬇ Xuất Excel</button>
+                <button id="download-task-template-btn" class="btn-export">⬇ File mẫu</button>
+                <input type="file" id="task-file-input" accept=".xlsx,.xls" hidden />
+                <button id="import-tasks-btn" class="btn-grade">⬆ Nhập Excel</button>
                 <button id="add-task-btn" class="primary">+ Nhập task mới</button>
               </div>
             </div>
@@ -817,7 +820,12 @@
                   <button type="button" id="roadmap-year-next" aria-label="Năm sau">›</button>
                 </div>
               </div>
-              <button id="add-roadmap-btn" class="primary">+ Thêm dòng roadmap</button>
+              <div class="row">
+                <button id="download-roadmap-template-btn" class="btn-export">⬇ File mẫu</button>
+                <input type="file" id="roadmap-file-input" accept=".xlsx,.xls" hidden />
+                <button id="import-roadmap-btn" class="btn-grade">⬆ Nhập Excel</button>
+                <button id="add-roadmap-btn" class="primary">+ Thêm dòng roadmap</button>
+              </div>
             </div>
             <p class="muted" style="margin:12px 0">Kế hoạch theo năm của phòng đang chọn — bấm vào 1 dòng để xem &amp; quản lý chi tiết công việc theo từng tháng.</p>
             <div class="row" style="margin-bottom:12px;align-items:center">

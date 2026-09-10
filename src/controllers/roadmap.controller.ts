@@ -9,7 +9,13 @@ import {
   updateRoadmapDetail,
   updateRoadmapItem,
 } from "../services/roadmap.service.js";
+import {
+  buildRoadmapImportTemplate,
+  importRoadmapFromWorkbook,
+} from "../services/roadmap-import.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 // GET /api/roadmap-items?year=YYYY&department_id=X
 export async function listRoadmapItemsHandler(req: Request, res: Response) {
@@ -98,4 +104,38 @@ export async function deleteRoadmapDetailHandler(req: Request, res: Response) {
   const ok = await deleteRoadmapDetail(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy chi tiết công việc" });
   res.status(204).send();
+}
+
+// GET /api/roadmap-items/import-template — file .xlsx mẫu nhập roadmap.
+export async function downloadRoadmapTemplateHandler(_req: Request, res: Response) {
+  const buffer = await buildRoadmapImportTemplate();
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="mau-nhap-roadmap.xlsx"`);
+  res.send(Buffer.from(buffer));
+}
+
+// POST /api/roadmap-items/import?year=YYYY&department_id=X — body là bytes thô .xlsx.
+export async function importRoadmapHandler(req: Request, res: Response) {
+  const year = Number(req.query.year);
+  if (!Number.isInteger(year)) {
+    return res.status(400).json({ error: "Query 'year' không hợp lệ" });
+  }
+  const buffer = req.body;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    return res.status(400).json({ error: "Không nhận được nội dung file" });
+  }
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    return res.status(400).json({ error: "File vượt quá 20MB" });
+  }
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+
+  try {
+    const result = await importRoadmapFromWorkbook(year, buffer, departmentId);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });
+  }
 }

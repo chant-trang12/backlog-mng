@@ -1,5 +1,67 @@
 import ExcelJS from "exceljs";
 
+const HEADER_FILL = "FF632423"; // đỏ mận đậm — đồng bộ với export Backlog
+const HEADER_FONT = "FFFFFFFF";
+
+// Bỏ dấu tiếng Việt + hạ chữ thường + gộp khoảng trắng, để so khớp tên cột
+// linh hoạt (người dùng gõ "Nhiem vu", "NHIỆM VỤ", "nhiem_vu"...).
+export function normalizeHeader(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Tìm tên cột thực trong file khớp với 1 trong các key (đã hoặc chưa chuẩn hoá).
+export function pickColumn(headers: string[], keys: string[]): string | undefined {
+  const norm = keys.map(normalizeHeader);
+  return headers.find((h) => norm.includes(normalizeHeader(h)));
+}
+
+// Dựng file .xlsx mẫu: dòng 1 tiêu đề (nền đỏ mận, chữ trắng, đóng băng),
+// kèm vài dòng ví dụ.
+export async function buildTemplateWorkbook(
+  sheetName: string,
+  columns: { header: string; width: number }[],
+  sampleRows: (string | number)[][],
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet(sheetName);
+  sheet.columns = columns;
+
+  sheet.getRow(1).eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_FILL } };
+  });
+  sheet.getRow(1).height = 24;
+  sampleRows.forEach((r) => sheet.addRow(r));
+  sheet.views = [{ state: "frozen", ySplit: 1 }];
+  return workbook.xlsx.writeBuffer();
+}
+
+// Chuyển 1 ô ngày (nhiều định dạng) về "YYYY-MM-DD"; rỗng nếu không parse được.
+export function parseDateToIso(text: string): string {
+  const t = (text ?? "").trim();
+  if (!t) return "";
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  m = t.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const d = new Date(t);
+  if (!Number.isNaN(d.getTime())) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  return "";
+}
+
 // Chuyển giá trị 1 ô Excel về chuỗi phẳng — xử lý Date, kết quả công thức và
 // rich text (exceljs trả về object { result, text, richText, ... }).
 export function cellToText(value: ExcelJS.CellValue): string {

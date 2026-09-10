@@ -90,6 +90,9 @@ const el = {
   downloadMemberTemplateBtn: document.getElementById("download-member-template-btn"),
   importMembersBtn: document.getElementById("import-members-btn"),
   memberFileInput: document.getElementById("member-file-input"),
+  downloadTaskTemplateBtn: document.getElementById("download-task-template-btn"),
+  importTasksBtn: document.getElementById("import-tasks-btn"),
+  taskFileInput: document.getElementById("task-file-input"),
   memberTbody: document.getElementById("member-tbody"),
   memberSearch: document.getElementById("member-search"),
   memberEmpty: document.getElementById("member-empty"),
@@ -197,6 +200,9 @@ const el = {
   roadmapYearPrev: document.getElementById("roadmap-year-prev"),
   roadmapYearNext: document.getElementById("roadmap-year-next"),
   addRoadmapBtn: document.getElementById("add-roadmap-btn"),
+  downloadRoadmapTemplateBtn: document.getElementById("download-roadmap-template-btn"),
+  importRoadmapBtn: document.getElementById("import-roadmap-btn"),
+  roadmapFileInput: document.getElementById("roadmap-file-input"),
   roadmapTbody: document.getElementById("roadmap-tbody"),
   roadmapEmpty: document.getElementById("roadmap-empty"),
   roadmapDialog: document.getElementById("roadmap-dialog"),
@@ -1336,6 +1342,72 @@ el.memberForm.addEventListener("submit", async (e) => {
       await loadMembers();
       showToast("Đã thêm nhân sự.", "success");
     }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Import Excel dùng chung (Nhân sự / Nhiệm vụ / Roadmap) ----
+
+async function runExcelImport({ url, file, unit }) {
+  const buffer = await file.arrayBuffer();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: buffer,
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error(b.error || `Lỗi ${res.status}`);
+  }
+  const result = await res.json();
+  let msg = `Đã nhập ${result.imported} ${unit}.`;
+  if (result.teamsCreated?.length) {
+    msg += ` Tạo mới ${result.teamsCreated.length} team: ${result.teamsCreated.join(", ")}.`;
+  }
+  if (result.skipped?.length) {
+    const detail = result.skipped
+      .slice(0, 5)
+      .map((s) => {
+        const name = s.nhiem_vu || s.name;
+        return `dòng ${s.row}${name ? ` (${name})` : ""}: ${s.reason}`;
+      })
+      .join("; ");
+    const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+    showToast(`${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`, "error");
+  } else {
+    showToast(msg, "success");
+  }
+}
+
+// ---- Import Excel: Nhiệm vụ (Backlog) ----
+
+el.downloadTaskTemplateBtn.addEventListener("click", () => {
+  if (!state.currentPeriodId) {
+    showToast("Hãy chọn một tháng backlog trước.");
+    return;
+  }
+  window.location.href = `/api/periods/${state.currentPeriodId}/tasks/import-template`;
+});
+el.importTasksBtn.addEventListener("click", () => {
+  if (!state.currentPeriodId) {
+    showToast("Hãy chọn một tháng backlog trước.");
+    return;
+  }
+  el.taskFileInput.click();
+});
+el.taskFileInput.addEventListener("change", async () => {
+  const file = el.taskFileInput.files[0];
+  el.taskFileInput.value = "";
+  if (!file) return;
+  try {
+    await runExcelImport({
+      url: `/api/periods/${state.currentPeriodId}/tasks/import${deptParam("?")}`,
+      file,
+      unit: "nhiệm vụ",
+    });
+    await loadTeams();
+    await loadTasks();
   } catch (err) {
     showToast(err.message);
   }
@@ -4236,6 +4308,32 @@ el.addRoadmapBtn.addEventListener("click", () => {
 el.roadmapCancelBtn.addEventListener("click", () => el.roadmapDialog.close());
 el.roadmapYearPrev.addEventListener("click", () => stepRoadmapYear(-1));
 el.roadmapYearNext.addEventListener("click", () => stepRoadmapYear(1));
+
+el.downloadRoadmapTemplateBtn.addEventListener("click", () => {
+  window.location.href = "/api/roadmap-items/import-template";
+});
+el.importRoadmapBtn.addEventListener("click", () => {
+  if (state.currentDepartmentId == null) {
+    showToast("Chưa có phòng ban nào.");
+    return;
+  }
+  el.roadmapFileInput.click();
+});
+el.roadmapFileInput.addEventListener("change", async () => {
+  const file = el.roadmapFileInput.files[0];
+  el.roadmapFileInput.value = "";
+  if (!file) return;
+  try {
+    await runExcelImport({
+      url: `/api/roadmap-items/import?year=${state.roadmapYear}${deptParam()}`,
+      file,
+      unit: "dòng roadmap",
+    });
+    await loadRoadmap();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 el.roadmapForm.addEventListener("submit", async (e) => {
   e.preventDefault();

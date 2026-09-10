@@ -1,9 +1,11 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import {
   createTaskHandler,
   deleteTaskHandler,
+  downloadTaskTemplateHandler,
   exportBacklogHandler,
   getTaskHandler,
+  importTasksHandler,
   listTasksHandler,
   markTasksNoScoreHandler,
   markTasksTonHandler,
@@ -16,6 +18,13 @@ const router = Router();
 
 // Đặt trước "/tasks/:id" để tránh xung đột path.
 router.get("/periods/:periodId/tasks/export", exportBacklogHandler);
+router.get("/periods/:periodId/tasks/import-template", downloadTaskTemplateHandler);
+// Body là bytes thô .xlsx (client gửi File trực tiếp) — express.raw() riêng.
+router.post(
+  "/periods/:periodId/tasks/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importTasksHandler,
+);
 router.post("/periods/:periodId/tasks/move-to-next-month", moveTasksToNextMonthHandler);
 router.post("/tasks/mark-no-score", markTasksNoScoreHandler);
 router.post("/tasks/unmark-no-score", unmarkTasksNoScoreHandler);

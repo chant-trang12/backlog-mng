@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
+import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
+
+async function xlsxBuffer(headers: string[], rows: (string | number)[][]): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const sheet = wb.addWorksheet("Sheet1");
+  sheet.addRow(headers);
+  rows.forEach((r) => sheet.addRow(r));
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
 
 describe("Roadmap năm", () => {
   it("creates, lists (theo year + department_id), updates, and deletes a roadmap item", async () => {
@@ -126,6 +135,69 @@ describe("Roadmap năm", () => {
     ).toBe(400);
     expect(
       (await request(app).post(`/api/roadmap-items/${itemId}/details`).send({ month: 3 })).status,
+    ).toBe(400);
+  });
+
+  it("serves a roadmap import template and imports rows from an Excel file", async () => {
+    const app = createApp();
+    const tpl = await request(app).get("/api/roadmap-items/import-template").buffer(true);
+    expect(tpl.status).toBe(200);
+    expect(tpl.headers["content-type"]).toContain("spreadsheetml");
+
+    const buf = await xlsxBuffer(
+      [
+        "Team",
+        "Hệ thống",
+        "Mục tiêu",
+        "Nhiệm vụ",
+        "DOD",
+        "Điều kiện đảm bảo",
+        "Phân loại",
+        "Thời gian bắt đầu",
+        "Thời gian kết thúc",
+        "Trạng thái",
+        "Ghi chú",
+      ],
+      [
+        ["CRM", "Website", "Tính năng mới", "RM import A", "prod", "test", "NVKH", "02/01/2095", "15/03/2095", "Đang thực hiện", "n"],
+        ["", "", "", "Thiếu team", "", "", "", "", "", "", ""],
+        ["CRM", "", "", "", "", "", "", "", "", "", ""],
+      ],
+    );
+    const res = await request(app)
+      .post("/api/roadmap-items/import?year=2095&department_id=1")
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(1);
+    expect(res.body.skipped).toHaveLength(2);
+
+    const list = await request(app).get("/api/roadmap-items?year=2095&department_id=1");
+    const a = list.body.find((r: { nhiem_vu: string }) => r.nhiem_vu === "RM import A");
+    expect(a.thoi_gian_bat_dau).toBe("2095-01-02");
+    expect(a.thoi_gian_ket_thuc).toBe("2095-03-15");
+    expect(a.trang_thai).toBe("Đang thực hiện");
+    expect(a.he_thong).toBe("Website");
+  });
+
+  it("rejects a roadmap import file missing the Nhiệm vụ column, and import with bad year", async () => {
+    const app = createApp();
+    const buf = await xlsxBuffer(["Team", "Ghi chú"], [["CRM", "x"]]);
+    expect(
+      (
+        await request(app)
+          .post("/api/roadmap-items/import?year=2095&department_id=1")
+          .set("Content-Type", "application/octet-stream")
+          .send(buf)
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(app)
+          .post("/api/roadmap-items/import?year=abc")
+          .set("Content-Type", "application/octet-stream")
+          .send(buf)
+      ).status,
     ).toBe(400);
   });
 });

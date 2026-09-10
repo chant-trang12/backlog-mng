@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
+import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
+
+async function xlsxBuffer(headers: string[], rows: (string | number)[][]): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const sheet = wb.addWorksheet("Sheet1");
+  sheet.addRow(headers);
+  rows.forEach((r) => sheet.addRow(r));
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
 
 describe("Backlog CRUD", () => {
   it("creates a period, adds tasks per team, updates progress, and exports Excel", async () => {
@@ -296,5 +305,52 @@ describe("Backlog CRUD", () => {
       .send({ ids: [task.body.id] });
     expect(move.body.targetPeriod.year).toBe(2036);
     expect(move.body.targetPeriod.month).toBe(1);
+  });
+
+  it("serves a task import template and imports tasks from an Excel file", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2045, month: 4 });
+    const periodId = period.body.id;
+
+    const tpl = await request(app)
+      .get(`/api/periods/${periodId}/tasks/import-template`)
+      .buffer(true);
+    expect(tpl.status).toBe(200);
+    expect(tpl.headers["content-type"]).toContain("spreadsheetml");
+
+    const buf = await xlsxBuffer(
+      ["Team", "Nhiệm vụ", "Tag", "Tính chất", "DoD", "Deadline", "% Hoàn thành", "Trạng thái", "Tiến độ"],
+      [
+        ["CRM", "Việc A", "Số hoá", "NVKH", "Xong", "15/03/2045", 30, "Đang thực hiện", "note"],
+        ["CRM", "", "", "", "", "", "", "", ""], // thiếu nhiệm vụ -> bỏ qua
+        ["", "Việc thiếu team", "", "", "", "", "", "", ""], // thiếu team -> bỏ qua
+      ],
+    );
+    const res = await request(app)
+      .post(`/api/periods/${periodId}/tasks/import?department_id=1`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(1);
+    expect(res.body.skipped).toHaveLength(2);
+
+    const list = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const a = list.body.find((t: { nhiem_vu: string }) => t.nhiem_vu === "Việc A");
+    expect(a.deadline).toBe("2045-03-15");
+    expect(a.phan_tram_hoan_thanh).toBe(30);
+    expect(a.trang_thai).toBe("Đang thực hiện");
+    expect(a.tag).toBe("Số hoá");
+  });
+
+  it("rejects a task import file missing the Nhiệm vụ column", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2045, month: 5 });
+    const buf = await xlsxBuffer(["Team", "Ghi chú"], [["CRM", "x"]]);
+    const res = await request(app)
+      .post(`/api/periods/${period.body.id}/tasks/import`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Nhiệm vụ");
   });
 });

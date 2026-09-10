@@ -11,8 +11,11 @@ import {
   updateTask,
 } from "../services/task.service.js";
 import { exportBacklogToExcel } from "../services/export.service.js";
+import { buildTaskImportTemplate, importTasksFromWorkbook } from "../services/task-import.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 // 1.3 Nhập mới task cho một team trong tháng backlog `periodId`.
 export async function createTaskHandler(req: Request, res: Response) {
@@ -129,5 +132,41 @@ export async function exportBacklogHandler(req: Request, res: Response) {
     res.send(Buffer.from(buffer));
   } catch (err) {
     res.status(404).json({ error: (err as Error).message });
+  }
+}
+
+// GET /api/periods/:periodId/tasks/import-template — file .xlsx mẫu nhập task.
+export async function downloadTaskTemplateHandler(_req: Request, res: Response) {
+  const buffer = await buildTaskImportTemplate();
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="mau-nhap-nhiem-vu.xlsx"`);
+  res.send(Buffer.from(buffer));
+}
+
+// POST /api/periods/:periodId/tasks/import?department_id=Y — body là bytes thô
+// file .xlsx. Chỉ thêm mới; Team chưa có được tạo tự động.
+export async function importTasksHandler(req: Request, res: Response) {
+  const periodId = parsePositiveInt(req.params.periodId);
+  if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
+  const period = await getPeriod(periodId);
+  if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
+
+  const buffer = req.body;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    return res.status(400).json({ error: "Không nhận được nội dung file" });
+  }
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    return res.status(400).json({ error: "File vượt quá 20MB" });
+  }
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+
+  try {
+    const result = await importTasksFromWorkbook(periodId, buffer, departmentId);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });
   }
 }
