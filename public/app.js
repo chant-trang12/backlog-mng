@@ -619,13 +619,15 @@ function gradingEntries(t) {
       graded_at: t.cpo_graded_at,
     });
   }
-  return entries;
+  return { past, entries };
 }
 
 // mode: "percent" (cột % Đánh giá) hoặc "content" (cột Nội dung đánh giá).
 function renderGradingHistory(t, mode) {
-  const entries = gradingEntries(t);
-  if (entries.length <= 1) return ""; // chỉ 1 lần -> đã hiện ở trên
+  const { past, entries } = gradingEntries(t);
+  // Hiện nút Lịch sử khi có đánh giá của THÁNG TRƯỚC (không hiện ở ô chính),
+  // hoặc khi có từ 2 lần đánh giá trở lên.
+  if (past.length === 0 && entries.length <= 1) return "";
 
   const pct = (e) =>
     e.cpo_danh_gia !== null && e.cpo_danh_gia !== undefined ? e.cpo_danh_gia + "%" : "—";
