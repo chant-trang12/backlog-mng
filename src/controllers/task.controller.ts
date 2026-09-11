@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import {
   createTask,
   deleteTask,
+  deleteTasks,
   getTask,
   listTasks,
   markTasksNoScore,
@@ -71,6 +72,16 @@ export async function deleteTaskHandler(req: Request, res: Response) {
   const ok = await deleteTask(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy task" });
   res.status(204).send();
+}
+
+// Xóa nhiều task theo checkbox đã chọn trên bảng Danh sách nhiệm vụ.
+export async function deleteSelectedTasksHandler(req: Request, res: Response) {
+  const { ids } = req.body ?? {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
+  }
+  const deleted = await deleteTasks(ids.map((id: unknown) => Number(id)));
+  res.json({ deleted });
 }
 
 // Chuyển các task đã chọn sang tháng kế tiếp (tự tạo tháng đích nếu chưa có),

@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import {
   createTaskHandler,
+  deleteSelectedTasksHandler,
   deleteTaskHandler,
   downloadTaskTemplateHandler,
   exportBacklogHandler,
@@ -26,6 +27,7 @@ router.post(
   importTasksHandler,
 );
 router.post("/periods/:periodId/tasks/move-to-next-month", moveTasksToNextMonthHandler);
+router.post("/tasks/delete-selected", deleteSelectedTasksHandler);
 router.post("/tasks/mark-no-score", markTasksNoScoreHandler);
 router.post("/tasks/unmark-no-score", unmarkTasksNoScoreHandler);
 router.post("/tasks/mark-ton", markTasksTonHandler);

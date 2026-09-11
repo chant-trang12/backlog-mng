@@ -1721,6 +1721,7 @@ el.bulkActionsMenu.addEventListener("click", async (e) => {
   else if (action === "ton") await doMarkTasksTon();
   else if (action === "no-score") await doMarkTasksNoScore();
   else if (action === "unmark-no-score") await doUnmarkTasksNoScore();
+  else if (action === "delete") await doDeleteTasks();
 });
 
 el.taskSelectAll.addEventListener("change", (e) => {
@@ -1786,6 +1787,23 @@ async function doUnmarkTasksNoScore() {
     state.selectedTaskIds.clear();
     await loadTasks();
     showToast(`Đã bỏ đánh dấu "Không tính điểm" cho ${ids.length} task.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+async function doDeleteTasks() {
+  const ids = [...state.selectedTaskIds];
+  if (ids.length === 0) return;
+  if (!confirm(`Xóa vĩnh viễn ${ids.length} task đã chọn? Không thể hoàn tác.`)) return;
+  try {
+    await api("/api/tasks/delete-selected", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedTaskIds.clear();
+    await loadTasks();
+    showToast(`Đã xóa ${ids.length} task.`, "success");
   } catch (err) {
     showToast(err.message);
   }

@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreatePhanLoaiInput, PhanLoaiOption, UpdatePhanLoaiInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listPhanLoai(): Promise<PhanLoaiOption[]> {
   const rows = await db("phan_loai_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -18,7 +19,7 @@ export async function createPhanLoai(input: CreatePhanLoaiInput): Promise<PhanLo
     : -1;
   const [created] = await db("phan_loai_options")
     .insert({
-      ten_phan_loai: input.ten_phan_loai.trim(),
+      ten_phan_loai: await resolveUniqueName("phan_loai_options", "ten_phan_loai", input.ten_phan_loai),
       thu_tu: maxThuTu + 1,
     })
     .returning("*");

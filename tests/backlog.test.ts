@@ -407,4 +407,31 @@ describe("Backlog CRUD", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("Nhiệm vụ");
   });
+
+  it("bulk-deletes selected tasks via checkbox delete-selected", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2048, month: 1 });
+    const periodId = period.body.id;
+    const t1 = await request(app).post(`/api/periods/${periodId}/tasks`).send({ team: "CRM", nhiem_vu: "Bulk del 1" });
+    const t2 = await request(app).post(`/api/periods/${periodId}/tasks`).send({ team: "CRM", nhiem_vu: "Bulk del 2" });
+    const t3 = await request(app).post(`/api/periods/${periodId}/tasks`).send({ team: "CRM", nhiem_vu: "Bulk del 3" });
+
+    const res = await request(app)
+      .post("/api/tasks/delete-selected")
+      .send({ ids: [t1.body.id, t2.body.id] });
+    expect(res.status).toBe(200);
+    expect(res.body.deleted).toBe(2);
+
+    const list = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const ids = list.body.map((t: { id: number }) => t.id);
+    expect(ids).not.toContain(t1.body.id);
+    expect(ids).not.toContain(t2.body.id);
+    expect(ids).toContain(t3.body.id);
+  });
+
+  it("rejects delete-selected tasks with an empty ids array", async () => {
+    const app = createApp();
+    const res = await request(app).post("/api/tasks/delete-selected").send({ ids: [] });
+    expect(res.status).toBe(400);
+  });
 });

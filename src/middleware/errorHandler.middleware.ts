@@ -1,5 +1,20 @@
 import type { Request, Response, NextFunction } from "express";
 
+// Dịch lỗi ràng buộc DB thô (SQLite/MSSQL) thành thông báo tiếng Việt gọn —
+// áp dụng chung cho MỌI bảng thay vì phải bắt lỗi thủ công ở từng service.
+function friendlyDbError(message: string): { message: string; status: number } | null {
+  if (/UNIQUE constraint failed/i.test(message) || /violation of unique/i.test(message)) {
+    return { message: "Giá trị này đã tồn tại — vui lòng dùng tên khác.", status: 409 };
+  }
+  if (/FOREIGN KEY constraint failed/i.test(message) || /conflicted with the (REFERENCE|FOREIGN KEY)/i.test(message)) {
+    return {
+      message: "Không thể thực hiện vì dữ liệu đang được dùng ở nơi khác.",
+      status: 409,
+    };
+  }
+  return null;
+}
+
 export function errorHandler(
   err: unknown,
   _req: Request,
@@ -8,8 +23,10 @@ export function errorHandler(
 ): void {
   console.error("[ERROR]", err);
   const e = err as any;
-  const message = e instanceof Error ? e.message : "Internal server error";
-  const statusCode = res.statusCode && res.statusCode >= 400 ? res.statusCode : 500;
+  const rawMessage = e instanceof Error ? e.message : "Internal server error";
+  const friendly = friendlyDbError(rawMessage);
+  const message = friendly?.message ?? rawMessage;
+  const statusCode = friendly?.status ?? (res.statusCode && res.statusCode >= 400 ? res.statusCode : 500);
 
   const payload: Record<string, unknown> = { error: message };
 

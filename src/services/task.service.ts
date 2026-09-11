@@ -121,6 +121,13 @@ export async function deleteTask(id: number): Promise<boolean> {
   return count > 0;
 }
 
+// Xóa nhiều task theo danh sách id đã chọn (checkbox trên bảng Danh sách nhiệm vụ).
+export async function deleteTasks(ids: number[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const count = await db("tasks").whereIn("id", ids).delete();
+  return Number(count);
+}
+
 function addTinhChatTon(tinhChat: string | null): string {
   const items = (tinhChat ?? "")
     .split(",")

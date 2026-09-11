@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { ChucVuOption, CreateChucVuInput, UpdateChucVuInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listChucVu(): Promise<ChucVuOption[]> {
   const rows = await db("chuc_vu_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -18,7 +19,7 @@ export async function createChucVu(input: CreateChucVuInput): Promise<ChucVuOpti
     : -1;
   const [created] = await db("chuc_vu_options")
     .insert({
-      ten_chuc_vu: input.ten_chuc_vu.trim(),
+      ten_chuc_vu: await resolveUniqueName("chuc_vu_options", "ten_chuc_vu", input.ten_chuc_vu),
       thu_tu: maxThuTu + 1,
     })
     .returning("*");

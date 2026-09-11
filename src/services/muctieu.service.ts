@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateMucTieuInput, MucTieuOption, UpdateMucTieuInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listMucTieu(): Promise<MucTieuOption[]> {
   const rows = await db("muc_tieu_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -15,7 +16,7 @@ export async function createMucTieu(input: CreateMucTieuInput): Promise<MucTieuO
   const maxRow = await db("muc_tieu_options").max({ m: "thu_tu" }).first();
   const thuTu = Number((maxRow as any)?.m ?? -1) + 1;
   const [created] = await db("muc_tieu_options")
-    .insert({ ten_muc_tieu: input.ten_muc_tieu.trim(), thu_tu: thuTu })
+    .insert({ ten_muc_tieu: await resolveUniqueName("muc_tieu_options", "ten_muc_tieu", input.ten_muc_tieu), thu_tu: thuTu })
     .returning("*");
   return created as MucTieuOption;
 }

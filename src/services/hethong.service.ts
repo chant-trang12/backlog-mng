@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateHeThongInput, HeThongOption, UpdateHeThongInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listHeThong(): Promise<HeThongOption[]> {
   const rows = await db("he_thong_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -15,7 +16,7 @@ export async function createHeThong(input: CreateHeThongInput): Promise<HeThongO
   const maxRow = await db("he_thong_options").max({ m: "thu_tu" }).first();
   const thuTu = Number((maxRow as any)?.m ?? -1) + 1;
   const [created] = await db("he_thong_options")
-    .insert({ ten_he_thong: input.ten_he_thong.trim(), thu_tu: thuTu })
+    .insert({ ten_he_thong: await resolveUniqueName("he_thong_options", "ten_he_thong", input.ten_he_thong), thu_tu: thuTu })
     .returning("*");
   return created as HeThongOption;
 }

@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateNhomInput, NhomOption, UpdateNhomInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listNhom(): Promise<NhomOption[]> {
   const rows = await db("nhom_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -18,7 +19,7 @@ export async function createNhom(input: CreateNhomInput): Promise<NhomOption> {
     : -1;
   const [created] = await db("nhom_options")
     .insert({
-      ten_nhom: input.ten_nhom.trim(),
+      ten_nhom: await resolveUniqueName("nhom_options", "ten_nhom", input.ten_nhom),
       thu_tu: maxThuTu + 1,
     })
     .returning("*");

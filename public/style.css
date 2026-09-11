@@ -425,6 +425,9 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
 .bulk-menu-item:hover:not(:disabled) { background: var(--bg); }
 .bulk-menu-item:disabled { color: var(--muted); cursor: not-allowed; }
 .bulk-menu-item[hidden] { display: none; }
+.bulk-menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+.bulk-menu-item-danger { color: var(--delete); font-weight: 600; }
+.bulk-menu-item-danger:hover:not(:disabled) { background: var(--delete-light); }
 
 /* Banner cảnh báo ở trang Backlog — chưa chấm điểm / quá hạn / sắp đến hạn. */
 .task-warnings-row {

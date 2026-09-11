@@ -161,4 +161,27 @@ describe("Cấu hình: Tag & Phân loại", () => {
     expect((await request(app).post("/api/he-thong").send({})).status).toBe(400);
     expect((await request(app).post("/api/muc-tieu").send({})).status).toBe(400);
   });
+
+  it('bấm "+ Thêm nhóm" nhiều lần liên tiếp (tên mặc định trùng) không lỗi — tự thêm hậu tố', async () => {
+    const app = createApp();
+    const a = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm mới test" });
+    const b = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm mới test" });
+    const c = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm mới test" });
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+    expect(c.status).toBe(201);
+    expect(a.body.ten_nhom).toBe("Nhóm mới test");
+    expect(b.body.ten_nhom).toBe("Nhóm mới test 2");
+    expect(c.body.ten_nhom).toBe("Nhóm mới test 3");
+  });
+
+  it("đổi tên trùng với 1 nhóm khác -> lỗi thân thiện (409), không lộ câu SQL thô", async () => {
+    const app = createApp();
+    const a = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm trùng A" });
+    const b = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm trùng B" });
+    const res = await request(app).put(`/api/nhom/${b.body.id}`).send({ ten_nhom: "Nhóm trùng A" });
+    expect(res.status).toBe(409);
+    expect(res.body.error).not.toMatch(/insert into|UNIQUE constraint/i);
+    expect(res.body.error).toContain("đã tồn tại");
+  });
 });

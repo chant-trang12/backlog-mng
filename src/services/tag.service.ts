@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateTagInput, TagOption, UpdateTagInput } from "../types/cskh.js";
+import { resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listTags(): Promise<TagOption[]> {
   const rows = await db("tags").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -18,7 +19,7 @@ export async function createTag(input: CreateTagInput): Promise<TagOption> {
     : -1;
   const [created] = await db("tags")
     .insert({
-      ten_tag: input.ten_tag.trim(),
+      ten_tag: await resolveUniqueName("tags", "ten_tag", input.ten_tag),
       thu_tu: maxThuTu + 1,
     })
     .returning("*");
