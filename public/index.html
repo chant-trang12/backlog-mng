@@ -1397,28 +1397,9 @@
         <label for="f-dod">DoD</label>
         <textarea id="f-dod"></textarea>
       </div>
-      <div class="field-row">
-        <div>
-          <label for="f-deadline">Deadline</label>
-          <input id="f-deadline" type="date" />
-        </div>
-        <div>
-          <label for="f-phan-tram">% Hoàn thành</label>
-          <input id="f-phan-tram" type="number" min="0" max="100" value="0" />
-        </div>
-        <div>
-          <label for="f-trang-thai">Trạng thái</label>
-          <select id="f-trang-thai">
-            <option>Chưa thực hiện</option>
-            <option>Đang thực hiện</option>
-            <option>Hoàn thành</option>
-            <option>Hủy</option>
-          </select>
-        </div>
-      </div>
       <div>
-        <label for="f-tien-do">Tiến độ</label>
-        <textarea id="f-tien-do"></textarea>
+        <label for="f-deadline">Deadline</label>
+        <input id="f-deadline" type="date" style="max-width:220px" />
       </div>
       <div class="actions">
         <button type="button" id="cancel-btn">Hủy</button>
@@ -1441,6 +1422,36 @@
       </div>
       <div class="actions">
         <button type="button" id="grade-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="progress-dialog">
+    <form id="progress-form">
+      <h2 style="margin:0">Cập nhật tiến độ</h2>
+      <input type="hidden" id="progress-task-id" />
+      <div class="field-row">
+        <div>
+          <label for="progress-phan-tram">% Hoàn thành</label>
+          <input id="progress-phan-tram" type="number" min="0" max="100" value="0" />
+        </div>
+        <div>
+          <label for="progress-trang-thai">Trạng thái</label>
+          <select id="progress-trang-thai">
+            <option>Chưa thực hiện</option>
+            <option>Đang thực hiện</option>
+            <option>Hoàn thành</option>
+            <option>Hủy</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="progress-tien-do">Tiến độ</label>
+        <textarea id="progress-tien-do"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" id="progress-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
       </div>
     </form>

@@ -381,6 +381,8 @@ button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; colo
 button.btn-delete:hover { background: var(--delete-light-hover); }
 button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
 button.btn-grade:hover { background: #c3d7b3; }
+button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
+button.btn-progress:hover { background: #b7d9ea; }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -620,6 +622,9 @@ th {
 
 #task-table th { text-align: center; }
 #task-table td { vertical-align: middle; }
+#task-table tbody tr:hover { background: var(--bg); }
+#task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */

@@ -342,6 +342,36 @@ describe("Backlog CRUD", () => {
     expect(a.tag).toBe("Số hoá");
   });
 
+  it('nhập "% Hoàn thành" đúng khi ô Excel định dạng Phần trăm (100% lưu dưới dạng số 1)', async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2049, month: 6 });
+    const periodId = period.body.id;
+
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Sheet1");
+    sheet.addRow(["Team", "Nhiệm vụ", "% Hoàn thành"]);
+    const row100 = sheet.addRow(["CRM", "Percent fmt 100", 1]);
+    row100.getCell(3).numFmt = "0%"; // Excel: 100% được lưu là số 1, không phải 100
+    const rowHalf = sheet.addRow(["CRM", "Percent fmt 50", 0.5]);
+    rowHalf.getCell(3).numFmt = "0%";
+    const rowPlain = sheet.addRow(["CRM", "Plain number 40", 40]); // không định dạng % -> giữ nguyên
+    void rowPlain;
+    const buf = Buffer.from(await wb.xlsx.writeBuffer());
+
+    const res = await request(app)
+      .post(`/api/periods/${periodId}/tasks/import`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(3);
+
+    const list = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const byName = (n: string) => list.body.find((t: { nhiem_vu: string }) => t.nhiem_vu === n);
+    expect(byName("Percent fmt 100").phan_tram_hoan_thanh).toBe(100);
+    expect(byName("Percent fmt 50").phan_tram_hoan_thanh).toBe(50);
+    expect(byName("Plain number 40").phan_tram_hoan_thanh).toBe(40);
+  });
+
   it("stamps cpo_graded_at khi chấm điểm; move sang tháng sau reset đánh giá và giữ snapshot tháng trước", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2047, month: 8 });

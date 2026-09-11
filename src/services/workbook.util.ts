@@ -87,12 +87,22 @@ export function parseDateToIso(text: string): string {
   return "";
 }
 
-// Chuyển giá trị 1 ô Excel về chuỗi phẳng — xử lý Date, kết quả công thức và
-// rich text (exceljs trả về object { result, text, richText, ... }).
-export function cellToText(value: ExcelJS.CellValue): string {
+// Chuyển giá trị 1 ô Excel về chuỗi phẳng — xử lý Date, kết quả công thức,
+// rich text (exceljs trả về object { result, text, richText, ... }) và Số
+// định dạng Phần trăm: Excel lưu 100% dưới dạng số 1 (không phải 100) —
+// nếu không quy đổi theo numFmt, "100%" trong file sẽ đọc thành 1.
+export function cellToText(cell: ExcelJS.Cell): string {
+  const value = cell.value;
   if (value === null || value === undefined) return "";
   if (value instanceof Date) {
     return `${String(value.getDate()).padStart(2, "0")}/${String(value.getMonth() + 1).padStart(2, "0")}/${value.getFullYear()}`;
+  }
+  if (typeof value === "number") {
+    const fmt = cell.numFmt || "";
+    if (fmt.includes("%")) {
+      return String(Math.round(value * 10000) / 100);
+    }
+    return String(value);
   }
   if (typeof value === "object") {
     const withResult = value as { result?: unknown; text?: unknown };
@@ -119,7 +129,7 @@ export async function parseFirstSheet(
   const headerRow = sheet.getRow(1);
   const headers: string[] = [];
   headerRow.eachCell({ includeEmpty: false }, (cell) => {
-    const text = cellToText(cell.value).trim();
+    const text = cellToText(cell).trim();
     if (text) headers.push(text);
   });
 
@@ -127,12 +137,12 @@ export async function parseFirstSheet(
   for (let r = 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     if (row.cellCount === 0) continue;
-    const isEmpty = headers.every((_, i) => cellToText(row.getCell(i + 1).value).trim() === "");
+    const isEmpty = headers.every((_, i) => cellToText(row.getCell(i + 1)).trim() === "");
     if (isEmpty) continue;
 
     const rowData: Record<string, string> = {};
     headers.forEach((header, i) => {
-      rowData[header] = cellToText(row.getCell(i + 1).value);
+      rowData[header] = cellToText(row.getCell(i + 1));
     });
     rows.push(rowData);
   }

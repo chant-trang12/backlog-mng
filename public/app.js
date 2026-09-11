@@ -126,6 +126,9 @@ const el = {
   gradeDialog: document.getElementById("grade-dialog"),
   gradeForm: document.getElementById("grade-form"),
   gradeCancelBtn: document.getElementById("grade-cancel-btn"),
+  progressDialog: document.getElementById("progress-dialog"),
+  progressForm: document.getElementById("progress-form"),
+  progressCancelBtn: document.getElementById("progress-cancel-btn"),
   addIncidentBtn: document.getElementById("add-incident-btn"),
   incidentTbody: document.getElementById("incident-tbody"),
   incidentEmpty: document.getElementById("incident-empty"),
@@ -1098,6 +1101,18 @@ el.taskSearch.addEventListener("input", () => {
   renderTasks();
 });
 
+// Bấm vào 1 dòng (ngoài checkbox/nút/ô nhập) -> tô nổi bật dòng đó, giúp dễ
+// theo dõi khi bảng nhiều cột phải cuộn ngang. Đăng ký 1 lần trên tbody
+// (không mất khi renderTasks() vẽ lại nội dung bên trong).
+el.taskTbody.addEventListener("click", (e) => {
+  if (e.target.closest("button, a, input, select, textarea, label")) return;
+  const tr = e.target.closest("tr");
+  if (!tr || !tr.parentElement) return;
+  const wasOn = tr.classList.contains("row-highlighted");
+  el.taskTbody.querySelectorAll("tr.row-highlighted").forEach((r) => r.classList.remove("row-highlighted"));
+  if (!wasOn) tr.classList.add("row-highlighted");
+});
+
 function applyTaskFilters() {
   const { tinhChat, khongTinhDiem, team, trangThai, tag } = state.taskFilters;
   const term = state.taskSearch.trim().toLowerCase();
@@ -1566,6 +1581,7 @@ function renderTasks() {
         <button class="small btn-edit edit-btn">Sửa</button>
         <button class="small btn-delete delete-btn">Xóa</button>
         <button class="small btn-grade grade-btn">Chấm điểm</button>
+        <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
       </div></td>
     </tr>`;
     })
@@ -1592,6 +1608,12 @@ function renderTasks() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openGradeDialog(state.tasks.find((t) => t.id === id));
+    });
+  });
+  el.taskTbody.querySelectorAll(".progress-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      openProgressDialog(state.tasks.find((t) => t.id === id));
     });
   });
   el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
@@ -1854,10 +1876,16 @@ function getTinhChatValue() {
     .join(", ");
 }
 
+// "Nhiệm vụ tồn" là giá trị hệ thống (tự gắn khi chuyển task sang tháng
+// sau), không có checkbox trong dialog Sửa — nếu task đang có sẵn, giữ lại
+// nguyên khi lưu, không để form (chỉ biết các Phân loại quản lý được) xoá mất.
+let editingTaskHasTon = false;
+
 function openTaskDialog(task) {
   el.taskForm.reset();
   document.getElementById("task-id").value = task?.id ?? "";
-  el.taskDialogTitle.textContent = task ? `Cập nhật task #${task.stt}` : "Nhập task mới";
+  el.taskDialogTitle.textContent = task ? `Sửa task #${task.stt}` : "Nhập task mới";
+  editingTaskHasTon = task ? taskHasTinhChatTon(task) : false;
 
   teamSelect.innerHTML = state.teams
     .map((t) => `<option value="${t.name}">${t.name}</option>`)
@@ -1878,9 +1906,6 @@ function openTaskDialog(task) {
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
   document.getElementById("f-dod").value = task?.dod ?? "";
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
-  document.getElementById("f-phan-tram").value = task?.phan_tram_hoan_thanh ?? 0;
-  document.getElementById("f-trang-thai").value = task?.trang_thai ?? "Chưa thực hiện";
-  document.getElementById("f-tien-do").value = task?.tien_do ?? "";
   el.taskDialog.showModal();
 }
 
@@ -1901,16 +1926,19 @@ el.cancelBtn.addEventListener("click", () => el.taskDialog.close());
 el.taskForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("task-id").value;
+  let tinhChat = getTinhChatValue();
+  if (editingTaskHasTon) {
+    const items = tinhChat.split(",").map((v) => v.trim()).filter(Boolean);
+    if (!items.includes("Nhiệm vụ tồn")) items.push("Nhiệm vụ tồn");
+    tinhChat = items.join(", ");
+  }
   const payload = {
     team: document.getElementById("f-team").value.trim(),
-    tinh_chat: getTinhChatValue() || undefined,
+    tinh_chat: tinhChat || undefined,
     tag: document.getElementById("f-tag").value || undefined,
     nhiem_vu: document.getElementById("f-nhiem-vu").value.trim(),
     dod: document.getElementById("f-dod").value.trim() || undefined,
     deadline: document.getElementById("f-deadline").value || undefined,
-    phan_tram_hoan_thanh: Number(document.getElementById("f-phan-tram").value) || 0,
-    trang_thai: document.getElementById("f-trang-thai").value,
-    tien_do: document.getElementById("f-tien-do").value.trim() || undefined,
   };
 
   try {
@@ -1959,6 +1987,40 @@ el.gradeForm.addEventListener("submit", async (e) => {
     el.gradeDialog.close();
     await loadTasks();
     showToast("Đã lưu chấm điểm.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Cập nhật tiến độ (% Hoàn thành, Trạng thái, Tiến độ) ----
+// Tách riêng khỏi dialog Sửa: đây là cập nhật định kỳ trong lúc làm việc,
+// không đụng tới nội dung task (Team/Tag/Phân loại/Nhiệm vụ/DoD/Deadline).
+
+function openProgressDialog(task) {
+  el.progressForm.reset();
+  document.getElementById("progress-task-id").value = task?.id ?? "";
+  document.getElementById("progress-phan-tram").value = task?.phan_tram_hoan_thanh ?? 0;
+  document.getElementById("progress-trang-thai").value = task?.trang_thai ?? "Chưa thực hiện";
+  document.getElementById("progress-tien-do").value = task?.tien_do ?? "";
+  el.progressDialog.showModal();
+}
+
+el.progressCancelBtn.addEventListener("click", () => el.progressDialog.close());
+
+el.progressForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("progress-task-id").value;
+  const payload = {
+    phan_tram_hoan_thanh: Number(document.getElementById("progress-phan-tram").value) || 0,
+    trang_thai: document.getElementById("progress-trang-thai").value,
+    tien_do: document.getElementById("progress-tien-do").value.trim() || undefined,
+  };
+
+  try {
+    await api(`/api/tasks/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    el.progressDialog.close();
+    await loadTasks();
+    showToast("Đã cập nhật tiến độ.", "success");
   } catch (err) {
     showToast(err.message);
   }
