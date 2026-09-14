@@ -1353,7 +1353,11 @@ el.addMemberBtn.addEventListener("click", () => {
 el.memberCancelBtn.addEventListener("click", () => el.memberDialog.close());
 
 el.downloadMemberTemplateBtn.addEventListener("click", () => {
-  window.location.href = "/api/members/import-template";
+  if (!state.currentPeriodId) {
+    showToast("Hãy chọn một tháng backlog trước.");
+    return;
+  }
+  window.location.href = `/api/members/import-template?period_id=${state.currentPeriodId}${deptParam()}`;
 });
 
 el.importMembersBtn.addEventListener("click", () => {

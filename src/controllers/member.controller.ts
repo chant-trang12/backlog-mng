@@ -6,7 +6,7 @@ import {
   listMembers,
   updateMember,
 } from "../services/member.service.js";
-import { getTeam } from "../services/team.service.js";
+import { getTeam, listTeams } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
 import {
   buildMemberImportTemplate,
@@ -93,10 +93,15 @@ export async function deleteMemberHandler(req: Request, res: Response) {
   res.status(204).send();
 }
 
-// GET /api/members/import-template — tải file .xlsx mẫu (3 cột: Họ và Tên,
-// Chức vụ, Team) để nhập nhân sự hàng loạt.
-export async function downloadMemberTemplateHandler(_req: Request, res: Response) {
-  const buffer = await buildMemberImportTemplate();
+// GET /api/members/import-template?period_id=X&department_id=Y — tải file
+// .xlsx mẫu (3 cột: Họ và Tên, Chức vụ, Team) để nhập nhân sự hàng loạt; cột
+// Team có dropdown chọn theo team hiện có của tháng + phòng đang chọn.
+export async function downloadMemberTemplateHandler(req: Request, res: Response) {
+  const periodId = req.query.period_id != null ? Number(req.query.period_id) : null;
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const teams =
+    periodId != null && Number.isFinite(periodId) ? await listTeams(periodId, departmentId) : [];
+  const buffer = await buildMemberImportTemplate({ teams: teams.map((t) => t.name) });
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

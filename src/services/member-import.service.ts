@@ -16,8 +16,10 @@ export interface ImportMembersResult {
   teamsCreated: string[];
 }
 
-// Tạo file .xlsx mẫu: dòng 1 tiêu đề 3 cột, kèm 2 dòng ví dụ.
-export function buildMemberImportTemplate(): Promise<ExcelJS.Buffer> {
+// Tạo file .xlsx mẫu: dòng 1 tiêu đề 3 cột, kèm 2 dòng ví dụ. Cột Team có
+// dropdown chọn theo team hiện có (tháng + phòng đang chọn) nếu truyền vào.
+export function buildMemberImportTemplate(opts?: { teams?: string[] }): Promise<ExcelJS.Buffer> {
+  const teams = opts?.teams ?? [];
   return buildTemplateWorkbook(
     "Nhân sự",
     [
@@ -26,9 +28,10 @@ export function buildMemberImportTemplate(): Promise<ExcelJS.Buffer> {
       { header: MEMBER_IMPORT_HEADERS[2], width: 18 },
     ],
     [
-      ["Nguyễn Văn A", "Trưởng nhóm", "CRM"],
-      ["Trần Thị B", "", "CSKH"],
+      ["Nguyễn Văn A", "Trưởng nhóm", teams[0] ?? "CRM"],
+      ["Trần Thị B", "", teams[1] ?? "CSKH"],
     ],
+    [{ column: 3, options: teams }], // Team
   );
 }
 

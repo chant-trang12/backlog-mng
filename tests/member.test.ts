@@ -3,6 +3,20 @@ import request from "supertest";
 import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
 
+// supertest/superagent không có parser mặc định cho mime .xlsx — ép về text
+// sẽ làm hỏng dữ liệu nhị phân khi đọc lại response (VD kiểm tra dropdown
+// trong file mẫu). Parser thủ công này gom đúng bytes gốc.
+function binaryParser(res: NodeJS.ReadableStream & { setEncoding: (enc: string) => void }, callback: (err: Error | null, body: Buffer) => void) {
+  res.setEncoding("binary");
+  let data = "";
+  res.on("data", (chunk: string) => {
+    data += chunk;
+  });
+  res.on("end", () => {
+    callback(null, Buffer.from(data, "binary"));
+  });
+}
+
 // Dựng buffer .xlsx từ tiêu đề + các dòng dữ liệu, để test route import.
 async function xlsxBuffer(headers: string[], rows: (string | undefined)[][]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
@@ -117,6 +131,31 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
     expect(res.headers["content-type"]).toContain("spreadsheetml");
     expect(res.headers["content-disposition"]).toContain(".xlsx");
     expect(Number(res.headers["content-length"])).toBeGreaterThan(0);
+  });
+
+  it("cột Team trong file mẫu có dropdown theo team hiện có của tháng + phòng", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2054, 1);
+    await makeTeam(app, "Template Team A", periodId);
+    await makeTeam(app, "Template Team B", periodId);
+
+    const res = await request(app)
+      .get(`/api/members/import-template?period_id=${periodId}`)
+      .buffer(true)
+      .parse(binaryParser);
+    expect(res.status).toBe(200);
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(res.body as Buffer);
+    const sheet = wb.worksheets[0];
+    const dv = sheet.getCell("C2").dataValidation;
+    expect(dv?.type).toBe("list");
+    expect(dv?.formulae?.[0]).toMatch(/Danh mục/);
+
+    const lookup = wb.getWorksheet("Danh mục");
+    expect(lookup?.getColumn(1).values.slice(1)).toEqual(
+      expect.arrayContaining(["Template Team A", "Template Team B"]),
+    );
   });
 
   it("imports members from an Excel file: creates missing teams, skips rows without a name/team, is additive", async () => {
