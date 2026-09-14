@@ -226,6 +226,7 @@ const el = {
   roadmapDetailDialogTitle: document.getElementById("roadmap-detail-dialog-title"),
   roadmapDetailCancelBtn: document.getElementById("roadmap-detail-cancel-btn"),
   confirmDialogEl: document.getElementById("confirm-dialog"),
+  confirmDialogIcon: document.getElementById("confirm-dialog-icon"),
   confirmDialogTitle: document.getElementById("confirm-dialog-title"),
   confirmDialogMessage: document.getElementById("confirm-dialog-message"),
   confirmOkBtn: document.getElementById("confirm-ok-btn"),
@@ -442,6 +443,8 @@ function showToast(message, type = "error") {
 function confirmDialog(message, opts = {}) {
   const { title = "Xác nhận", okText = "OK", cancelText = "Hủy", danger = true } = opts;
   return new Promise((resolve) => {
+    el.confirmDialogIcon.textContent = danger ? "!" : "✓";
+    el.confirmDialogIcon.className = danger ? "confirm-icon" : "confirm-icon confirm-icon-primary";
     el.confirmDialogTitle.textContent = title;
     el.confirmDialogMessage.textContent = message;
     el.confirmOkBtn.textContent = okText;
