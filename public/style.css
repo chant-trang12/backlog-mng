@@ -350,9 +350,37 @@ input, select, textarea {
 /* select ở trình duyệt thật (không phải headless) tự co giãn theo option dài
    nhất — có option dài như "NV được giao từ BGĐ" khiến select rất rộng,
    không co lại theo flex được nên đẩy tràn cả hàng ra ngoài trang. Giới hạn
-   độ rộng tối đa, phần chữ dài sẽ bị cắt (…) thay vì đẩy vỡ layout. */
+   độ rộng tối đa, phần chữ dài sẽ bị cắt (…) thay vì đẩy vỡ layout.
+   Bỏ mũi tên gốc hệ điều hành (appearance: none), vẽ lại mũi tên riêng theo
+   màu chữ hiện tại (currentColor — tự đổi theo theme sáng/tối) để khớp
+   phong cách bo tròn/màu olive-khaki chung của trang thay vì control mặc
+   định của trình duyệt. */
 select {
   max-width: 220px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 26px;
+}
+select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+/* Danh sách option khi mở dropdown — Chrome/Firefox theo được màu nền/chữ
+   này; Safari trên macOS dùng control gốc hệ điều hành nên có thể không áp
+   dụng hết được (giới hạn của trình duyệt, không phải CSS). */
+select option {
+  background: var(--card-bg);
+  color: var(--text);
+}
+select option:checked,
+select option:hover {
+  background: var(--primary);
+  color: #fff;
 }
 
 textarea { resize: vertical; min-height: 60px; width: 100%; }

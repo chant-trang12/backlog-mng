@@ -225,6 +225,11 @@ const el = {
   roadmapDetailForm: document.getElementById("roadmap-detail-form"),
   roadmapDetailDialogTitle: document.getElementById("roadmap-detail-dialog-title"),
   roadmapDetailCancelBtn: document.getElementById("roadmap-detail-cancel-btn"),
+  confirmDialogEl: document.getElementById("confirm-dialog"),
+  confirmDialogTitle: document.getElementById("confirm-dialog-title"),
+  confirmDialogMessage: document.getElementById("confirm-dialog-message"),
+  confirmOkBtn: document.getElementById("confirm-ok-btn"),
+  confirmCancelBtn: document.getElementById("confirm-cancel-btn"),
   chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
@@ -427,6 +432,37 @@ function showToast(message, type = "error") {
     toast.classList.add("toast-hide");
     toast.addEventListener("animationend", () => toast.remove(), { once: true });
   }, 3000);
+}
+
+// Popup xác nhận dùng chung toàn hệ thống, thay cho window.confirm() mặc
+// định của trình duyệt (không theo được giao diện/theme của trang). Trả về
+// Promise<boolean> — resolve(true) khi bấm OK, resolve(false) khi Hủy/Esc.
+// `opts.danger` (mặc định true) quyết định màu nút OK: đỏ cho hành động phá
+// hủy (xóa...), xanh olive (primary) cho hành động có thể đảo ngược.
+function confirmDialog(message, opts = {}) {
+  const { title = "Xác nhận", okText = "OK", cancelText = "Hủy", danger = true } = opts;
+  return new Promise((resolve) => {
+    el.confirmDialogTitle.textContent = title;
+    el.confirmDialogMessage.textContent = message;
+    el.confirmOkBtn.textContent = okText;
+    el.confirmOkBtn.className = danger ? "danger" : "primary";
+    el.confirmCancelBtn.textContent = cancelText;
+
+    const finish = (result) => {
+      el.confirmOkBtn.removeEventListener("click", onOk);
+      el.confirmCancelBtn.removeEventListener("click", onCancel);
+      el.confirmDialogEl.removeEventListener("cancel", onCancel);
+      if (el.confirmDialogEl.open) el.confirmDialogEl.close();
+      resolve(result);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+
+    el.confirmOkBtn.addEventListener("click", onOk);
+    el.confirmCancelBtn.addEventListener("click", onCancel);
+    el.confirmDialogEl.addEventListener("cancel", onCancel); // phím Esc
+    el.confirmDialogEl.showModal();
+  });
 }
 
 async function api(path, options) {
@@ -926,7 +962,7 @@ el.deletePeriodBtn.addEventListener("click", async () => {
   }
   const period = state.periods.find((p) => p.id === state.currentPeriodId);
   const label = period?.label ?? "tháng này";
-  if (!confirm(`Xóa ${label}? Toàn bộ task và dữ liệu CSKH (Sự cố, Hỗ trợ ticket, Tỉ lệ khởi tạo) của tháng này sẽ bị xóa vĩnh viễn.`)) {
+  if (!await confirmDialog(`Xóa ${label}? Toàn bộ task và dữ liệu CSKH (Sự cố, Hỗ trợ ticket, Tỉ lệ khởi tạo) của tháng này sẽ bị xóa vĩnh viễn.`)) {
     return;
   }
   try {
@@ -1027,7 +1063,7 @@ function renderTeamList() {
   el.teamList.querySelectorAll(".pill-x").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (!confirm("Xóa team này? (task đã nhập với team này sẽ được giữ nguyên, nhân sự của team sẽ bị xóa)")) return;
+      if (!await confirmDialog("Xóa team này? (task đã nhập với team này sẽ được giữ nguyên, nhân sự của team sẽ bị xóa)")) return;
       try {
         await api(`/api/teams/${btn.dataset.id}`, { method: "DELETE" });
         await loadTeams();
@@ -1274,7 +1310,7 @@ function renderMemberTable() {
   el.memberTbody.querySelectorAll(".delete-member-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa nhân sự này?")) return;
+      if (!await confirmDialog("Xóa nhân sự này?")) return;
       try {
         await api(`/api/members/${id}`, { method: "DELETE" });
         state.selectedMemberIds.delete(id);
@@ -1308,7 +1344,7 @@ el.memberSelectAll.addEventListener("change", (e) => {
 el.deleteSelectedMembersBtn.addEventListener("click", async () => {
   const ids = [...state.selectedMemberIds];
   if (ids.length === 0) return;
-  if (!confirm(`Xóa ${ids.length} nhân sự đã chọn?`)) return;
+  if (!await confirmDialog(`Xóa ${ids.length} nhân sự đã chọn?`)) return;
   try {
     await api("/api/members/delete-selected", {
       method: "POST",
@@ -1641,7 +1677,7 @@ function renderTasks() {
   el.taskTbody.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa task này?")) return;
+      if (!await confirmDialog("Xóa task này?")) return;
       try {
         await api(`/api/tasks/${id}`, { method: "DELETE" });
         state.selectedTaskIds.delete(id);
@@ -1767,8 +1803,9 @@ async function doMoveTasksToNextMonth() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (
-    !confirm(
+    !await confirmDialog(
       `Chuyển ${ids.length} task đã chọn sang tháng sau? Task sẽ được đánh dấu "Nhiệm vụ tồn".`,
+      { danger: false },
     )
   ) {
     return;
@@ -1791,7 +1828,7 @@ async function doMoveTasksToNextMonth() {
 async function doMarkTasksNoScore() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
-  if (!confirm(`Đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`)) return;
+  if (!await confirmDialog(`Đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`, { danger: false })) return;
   try {
     await api("/api/tasks/mark-no-score", {
       method: "POST",
@@ -1808,7 +1845,7 @@ async function doMarkTasksNoScore() {
 async function doUnmarkTasksNoScore() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
-  if (!confirm(`Bỏ đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`)) return;
+  if (!await confirmDialog(`Bỏ đánh dấu "Không tính điểm" cho ${ids.length} task đã chọn?`, { danger: false })) return;
   try {
     await api("/api/tasks/unmark-no-score", {
       method: "POST",
@@ -1825,7 +1862,7 @@ async function doUnmarkTasksNoScore() {
 async function doDeleteTasks() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
-  if (!confirm(`Xóa vĩnh viễn ${ids.length} task đã chọn? Không thể hoàn tác.`)) return;
+  if (!await confirmDialog(`Xóa vĩnh viễn ${ids.length} task đã chọn? Không thể hoàn tác.`)) return;
   try {
     await api("/api/tasks/delete-selected", {
       method: "POST",
@@ -1843,8 +1880,9 @@ async function doMarkTasksTon() {
   const ids = [...state.selectedTaskIds];
   if (ids.length === 0) return;
   if (
-    !confirm(
+    !await confirmDialog(
       `Đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task đã chọn? Task sẽ được gắn Tính chất "Nhiệm vụ tồn" và Không tính điểm.`,
+      { danger: false },
     )
   ) {
     return;
@@ -2137,7 +2175,7 @@ function renderIncidents() {
   el.incidentTbody.querySelectorAll(".delete-incident-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa sự cố này?")) return;
+      if (!await confirmDialog("Xóa sự cố này?")) return;
       try {
         await api(`/api/incidents/${id}`, { method: "DELETE" });
         await loadIncidents();
@@ -2246,7 +2284,7 @@ function renderComplianceRecords() {
   el.complianceTbody.querySelectorAll(".delete-compliance-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu tuân thủ này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu tuân thủ này?")) return;
       try {
         await api(`/api/compliance-records/${id}`, { method: "DELETE" });
         await loadComplianceRecords();
@@ -2383,7 +2421,7 @@ function renderTrainingRecords() {
   el.trainingTbody.querySelectorAll(".delete-training-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu đào tạo này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu đào tạo này?")) return;
       try {
         await api(`/api/training-records/${id}`, { method: "DELETE" });
         await loadTrainingRecords();
@@ -2532,7 +2570,7 @@ function renderSupportRecords() {
   el.supportTbody.querySelectorAll(".delete-support-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu hỗ trợ này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu hỗ trợ này?")) return;
       try {
         await api(`/api/support-records/${id}`, { method: "DELETE" });
         await loadSupportRecords();
@@ -2678,7 +2716,7 @@ function renderDanhGiaRecords() {
   el.danhGiaTbody.querySelectorAll(".delete-danhgia-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu đánh giá này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu đánh giá này?")) return;
       try {
         await api(`/api/danh-gia-records/${id}`, { method: "DELETE" });
         await loadDanhGiaRecords();
@@ -2926,7 +2964,7 @@ el.noiQuySearch.addEventListener("input", () => {
 el.markExcludedNoiQuyBtn.addEventListener("click", async () => {
   const names = [...state.selectedNoiQuyNames];
   if (names.length === 0) return;
-  if (!confirm(`Đánh dấu "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ về 0.`)) return;
+  if (!await confirmDialog(`Đánh dấu "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ về 0.`, { danger: false })) return;
   try {
     await api("/api/noiquy-overrides", {
       method: "POST",
@@ -2944,7 +2982,7 @@ el.markExcludedNoiQuyBtn.addEventListener("click", async () => {
 el.unmarkExcludedNoiQuyBtn.addEventListener("click", async () => {
   const names = [...state.selectedNoiQuyNames];
   if (names.length === 0) return;
-  if (!confirm(`Bỏ "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ tính lại như bình thường.`)) return;
+  if (!await confirmDialog(`Bỏ "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ tính lại như bình thường.`, { danger: false })) return;
   try {
     await api("/api/noiquy-overrides", {
       method: "DELETE",
@@ -3034,7 +3072,7 @@ function renderAttendanceTable() {
   el.attendanceTbody.querySelectorAll(".delete-attendance-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dòng dữ liệu Chấm công này?")) return;
+      if (!await confirmDialog("Xóa dòng dữ liệu Chấm công này?")) return;
       try {
         await api(`/api/attendance-records/${id}`, { method: "DELETE" });
         state.selectedAttendanceIds.delete(id);
@@ -3095,7 +3133,7 @@ el.attendanceFileInput.addEventListener("change", async () => {
 el.deleteSelectedAttendanceBtn.addEventListener("click", async () => {
   const ids = [...state.selectedAttendanceIds];
   if (ids.length === 0) return;
-  if (!confirm(`Xóa ${ids.length} dòng dữ liệu Chấm công đã chọn?`)) return;
+  if (!await confirmDialog(`Xóa ${ids.length} dòng dữ liệu Chấm công đã chọn?`)) return;
   try {
     await api("/api/attendance-records/delete-selected", {
       method: "POST",
@@ -3112,7 +3150,7 @@ el.deleteSelectedAttendanceBtn.addEventListener("click", async () => {
 el.markExcludedAttendanceBtn.addEventListener("click", async () => {
   const ids = [...state.selectedAttendanceIds];
   if (ids.length === 0) return;
-  if (!confirm(`Đánh dấu "Không tính đi muộn" cho ${ids.length} dòng đã chọn? Các dòng này sẽ không được tính vào Lượt đi muộn ở tab Nội quy.`)) return;
+  if (!await confirmDialog(`Đánh dấu "Không tính đi muộn" cho ${ids.length} dòng đã chọn? Các dòng này sẽ không được tính vào Lượt đi muộn ở tab Nội quy.`, { danger: false })) return;
   try {
     await api("/api/attendance-records/mark-excluded", {
       method: "POST",
@@ -3129,7 +3167,7 @@ el.markExcludedAttendanceBtn.addEventListener("click", async () => {
 el.unmarkExcludedAttendanceBtn.addEventListener("click", async () => {
   const ids = [...state.selectedAttendanceIds];
   if (ids.length === 0) return;
-  if (!confirm(`Bỏ "Không tính đi muộn" cho ${ids.length} dòng đã chọn? Các dòng này sẽ tính lại vào Lượt đi muộn ở tab Nội quy.`)) return;
+  if (!await confirmDialog(`Bỏ "Không tính đi muộn" cho ${ids.length} dòng đã chọn? Các dòng này sẽ tính lại vào Lượt đi muộn ở tab Nội quy.`, { danger: false })) return;
   try {
     await api("/api/attendance-records/mark-excluded", {
       method: "POST",
@@ -3180,7 +3218,7 @@ function renderTickets() {
   el.ticketTbody.querySelectorAll(".delete-ticket-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu ticket này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu ticket này?")) return;
       try {
         await api(`/api/tickets/${id}`, { method: "DELETE" });
         await loadTickets();
@@ -3284,7 +3322,7 @@ function renderCreationRates() {
   el.creationRateTbody.querySelectorAll(".delete-creation-rate-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa dữ liệu này?")) return;
+      if (!await confirmDialog("Xóa dữ liệu này?")) return;
       try {
         await api(`/api/creation-rates/${id}`, { method: "DELETE" });
         await loadCreationRates();
@@ -3444,7 +3482,7 @@ function renderTieuChi() {
   el.tieuChiTbody.querySelectorAll(".delete-tieuchi-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      if (!confirm("Xóa tiêu chí này? Toàn bộ điểm chuẩn đã cấu hình cho tiêu chí này cũng sẽ bị xóa.")) return;
+      if (!await confirmDialog("Xóa tiêu chí này? Toàn bộ điểm chuẩn đã cấu hình cho tiêu chí này cũng sẽ bị xóa.")) return;
       try {
         await api(`/api/tieu-chi/${id}`, { method: "DELETE" });
         await loadTieuChi();
@@ -3593,7 +3631,7 @@ function renderRanking() {
   });
   el.rankingTheadRow.querySelectorAll(".delete-ranking-column-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa cột này? Toàn bộ giá trị đã nhập trong cột sẽ bị xóa.")) return;
+      if (!await confirmDialog("Xóa cột này? Toàn bộ giá trị đã nhập trong cột sẽ bị xóa.")) return;
       try {
         await api(`/api/ranking-config/columns/${btn.dataset.columnId}`, { method: "DELETE" });
         await loadRanking();
@@ -3606,7 +3644,7 @@ function renderRanking() {
 
   el.rankingTbody.querySelectorAll(".delete-ranking-row-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa dòng xếp hạng này?")) return;
+      if (!await confirmDialog("Xóa dòng xếp hạng này?")) return;
       try {
         await api(`/api/ranking-config/rows/${btn.dataset.viTri}`, { method: "DELETE" });
         await loadRanking();
@@ -3718,7 +3756,7 @@ function renderTagConfig() {
   });
   el.tagConfigTbody.querySelectorAll(".delete-tag-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa tag này? Các task đang gắn tag này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      if (!await confirmDialog("Xóa tag này? Các task đang gắn tag này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/tags/${btn.dataset.id}`, { method: "DELETE" });
         await loadTags();
@@ -3769,7 +3807,7 @@ function renderPhanLoaiConfig() {
   });
   el.phanLoaiConfigTbody.querySelectorAll(".delete-phanloai-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa phân loại này? Các task đang gắn phân loại này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      if (!await confirmDialog("Xóa phân loại này? Các task đang gắn phân loại này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/phan-loai/${btn.dataset.id}`, { method: "DELETE" });
         await loadPhanLoai();
@@ -3843,7 +3881,7 @@ function renderNhomConfig() {
   });
   el.nhomConfigTbody.querySelectorAll(".delete-nhom-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa nhóm này? Các tiêu chí đang gắn nhóm này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      if (!await confirmDialog("Xóa nhóm này? Các tiêu chí đang gắn nhóm này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/nhom/${btn.dataset.id}`, { method: "DELETE" });
         await loadNhom();
@@ -3901,7 +3939,7 @@ function renderChucVuConfig() {
   });
   el.chucVuConfigTbody.querySelectorAll(".delete-chucvu-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa chức vụ này? Các nhân sự đang gắn chức vụ này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
+      if (!await confirmDialog("Xóa chức vụ này? Các nhân sự đang gắn chức vụ này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/chuc-vu/${btn.dataset.id}`, { method: "DELETE" });
         await loadChucVu();
@@ -3990,7 +4028,7 @@ function renderDepartmentConfig(allTeams) {
   });
   el.departmentConfigTbody.querySelectorAll(".delete-dept-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm("Xóa phòng này? Chỉ xóa được khi phòng không còn team nào.")) return;
+      if (!await confirmDialog("Xóa phòng này? Chỉ xóa được khi phòng không còn team nào.")) return;
       try {
         await api(`/api/departments/${btn.dataset.id}`, { method: "DELETE" });
         await loadDepartmentConfig();
@@ -4077,7 +4115,7 @@ function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload
   });
   tbodyEl.querySelectorAll(".sc-del-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!confirm(`Xóa ${label} này? Các dòng roadmap đang dùng sẽ giữ giá trị cũ nhưng không còn khớp danh mục.`)) return;
+      if (!await confirmDialog(`Xóa ${label} này? Các dòng roadmap đang dùng sẽ giữ giá trị cũ nhưng không còn khớp danh mục.`)) return;
       try {
         await api(`${endpoint}/${btn.dataset.id}`, { method: "DELETE" });
         await reload();
@@ -4280,7 +4318,7 @@ function renderRoadmap() {
   });
   el.roadmapTbody.querySelectorAll(".rm-del-btn").forEach((b) => {
     b.addEventListener("click", async () => {
-      if (!confirm("Xóa dòng roadmap này? Chi tiết công việc theo tháng cũng bị xóa.")) return;
+      if (!await confirmDialog("Xóa dòng roadmap này? Chi tiết công việc theo tháng cũng bị xóa.")) return;
       try {
         await api(`/api/roadmap-items/${b.dataset.id}`, { method: "DELETE" });
         await loadRoadmap();
@@ -4316,7 +4354,7 @@ el.roadmapSelectAll.addEventListener("change", (e) => {
 el.deleteSelectedRoadmapBtn.addEventListener("click", async () => {
   const ids = [...state.roadmapSelectedIds];
   if (ids.length === 0) return;
-  if (!confirm(`Xóa ${ids.length} dòng roadmap đã chọn? Chi tiết công việc theo tháng cũng bị xóa.`)) return;
+  if (!await confirmDialog(`Xóa ${ids.length} dòng roadmap đã chọn? Chi tiết công việc theo tháng cũng bị xóa.`)) return;
   try {
     await api("/api/roadmap-items/delete-selected", {
       method: "POST",
@@ -4437,7 +4475,7 @@ function renderRoadmapDetail() {
   });
   el.roadmapDetailMonths.querySelectorAll(".rd-del-btn").forEach((b) => {
     b.addEventListener("click", async () => {
-      if (!confirm("Xóa việc này?")) return;
+      if (!await confirmDialog("Xóa việc này?")) return;
       try {
         await api(`/api/roadmap-details/${b.dataset.id}`, { method: "DELETE" });
         await reloadRoadmapDetails();

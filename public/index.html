@@ -1566,6 +1566,20 @@
     </form>
   </dialog>
 
+  <!-- Popup xác nhận dùng chung cho toàn bộ hệ thống, thay cho window.confirm()
+       mặc định của trình duyệt (không đồng bộ giao diện) — mở/đóng qua hàm
+       confirmDialog() trong app.js. -->
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <h2 id="confirm-dialog-title" style="margin:0">Xác nhận</h2>
+      <p id="confirm-dialog-message" style="margin:0; white-space:pre-line"></p>
+      <div class="actions">
+        <button type="button" id="confirm-cancel-btn">Hủy</button>
+        <button type="button" id="confirm-ok-btn" class="danger">OK</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast-container" id="toast-container"></div>
 
   <script src="app.js"></script>
