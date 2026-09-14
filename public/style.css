@@ -936,6 +936,25 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
 
+/* Roadmap năm — dòng đã tự động đưa vào Backlog: badge nổi bật (nền xanh lá
+   đậm, chữ trắng), ghim ở góc trên bên phải ô "Nhiệm vụ" (giống cách ghim
+   .cell-prev-badge ở bảng Backlog) thay vì nằm inline theo dòng chữ. */
+#roadmap-table td.rm-nv-cell { position: relative; }
+#roadmap-table td.rm-nv-cell.has-sync-badge { padding-top: 20px; }
+.rm-synced-badge {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--success);
+  color: #fff;
+  white-space: nowrap;
+}
+
 /* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân
    loại quản lý ở Cấu hình), giữ màu cố định riêng. Các phân loại khác lấy màu
    theo palette động ở app.js (TAG_PALETTE/PHAN_LOAI_PALETTE, áp qua style="..."). */
