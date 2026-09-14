@@ -616,15 +616,44 @@ th {
   color: #fff;
   position: sticky;
   top: 0;
+  z-index: 2;
 }
 
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
+
+/* Cố định cột checkbox (chọn nhiều dòng) khi cuộn ngang — áp dụng cho mọi
+   bảng có cột chọn: Backlog, Nhân sự, Nội quy, Roadmap năm, Chấm công.
+   z-index: ô góc (th cột 1) > td cột 1 > th thường, để ô góc luôn nổi trên
+   cùng khi cuộn cả 2 chiều. */
+#task-table td:first-child,
+#member-table td:first-child,
+#noiquy-table td:first-child,
+#roadmap-table td:first-child,
+#attendance-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card-bg);
+}
+#task-table th:first-child,
+#member-table th:first-child,
+#noiquy-table th:first-child,
+#roadmap-table th:first-child,
+#attendance-table th:first-child {
+  left: 0;
+  z-index: 3;
+}
 
 #task-table th { text-align: center; }
 #task-table td { vertical-align: middle; }
 #task-table tbody tr:hover { background: var(--bg); }
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
+/* Cột checkbox cố định có background riêng (để che nội dung cuộn qua bên
+   dưới) — đồng bộ lại màu theo trạng thái hover/nổi bật của dòng. */
+#task-table tbody tr:hover td:first-child { background: var(--bg); }
+#task-table tbody tr.row-highlighted td:first-child { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted:hover td:first-child { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */
@@ -725,6 +754,10 @@ th {
 #roadmap-table tbody tr { cursor: pointer; }
 #roadmap-table tbody tr:hover { background: var(--bg); }
 #roadmap-table tbody tr.rm-row-selected { background: var(--bg); box-shadow: inset 3px 0 0 var(--primary); }
+/* Cột checkbox cố định — đồng bộ màu theo trạng thái hover/đang chọn xem
+   chi tiết của dòng (xem ghi chú tương tự ở #task-table). */
+#roadmap-table tbody tr:hover td:first-child { background: var(--bg); }
+#roadmap-table tbody tr.rm-row-selected td:first-child { background: var(--bg); box-shadow: inset 3px 0 0 var(--primary); }
 
 .rm-month-block { padding: 12px 0; border-top: 1px solid var(--border); }
 .rm-month-block:first-child { border-top: none; padding-top: 0; }
