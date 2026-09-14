@@ -393,6 +393,12 @@ select option:hover {
   select {
     appearance: base-select;
   }
+  /* base-select tự thêm mũi tên riêng (hình tam giác đặc, chồng lên mũi tên
+     mảnh đã vẽ bằng background-image ở trên) — ẩn đi, chỉ giữ mũi tên cũ
+     cho gọn, đỡ rối mắt. */
+  select::picker-icon {
+    display: none;
+  }
   select::picker(select) {
     border: 1px solid var(--border);
     border-radius: 10px;
