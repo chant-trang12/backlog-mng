@@ -7,6 +7,8 @@ import type {
   UpdateRoadmapDetailInput,
   UpdateRoadmapItemInput,
 } from "../types/backlog.js";
+import { getPeriodByYearMonth } from "./period.service.js";
+import { createTask } from "./task.service.js";
 
 const FIELDS = [
   "team",
@@ -57,7 +59,7 @@ export async function createRoadmapItem(input: CreateRoadmapItemInput): Promise<
       ...normalize(input as unknown as Record<string, unknown>),
     })
     .returning("*");
-  return created as RoadmapItem;
+  return syncRoadmapItemToBacklog(created as RoadmapItem);
 }
 
 export async function updateRoadmapItem(
@@ -74,7 +76,47 @@ export async function updateRoadmapItem(
       updated_at: db.fn.now(),
     })
     .returning("*");
+  return syncRoadmapItemToBacklog(updated as RoadmapItem);
+}
+
+// Đưa 1 dòng roadmap vào backlog đúng tháng bắt đầu (nếu tháng đó đã được
+// quản lý trong Backlog) — chỉ đưa Team, Nhiệm vụ, DOD, Phân loại (map vào
+// cột Tính chất của task, cùng danh mục Phân loại) và Deadline (= ngày kết
+// thúc roadmap). Không đưa chi tiết theo tháng. Chỉ đưa đúng 1 lần (đánh dấu
+// qua synced_task_id) — nếu chưa xong thì đã có sẵn tính năng "Chuyển sang
+// tháng sau" của Backlog để tự đẩy tiếp, roadmap không lặp lại việc đưa vào.
+async function syncRoadmapItemToBacklog(item: RoadmapItem): Promise<RoadmapItem> {
+  if (item.synced_task_id || !item.thoi_gian_bat_dau) return item;
+  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(item.thoi_gian_bat_dau);
+  if (!m) return item;
+  const period = await getPeriodByYearMonth(Number(m[1]), Number(m[2]));
+  if (!period) return item;
+
+  const task = await createTask(period.id, {
+    department_id: item.department_id ?? undefined,
+    team: item.team,
+    nhiem_vu: item.nhiem_vu,
+    dod: item.dod ?? undefined,
+    tinh_chat: item.phan_loai ?? undefined,
+    deadline: item.thoi_gian_ket_thuc ?? undefined,
+  });
+  const [updated] = await db("roadmap_items")
+    .where({ id: item.id })
+    .update({ synced_task_id: task.id })
+    .returning("*");
   return updated as RoadmapItem;
+}
+
+// Quét các dòng roadmap chưa đưa vào backlog, khớp đúng (năm, tháng) với
+// tháng vừa được thêm vào Backlog — gọi sau khi tạo period mới.
+export async function syncRoadmapItemsForPeriod(year: number, month: number): Promise<void> {
+  const prefix = `${year}-${String(month).padStart(2, "0")}`;
+  const items = await db("roadmap_items")
+    .whereNull("synced_task_id")
+    .whereRaw("substr(thoi_gian_bat_dau, 1, 7) = ?", [prefix]);
+  for (const item of items as RoadmapItem[]) {
+    await syncRoadmapItemToBacklog(item);
+  }
 }
 
 export async function deleteRoadmapItem(id: number): Promise<boolean> {

@@ -4237,7 +4237,7 @@ function renderRoadmap() {
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${mucTieuColorClass(it.muc_tieu)}"`)}</td>
-      <td>${nl2br(it.nhiem_vu)}</td>
+      <td>${nl2br(it.nhiem_vu)}${it.synced_task_id ? ' <span class="status-badge status-default" title="Đã tự động đưa vào Backlog theo tháng bắt đầu">✓ Đã vào Backlog</span>' : ""}</td>
       <td>${nl2br(it.dod)}</td>
       <td>${nl2br(it.dieu_kien_dam_bao)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, phanLoaiBadgeAttrs(it.phan_loai))}</td>

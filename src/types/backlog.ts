@@ -137,6 +137,7 @@ export interface RoadmapItem {
   thoi_gian_ket_thuc: string | null;
   trang_thai: TaskStatus;
   ghi_chu: string | null;
+  synced_task_id: number | null;
   created_at: string;
   updated_at: string;
 }

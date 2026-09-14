@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
 import { createPeriod, deletePeriod, getPeriod, listPeriods } from "../services/period.service.js";
+import { syncRoadmapItemsForPeriod } from "../services/roadmap.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
 
-// 1.2 Tạo mới một backlog theo tháng.
+// 1.2 Tạo mới một backlog theo tháng. Sau khi tạo, tự động đưa các nhiệm vụ
+// Roadmap năm có "Ngày bắt đầu" rơi vào đúng tháng này vào backlog (nếu
+// chưa được đưa vào trước đó) — xem roadmap.service.ts#syncRoadmapItemsForPeriod.
 export async function createPeriodHandler(req: Request, res: Response) {
   const { year, month, label } = req.body ?? {};
   const y = Number(year);
@@ -11,6 +14,7 @@ export async function createPeriodHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'year' và 'month' (1-12) là bắt buộc" });
   }
   const period = await createPeriod({ year: y, month: m, label });
+  await syncRoadmapItemsForPeriod(period.year, period.month);
   res.status(201).json(period);
 }
 

@@ -523,6 +523,16 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 28. roadmap_items.synced_task_id — đánh dấu dòng roadmap đã được tự
+    // động đưa vào backlog (task tương ứng) theo tháng bắt đầu, để không tạo
+    // trùng khi thêm tháng mới hoặc sửa lại roadmap. Task bị xóa thì chỉ gỡ
+    // liên kết (SET NULL), không xóa ngược lại dòng roadmap.
+    if (!(await db.schema.hasColumn("roadmap_items", "synced_task_id"))) {
+      await db.schema.alterTable("roadmap_items", (table) => {
+        table.integer("synced_task_id").references("id").inTable("tasks").onDelete("SET NULL");
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

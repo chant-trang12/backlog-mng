@@ -345,4 +345,92 @@ describe("Roadmap năm", () => {
     const res = await request(app).post("/api/roadmap-items/delete-selected").send({ ids: [] });
     expect(res.status).toBe(400);
   });
+
+  describe("Tự động đưa nhiệm vụ roadmap vào backlog theo tháng bắt đầu", () => {
+    it("đưa ngay vào backlog nếu tháng bắt đầu đã có period sẵn — chỉ Team/Nhiệm vụ/DOD/Phân loại/Deadline", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2012, 9); // tháng 9/2012 đã quản lý sẵn
+
+      const created = await request(app).post("/api/roadmap-items").send({
+        year: 2012,
+        department_id: 1,
+        team: "CRM",
+        he_thong: "Website",
+        muc_tieu: "Tính năng mới",
+        nhiem_vu: "RM sync A",
+        dod: "Chạy trên prod",
+        dieu_kien_dam_bao: "Có kiểm thử",
+        phan_loai: "NVKH",
+        thoi_gian_bat_dau: "2012-09-23",
+        thoi_gian_ket_thuc: "2012-11-30",
+      });
+      expect(created.status).toBe(201);
+      expect(created.body.synced_task_id).toBeTruthy();
+
+      const tasks = await request(app).get(`/api/periods/${periodId}/tasks`);
+      const t = tasks.body.find((x: { id: number }) => x.id === created.body.synced_task_id);
+      expect(t).toBeTruthy();
+      expect(t.team).toBe("CRM");
+      expect(t.nhiem_vu).toBe("RM sync A");
+      expect(t.dod).toBe("Chạy trên prod");
+      expect(t.tinh_chat).toBe("NVKH"); // Phân loại roadmap -> Tính chất task
+      expect(t.deadline).toBe("2012-11-30"); // Ngày kết thúc roadmap -> Deadline task
+    });
+
+    it("chưa có tháng quản lý thì chưa đưa vào — thêm tháng sau đó thì tự động đưa vào đúng 1 lần", async () => {
+      const app = createApp();
+      // Chỉ có tháng 8/2013 được quản lý trước — chưa khớp tháng bắt đầu (9).
+      await makePeriod(app, 2013, 8);
+
+      const created = await request(app).post("/api/roadmap-items").send({
+        year: 2013,
+        department_id: 1,
+        team: "NVKH",
+        nhiem_vu: "RM sync B",
+        thoi_gian_bat_dau: "2013-09-23",
+        thoi_gian_ket_thuc: "2013-11-30",
+      });
+      expect(created.body.synced_task_id).toBeFalsy();
+
+      // Thêm tháng 9 — nhiệm vụ trên phải tự động được đưa vào tháng 9.
+      const sepId = await makePeriod(app, 2013, 9);
+      const afterSep = await request(app).get(`/api/roadmap-items?year=2013&department_id=1`);
+      const item = afterSep.body.find((r: { nhiem_vu: string }) => r.nhiem_vu === "RM sync B");
+      expect(item.synced_task_id).toBeTruthy();
+      const sepTasks = await request(app).get(`/api/periods/${sepId}/tasks`);
+      expect(sepTasks.body.some((t: { id: number }) => t.id === item.synced_task_id)).toBe(true);
+
+      // Thêm tiếp tháng 10 — KHÔNG được đưa thêm lần nữa (đã vào tháng 9 rồi,
+      // việc kéo sang tháng sau nếu chưa xong là nghiệp vụ riêng của Backlog).
+      const octId = await makePeriod(app, 2013, 10);
+      const octTasks = await request(app).get(`/api/periods/${octId}/tasks`);
+      expect(octTasks.body.some((t: { nhiem_vu: string }) => t.nhiem_vu === "RM sync B")).toBe(false);
+
+      const afterOct = await request(app).get(`/api/roadmap-items?year=2013&department_id=1`);
+      const itemAfterOct = afterOct.body.find((r: { nhiem_vu: string }) => r.nhiem_vu === "RM sync B");
+      expect(itemAfterOct.synced_task_id).toBe(item.synced_task_id); // vẫn task cũ, không tạo thêm
+    });
+
+    it("nhập từ Excel cũng tự động đưa vào backlog nếu tháng bắt đầu đã có period", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2014, 4);
+
+      const buf = await xlsxBuffer(
+        ["Team", "Nhiệm vụ", "Phân loại", "Thời gian bắt đầu", "Thời gian kết thúc"],
+        [["CRM", "RM import sync", "NVPS", "05/04/2014", "20/06/2014"]],
+      );
+      const res = await request(app)
+        .post("/api/roadmap-items/import?year=2014&department_id=1")
+        .set("Content-Type", "application/octet-stream")
+        .send(buf);
+      expect(res.status).toBe(201);
+      expect(res.body.imported).toBe(1);
+
+      const tasks = await request(app).get(`/api/periods/${periodId}/tasks`);
+      const t = tasks.body.find((x: { nhiem_vu: string }) => x.nhiem_vu === "RM import sync");
+      expect(t).toBeTruthy();
+      expect(t.tinh_chat).toBe("NVPS");
+      expect(t.deadline).toBe("2014-06-20");
+    });
+  });
 });
