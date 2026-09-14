@@ -4250,13 +4250,18 @@ el.roadmapSearch.addEventListener("input", () => {
   renderRoadmap();
 });
 
+// Hệ thống và Mục tiêu trước đây dùng chung bảng màu team-color-N, đánh số
+// độc lập theo từng danh mục — nên hay trùng màu nhau (VD "Website" và
+// "Tính năng mới" cùng ở vị trí đầu danh mục thì cùng ra team-color-0).
+// Nay mỗi danh mục có bảng màu riêng (ht-color-N / mt-color-N, xem
+// style.css) để không bao giờ trùng màu với nhau lẫn với Team.
 function heThongColorClass(value) {
   const i = state.heThongOptions.findIndex((h) => h.ten_he_thong === value);
-  return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+  return `ht-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 function mucTieuColorClass(value) {
   const i = state.mucTieuOptions.findIndex((m) => m.ten_muc_tieu === value);
-  return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+  return `mt-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 
 // "Chọn tất cả" thao tác trên tập đã lọc theo từ khoá (giống bảng Danh sách

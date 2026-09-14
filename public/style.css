@@ -1034,6 +1034,26 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .team-color-4 { background: #d7e8e3; color: #2f6157; }
 .team-color-5 { background: #ecdbe4; color: #6b3a52; }
 
+/* Hệ thống — bảng màu riêng (tông xanh dương/cyan), tách hẳn khỏi bảng màu
+   Team ở trên và bảng màu Mục tiêu ở dưới, để 2 badge Hệ thống/Mục tiêu
+   không bao giờ trùng màu khi đứng cạnh nhau (VD ở bảng Roadmap năm) — xem
+   heThongColorClass trong app.js. */
+.ht-color-0 { background: #d7e6f7; color: #2b5b86; }
+.ht-color-1 { background: #cfeef0; color: #1a6b74; }
+.ht-color-2 { background: #d3e0ef; color: #2d4d78; }
+.ht-color-3 { background: #dbe6f5; color: #1f5f80; }
+.ht-color-4 { background: #cde3f2; color: #235a82; }
+.ht-color-5 { background: #d6e2f7; color: #2e4d8a; }
+
+/* Mục tiêu — bảng màu riêng (tông hồng/tím), tách khỏi cả Team lẫn Hệ thống
+   — xem mucTieuColorClass trong app.js. */
+.mt-color-0 { background: #f0dcf2; color: #7a3789; }
+.mt-color-1 { background: #f2d9e8; color: #8a2f63; }
+.mt-color-2 { background: #ecd9f0; color: #6e3396; }
+.mt-color-3 { background: #f7d9e2; color: #9c3060; }
+.mt-color-4 { background: #e6d6f0; color: #5c3597; }
+.mt-color-5 { background: #f2d6e6; color: #93275f; }
+
 /* Bản đậm hơn của bảng màu team, dùng làm màu tô cột trong biểu đồ (trang
    Home) — cùng thứ tự index với team-color-N (xem teamBarColorClass). */
 .team-bar-0 { background: #7c9b5c; }
