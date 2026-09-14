@@ -451,22 +451,38 @@ function confirmDialog(message, opts = {}) {
     el.confirmOkBtn.className = danger ? "danger" : "primary";
     el.confirmCancelBtn.textContent = cancelText;
 
-    const finish = (result) => {
-      el.confirmOkBtn.removeEventListener("click", onOk);
-      el.confirmCancelBtn.removeEventListener("click", onCancel);
-      el.confirmDialogEl.removeEventListener("cancel", onCancel);
-      if (el.confirmDialogEl.open) el.confirmDialogEl.close();
-      resolve(result);
+    // Chỉ cần bắt sự kiện "close" của dialog (luôn nổ ra dù đóng bằng cách
+    // nào: bấm OK, Hủy, nút X ở góc, hay phím Esc) — không cần bắt riêng
+    // từng đường đóng. okClicked đánh dấu đường đóng duy nhất trả về true.
+    let okClicked = false;
+    const onOk = () => {
+      okClicked = true;
+      el.confirmDialogEl.close();
     };
-    const onOk = () => finish(true);
-    const onCancel = () => finish(false);
+    const onCancelClick = () => el.confirmDialogEl.close();
+    const onClose = () => {
+      el.confirmOkBtn.removeEventListener("click", onOk);
+      el.confirmCancelBtn.removeEventListener("click", onCancelClick);
+      el.confirmDialogEl.removeEventListener("close", onClose);
+      resolve(okClicked);
+    };
 
     el.confirmOkBtn.addEventListener("click", onOk);
-    el.confirmCancelBtn.addEventListener("click", onCancel);
-    el.confirmDialogEl.addEventListener("cancel", onCancel); // phím Esc
+    el.confirmCancelBtn.addEventListener("click", onCancelClick);
+    el.confirmDialogEl.addEventListener("close", onClose);
     el.confirmDialogEl.showModal();
   });
 }
+
+// Nút X đóng popup — dùng chung 1 handler ủy quyền cho mọi dialog trong hệ
+// thống (xem .dialog-close-x trong style.css) thay vì gắn listener riêng
+// cho từng dialog. Đóng "cứng" (không lưu), giống bấm nút Hủy.
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".dialog-close-x");
+  if (!btn) return;
+  const dialog = btn.closest("dialog");
+  if (dialog?.open) dialog.close();
+});
 
 async function api(path, options) {
   const res = await fetch(path, {
