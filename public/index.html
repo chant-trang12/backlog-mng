@@ -823,6 +823,7 @@
                 </div>
               </div>
               <div class="row">
+                <button id="delete-selected-roadmap-btn" class="danger" hidden>Xóa đã chọn (<span id="selected-roadmap-count">0</span>)</button>
                 <button id="download-roadmap-template-btn" class="btn-edit">⬇ File mẫu</button>
                 <input type="file" id="roadmap-file-input" accept=".xlsx,.xls" hidden />
                 <button id="import-roadmap-btn" class="btn-exclude">⬆ Nhập Excel</button>
@@ -838,6 +839,7 @@
               <table id="roadmap-table">
                 <thead>
                   <tr>
+                    <th style="width:36px"><input type="checkbox" id="roadmap-select-all" /></th>
                     <th style="min-width:44px">STT</th>
                     <th style="min-width:110px">Team</th>
                     <th style="min-width:120px">Hệ thống</th>

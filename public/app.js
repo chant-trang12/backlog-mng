@@ -34,8 +34,9 @@ const state = {
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
   roadmapSearch: "",
-  roadmapSelectedId: null,
+  roadmapSelectedId: null, // dòng đang mở panel "Chi tiết công việc theo tháng"
   roadmapDetails: [],
+  roadmapSelectedIds: new Set(), // các dòng đang tick chọn (checkbox) để xóa hàng loạt
   homePeriodId: null, // Tháng đang xem ở trang Home — độc lập với period đang chọn ở Backlog/Team
   homeTeamFilter: "", // "" = tất cả team
   homeTeams: [],
@@ -206,6 +207,9 @@ const el = {
   downloadRoadmapTemplateBtn: document.getElementById("download-roadmap-template-btn"),
   importRoadmapBtn: document.getElementById("import-roadmap-btn"),
   roadmapFileInput: document.getElementById("roadmap-file-input"),
+  roadmapSelectAll: document.getElementById("roadmap-select-all"),
+  deleteSelectedRoadmapBtn: document.getElementById("delete-selected-roadmap-btn"),
+  selectedRoadmapCount: document.getElementById("selected-roadmap-count"),
   roadmapTbody: document.getElementById("roadmap-tbody"),
   roadmapEmpty: document.getElementById("roadmap-empty"),
   roadmapDialog: document.getElementById("roadmap-dialog"),
@@ -4153,6 +4157,10 @@ async function loadRoadmap() {
   if (state.roadmapSelectedId != null && !state.roadmapItems.some((x) => x.id === state.roadmapSelectedId)) {
     closeRoadmapDetail();
   }
+  const roadmapIds = new Set(state.roadmapItems.map((it) => it.id));
+  state.roadmapSelectedIds.forEach((id) => {
+    if (!roadmapIds.has(id)) state.roadmapSelectedIds.delete(id);
+  });
   roadmapPagination.reset();
   renderRoadmap();
   if (state.roadmapSelectedId != null) renderRoadmapDetail();
@@ -4194,11 +4202,15 @@ function mucTieuColorClass(value) {
   return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 
-function renderRoadmap() {
+// "Chọn tất cả" thao tác trên tập đã lọc theo từ khoá (giống bảng Danh sách
+// nhiệm vụ), không phải toàn bộ dữ liệu của năm khi đang gõ tìm kiếm.
+function filteredRoadmapItems() {
   const term = state.roadmapSearch.trim().toLowerCase();
-  const filtered = term
-    ? state.roadmapItems.filter((it) => roadmapRowText(it).includes(term))
-    : state.roadmapItems;
+  return term ? state.roadmapItems.filter((it) => roadmapRowText(it).includes(term)) : state.roadmapItems;
+}
+
+function renderRoadmap() {
+  const filtered = filteredRoadmapItems();
 
   if (state.roadmapItems.length === 0) {
     el.roadmapEmpty.textContent = 'Chưa có dòng roadmap nào cho năm này — bấm "+ Thêm dòng roadmap".';
@@ -4220,6 +4232,7 @@ function renderRoadmap() {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
       const selCls = it.id === state.roadmapSelectedId ? " class=\"rm-row-selected\"" : "";
       return `<tr data-id="${it.id}"${selCls}>
+      <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
       <td style="text-align:center">${offset + i + 1}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
@@ -4245,8 +4258,19 @@ function renderRoadmap() {
 
   el.roadmapTbody.querySelectorAll("tr").forEach((tr) => {
     tr.addEventListener("click", (e) => {
-      if (e.target.closest("button")) return; // bỏ qua khi bấm Sửa/Xóa
+      if (e.target.closest("button, input")) return; // bỏ qua khi bấm Sửa/Xóa/checkbox
       selectRoadmapRow(Number(tr.dataset.id));
+    });
+  });
+  el.roadmapTbody.querySelectorAll(".roadmap-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) {
+        state.roadmapSelectedIds.add(id);
+      } else {
+        state.roadmapSelectedIds.delete(id);
+      }
+      updateRoadmapSelectionUI();
     });
   });
   el.roadmapTbody.querySelectorAll(".rm-edit-btn").forEach((b) => {
@@ -4266,7 +4290,45 @@ function renderRoadmap() {
       }
     });
   });
+
+  updateRoadmapSelectionUI();
 }
+
+function updateRoadmapSelectionUI() {
+  const visible = filteredRoadmapItems();
+  const visibleSelectedCount = visible.filter((it) => state.roadmapSelectedIds.has(it.id)).length;
+  el.deleteSelectedRoadmapBtn.hidden = state.roadmapSelectedIds.size === 0;
+  el.selectedRoadmapCount.textContent = String(state.roadmapSelectedIds.size);
+  el.roadmapSelectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+  el.roadmapSelectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+}
+
+el.roadmapSelectAll.addEventListener("change", (e) => {
+  const visible = filteredRoadmapItems();
+  if (e.target.checked) {
+    visible.forEach((it) => state.roadmapSelectedIds.add(it.id));
+  } else {
+    visible.forEach((it) => state.roadmapSelectedIds.delete(it.id));
+  }
+  renderRoadmap();
+});
+
+el.deleteSelectedRoadmapBtn.addEventListener("click", async () => {
+  const ids = [...state.roadmapSelectedIds];
+  if (ids.length === 0) return;
+  if (!confirm(`Xóa ${ids.length} dòng roadmap đã chọn? Chi tiết công việc theo tháng cũng bị xóa.`)) return;
+  try {
+    await api("/api/roadmap-items/delete-selected", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.roadmapSelectedIds.clear();
+    await loadRoadmap();
+    showToast(`Đã xóa ${ids.length} dòng roadmap.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 // ---- Chi tiết công việc theo tháng của 1 dòng roadmap ----
 

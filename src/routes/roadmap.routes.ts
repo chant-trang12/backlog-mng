@@ -4,6 +4,7 @@ import {
   createRoadmapItemHandler,
   deleteRoadmapDetailHandler,
   deleteRoadmapItemHandler,
+  deleteSelectedRoadmapItemsHandler,
   downloadRoadmapTemplateHandler,
   importRoadmapHandler,
   listRoadmapDetailsHandler,
@@ -21,6 +22,8 @@ router.post(
   express.raw({ type: () => true, limit: "20mb" }),
   importRoadmapHandler,
 );
+
+router.post("/roadmap-items/delete-selected", deleteSelectedRoadmapItemsHandler);
 
 router.get("/roadmap-items", listRoadmapItemsHandler);
 router.post("/roadmap-items", createRoadmapItemHandler);

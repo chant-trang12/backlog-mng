@@ -82,6 +82,14 @@ export async function deleteRoadmapItem(id: number): Promise<boolean> {
   return count > 0;
 }
 
+// Xóa nhiều dòng roadmap theo checkbox đã chọn trên bảng (chi tiết công
+// việc theo tháng của từng dòng cũng bị xóa theo, CASCADE).
+export async function deleteRoadmapItems(ids: number[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const count = await db("roadmap_items").whereIn("id", ids).delete();
+  return Number(count);
+}
+
 // ---- Chi tiết công việc theo tháng ----
 
 export async function listRoadmapDetails(itemId: number): Promise<RoadmapDetail[]> {

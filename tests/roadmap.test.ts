@@ -200,4 +200,98 @@ describe("Roadmap năm", () => {
       ).status,
     ).toBe(400);
   });
+
+  it("gộp ô dọc trong Excel (nhiều dòng cùng 1 việc, VD Điều kiện đảm bảo liệt kê riêng từng dòng) -> import đúng số bản ghi, không tách dòng", async () => {
+    const app = createApp();
+
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Sheet1");
+    sheet.addRow([
+      "Team",
+      "Hệ thống",
+      "Mục tiêu",
+      "Nhiệm vụ",
+      "DOD",
+      "Điều kiện đảm bảo",
+      "Phân loại",
+      "Thời gian bắt đầu",
+      "Thời gian kết thúc",
+      "Trạng thái",
+      "Ghi chú",
+    ]);
+    // Dòng 2: CRM — 1 bản ghi độc lập, không gộp ô.
+    sheet.addRow(["CRM", "CRM", "Tính năng mới", "Hoàn thiện giao diện CRM", "Nâng cấp NextJS", "", "Tập đoàn", "06/01/2026", "30/11/2026", "", ""]);
+    // Dòng 3-5: DMP — gộp dọc cột A,B,C,D,E,G,H,I (1 việc), cột F (Điều kiện
+    // đảm bảo) liệt kê riêng 3 dòng khác nhau -> phải gộp lại thành 1 bản ghi.
+    sheet.addRow(["DMP", "DMP", "Tính năng mới", "Tính toán tự động KPI", "", "Bước 1: xây dựng bộ dữ liệu (Tháng 5)", "", "05/01/2026", "30/06/2026", "", ""]);
+    sheet.addRow(["", "", "", "", "", "Bước 2: thiết lập API (Tháng 5)", "", "", "", "", ""]);
+    sheet.addRow(["", "", "", "", "", "Bước 3: dashboard (Tháng 6)", "", "", "", "", ""]);
+    sheet.mergeCells("A3:A5");
+    sheet.mergeCells("B3:B5");
+    sheet.mergeCells("C3:C5");
+    sheet.mergeCells("D3:D5");
+    sheet.mergeCells("E3:E5");
+    sheet.mergeCells("G3:G5");
+    sheet.mergeCells("H3:H5");
+    sheet.mergeCells("I3:I5");
+    const buf = Buffer.from(await wb.xlsx.writeBuffer());
+
+    const res = await request(app)
+      .post("/api/roadmap-items/import?year=2093&department_id=1")
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(2); // KHÔNG phải 4
+    expect(res.body.skipped).toHaveLength(0);
+
+    const list = await request(app).get("/api/roadmap-items?year=2093&department_id=1");
+    expect(list.body).toHaveLength(2);
+
+    const dmp = list.body.find((r: { team: string }) => r.team === "DMP");
+    expect(dmp.nhiem_vu).toBe("Tính toán tự động KPI");
+    expect(dmp.dieu_kien_dam_bao).toBe(
+      "Bước 1: xây dựng bộ dữ liệu (Tháng 5)\nBước 2: thiết lập API (Tháng 5)\nBước 3: dashboard (Tháng 6)",
+    );
+    expect(dmp.thoi_gian_bat_dau).toBe("2026-01-05");
+    expect(dmp.thoi_gian_ket_thuc).toBe("2026-06-30");
+
+    const crm = list.body.find((r: { team: string }) => r.team === "CRM");
+    expect(crm.nhiem_vu).toBe("Hoàn thiện giao diện CRM");
+  });
+
+  it("bulk-deletes selected roadmap items via checkbox delete-selected (xóa cả chi tiết theo tháng)", async () => {
+    const app = createApp();
+    const mk = (nhiem_vu: string) =>
+      request(app)
+        .post("/api/roadmap-items")
+        .send({ year: 2092, department_id: 1, team: "CRM", nhiem_vu });
+
+    const r1 = await mk("Bulk RM del 1");
+    const r2 = await mk("Bulk RM del 2");
+    const r3 = await mk("Bulk RM del 3");
+    await request(app)
+      .post(`/api/roadmap-items/${r1.body.id}/details`)
+      .send({ month: 1, noi_dung: "chi tiết r1" });
+
+    const res = await request(app)
+      .post("/api/roadmap-items/delete-selected")
+      .send({ ids: [r1.body.id, r2.body.id] });
+    expect(res.status).toBe(200);
+    expect(res.body.deleted).toBe(2);
+
+    const list = await request(app).get("/api/roadmap-items?year=2092&department_id=1");
+    const ids = list.body.map((r: { id: number }) => r.id);
+    expect(ids).not.toContain(r1.body.id);
+    expect(ids).not.toContain(r2.body.id);
+    expect(ids).toContain(r3.body.id);
+
+    const detailsAfter = await request(app).get(`/api/roadmap-items/${r1.body.id}/details`);
+    expect(detailsAfter.body).toHaveLength(0); // CASCADE
+  });
+
+  it("rejects delete-selected roadmap items with an empty ids array", async () => {
+    const app = createApp();
+    const res = await request(app).post("/api/roadmap-items/delete-selected").send({ ids: [] });
+    expect(res.status).toBe(400);
+  });
 });

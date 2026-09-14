@@ -140,6 +140,41 @@ export async function parseFirstSheet(
     const isEmpty = headers.every((_, i) => cellToText(row.getCell(i + 1)).trim() === "");
     if (isEmpty) continue;
 
+    // Excel gộp ô theo chiều dọc (VD: cột Team/Nhiệm vụ gộp 3 dòng cho 1
+    // việc, nhưng cột "Điều kiện đảm bảo" liệt kê riêng từng dòng) khiến mỗi
+    // dòng vật lý đọc ra tưởng là 1 bản ghi riêng — 1 việc thực tế bị tách
+    // thành nhiều dòng import. Nhận diện: nếu cột có dữ liệu ĐẦU TIÊN của
+    // dòng này là phần tiếp nối của ô gộp bắt đầu từ dòng trước (cell.master
+    // ở dòng nhỏ hơn r), coi đây là dòng nối tiếp của bản ghi trước — các cột
+    // KHÔNG gộp (có giá trị riêng ở dòng này) được nối thêm (xuống dòng) vào
+    // giá trị đã có, thay vì tạo bản ghi mới. File không dùng merge thì hành
+    // vi giữ nguyên như cũ (isMerged luôn false).
+    let firstNonEmptyCol = -1;
+    for (let i = 0; i < headers.length; i++) {
+      if (cellToText(row.getCell(i + 1)).trim() !== "") {
+        firstNonEmptyCol = i;
+        break;
+      }
+    }
+    const firstCell = firstNonEmptyCol >= 0 ? row.getCell(firstNonEmptyCol + 1) : null;
+    // exceljs khai báo `Cell.row` là string (kiểu dùng chung với Address) dù
+    // lúc chạy luôn trả về number — ép kiểu để so sánh đúng.
+    const isContinuation =
+      rows.length > 0 && !!firstCell?.isMerged && Number(firstCell.master.row) < r;
+
+    if (isContinuation) {
+      const target = rows[rows.length - 1];
+      headers.forEach((header, i) => {
+        const cell = row.getCell(i + 1);
+        const isFreshHere = !(cell.isMerged && Number(cell.master.row) < r);
+        if (!isFreshHere) return; // kế thừa từ ô gộp — đã có sẵn ở dòng gốc
+        const val = cellToText(cell).trim();
+        if (!val || target[header] === val) return;
+        target[header] = target[header] ? `${target[header]}\n${val}` : val;
+      });
+      continue;
+    }
+
     const rowData: Record<string, string> = {};
     headers.forEach((header, i) => {
       rowData[header] = cellToText(row.getCell(i + 1));

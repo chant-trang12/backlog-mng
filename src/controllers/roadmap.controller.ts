@@ -4,6 +4,7 @@ import {
   createRoadmapItem,
   deleteRoadmapDetail,
   deleteRoadmapItem,
+  deleteRoadmapItems,
   listRoadmapDetails,
   listRoadmapItems,
   updateRoadmapDetail,
@@ -62,6 +63,16 @@ export async function deleteRoadmapItemHandler(req: Request, res: Response) {
   const ok = await deleteRoadmapItem(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy dòng roadmap" });
   res.status(204).send();
+}
+
+// Xóa nhiều dòng roadmap theo checkbox đã chọn trên bảng.
+export async function deleteSelectedRoadmapItemsHandler(req: Request, res: Response) {
+  const { ids } = req.body ?? {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
+  }
+  const deleted = await deleteRoadmapItems(ids.map((id: unknown) => Number(id)));
+  res.json({ deleted });
 }
 
 // ---- Chi tiết công việc theo tháng ----
