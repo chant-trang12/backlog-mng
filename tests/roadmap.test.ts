@@ -11,6 +11,23 @@ async function xlsxBuffer(headers: string[], rows: (string | number)[][]): Promi
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
+function binaryParser(res: NodeJS.ReadableStream & { setEncoding: (enc: string) => void }, callback: (err: Error | null, body: Buffer) => void) {
+  res.setEncoding("binary");
+  let data = "";
+  res.on("data", (chunk) => (data += chunk));
+  res.on("end", () => callback(null, Buffer.from(data, "binary")));
+}
+
+async function makePeriod(app: ReturnType<typeof createApp>, year: number, month: number) {
+  const res = await request(app).post("/api/periods").send({ year, month });
+  return res.body.id as number;
+}
+
+async function makeTeam(app: ReturnType<typeof createApp>, name: string, periodId: number) {
+  const res = await request(app).post("/api/teams").send({ name, period_id: periodId });
+  return res.body.id as number;
+}
+
 describe("Roadmap năm", () => {
   it("creates, lists (theo year + department_id), updates, and deletes a roadmap item", async () => {
     const app = createApp();
@@ -178,6 +195,40 @@ describe("Roadmap năm", () => {
     expect(a.thoi_gian_ket_thuc).toBe("2095-03-15");
     expect(a.trang_thai).toBe("Đang thực hiện");
     expect(a.he_thong).toBe("Website");
+  });
+
+  it("file mẫu roadmap có dropdown Team/Hệ thống/Mục tiêu/Phân loại theo danh mục đang quản lý", async () => {
+    const app = createApp();
+    // Dùng năm rất nhỏ (không phải năm cao nhất trong toàn bộ DB test) để
+    // tránh bị chọn làm "tháng gần nhất" khi các test khác tạo period mới
+    // và kế thừa team (xem team.service.ts#cloneTeamsFromPeriod).
+    const periodId = await makePeriod(app, 2011, 1);
+    await makeTeam(app, "Template Team A", periodId);
+    await makeTeam(app, "Template Team B", periodId);
+    await request(app).post("/api/he-thong").send({ ten_he_thong: "Hệ thống mẫu" });
+    await request(app).post("/api/muc-tieu").send({ ten_muc_tieu: "Mục tiêu mẫu" });
+    await request(app).post("/api/phan-loai").send({ ten_phan_loai: "Phân loại mẫu" });
+
+    const res = await request(app)
+      .get(`/api/roadmap-items/import-template?period_id=${periodId}`)
+      .buffer(true)
+      .parse(binaryParser);
+    expect(res.status).toBe(200);
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(res.body as Buffer);
+    const sheet = wb.worksheets[0];
+    // Cột 1 Team, 2 Hệ thống, 3 Mục tiêu, 7 Phân loại — dòng 2 (dòng dữ liệu đầu).
+    expect(sheet.getCell("A2").dataValidation?.type).toBe("list");
+    expect(sheet.getCell("B2").dataValidation?.type).toBe("list");
+    expect(sheet.getCell("C2").dataValidation?.type).toBe("list");
+    expect(sheet.getCell("G2").dataValidation?.type).toBe("list");
+
+    const lookup = wb.getWorksheet("Danh mục");
+    const allValues = lookup?.getRows(1, 500)?.flatMap((r) => r.values as unknown[]) ?? [];
+    expect(allValues).toEqual(
+      expect.arrayContaining(["Template Team A", "Template Team B", "Hệ thống mẫu", "Mục tiêu mẫu", "Phân loại mẫu"]),
+    );
   });
 
   it("rejects a roadmap import file missing the Nhiệm vụ column, and import with bad year", async () => {

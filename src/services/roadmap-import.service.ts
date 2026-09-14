@@ -30,7 +30,19 @@ export interface ImportRoadmapResult {
   teamsCreated: string[];
 }
 
-export function buildRoadmapImportTemplate(): Promise<ExcelJS.Buffer> {
+// `opts`: danh sách chọn lấy từ Team đã khai báo theo tháng + các danh mục
+// quản lý ở Cấu hình (Hệ thống, Mục tiêu, Phân loại) — gắn dropdown cho các
+// cột này trong file mẫu để nhập liệu đúng theo danh mục, tránh gõ tự do.
+export function buildRoadmapImportTemplate(opts?: {
+  teams?: string[];
+  heThong?: string[];
+  mucTieu?: string[];
+  phanLoai?: string[];
+}): Promise<ExcelJS.Buffer> {
+  const teams = opts?.teams ?? [];
+  const heThong = opts?.heThong ?? [];
+  const mucTieu = opts?.mucTieu ?? [];
+  const phanLoai = opts?.phanLoai ?? [];
   return buildTemplateWorkbook(
     "Roadmap năm",
     [
@@ -47,8 +59,15 @@ export function buildRoadmapImportTemplate(): Promise<ExcelJS.Buffer> {
       { header: "Ghi chú", width: 24 },
     ],
     [
-      ["CRM", "Website", "Tính năng mới", "Làm màn hình quản lý abc", "Chạy trên prod", "Có kiểm thử tự động", "NVKH", "02/01/2026", "15/03/2026", "Chưa thực hiện", ""],
-      ["NVKH", "Nội bộ", "Nâng cấp tính năng", "Tối ưu truy vấn xyz", "", "", "NVPS", "01/04/2026", "30/06/2026", "Đang thực hiện", "Ưu tiên cao"],
+      [teams[0] ?? "CRM", heThong[0] ?? "Website", mucTieu[0] ?? "Tính năng mới", "Làm màn hình quản lý abc", "Chạy trên prod", "Có kiểm thử tự động", phanLoai[0] ?? "NVKH", "02/01/2026", "15/03/2026", "Chưa thực hiện", ""],
+      [teams[1] ?? "NVKH", heThong[1] ?? "Nội bộ", mucTieu[1] ?? "Nâng cấp tính năng", "Tối ưu truy vấn xyz", "", "", phanLoai[1] ?? "NVPS", "01/04/2026", "30/06/2026", "Đang thực hiện", "Ưu tiên cao"],
+    ],
+    [
+      { column: 1, options: teams }, // Team
+      { column: 2, options: heThong }, // Hệ thống
+      { column: 3, options: mucTieu }, // Mục tiêu
+      { column: 7, options: phanLoai }, // Phân loại
+      { column: 10, options: [...STATUSES] }, // Trạng thái
     ],
   );
 }

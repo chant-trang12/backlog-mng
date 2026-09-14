@@ -4549,7 +4549,7 @@ el.roadmapYearPrev.addEventListener("click", () => stepRoadmapYear(-1));
 el.roadmapYearNext.addEventListener("click", () => stepRoadmapYear(1));
 
 el.downloadRoadmapTemplateBtn.addEventListener("click", () => {
-  window.location.href = "/api/roadmap-items/import-template";
+  window.location.href = `/api/roadmap-items/import-template?period_id=${state.currentPeriodId ?? ""}${deptParam()}`;
 });
 el.importRoadmapBtn.addEventListener("click", () => {
   if (state.currentDepartmentId == null) {

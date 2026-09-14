@@ -14,6 +14,10 @@ import {
   buildRoadmapImportTemplate,
   importRoadmapFromWorkbook,
 } from "../services/roadmap-import.service.js";
+import { listTeams } from "../services/team.service.js";
+import { listHeThong } from "../services/hethong.service.js";
+import { listMucTieu } from "../services/muctieu.service.js";
+import { listPhanLoai } from "../services/phanloai.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -117,9 +121,24 @@ export async function deleteRoadmapDetailHandler(req: Request, res: Response) {
   res.status(204).send();
 }
 
-// GET /api/roadmap-items/import-template — file .xlsx mẫu nhập roadmap.
-export async function downloadRoadmapTemplateHandler(_req: Request, res: Response) {
-  const buffer = await buildRoadmapImportTemplate();
+// GET /api/roadmap-items/import-template?period_id=X&department_id=Y — file
+// .xlsx mẫu nhập roadmap, có sẵn dropdown Team / Hệ thống / Mục tiêu /
+// Phân loại theo đúng danh mục đang quản lý ở Cấu hình.
+export async function downloadRoadmapTemplateHandler(req: Request, res: Response) {
+  const periodId = req.query.period_id != null ? Number(req.query.period_id) : NaN;
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const [teams, heThong, mucTieu, phanLoai] = await Promise.all([
+    Number.isFinite(periodId) ? listTeams(periodId, departmentId) : Promise.resolve([]),
+    listHeThong(),
+    listMucTieu(),
+    listPhanLoai(),
+  ]);
+  const buffer = await buildRoadmapImportTemplate({
+    teams: teams.map((t) => t.name),
+    heThong: heThong.map((h) => h.ten_he_thong),
+    mucTieu: mucTieu.map((m) => m.ten_muc_tieu),
+    phanLoai: phanLoai.map((p) => p.ten_phan_loai),
+  });
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
