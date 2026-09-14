@@ -383,6 +383,35 @@ select option:hover {
   color: #fff;
 }
 
+/* Chrome/Edge bản mới hỗ trợ "customizable select" (appearance: base-select)
+   — cho phép CSS kiểm soát hẳn cả khung popup lẫn màu di chuột qua từng
+   option, khác với select gốc (nơi màu xanh dương khi hover là do hệ điều
+   hành vẽ, CSS không đổi được). Bọc trong @supports để chỉ bật ở trình
+   duyệt hỗ trợ, nơi không hỗ trợ (Safari, Firefox hiện tại) vẫn dùng cách
+   tô nền ở trên như cũ — không hỏng gì. */
+@supports (appearance: base-select) {
+  select {
+    appearance: base-select;
+  }
+  select::picker(select) {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    padding: 4px;
+    margin-top: 4px;
+  }
+  select option {
+    border-radius: 6px;
+    padding: 7px 10px;
+  }
+  select option:hover,
+  select option:focus,
+  select option:checked {
+    background: var(--primary);
+    color: #fff;
+  }
+}
+
 textarea { resize: vertical; min-height: 60px; width: 100%; }
 
 button {
