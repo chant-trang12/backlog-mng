@@ -1496,24 +1496,26 @@
 
   <dialog id="member-task-detail-dialog" style="max-width:640px">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-    <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
-    <p class="muted" style="margin:8px 0">Danh sách task đã gán nhân sự này ở Backlog (xem popup "Nhân sự tham gia") trong tháng đang chọn. Điểm = Điểm cá nhân đã ghi đè, hoặc tự tính = % Đánh giá × Tỷ lệ đóng góp; task chưa chấm điểm chưa có điểm.</p>
-    <div class="table-wrap">
-      <table id="member-task-detail-table">
-        <thead>
-          <tr>
-            <th>Nhiệm vụ</th>
-            <th style="width:130px">Team</th>
-            <th style="width:140px">Phân loại</th>
-            <th style="width:90px">Điểm</th>
-          </tr>
-        </thead>
-        <tbody id="member-task-detail-tbody"></tbody>
-      </table>
-      <p class="muted" id="member-task-detail-empty" hidden style="padding:16px;text-align:center">Nhân sự này chưa được gán vào task nào trong tháng đang chọn.</p>
-    </div>
-    <div class="actions">
-      <button type="button" id="member-task-detail-close-btn">Đóng</button>
+    <div class="dialog-body">
+      <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
+      <p class="muted" style="margin:0">Task đã gán ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn. Điểm = Điểm cá nhân ghi đè, hoặc tự tính = % Đánh giá × Tỷ lệ đóng góp — task chưa chấm điểm để trống.</p>
+      <div class="table-wrap">
+        <table id="member-task-detail-table">
+          <thead>
+            <tr>
+              <th>Nhiệm vụ</th>
+              <th style="width:130px">Team</th>
+              <th style="width:140px">Phân loại</th>
+              <th style="width:90px">Điểm</th>
+            </tr>
+          </thead>
+          <tbody id="member-task-detail-tbody"></tbody>
+        </table>
+        <p class="muted" id="member-task-detail-empty" hidden style="padding:16px;text-align:center">Nhân sự này chưa được gán vào task nào trong tháng đang chọn.</p>
+      </div>
+      <div class="actions">
+        <button type="button" id="member-task-detail-close-btn">Đóng</button>
+      </div>
     </div>
   </dialog>
 

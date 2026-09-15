@@ -694,11 +694,11 @@ th {
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
 
 /* Cố định cột checkbox (chọn nhiều dòng) khi cuộn ngang — áp dụng cho mọi
-   bảng có cột chọn: Backlog, Nhân sự, Nội quy, Roadmap năm, Chấm công.
+   bảng có cột chọn: Backlog, Nội quy, Roadmap năm, Chấm công (bảng Nhân sự
+   cố định riêng tới hết cột "Họ và Tên", xem khối #member-table bên dưới).
    z-index: ô góc (th cột 1) > td cột 1 > th thường, để ô góc luôn nổi trên
    cùng khi cuộn cả 2 chiều. */
 #task-table td:first-child,
-#member-table td:first-child,
 #noiquy-table td:first-child,
 #roadmap-table td:first-child,
 #attendance-table td:first-child {
@@ -708,12 +708,38 @@ th {
   background: var(--card-bg);
 }
 #task-table th:first-child,
-#member-table th:first-child,
 #noiquy-table th:first-child,
 #roadmap-table th:first-child,
 #attendance-table th:first-child {
   left: 0;
   z-index: 3;
+}
+
+/* Bảng Nhân sự — cố định 3 cột đầu (checkbox, STT, Họ và Tên) khi cuộn
+   ngang, không chỉ mỗi checkbox, vì bảng có nhiều cột và tên nhân sự cần
+   luôn nhìn thấy. left cộng dồn theo đúng width cố định của cột 1 (36px) +
+   cột 2 (60px) đặt ở index.html. Viền mờ bên phải cột 3 để tách khỏi phần
+   nội dung đang cuộn qua. */
+#member-table td:nth-child(1),
+#member-table td:nth-child(2),
+#member-table td:nth-child(3) {
+  position: sticky;
+  z-index: 1;
+  background: var(--card-bg);
+}
+#member-table th:nth-child(1),
+#member-table th:nth-child(2),
+#member-table th:nth-child(3) {
+  z-index: 3;
+}
+#member-table td:nth-child(1),
+#member-table th:nth-child(1) { left: 0; }
+#member-table td:nth-child(2),
+#member-table th:nth-child(2) { left: 36px; }
+#member-table td:nth-child(3),
+#member-table th:nth-child(3) {
+  left: 96px;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
 }
 
 #task-table th { text-align: center; }
@@ -807,6 +833,7 @@ th {
 #member-table td:nth-child(8), /* Đào tạo */
 #member-table td:nth-child(9), /* Hỗ trợ */
 #member-table td:nth-child(10), /* Đánh giá */
+#member-table td:nth-child(11), /* Điểm cá nhân (Tính theo task) */
 #member-table td:last-child { /* Sửa/Xóa */
   text-align: center;
   vertical-align: middle;
@@ -1301,8 +1328,15 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 #home-ranking-team-table tbody tr:hover { background: var(--bg); }
 #home-ranking-team-table tbody tr.active { background: var(--bg); font-weight: 700; }
 /* Bảng Nhân sự (Team & Nhân sự) — bấm 1 dòng xem chi tiết công việc tham
-   gia, trừ ô checkbox/nút Sửa-Xóa (xem renderMemberTable trong app.js). */
+   gia, trừ ô checkbox/nút Sửa-Xóa (xem renderMemberTable trong app.js). 3
+   cột cố định (checkbox/STT/Họ và Tên) có background riêng nên cần đồng bộ
+   lại màu hover, không thì chỉ phần cuộn được mới đổi màu khi rê chuột. */
 #member-table tbody tr.member-row-clickable:hover { background: var(--bg); }
+#member-table tbody tr.member-row-clickable:hover td:nth-child(1),
+#member-table tbody tr.member-row-clickable:hover td:nth-child(2),
+#member-table tbody tr.member-row-clickable:hover td:nth-child(3) {
+  background: var(--bg);
+}
 #home-ranking-detail-table tr.home-nhom-row td { background: var(--bg); font-weight: 600; text-align: left; }
 #home-ranking-detail-table tr.home-tongdiem-row td { background: var(--bg); font-weight: 700; border-top: 2px solid var(--border); }
 
@@ -1377,8 +1411,17 @@ dialog::backdrop { background: rgba(56, 66, 43, 0.35); }
 }
 .dialog-close-x:hover { background: var(--border); color: var(--text); }
 
-dialog form { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-dialog form > h2 { padding-right: 26px; } /* chừa chỗ cho nút X ở góc phải */
+dialog form,
+/* Dialog chỉ hiển thị (không nhập liệu, VD popup xem chi tiết) không cần
+   thẻ <form> — dùng .dialog-body để có cùng padding/spacing chuẩn. */
+dialog .dialog-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+dialog form > h2,
+dialog .dialog-body > h2 { padding-right: 26px; } /* chừa chỗ cho nút X ở góc phải */
 dialog input, dialog select, dialog textarea { width: 100%; }
 dialog .field-row { display: flex; gap: 12px; min-width: 0; }
 dialog .field-row > div { flex: 1; min-width: 0; }
