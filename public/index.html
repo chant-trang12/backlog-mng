@@ -1496,29 +1496,12 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
-      <div style="position:relative">
-        <label for="tm-member">Nhân sự</label>
-        <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
-        <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
-      </div>
-      <div class="field-row" style="align-items:flex-end">
-        <div>
-          <label for="tm-phan-loai">Phân loại</label>
-          <select id="tm-phan-loai"></select>
-        </div>
-        <div style="flex:1">
-          <label for="tm-ghi-chu">Ghi chú</label>
-          <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
-        </div>
-        <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
-      </div>
-
       <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật) +
            nút Chia đều tỷ lệ (nổi bật, góc phải). Dòng 2: đơn vị nhập điểm cá
            nhân + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
       <div class="row" id="task-member-score-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
-        <button type="button" id="tm-split-even-btn" class="small primary">Chia đều tỷ lệ</button>
+        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
       <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div class="row" style="align-items:center;gap:8px">
@@ -1529,6 +1512,27 @@
           </select>
         </div>
         <span id="task-member-total-badge" class="status-badge status-default"></span>
+      </div>
+
+      <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
+           dưới. -->
+      <div class="tm-add-frame">
+        <div style="position:relative">
+          <label for="tm-member">Nhân sự</label>
+          <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
+          <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
+        </div>
+        <div class="field-row" style="align-items:flex-end">
+          <div>
+            <label for="tm-phan-loai">Phân loại</label>
+            <select id="tm-phan-loai"></select>
+          </div>
+          <div style="flex:1">
+            <label for="tm-ghi-chu">Ghi chú</label>
+            <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
+          </div>
+          <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
+        </div>
       </div>
 
       <div class="table-wrap">

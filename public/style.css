@@ -1061,6 +1061,44 @@ select.tm-phanloai-select {
   background-size: 10px;
 }
 
+/* Khung "Thêm nhân sự" trong dialog "Nhân sự tham gia" — nền khác màu để
+   tách biệt khỏi bảng danh sách bên dưới. */
+.tm-add-frame {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Nút "Chia đều tỷ lệ" — màu riêng, tách biệt hẳn với primary (olive) và
+   các nút hành động khác trong dialog để nổi bật hơn. */
+button.btn-split-even { background: var(--warning); border-color: var(--warning); color: #fff; }
+button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
+
+/* Bảng "Nhân sự tham gia" — cột Tỷ lệ đóng góp/Điểm cá nhân căn giữa cho dễ
+   nhìn (số liệu, không phải text dài). text-align chỉ đủ cho tiêu đề/ô
+   trống; 2 ô này chứa input/flex-row nên phải canh riêng (input tự căn
+   giữa + đưa vào chính giữa ô, .row bên trong ô Điểm cá nhân canh giữa cả
+   cụm input + nút/nhãn "(tự tính)"). */
+#task-member-table th:nth-child(4),
+#task-member-table th:nth-child(5),
+#task-member-table td:nth-child(4),
+#task-member-table td:nth-child(5) {
+  text-align: center;
+}
+#task-member-table td:nth-child(4) input,
+#task-member-table td:nth-child(5) input {
+  text-align: center;
+  display: block;
+  margin: 0 auto;
+}
+#task-member-table td:nth-child(5) .row {
+  justify-content: center;
+}
+
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem teamColorClass trong app.js). */
 .team-badge { background: #dcfce7; color: #166534; }
 .team-color-0 { background: #e3ecd7; color: #4a6234; }
