@@ -1379,6 +1379,16 @@ dialog.confirm-dialog form {
 }
 dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn giữa, không cần chừa chỗ nút X */
 
+/* select "Kiểu tính điểm"/"Nguồn dữ liệu" ở dialog Tiêu chí có nhãn dài (VD
+   "Tỷ lệ (nguồn dữ liệu) × Điểm chuẩn") — max-width: 220px chung bị chặn
+   quá hẹp, chữ tràn đè lên mũi tên (xem lý do text-overflow không ăn với
+   appearance: base-select ở ghi chú của rule select gốc). Bỏ giới hạn, dùng
+   hết chiều rộng khung "card" chứa 2 select này. */
+#tc-kieu-tinh,
+#tc-nguon {
+  max-width: 100%;
+}
+
 /* Gợi ý tìm nhân sự (dialog "Nhân sự tham gia") — tự dựng bằng div thay vì
    <input list> + <datalist>: datalist để trình duyệt tự định vị popup gợi
    ý, và bên trong <dialog> (top layer) Chrome tính toán sai vị trí (bung ra
