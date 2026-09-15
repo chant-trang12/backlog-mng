@@ -1401,13 +1401,13 @@ function memberKpiTheoTaskRow(memberId) {
 // (điểm cộng, không chia lại theo số lượng). VD 3 việc thực hiện chính + 1
 // việc hỗ trợ -> trung bình 3 việc chính + điểm việc hỗ trợ cộng thêm.
 //
-// t.diem = diem_ca_nhân ghi đè, hoặc thẳng % Đánh giá của task — Tỷ lệ đóng
-// góp KHÔNG còn nhân vào công thức ở bất kỳ đâu nữa (chỉ còn là trường tham
-// chiếu/hiển thị, xem taskMember.service.ts#listKpiTheoTask): nếu nhân tỷ
-// lệ thì task càng nhiều người chia sẻ (tỷ lệ thấp) càng kéo điểm xuống,
-// còn task 1 người làm trọn (100%) luôn cao hơn hẳn dù chất lượng công việc
-// (% Đánh giá) không khác gì nhau — không phản ánh đúng nỗ lực, đặc biệt
-// bất lợi cho người tham gia nhiều task phối hợp cùng người khác.
+// t.diem tính khác nhau theo phân loại (xem
+// taskMember.service.ts#listKpiTheoTask): task "Thực hiện chính" (hoặc chưa
+// phân loại) = thẳng % Đánh giá, KHÔNG nhân Tỷ lệ đóng góp — tránh task
+// nhiều người chia sẻ (tỷ lệ thấp) bị kéo điểm xuống so với task 1 người
+// làm trọn (100%) dù % Đánh giá như nhau, không phản ánh đúng nỗ lực; task
+// "Hỗ trợ" = Tỷ lệ đóng góp × % Đánh giá (VẪN nhân tỷ lệ — hỗ trợ càng
+// nhiều mới cộng càng nhiều).
 function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;

@@ -314,6 +314,33 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(t3Entry.diem).toBeNull();
     });
 
+    it("task phân loại 'Hỗ trợ' vẫn nhân Tỷ lệ đóng góp (khác task Thực hiện chính)", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1995, 1);
+      const teamId = await makeTeam(app, "KPI hotro team", periodId);
+      const memberId = await makeMember(app, "Hồ Thị R", teamId, periodId, "Dev");
+
+      const mainTask = await makeTask(app, periodId, "KPI hotro team", "Task chính");
+      await request(app).put(`/api/tasks/${mainTask}`).send({ cpo_danh_gia: 80 });
+      await request(app)
+        .post(`/api/tasks/${mainTask}/members`)
+        .send({ member_id: memberId, ty_le_dong_gop: 50, phan_loai: "Thực hiện chính" });
+
+      const supportTask = await makeTask(app, periodId, "KPI hotro team", "Task hỗ trợ");
+      await request(app).put(`/api/tasks/${supportTask}`).send({ cpo_danh_gia: 80 });
+      await request(app)
+        .post(`/api/tasks/${supportTask}/members`)
+        .send({ member_id: memberId, ty_le_dong_gop: 50, phan_loai: "Hỗ trợ" });
+
+      const res = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const row = res.body.find((r: { member_id: number }) => r.member_id === memberId);
+      const mainEntry = row.tasks.find((t: { task_id: number }) => t.task_id === mainTask);
+      const supportEntry = row.tasks.find((t: { task_id: number }) => t.task_id === supportTask);
+      expect(mainEntry.diem).toBe(80); // Thực hiện chính: thẳng % Đánh giá, không nhân tỷ lệ
+      expect(supportEntry.diem).toBe(40); // Hỗ trợ: 50% x 80 = 40, VẪN nhân tỷ lệ
+      expect(row.tong_diem).toBe(120);
+    });
+
     it("lọc theo department_id — chỉ cộng điểm từ task thuộc đúng phòng ban", async () => {
       const app = createApp();
       const periodId = await makePeriod(app, 1997, 1);

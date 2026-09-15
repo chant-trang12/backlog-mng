@@ -144,18 +144,26 @@ export async function deleteTaskMember(id: number): Promise<boolean> {
   return count > 0;
 }
 
+// Nhãn "Hỗ trợ" trong danh mục phan_loai_nhan_su_options — khớp với
+// HO_TRO_LABEL ở public/app.js (2 nơi định nghĩa độc lập, không có module
+// dùng chung giữa FE/BE trong repo này).
+const HO_TRO_LABEL = "Hỗ trợ";
+
 // KPI nhân sự tính trực tiếp theo task (dùng cho phòng ban có
 // departments.cach_tinh_kpi = "theo_task", không chia theo team) — cộng dồn
 // Điểm cá nhân của mỗi nhân sự từ mọi task họ tham gia trong 1 tháng
-// backlog. Điểm từng task = diem_ca_nhan nếu đã ghi đè tay, không thì thẳng
-// % Đánh giá của task (cpo_danh_gia) — Tỷ lệ đóng góp KHÔNG còn nhân vào
-// công thức nữa (chỉ còn là trường tham chiếu/hiển thị), theo yêu cầu: task
-// nhiều người chia sẻ tỷ lệ thấp trước đây luôn kéo điểm xuống so với task 1
-// người làm trọn dù % Đánh giá như nhau, không phản ánh đúng nỗ lực. Áp
-// dụng thống nhất cho cả tong_diem (KPI theo Task/Ranking nhân sự ở Home)
-// lẫn diem từng task (Điểm cá nhân (Tính theo task)/popup chi tiết ở bảng
-// Nhân sự). Task chưa chấm điểm thì không cộng điểm (không phải 0 — vẫn
-// tính vào "số task tham gia" để biết họ có tham gia, chỉ không có điểm).
+// backlog. Điểm từng task:
+// - diem_ca_nhan ghi đè tay -> luôn ưu tiên dùng giá trị đó, bất kể phân loại.
+// - Task phân loại "Hỗ trợ" -> Điểm = Tỷ lệ đóng góp (%) × % Đánh giá / 100
+//   (vẫn nhân tỷ lệ — hỗ trợ càng nhiều mới được cộng càng nhiều).
+// - Task "Thực hiện chính" (hoặc chưa phân loại) -> thẳng % Đánh giá của
+//   task, KHÔNG nhân tỷ lệ đóng góp — tránh việc task nhiều người chia sẻ
+//   tỷ lệ thấp bị kéo điểm xuống so với task 1 người làm trọn dù % Đánh giá
+//   như nhau, không phản ánh đúng nỗ lực.
+// Áp dụng thống nhất cho cả tong_diem (KPI theo Task/Ranking nhân sự ở
+// Home) lẫn diem từng task (Điểm cá nhân (Tính theo task)/popup chi tiết ở
+// bảng Nhân sự). Task chưa chấm điểm thì không cộng điểm (không phải 0 —
+// vẫn tính vào "số task tham gia" để biết họ có tham gia, chỉ không có điểm).
 export async function listKpiTheoTask(
   periodId: number,
   departmentId: number | null,
@@ -186,9 +194,16 @@ export async function listKpiTheoTask(
     const diemCaNhan = r.diem_ca_nhan !== null && r.diem_ca_nhan !== undefined ? Number(r.diem_ca_nhan) : null;
     const tyLeDongGop = r.ty_le_dong_gop !== null && r.ty_le_dong_gop !== undefined ? Number(r.ty_le_dong_gop) : null;
     const cpoDanhGia = r.cpo_danh_gia !== null && r.cpo_danh_gia !== undefined ? Number(r.cpo_danh_gia) : null;
-    // diem_ca_nhan ghi đè (nếu có) hoặc thẳng % Đánh giá — không nhân
-    // ty_le_dong_gop nữa (trường này giờ chỉ để tham chiếu/hiển thị).
-    const diem = diemCaNhan !== null ? diemCaNhan : cpoDanhGia;
+    // diem_ca_nhan ghi đè luôn ưu tiên; không thì tùy phân loại — "Hỗ trợ"
+    // nhân tỷ lệ đóng góp, "Thực hiện chính"/chưa phân loại thì không.
+    const diem =
+      diemCaNhan !== null
+        ? diemCaNhan
+        : r.phan_loai === HO_TRO_LABEL
+          ? cpoDanhGia !== null && tyLeDongGop !== null
+            ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
+            : null
+          : cpoDanhGia;
 
     if (!byMember.has(r.member_id)) {
       byMember.set(r.member_id, {
