@@ -919,7 +919,20 @@
             <span class="pill" data-tab="ranking">Ranking team</span>
             <span class="pill" data-tab="tagphanloai">Cấu hình</span>
             <span class="pill" data-tab="phongban">Phòng ban</span>
+            <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
           </div>
+
+          <section class="card" id="config-tab-users" hidden>
+            <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
+            <p class="muted" style="margin:12px 0">User được tạo tự động khi đăng nhập SSO lần đầu — không tạo tay ở đây. Người đầu tiên đăng nhập vào hệ thống tự thành Admin; nâng/hạ quyền hoặc khóa tài khoản cho những người sau ở bảng dưới. <strong>Admin</strong>: toàn quyền + Quản lý User. <strong>Biên tập</strong>: sửa/xóa dữ liệu nghiệp vụ bình thường. <strong>Chỉ xem</strong>: chỉ đọc, không sửa/xóa/thêm được gì.</p>
+            <div class="table-wrap">
+              <table id="users-config-table">
+                <thead><tr><th>Họ và tên</th><th>Username</th><th>Email</th><th style="width:150px">Quyền</th><th style="width:120px">Trạng thái</th><th style="width:160px">Đăng nhập gần nhất</th><th style="width:100px"></th></tr></thead>
+                <tbody id="users-config-tbody"></tbody>
+              </table>
+              <p class="muted" id="users-config-empty" hidden style="padding:16px;text-align:center">Chưa có user nào đăng nhập.</p>
+            </div>
+          </section>
 
           <section class="card" id="config-tab-phongban" hidden>
             <div class="row" style="justify-content:space-between">

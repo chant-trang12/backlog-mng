@@ -26,6 +26,8 @@ describe("Authentication & SSO Integration", () => {
         ssoEnabled: false,
         authenticated: false,
         user: null,
+        role: null,
+        userId: null,
       });
     });
 
@@ -100,7 +102,7 @@ describe("Authentication & SSO Integration", () => {
       expect(res.body.error).toMatch(/Invalid SSO state/i);
     });
 
-    it("allows access and sets req.user when user is in session", async () => {
+    it("allows access and sets req.user + req.appUser when user is in session", async () => {
       const { requireAuth } = await import("../src/middleware/auth.middleware.js");
       let nextCalled = false;
       const mockUser = {
@@ -118,11 +120,15 @@ describe("Authentication & SSO Integration", () => {
         status: () => res,
         json: () => res,
       };
-      requireAuth(req, res, () => {
+      // requireAuth tra cứu/tạo user cục bộ (bảng users) — là async, phải await.
+      await requireAuth(req, res, () => {
         nextCalled = true;
       });
       expect(nextCalled).toBe(true);
       expect(req.user).toEqual(mockUser);
+      expect(req.appUser).toBeDefined();
+      expect(req.appUser.sso_sub).toBe("user-123");
+      expect(["admin", "viewer"]).toContain(req.appUser.role); // admin nếu là user đầu tiên, viewer nếu không
     });
   });
 });

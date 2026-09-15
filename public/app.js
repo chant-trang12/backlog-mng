@@ -1,4 +1,5 @@
 const state = {
+  currentUserId: null, // id cục bộ (bảng users) của người đang đăng nhập — xem checkAuth()
   departments: [],
   currentDepartmentId: null,
   periods: [],
@@ -2584,10 +2585,11 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#config-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["tieuchi", "ranking", "tagphanloai", "phongban"].forEach((tab) => {
+    ["tieuchi", "ranking", "tagphanloai", "phongban", "users"].forEach((tab) => {
       document.getElementById(`config-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
     if (pill.dataset.tab === "phongban") loadDepartmentConfig().catch((err) => showToast(err.message));
+    if (pill.dataset.tab === "users") loadUsersConfig().catch((err) => showToast(err.message));
   });
 });
 
@@ -4667,6 +4669,88 @@ document.getElementById("department-form").addEventListener("submit", async (e) 
   }
 });
 
+// ---- Cấu hình > Quản lý User & Phân quyền (chỉ Admin thấy được, xem
+// checkAuth()/#config-users-pill) ----
+
+const USER_ROLE_LABELS = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };
+
+function formatUserLastLogin(value) {
+  if (!value) return "—";
+  const [datePart, timePart] = String(value).split(" ");
+  if (!datePart) return "—";
+  const [y, m, d] = datePart.split("-");
+  return timePart ? `${d}/${m}/${y} ${timePart.slice(0, 5)}` : `${d}/${m}/${y}`;
+}
+
+async function loadUsersConfig() {
+  const tbody = document.getElementById("users-config-tbody");
+  if (!tbody) return;
+  const users = await api("/api/users");
+  renderUsersConfig(users);
+}
+
+function renderUsersConfig(users) {
+  const tbody = document.getElementById("users-config-tbody");
+  const empty = document.getElementById("users-config-empty");
+  if (!tbody) return;
+  empty.hidden = users.length > 0;
+
+  tbody.innerHTML = users
+    .map((u) => {
+      // Không tự đổi role/khóa chính tài khoản đang đăng nhập — khớp guard
+      // chặn ở server (user.service.ts#updateUser/deleteUser), disable luôn
+      // control tương ứng ở FE để đỡ bấm vào rồi bị lỗi.
+      const isSelf = state.currentUserId != null && u.id === state.currentUserId;
+      const roleOptions = Object.entries(USER_ROLE_LABELS)
+        .map(([value, label]) => `<option value="${value}"${u.role === value ? " selected" : ""}>${label}</option>`)
+        .join("");
+      return `
+    <tr data-id="${u.id}">
+      <td>${u.name}${isSelf ? ' <span class="muted">(bạn)</span>' : ""}</td>
+      <td>${u.username}</td>
+      <td>${u.email ?? ""}</td>
+      <td><select class="inline-cell-input user-role-select" data-id="${u.id}" ${isSelf ? "disabled" : ""}>${roleOptions}</select></td>
+      <td style="text-align:center">
+        <span class="status-badge ${u.active ? "status-hoan-thanh" : "status-huy"}">${u.active ? "Đang hoạt động" : "Đã khóa"}</span>
+      </td>
+      <td>${formatUserLastLogin(u.last_login_at)}</td>
+      <td style="text-align:center">
+        <button type="button" class="small ${u.active ? "btn-delete" : ""} user-toggle-active-btn" data-id="${u.id}" data-active="${u.active}" ${isSelf ? "disabled" : ""}>${u.active ? "Khóa" : "Mở khóa"}</button>
+      </td>
+    </tr>`;
+    })
+    .join("");
+
+  tbody.querySelectorAll(".user-role-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const prevValue = select.dataset.prevValue ?? select.value;
+      try {
+        await api(`/api/users/${select.dataset.id}`, { method: "PUT", body: JSON.stringify({ role: select.value }) });
+        showToast("Đã đổi quyền.", "success");
+        await loadUsersConfig();
+      } catch (err) {
+        showToast(err.message);
+        select.value = prevValue;
+      }
+    });
+  });
+
+  tbody.querySelectorAll(".user-toggle-active-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const nextActive = btn.dataset.active !== "true";
+      const msg = nextActive ? "Mở khóa tài khoản này?" : "Khóa tài khoản này? Người này sẽ không đăng nhập/thao tác được nữa.";
+      if (!(await confirmDialog(msg))) return;
+      try {
+        await api(`/api/users/${btn.dataset.id}`, { method: "PUT", body: JSON.stringify({ active: nextActive }) });
+        showToast(nextActive ? "Đã mở khóa." : "Đã khóa tài khoản.", "success");
+        await loadUsersConfig();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
 // ---- Cấu hình > Hệ thống / Mục tiêu (danh mục đơn, dùng ở Roadmap năm) ----
 
 function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload, label, colorClassFn) {
@@ -6251,6 +6335,14 @@ async function checkAuth() {
     const res = await fetch("/auth/me");
     if (!res.ok) return;
     const data = await res.json();
+    state.currentUserId = data.userId ?? null; // id cục bộ (bảng users) — dùng để tự nhận "chính mình" ở Quản lý User
+
+    // Mục "Quản lý User" chỉ Admin thấy được. Tắt SSO (dev/test, không có
+    // khái niệm role) thì hiện sẵn cho tiện làm việc — giống các phần khác
+    // của app vốn không phân quyền gì khi SSO tắt.
+    const usersPill = document.getElementById("config-users-pill");
+    if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
+
     if (data.ssoEnabled) {
       if (!data.authenticated) {
         window.location.href = "/auth/login";
@@ -6262,7 +6354,10 @@ async function checkAuth() {
       if (sidebarUser && data.user) {
         sidebarUser.style.display = "flex";
         if (userName) userName.textContent = data.user.name || data.user.username;
-        if (userEmail) userEmail.textContent = data.user.email || data.user.username;
+        if (userEmail) {
+          const roleLabel = USER_ROLE_LABELS[data.role] ?? "";
+          userEmail.textContent = roleLabel ? `${data.user.email || data.user.username} · ${roleLabel}` : (data.user.email || data.user.username);
+        }
       }
     }
   } catch (err) {
