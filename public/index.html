@@ -1496,6 +1496,23 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
+      <div style="position:relative">
+        <label for="tm-member">Nhân sự</label>
+        <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
+        <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
+      </div>
+      <div class="field-row" style="align-items:flex-end">
+        <div>
+          <label for="tm-phan-loai">Phân loại</label>
+          <select id="tm-phan-loai"></select>
+        </div>
+        <div style="flex:1">
+          <label for="tm-ghi-chu">Ghi chú</label>
+          <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
+        </div>
+        <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
+      </div>
+
       <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật) +
            nút Chia đều tỷ lệ (nổi bật, góc phải). Dòng 2: đơn vị nhập điểm cá
            nhân + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
@@ -1520,23 +1537,6 @@
           <tbody id="task-member-tbody"></tbody>
         </table>
         <p class="muted" id="task-member-empty" hidden style="padding:16px;text-align:center">Chưa có nhân sự nào tham gia task này.</p>
-      </div>
-
-      <div style="position:relative">
-        <label for="tm-member">Nhân sự</label>
-        <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
-        <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
-      </div>
-      <div class="field-row" style="align-items:flex-end">
-        <div>
-          <label for="tm-phan-loai">Phân loại</label>
-          <select id="tm-phan-loai"></select>
-        </div>
-        <div style="flex:1">
-          <label for="tm-ghi-chu">Ghi chú</label>
-          <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
-        </div>
-        <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
       </div>
 
       <div class="actions">
