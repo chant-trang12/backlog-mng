@@ -1300,6 +1300,9 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 #home-ranking-team-table tbody tr { cursor: pointer; }
 #home-ranking-team-table tbody tr:hover { background: var(--bg); }
 #home-ranking-team-table tbody tr.active { background: var(--bg); font-weight: 700; }
+/* Bảng Nhân sự (Team & Nhân sự) — bấm 1 dòng xem chi tiết công việc tham
+   gia, trừ ô checkbox/nút Sửa-Xóa (xem renderMemberTable trong app.js). */
+#member-table tbody tr.member-row-clickable:hover { background: var(--bg); }
 #home-ranking-detail-table tr.home-nhom-row td { background: var(--bg); font-weight: 600; text-align: left; }
 #home-ranking-detail-table tr.home-tongdiem-row td { background: var(--bg); font-weight: 700; border-top: 2px solid var(--border); }
 

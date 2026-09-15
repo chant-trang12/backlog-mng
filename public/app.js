@@ -11,6 +11,7 @@ const state = {
   memberFilterTeam: "", // "" = tất cả
   memberSearch: "",
   selectedMemberIds: new Set(),
+  memberKpiTheoTask: [], // dữ liệu task đã tham gia của từng nhân sự (GET /api/kpi-theo-task) — dùng cho cột "Điểm cá nhân (Tính theo task)" + popup chi tiết ở tab Nhân sự
   tasksAll: [], // toàn bộ task của tháng đang chọn (chưa lọc)
   tasks: [], // task sau khi áp bộ lọc (Tính chất / Team / Trạng thái)
   taskFilters: { tinhChat: "", khongTinhDiem: "", team: "", trangThai: "", tag: "" },
@@ -1306,12 +1307,18 @@ function applyTaskFilters() {
 async function loadMembers() {
   if (!state.currentPeriodId) {
     state.members = [];
+    state.memberKpiTheoTask = [];
     renderMemberTeamFilter();
     renderMemberTable();
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.members = await api(`/api/members?period_id=${state.currentPeriodId}${deptParam()}`);
+  const [members, kpiTheoTask] = await Promise.all([
+    api(`/api/members?period_id=${state.currentPeriodId}${deptParam()}`),
+    api(`/api/kpi-theo-task?period_id=${state.currentPeriodId}${deptParam()}`).catch(() => []),
+  ]);
+  state.members = members;
+  state.memberKpiTheoTask = kpiTheoTask;
   const memberIds = new Set(state.members.map((m) => m.id));
   state.selectedMemberIds.forEach((id) => {
     if (!memberIds.has(id)) state.selectedMemberIds.delete(id);
@@ -1379,6 +1386,49 @@ function updateMemberSelectionUI() {
   el.memberSelectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
 }
 
+// Dòng KPI-theo-task (GET /api/kpi-theo-task) của 1 nhân sự — có tasks[] kèm
+// điểm từng task (đã tính sẵn ở backend, đúng công thức ở popup "Nhân sự
+// tham gia": diem_ca_nhan ghi đè, không thì tự tính = % Đánh giá x Tỷ lệ
+// đóng góp).
+function memberKpiTheoTaskRow(memberId) {
+  return state.memberKpiTheoTask.find((r) => r.member_id === memberId);
+}
+
+// "Điểm cá nhân (Tính theo task)" = ĐIỂM TRUNG BÌNH (không phải tổng) của
+// các task ĐÃ CÓ điểm (task chưa chấm điểm/chưa có tỷ lệ đóng góp thì không
+// tính vào — không coi là 0). null nếu chưa có task nào có điểm.
+function memberAvgDiemTheoTask(memberId) {
+  const row = memberKpiTheoTaskRow(memberId);
+  if (!row) return null;
+  const scored = row.tasks.filter((t) => t.diem !== null);
+  if (scored.length === 0) return null;
+  return Math.round((scored.reduce((sum, t) => sum + t.diem, 0) / scored.length) * 100) / 100;
+}
+
+function openMemberTaskDetailDialog(member) {
+  const row = memberKpiTheoTaskRow(member.id);
+  const tasks = row?.tasks ?? [];
+  document.getElementById("member-task-detail-name").textContent = member.name;
+  const tbody = document.getElementById("member-task-detail-tbody");
+  const empty = document.getElementById("member-task-detail-empty");
+  empty.hidden = tasks.length > 0;
+  tbody.innerHTML = tasks
+    .map(
+      (t) => `
+    <tr>
+      <td>${t.nhiem_vu}</td>
+      <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
+      <td>${t.phan_loai ?? ""}</td>
+      <td>${t.diem ?? "-"}</td>
+    </tr>`,
+    )
+    .join("");
+  document.getElementById("member-task-detail-dialog").showModal();
+}
+document.getElementById("member-task-detail-close-btn").addEventListener("click", () => {
+  document.getElementById("member-task-detail-dialog").close();
+});
+
 function renderMemberTable() {
   const visible = filteredMembers();
   el.memberEmpty.hidden = visible.length > 0;
@@ -1390,8 +1440,9 @@ function renderMemberTable() {
   el.memberTbody.innerHTML = pageItems
     .map((m, i) => {
       const noiQuyTotal = noiQuyByName.get(m.name) ?? 0;
+      const avgDiem = memberAvgDiemTheoTask(m.id);
       return `
-    <tr data-id="${m.id}">
+    <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
       <td>${m.name}</td>
@@ -1402,6 +1453,7 @@ function renderMemberTable() {
       <td>${m.dao_tao ?? ""}</td>
       <td>${m.ho_tro ?? ""}</td>
       <td>${m.danh_gia ?? ""}</td>
+      <td>${avgDiem ?? "-"}</td>
       <td><div class="actions-cell">
         <button class="small btn-edit edit-member-btn">Sửa</button>
         <button class="small btn-delete delete-member-btn">Xóa</button>
@@ -1409,6 +1461,17 @@ function renderMemberTable() {
     </tr>`;
     })
     .join("");
+
+  // Bấm vào dòng (trừ ô checkbox/nút Sửa/Xóa) -> xem chi tiết công việc đã
+  // tham gia (thêm ở Backlog / popup "Nhân sự tham gia").
+  el.memberTbody.querySelectorAll("tr.member-row-clickable").forEach((tr) => {
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("input, button, .actions-cell")) return;
+      const id = Number(tr.dataset.id);
+      const member = state.members.find((m) => m.id === id);
+      if (member) openMemberTaskDetailDialog(member);
+    });
+  });
 
   el.memberTbody.querySelectorAll(".member-row-checkbox").forEach((checkbox) => {
     checkbox.addEventListener("change", (e) => {
