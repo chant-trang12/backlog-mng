@@ -393,16 +393,17 @@ select option:hover {
 /* Chrome/Edge bản mới hỗ trợ "customizable select" (appearance: base-select)
    — cho phép CSS kiểm soát hẳn cả khung popup lẫn màu di chuột qua từng
    option, khác với select gốc (nơi màu xanh dương khi hover là do hệ điều
-   hành vẽ, CSS không đổi được). Bọc trong @supports để chỉ bật ở trình
-   duyệt hỗ trợ, nơi không hỗ trợ (Safari, Firefox hiện tại) vẫn dùng cách
-   tô nền ở trên như cũ — không hỏng gì. */
+   hành vẽ, CSS không đổi được).
+   ĐÃ TẮT: đây là tính năng thử nghiệm còn nhiều lỗi hiển thị (text-overflow
+   không ăn, chiều cao khung select bị vẽ sai/thừa khoảng trắng khi
+   focus...) — đã vá từng vụ riêng lẻ nhiều lần trong lúc dùng thực tế,
+   quyết định tắt hẳn thay vì tiếp tục vá từng chỗ. Selector gốc phía trên
+   (appearance: none + mũi tên tự vẽ) đã hoạt động ổn định trên mọi trình
+   duyệt, dùng luôn cách đó thay thế.
 @supports (appearance: base-select) {
   select {
     appearance: base-select;
   }
-  /* base-select tự thêm mũi tên riêng (hình tam giác đặc, chồng lên mũi tên
-     mảnh đã vẽ bằng background-image ở trên) — ẩn đi, chỉ giữ mũi tên cũ
-     cho gọn, đỡ rối mắt. */
   select::picker-icon {
     display: none;
   }
@@ -424,6 +425,7 @@ select option:hover {
     color: #fff;
   }
 }
+*/
 
 textarea { resize: vertical; min-height: 60px; width: 100%; }
 
