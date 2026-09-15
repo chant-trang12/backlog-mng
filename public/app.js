@@ -5566,9 +5566,13 @@ function renderHomeVBarChart(rankingData) {
 // Danh sách Tag (theo danh mục Tag ở Cấu hình → Tag & Phân loại) — dùng làm
 // nhóm cột trong bảng tổng hợp "Tỉ lệ hoàn thành nhiệm vụ" ở Home. Đọc trực
 // tiếp từ state.tags mỗi lần dùng để luôn khớp danh mục hiện tại (thêm/xóa/
-// đổi tên tag ở Cấu hình phản ánh ngay ở Home).
-function homeCompletionTagCategories() {
-  return state.tags.map((t) => t.ten_tag);
+// đổi tên tag ở Cấu hình phản ánh ngay ở Home). Chỉ giữ lại Tag nào có ít
+// nhất 1 đầu việc khớp điều kiện (eligible, theo team đang xem) — ẩn cột Tag
+// chưa có đầu việc nào để đỡ rối mắt (toàn "-").
+function homeCompletionTagCategories(eligibleTasks, teamNames) {
+  return state.tags
+    .map((t) => t.ten_tag)
+    .filter((tag) => eligibleTasks.some((t) => teamNames.includes(t.team) && t.tag === tag));
 }
 
 // Làm tròn 2 chữ số thập phân và bỏ số 0 thừa ở cuối (0.79 → "0.79", 1 → "1").
@@ -6021,10 +6025,10 @@ function renderHomeCompletionRateTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-rate-tbody");
   if (!tbody) return;
 
-  const tagCategories = homeCompletionTagCategories();
+  const eligible = homeEligibleTasks(tasksInScope);
+  const tagCategories = homeCompletionTagCategories(eligible, teamNames);
   renderHomeCompletionRateThead(tagCategories);
   const colCount = 1 + tagCategories.length + 1;
-  const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colCount}" class="hbar-empty">Chưa có team nào ở tháng đang chọn.</td></tr>`;
@@ -6106,10 +6110,10 @@ function renderHomeCompletionTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-tbody");
   if (!tbody) return;
 
-  const tagCategories = homeCompletionTagCategories();
+  const eligible = homeEligibleTasks(tasksInScope);
+  const tagCategories = homeCompletionTagCategories(eligible, teamNames);
   renderHomeCompletionThead(tagCategories);
   const colCount = 1 + (tagCategories.length + 1) * 2;
-  const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colCount}" class="hbar-empty">Chưa có team nào ở tháng đang chọn.</td></tr>`;
