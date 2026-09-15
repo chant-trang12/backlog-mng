@@ -1498,7 +1498,9 @@
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <div class="dialog-body">
       <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
-      <p class="muted" style="margin:0">Task đã gán ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn. Điểm (cột dưới) = Điểm cá nhân ghi đè; task Thực hiện chính (hoặc chưa phân loại) thì thẳng % Đánh giá (không nhân Tỷ lệ đóng góp); task Hỗ trợ thì = Tỷ lệ đóng góp × % Đánh giá — task chưa chấm điểm để trống. "Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm này của các task Thực hiện chính, cộng thẳng thêm điểm các task Hỗ trợ.</p>
+      <p class="muted" style="margin:0">Danh sách task đã gán nhân sự này ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn.</p>
+      <p class="muted" style="margin:0">Cách tính cột Điểm: nếu đã ghi đè tay (Điểm cá nhân) thì lấy đúng giá trị đó. Nếu chưa, task <strong>Thực hiện chính</strong> (hoặc chưa phân loại) lấy thẳng % Đánh giá; task <strong>Hỗ trợ</strong> nhân thêm Tỷ lệ đóng góp (Tỷ lệ đóng góp × % Đánh giá). Task chưa chấm điểm thì để trống.</p>
+      <p class="muted" style="margin:0">"Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm của các task Thực hiện chính, cộng thêm điểm các task Hỗ trợ.</p>
       <div class="table-wrap">
         <table id="member-task-detail-table">
           <thead>
