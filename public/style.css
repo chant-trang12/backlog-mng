@@ -842,6 +842,17 @@ th {
   vertical-align: middle;
 }
 
+/* Popup "Công việc tham gia" (chi tiết task của 1 nhân sự, mở từ bảng Nhân
+   sự) — căn giữa label cột + dữ liệu Team/Phân loại/Điểm, riêng Nhiệm vụ
+   giữ căn trái (mô tả dài, căn giữa sẽ khó đọc). */
+#member-task-detail-table th { text-align: center; }
+#member-task-detail-table td:nth-child(2),
+#member-task-detail-table td:nth-child(3),
+#member-task-detail-table td:nth-child(4) {
+  text-align: center;
+  vertical-align: middle;
+}
+
 #incident-table th,
 #ticket-table th,
 #creation-rate-table th,
