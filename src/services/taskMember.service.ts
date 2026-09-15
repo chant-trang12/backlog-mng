@@ -11,6 +11,7 @@ const SELECT_COLUMNS = [
   "task_members.member_id",
   "task_members.ty_le_dong_gop",
   "task_members.diem_ca_nhan",
+  "task_members.phan_loai",
   "task_members.ghi_chu",
   "task_members.created_at",
   "task_members.updated_at",
@@ -38,6 +39,17 @@ export async function getTaskMember(id: number): Promise<TaskMemberWithName | un
     .select(SELECT_COLUMNS)
     .first();
   return row as TaskMemberWithName | undefined;
+}
+
+// undefined -> giữ nguyên giá trị cũ, null -> xóa (về "— Không —"), chuỗi
+// -> trim rồi lưu (rỗng cũng thành null).
+function normalizeNullableText(
+  value: string | null | undefined,
+  existing: string | null,
+): string | null {
+  if (value === undefined) return existing;
+  if (value === null) return null;
+  return value.trim() || null;
 }
 
 // Tổng % đã phân bổ cho task (trừ chính dòng đang sửa, nếu có) không được
@@ -85,6 +97,7 @@ export async function createTaskMember(
     if (input.ghi_chu !== undefined) update.ghi_chu = input.ghi_chu.trim() || null;
     if (input.ty_le_dong_gop !== undefined) update.ty_le_dong_gop = input.ty_le_dong_gop;
     if (input.diem_ca_nhan !== undefined) update.diem_ca_nhan = input.diem_ca_nhan;
+    if (input.phan_loai !== undefined) update.phan_loai = normalizeNullableText(input.phan_loai, null);
     await db("task_members").where({ id: existing.id }).update(update);
     return (await getTaskMember(existing.id)) as TaskMemberWithName;
   }
@@ -95,6 +108,7 @@ export async function createTaskMember(
       member_id: input.member_id,
       ty_le_dong_gop: input.ty_le_dong_gop ?? null,
       diem_ca_nhan: input.diem_ca_nhan ?? null,
+      phan_loai: normalizeNullableText(input.phan_loai, null),
       ghi_chu: input.ghi_chu?.trim() || null,
     })
     .returning("*");
@@ -117,6 +131,7 @@ export async function updateTaskMember(
     .update({
       ty_le_dong_gop: input.ty_le_dong_gop !== undefined ? input.ty_le_dong_gop : existing.ty_le_dong_gop,
       diem_ca_nhan: input.diem_ca_nhan !== undefined ? input.diem_ca_nhan : existing.diem_ca_nhan,
+      phan_loai: normalizeNullableText(input.phan_loai, existing.phan_loai),
       ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
       updated_at: db.fn.now(),
     });

@@ -151,7 +151,7 @@ export interface CreateRoadmapItemInput {
   nhiem_vu: string;
   dod?: string;
   dieu_kien_dam_bao?: string;
-  phan_loai?: string;
+  phan_loai?: string | null;
   thoi_gian_bat_dau?: string;
   thoi_gian_ket_thuc?: string;
   trang_thai?: TaskStatus;
@@ -177,6 +177,9 @@ export interface TaskMember {
   member_id: number;
   ty_le_dong_gop: number | null;
   diem_ca_nhan: number | null;
+  // Phân loại nhân sự tham gia (Thực hiện chính / Hỗ trợ...) — giá trị lấy
+  // từ danh mục phan_loai_nhan_su_options, lưu dạng chuỗi tự do (không FK).
+  phan_loai: string | null;
   ghi_chu: string | null;
   created_at: string;
   updated_at: string;
@@ -193,12 +196,14 @@ export interface CreateTaskMemberInput {
   member_id: number;
   ty_le_dong_gop?: number | null;
   diem_ca_nhan?: number | null;
+  phan_loai?: string | null;
   ghi_chu?: string;
 }
 
 export interface UpdateTaskMemberInput {
   ty_le_dong_gop?: number | null;
   diem_ca_nhan?: number | null;
+  phan_loai?: string | null;
   ghi_chu?: string;
 }
 

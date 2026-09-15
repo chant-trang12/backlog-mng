@@ -42,10 +42,11 @@ export async function createTaskMemberHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'member_id' là bắt buộc" });
   }
   try {
-    const { ghi_chu } = req.body ?? {};
+    const { ghi_chu, phan_loai } = req.body ?? {};
     const row = await createTaskMember(taskId, {
       member_id: memberId,
       ghi_chu,
+      phan_loai,
       ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
       diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
     });
@@ -59,9 +60,10 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    const { ghi_chu } = req.body ?? {};
+    const { ghi_chu, phan_loai } = req.body ?? {};
     const row = await updateTaskMember(id, {
       ghi_chu,
+      phan_loai,
       ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
       diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
     });

@@ -563,6 +563,34 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 30. phan_loai_nhan_su_options — danh mục Phân loại nhân sự tham gia
+    // task (Thực hiện chính / Hỗ trợ...), khác với danh mục Phân loại của
+    // Task/Roadmap (NVKH/NVPS...) nên tách bảng riêng, tránh lẫn.
+    if (!(await db.schema.hasTable("phan_loai_nhan_su_options"))) {
+      await db.schema.createTable("phan_loai_nhan_su_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_phan_loai", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+    const phanLoaiNhanSuCountRes = await db("phan_loai_nhan_su_options").count({ c: "*" }).first();
+    if (Number((phanLoaiNhanSuCountRes as any)?.c ?? 0) === 0) {
+      const seed = ["Thực hiện chính", "Hỗ trợ"];
+      for (let i = 0; i < seed.length; i++) {
+        await db("phan_loai_nhan_su_options").insert({ ten_phan_loai: seed[i], thu_tu: i });
+      }
+    }
+
+    // task_members.phan_loai — Phân loại nhân sự tham gia task (giá trị lấy
+    // từ phan_loai_nhan_su_options ở trên, lưu dạng chuỗi tự do giống các
+    // cột "Phân loại" khác trong hệ thống — không ràng buộc FK).
+    if (!(await db.schema.hasColumn("task_members", "phan_loai"))) {
+      await db.schema.alterTable("task_members", (table) => {
+        table.string("phan_loai", 255);
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

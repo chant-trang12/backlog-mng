@@ -240,4 +240,41 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       ).toBe(400);
     });
   });
+
+  describe("Phân loại nhân sự tham gia (Thực hiện chính / Hỗ trợ...)", () => {
+    it("gán kèm phân loại, sửa lại, xóa về '— Không —' (null)", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2000, 1);
+      const teamId = await makeTeam(app, "TM phanloai team", periodId);
+      const memberId = await makeMember(app, "Kiều Văn N", teamId, periodId, "Dev");
+      const taskId = await makeTask(app, periodId, "TM phanloai team", "Task phân loại nhân sự");
+
+      const created = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: memberId, phan_loai: "Hỗ trợ" });
+      expect(created.status).toBe(201);
+      expect(created.body.phan_loai).toBe("Hỗ trợ");
+
+      const updated = await request(app)
+        .put(`/api/task-members/${created.body.id}`)
+        .send({ phan_loai: "Thực hiện chính" });
+      expect(updated.body.phan_loai).toBe("Thực hiện chính");
+
+      const cleared = await request(app).put(`/api/task-members/${created.body.id}`).send({ phan_loai: null });
+      expect(cleared.status).toBe(200); // không được crash khi gửi null tường minh
+      expect(cleared.body.phan_loai).toBeNull();
+    });
+
+    it("không gán phân loại -> mặc định null, không bắt buộc", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1999, 1);
+      const teamId = await makeTeam(app, "TM no phanloai team", periodId);
+      const memberId = await makeMember(app, "Lý Thị O", teamId, periodId);
+      const taskId = await makeTask(app, periodId, "TM no phanloai team", "Task không phân loại");
+
+      const created = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
+      expect(created.status).toBe(201);
+      expect(created.body.phan_loai).toBeNull();
+    });
+  });
 });

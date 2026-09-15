@@ -1056,6 +1056,21 @@
 
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Phân loại nhân sự</h2>
+                <button id="add-phanloainhansu-btn" class="primary">+ Thêm phân loại</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Phân loại (VD: Thực hiện chính, Hỗ trợ…) — dùng khi gán nhân sự tham gia 1 task ở Backlog.</p>
+              <div class="table-wrap">
+                <table id="phanloainhansu-config-table">
+                  <thead><tr><th>Phân loại</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="phanloainhansu-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="phanloainhansu-config-empty" hidden style="padding:16px;text-align:center">Chưa có phân loại nào — bấm "+ Thêm phân loại" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Team</h2>
               </div>
               <p class="muted" style="margin:12px 0">Team khai báo <strong>theo từng tháng</strong> — mỗi tháng có danh sách riêng, số lượng có thể khác nhau. Tháng mới kế thừa từ tháng gần nhất; xóa team sẽ xóa nhân sự của team đó.</p>
@@ -1475,22 +1490,26 @@
        người cùng làm) — mở từ nút "Nhân sự" ở bảng Danh sách nhiệm vụ. Cột
        "Vai trò" lấy thẳng theo Chức vụ đã khai báo sẵn của nhân sự đó ở
        Team & Nhân sự, không chọn riêng ở đây. -->
-  <dialog id="task-member-dialog" style="max-width:640px">
+  <dialog id="task-member-dialog" style="max-width:760px">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <form method="dialog" style="padding:20px;display:flex;flex-direction:column;gap:12px">
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
-      <p class="muted" id="task-member-dialog-sub" style="margin:0"></p>
+      <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
-      <!-- Chỉ hiện khi task đã có % Đánh giá — chọn đơn vị nhập điểm cá nhân
-           + chia đều tỷ lệ đóng góp + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
-      <div class="row" id="task-member-score-bar" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật) +
+           nút Chia đều tỷ lệ (nổi bật, góc phải). Dòng 2: đơn vị nhập điểm cá
+           nhân + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
+      <div class="row" id="task-member-score-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
+        <button type="button" id="tm-split-even-btn" class="small primary">Chia đều tỷ lệ</button>
+      </div>
+      <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div class="row" style="align-items:center;gap:8px">
           <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
           <select id="tm-score-unit" style="max-width:140px">
             <option value="percent">% (theo task)</option>
             <option value="scale5">Thang điểm 5</option>
           </select>
-          <button type="button" id="tm-split-even-btn" class="small">Chia đều tỷ lệ</button>
         </div>
         <span id="task-member-total-badge" class="status-badge status-default"></span>
       </div>
@@ -1509,6 +1528,10 @@
         <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
       </div>
       <div class="field-row" style="align-items:flex-end">
+        <div>
+          <label for="tm-phan-loai">Phân loại</label>
+          <select id="tm-phan-loai"></select>
+        </div>
         <div style="flex:1">
           <label for="tm-ghi-chu">Ghi chú</label>
           <input id="tm-ghi-chu" placeholder="Không bắt buộc" />

@@ -403,3 +403,20 @@ export interface UpdateMucTieuInput {
   ten_muc_tieu?: string;
   thu_tu?: number;
 }
+
+// Danh mục Phân loại nhân sự tham gia task (Thực hiện chính, Hỗ trợ...) —
+// dùng ở dialog "Nhân sự tham gia" của Backlog, khác với danh mục Phân loại
+// của Task/Roadmap (NVKH/NVPS...).
+export interface PhanLoaiNhanSuOption {
+  id: number;
+  ten_phan_loai: string;
+  thu_tu: number;
+  created_at: string;
+}
+export interface CreatePhanLoaiNhanSuInput {
+  ten_phan_loai: string;
+}
+export interface UpdatePhanLoaiNhanSuInput {
+  ten_phan_loai?: string;
+  thu_tu?: number;
+}

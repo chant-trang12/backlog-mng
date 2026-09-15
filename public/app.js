@@ -31,6 +31,7 @@ const state = {
   chucVuOptions: [],
   heThongOptions: [],
   mucTieuOptions: [],
+  phanLoaiNhanSuOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
@@ -205,10 +206,15 @@ const el = {
   addMucTieuBtn: document.getElementById("add-muctieu-btn"),
   mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
   mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
+  addPhanLoaiNhanSuBtn: document.getElementById("add-phanloainhansu-btn"),
+  phanLoaiNhanSuConfigTbody: document.getElementById("phanloainhansu-config-tbody"),
+  phanLoaiNhanSuConfigEmpty: document.getElementById("phanloainhansu-config-empty"),
   taskMemberDialog: document.getElementById("task-member-dialog"),
   taskMemberDialogTitle: document.getElementById("task-member-dialog-title"),
-  taskMemberDialogSub: document.getElementById("task-member-dialog-sub"),
-  taskMemberScoreBar: document.getElementById("task-member-score-bar"),
+  taskMemberDialogTeam: document.getElementById("task-member-dialog-team"),
+  taskMemberScoreRow: document.getElementById("task-member-score-row"),
+  taskMemberScoreBadge: document.getElementById("task-member-score-badge"),
+  taskMemberUnitRow: document.getElementById("task-member-unit-row"),
   taskMemberTotalBadge: document.getElementById("task-member-total-badge"),
   tmScoreUnit: document.getElementById("tm-score-unit"),
   tmSplitEvenBtn: document.getElementById("tm-split-even-btn"),
@@ -218,6 +224,7 @@ const el = {
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
   tmMember: document.getElementById("tm-member"),
   tmMemberSuggestions: document.getElementById("tm-member-suggestions"),
+  tmPhanLoai: document.getElementById("tm-phan-loai"),
   tmGhiChu: document.getElementById("tm-ghi-chu"),
   tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
@@ -2130,14 +2137,23 @@ async function openTaskMemberDialog(task) {
   // bổ tỷ lệ đóng góp/điểm cá nhân, task chưa chấm điểm thì chưa có gì để
   // quy đổi.
   state.taskMemberTaskScore = task.cpo_danh_gia;
+  const graded = state.taskMemberTaskScore != null;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
-  el.taskMemberDialogSub.textContent =
-    `Team ${task.team}` + (state.taskMemberTaskScore != null ? ` · % Đánh giá: ${state.taskMemberTaskScore}%` : "");
+  el.taskMemberDialogTeam.textContent = `Team ${task.team}`;
+  el.taskMemberScoreRow.hidden = !graded;
+  if (graded) el.taskMemberScoreBadge.textContent = `% Đánh giá: ${state.taskMemberTaskScore}%`;
   state.taskMemberScoreUnit = "percent";
   el.tmScoreUnit.value = "percent";
+  fillTaskMemberPhanLoaiSelect();
   renderTaskMemberThead();
   await loadTaskMembers();
   el.taskMemberDialog.showModal();
+}
+
+function fillTaskMemberPhanLoaiSelect() {
+  el.tmPhanLoai.innerHTML =
+    `<option value="">— Không —</option>` +
+    state.phanLoaiNhanSuOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`).join("");
 }
 
 function renderTaskMemberThead() {
@@ -2145,6 +2161,7 @@ function renderTaskMemberThead() {
   el.taskMemberThead.innerHTML = `<tr>
     <th>Nhân sự</th>
     <th>Vai trò</th>
+    <th>Phân loại</th>
     ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}
     <th>Ghi chú</th>
     <th style="width:56px"></th>
@@ -2225,7 +2242,8 @@ const scale5ToPercent = (s) => round2(s * 20);
 function renderTaskMembers() {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
-  el.taskMemberScoreBar.hidden = !graded;
+  el.taskMemberScoreRow.hidden = !graded;
+  el.taskMemberUnitRow.hidden = !graded;
   const unit = state.taskMemberScoreUnit;
 
   el.taskMemberTbody.innerHTML = state.taskMembers
@@ -2250,10 +2268,18 @@ function renderTaskMembers() {
         </div>
       </td>`;
       }
+      const phanLoaiOptions =
+        `<option value="">— Không —</option>` +
+        state.phanLoaiNhanSuOptions
+          .map((p) => `<option value="${p.ten_phan_loai}"${p.ten_phan_loai === tm.phan_loai ? " selected" : ""}>${p.ten_phan_loai}</option>`)
+          .join("");
       return `
     <tr data-id="${tm.id}">
       <td>${tm.member_name}</td>
       <td>${tm.member_chuc_vu ?? ""}</td>
+      <td>
+        <select class="tm-phanloai-select ${phanLoaiNhanSuColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${phanLoaiOptions}</select>
+      </td>
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
       <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
@@ -2270,6 +2296,21 @@ function renderTaskMembers() {
         await loadTasks(); // cập nhật lại số đếm ở nút "👤 Nhân sự (N)"
       } catch (err) {
         showToast(err.message);
+      }
+    });
+  });
+
+  el.taskMemberTbody.querySelectorAll(".tm-phanloai-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      try {
+        await api(`/api/task-members/${select.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ phan_loai: select.value || null }),
+        });
+        await loadTaskMembers();
+      } catch (err) {
+        showToast(err.message);
+        await loadTaskMembers();
       }
     });
   });
@@ -2343,20 +2384,47 @@ el.tmScoreUnit.addEventListener("change", () => {
 // chữ số thập phân, dồn phần dư vào người cuối để tổng luôn đúng 100%). Áp
 // dụng giảm trước/tăng sau để tổng không bao giờ tạm thời vượt quá 100% khi
 // đang lưu tuần tự từng dòng (backend chặn cứng > 100%).
+// Nhân sự "Hỗ trợ" mặc định 10% (vẫn sửa lại được sau) — phần còn lại
+// (100% - tổng % của các "Hỗ trợ") mới chia đều cho các nhân sự còn lại
+// (Thực hiện chính hoặc chưa phân loại). Nếu số "Hỗ trợ" quá nhiều (>10
+// người, vượt 100% nếu giữ nguyên 10%/người) thì co lại đều nhau cho vừa
+// 100%, tránh chặn cứng ở backend khi lưu.
+const HO_TRO_LABEL = "Hỗ trợ";
+const HO_TRO_DEFAULT_PERCENT = 10;
+
 el.tmSplitEvenBtn.addEventListener("click", async () => {
   const members = state.taskMembers;
   if (members.length === 0) return;
-  const base = Math.floor((100 / members.length) * 10) / 10;
-  const values = new Array(members.length).fill(base);
-  values[values.length - 1] = round2(base + round2(100 - base * members.length));
 
-  const updates = members
-    .map((tm, i) => ({
+  const supportMembers = members.filter((tm) => tm.phan_loai === HO_TRO_LABEL);
+  const mainMembers = members.filter((tm) => tm.phan_loai !== HO_TRO_LABEL);
+
+  const perSupport =
+    supportMembers.length * HO_TRO_DEFAULT_PERCENT > 100
+      ? round2(100 / supportMembers.length)
+      : HO_TRO_DEFAULT_PERCENT;
+  const supportTotal = round2(perSupport * supportMembers.length);
+  const remaining = Math.max(0, round2(100 - supportTotal));
+
+  let mainValues = [];
+  if (mainMembers.length > 0) {
+    const base = Math.floor((remaining / mainMembers.length) * 10) / 10;
+    mainValues = new Array(mainMembers.length).fill(base);
+    mainValues[mainValues.length - 1] = round2(base + round2(remaining - base * mainMembers.length));
+  }
+
+  const updates = [
+    ...supportMembers.map((tm) => ({
       id: tm.id,
-      newVal: values[i],
-      delta: values[i] - (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0),
-    }))
-    .sort((a, b) => a.delta - b.delta);
+      newVal: perSupport,
+      delta: perSupport - (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0),
+    })),
+    ...mainMembers.map((tm, i) => ({
+      id: tm.id,
+      newVal: mainValues[i],
+      delta: mainValues[i] - (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0),
+    })),
+  ].sort((a, b) => a.delta - b.delta); // giảm trước, tăng sau — tránh tổng tạm thời vượt 100%
 
   try {
     for (const u of updates) {
@@ -2384,10 +2452,12 @@ el.tmAddBtn.addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({
         member_id: memberId,
+        phan_loai: el.tmPhanLoai.value || undefined,
         ghi_chu: el.tmGhiChu.value.trim() || undefined,
       }),
     });
     el.tmGhiChu.value = "";
+    el.tmPhanLoai.value = "";
     await loadTaskMembers();
     await loadTasks();
     showToast("Đã thêm nhân sự.", "success");
@@ -4481,6 +4551,28 @@ el.addMucTieuBtn.addEventListener("click", async () => {
   }
 });
 
+async function loadPhanLoaiNhanSu() {
+  state.phanLoaiNhanSuOptions = await api("/api/phan-loai-nhan-su");
+  renderSimpleCatalog(
+    el.phanLoaiNhanSuConfigTbody,
+    el.phanLoaiNhanSuConfigEmpty,
+    state.phanLoaiNhanSuOptions,
+    "ten_phan_loai",
+    "/api/phan-loai-nhan-su",
+    loadPhanLoaiNhanSu,
+    "phân loại",
+    phanLoaiNhanSuColorClass,
+  );
+}
+el.addPhanLoaiNhanSuBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/phan-loai-nhan-su", { method: "POST", body: JSON.stringify({ ten_phan_loai: "Phân loại mới" }) });
+    await loadPhanLoaiNhanSu();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // ---- Roadmap năm (theo phòng ban + năm) ----
 
 // 1 năm 4 quý, 3 tháng = 1 quý — suy ra từ Thời gian kết thúc.
@@ -4569,6 +4661,17 @@ function heThongColorClass(value) {
 function mucTieuColorClass(value) {
   const i = state.mucTieuOptions.findIndex((m) => m.ten_muc_tieu === value);
   return `mt-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+}
+
+// Phân loại nhân sự tham gia task — 2 giá trị mặc định (Thực hiện chính /
+// Hỗ trợ) có màu cố định riêng, dễ nhận ngay (xanh lá = chính, xanh dương =
+// hỗ trợ); phân loại tự thêm khác thì quay vòng theo bảng màu team-color.
+function phanLoaiNhanSuColorClass(value) {
+  if (!value) return "status-default";
+  if (value === "Thực hiện chính") return "phan-loai-ns-chinh";
+  if (value === "Hỗ trợ") return "phan-loai-ns-hotro";
+  const i = state.phanLoaiNhanSuOptions.findIndex((p) => p.ten_phan_loai === value);
+  return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 
 // "Chọn tất cả" thao tác trên tập đã lọc theo từ khoá (giống bảng Danh sách
@@ -5823,6 +5926,7 @@ async function checkAuth() {
         loadDepartmentConfig(),
         loadHeThong(),
         loadMucTieu(),
+        loadPhanLoaiNhanSu(),
         loadRoadmap(),
       ]),
     )

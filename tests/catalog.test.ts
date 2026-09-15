@@ -162,6 +162,31 @@ describe("Cấu hình: Tag & Phân loại", () => {
     expect((await request(app).post("/api/muc-tieu").send({})).status).toBe(400);
   });
 
+  it("creates, lists, updates, and deletes a phân loại nhân sự option", async () => {
+    const app = createApp();
+    const created = await request(app).post("/api/phan-loai-nhan-su").send({ ten_phan_loai: "Test Phân loại NS A" });
+    expect(created.status).toBe(201);
+    const list = await request(app).get("/api/phan-loai-nhan-su");
+    expect(list.body.some((p: { id: number }) => p.id === created.body.id)).toBe(true);
+    const updated = await request(app)
+      .put(`/api/phan-loai-nhan-su/${created.body.id}`)
+      .send({ ten_phan_loai: "Test Phân loại NS A (sửa)" });
+    expect(updated.body.ten_phan_loai).toBe("Test Phân loại NS A (sửa)");
+    expect((await request(app).delete(`/api/phan-loai-nhan-su/${created.body.id}`)).status).toBe(204);
+  });
+
+  it("rejects phân loại nhân sự missing name", async () => {
+    const app = createApp();
+    expect((await request(app).post("/api/phan-loai-nhan-su").send({})).status).toBe(400);
+  });
+
+  it("danh mục Phân loại nhân sự có sẵn 'Thực hiện chính' và 'Hỗ trợ' (seed mặc định)", async () => {
+    const app = createApp();
+    const list = await request(app).get("/api/phan-loai-nhan-su");
+    const names = list.body.map((p: { ten_phan_loai: string }) => p.ten_phan_loai);
+    expect(names).toEqual(expect.arrayContaining(["Thực hiện chính", "Hỗ trợ"]));
+  });
+
   it('bấm "+ Thêm nhóm" nhiều lần liên tiếp (tên mặc định trùng) không lỗi — tự thêm hậu tố', async () => {
     const app = createApp();
     const a = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm mới test" });
