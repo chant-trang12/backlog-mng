@@ -774,6 +774,16 @@ export async function initDatabase(): Promise<void> {
         table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
       });
     }
+
+    // members.ha_ki — nút "Hạ KI" ở tab Nhân sự, hạ KI của nhân sự đó xuống 1
+    // bậc khi hiển thị ở Home > Ranking > "Ranking thành viên team" (thang
+    // A+ > A > B > C > D > E, xem homeLowerKiOneLevel ở app.js). Mặc định
+    // false — hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("members", "ha_ki"))) {
+      await db.schema.alterTable("members", (table) => {
+        table.boolean("ha_ki").notNullable().defaultTo(false);
+      });
+    }
   })();
 
   return initPromise;

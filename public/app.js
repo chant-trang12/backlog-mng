@@ -1462,7 +1462,7 @@ function renderMemberTable() {
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
-      <td>${m.name}</td>
+      <td>${m.name}${m.ha_ki ? ` <span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}</td>
       <td>${m.chuc_vu ?? ""}</td>
       <td><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
       <td>${m.tuan_thu ?? ""}</td>
@@ -1472,6 +1472,7 @@ function renderMemberTable() {
       <td>${m.danh_gia ?? ""}</td>
       <td>${avgDiem ?? "-"}</td>
       <td><div class="actions-cell">
+        <button class="small ${m.ha_ki ? "btn-delete" : "btn-exclude"} toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}" title="Hạ 1 KI của nhân sự này (xem ở Home &gt; Ranking &gt; Ranking thành viên team)">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
         <button class="small btn-edit edit-member-btn">Sửa</button>
         <button class="small btn-delete delete-member-btn">Xóa</button>
       </div></td>
@@ -1499,6 +1500,20 @@ function renderMemberTable() {
         state.selectedMemberIds.delete(id);
       }
       updateMemberSelectionUI();
+    });
+  });
+  el.memberTbody.querySelectorAll(".toggle-ha-ki-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      const nextHaKi = btn.dataset.haKi !== "true";
+      try {
+        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ ha_ki: nextHaKi }) });
+        await loadMembers();
+        syncHomeFromCurrentIfNeeded();
+        showToast(nextHaKi ? "Đã hạ 1 KI." : "Đã bỏ hạ KI.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
     });
   });
   el.memberTbody.querySelectorAll(".edit-member-btn").forEach((btn) => {
@@ -6144,6 +6159,16 @@ function homeKiValue(column, viTri) {
   return cell?.gia_tri || "-";
 }
 
+// Thang KI từ cao xuống thấp — dùng cho nút "Hạ KI" (tab Nhân sự): hạ 1 bậc
+// = lùi 1 vị trí trong thang này. Giá trị KI không khớp thang (VD ô Ranking
+// team chưa cấu hình đúng ký hiệu A+/A/B/C/D/E) thì giữ nguyên, không đoán mò.
+const HOME_KI_SCALE = ["A+", "A", "B", "C", "D", "E"];
+function homeLowerKiOneLevel(value) {
+  const idx = HOME_KI_SCALE.indexOf(value);
+  if (idx === -1 || idx === HOME_KI_SCALE.length - 1) return value;
+  return HOME_KI_SCALE[idx + 1];
+}
+
 // Tab "Ranking" — bảng xếp hạng team (theo đúng Tổng điểm ở tab Tổng hợp),
 // bấm vào 1 team để xem "Điểm chi tiết theo team" (nhóm theo Nhóm tiêu chí,
 // dùng lại homeComputeTeamScores) và "Ranking thành viên team" (Rank từ tab
@@ -6245,25 +6270,56 @@ function renderHomeRankingTab(rankingData, eligible) {
 
   // vi_tri tra KI = hạng của TEAM trên bảng Ranking Team (dùng chung cho mọi
   // thành viên của team đó); cột tra KI thì đổi theo vị trí của TỪNG thành
-  // viên trong chính team này.
+  // viên trong chính team này — chỉ tính trên các nhân sự ĐÃ có dữ liệu Đánh
+  // giá (so_thu_tu), nhân sự chưa nhập Ranking không có vị trí để tra cột.
   const teamRankPosition = teamNames.indexOf(team) + 1;
-  const members = state.homeDanhGiaRecords
+  const rankedMembers = state.homeDanhGiaRecords
     .filter((r) => r.team_name === team)
     .sort((a, b) => a.so_thu_tu - b.so_thu_tu);
-  const memberTbody = document.getElementById("home-ranking-member-tbody");
-  memberTbody.innerHTML = members.length
-    ? members
-        .map((m, i) => {
-          const kiColumn = homeKiColumnForMemberRank(i, members.length);
-          return `
+  // Nhân sự thuộc team nhưng CHƯA nhập Ranking (tab Đánh giá) — vẫn hiển thị
+  // ở đây, gán badge "Không tính KI" thay vì tra KI, để không bị "mất tích"
+  // khỏi bảng chỉ vì chưa kịp nhập đánh giá.
+  const rankedMemberIds = new Set(rankedMembers.map((r) => r.member_id));
+  const unrankedMembers = state.homeMembers
+    .filter((m) => m.team_name === team && !rankedMemberIds.has(m.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const haKiBadge = (memberId) => {
+    const member = state.homeMembers.find((m) => m.id === memberId);
+    return member?.ha_ki
+      ? ` <span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`
+      : "";
+  };
+
+  const rankedRows = rankedMembers
+    .map((m, i) => {
+      const kiColumn = homeKiColumnForMemberRank(i, rankedMembers.length);
+      const rawKi = homeKiValue(kiColumn, teamRankPosition);
+      const member = state.homeMembers.find((mem) => mem.id === m.member_id);
+      const ki = member?.ha_ki ? homeLowerKiOneLevel(rawKi) : rawKi;
+      return `
       <tr>
-        <td style="text-align:left">${m.member_name}</td>
+        <td style="text-align:left">${m.member_name}${haKiBadge(m.member_id)}</td>
         <td>${m.so_thu_tu}</td>
-        <td>${homeKiValue(kiColumn, teamRankPosition)}</td>
+        <td>${ki}</td>
       </tr>`;
-        })
-        .join("")
-    : `<tr><td colspan="3" class="hbar-empty">Chưa có dữ liệu Đánh giá cho team này.</td></tr>`;
+    })
+    .join("");
+  const unrankedRows = unrankedMembers
+    .map(
+      (m) => `
+      <tr>
+        <td style="text-align:left">${m.name}${haKiBadge(m.id)}</td>
+        <td>-</td>
+        <td><span class="status-badge status-default">Không tính KI</span></td>
+      </tr>`,
+    )
+    .join("");
+
+  const memberTbody = document.getElementById("home-ranking-member-tbody");
+  memberTbody.innerHTML =
+    rankedRows + unrankedRows ||
+    `<tr><td colspan="3" class="hbar-empty">Chưa có nhân sự nào ở team này.</td></tr>`;
 }
 
 // Khung "Tổng hợp tỉ lệ hoàn thành nhiệm vụ" — mỗi dòng 1 team, mỗi cột 1 Tag,

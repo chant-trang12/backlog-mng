@@ -46,6 +46,11 @@ export interface Member {
   dao_tao: string | null;
   ho_tro: string | null;
   danh_gia: string | null;
+  // Nút "Hạ KI" ở tab Nhân sự — hạ KI của nhân sự này xuống 1 bậc (thang
+  // A+ > A > B > C > D > E) khi hiển thị ở Home > Ranking > "Ranking thành
+  // viên team". Toggle được (bấm lại để bỏ hạ). Theo period_id (mỗi tháng
+  // backlog có bảng members riêng nên field này tự động cũng theo tháng).
+  ha_ki: boolean;
   created_at: string;
 }
 
@@ -74,6 +79,7 @@ export interface UpdateMemberInput {
   dao_tao?: string;
   ho_tro?: string;
   danh_gia?: string;
+  ha_ki?: boolean;
 }
 
 export type TaskStatus = "Chưa thực hiện" | "Đang thực hiện" | "Hoàn thành" | "Hủy";

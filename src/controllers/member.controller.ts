@@ -63,12 +63,15 @@ export async function updateMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
 
-  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia } = req.body ?? {};
+  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ha_ki } = req.body ?? {};
   if (team_id !== undefined) {
     const team = await getTeam(Number(team_id));
     if (!team) {
       return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
     }
+  }
+  if (ha_ki !== undefined && typeof ha_ki !== "boolean") {
+    return res.status(400).json({ error: "Trường 'ha_ki' phải là boolean" });
   }
 
   const member = await updateMember(id, {
@@ -80,6 +83,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
     dao_tao,
     ho_tro,
     danh_gia,
+    ha_ki,
   });
   if (!member) return res.status(404).json({ error: "Không tìm thấy nhân sự" });
   res.json(member);
