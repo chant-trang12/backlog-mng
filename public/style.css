@@ -1045,6 +1045,17 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   white-space: nowrap;
 }
 
+/* Tên nhân sự + badge "Hạ KI" (bảng Nhân sự + Home > Ranking > Ranking
+   thành viên team) — dùng flex-wrap + gap thay vì margin thường, để badge
+   luôn có khoảng cách rõ ràng với tên dù nằm cùng dòng hay bị đẩy xuống
+   dòng dưới (tên dài dễ xảy ra ở cột hẹp). */
+.name-with-ha-ki {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
 /* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
 .status-default { background: var(--border); color: var(--maroon); }
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }

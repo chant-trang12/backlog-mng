@@ -1462,7 +1462,7 @@ function renderMemberTable() {
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
-      <td>${m.name}${m.ha_ki ? ` <span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}</td>
+      <td><div class="name-with-ha-ki">${m.name}${m.ha_ki ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}</div></td>
       <td>${m.chuc_vu ?? ""}</td>
       <td><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
       <td>${m.tuan_thu ?? ""}</td>
@@ -6287,9 +6287,10 @@ function renderHomeRankingTab(rankingData, eligible) {
   const haKiBadge = (memberId) => {
     const member = state.homeMembers.find((m) => m.id === memberId);
     return member?.ha_ki
-      ? ` <span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`
+      ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`
       : "";
   };
+  const nameWithHaKi = (name, memberId) => `<div class="name-with-ha-ki">${name}${haKiBadge(memberId)}</div>`;
 
   const rankedRows = rankedMembers
     .map((m, i) => {
@@ -6299,7 +6300,7 @@ function renderHomeRankingTab(rankingData, eligible) {
       const ki = member?.ha_ki ? homeLowerKiOneLevel(rawKi) : rawKi;
       return `
       <tr>
-        <td style="text-align:left">${m.member_name}${haKiBadge(m.member_id)}</td>
+        <td style="text-align:left">${nameWithHaKi(m.member_name, m.member_id)}</td>
         <td>${m.so_thu_tu}</td>
         <td>${ki}</td>
       </tr>`;
@@ -6309,7 +6310,7 @@ function renderHomeRankingTab(rankingData, eligible) {
     .map(
       (m) => `
       <tr>
-        <td style="text-align:left">${m.name}${haKiBadge(m.id)}</td>
+        <td style="text-align:left">${nameWithHaKi(m.name, m.id)}</td>
         <td>-</td>
         <td><span class="status-badge status-default">Không tính KI</span></td>
       </tr>`,
