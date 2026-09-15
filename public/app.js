@@ -1397,12 +1397,20 @@ function memberKpiTheoTaskRow(memberId) {
 // "Điểm cá nhân (Tính theo task)" = ĐIỂM TRUNG BÌNH (không phải tổng) của
 // các task ĐÃ CÓ điểm (task chưa chấm điểm/chưa có tỷ lệ đóng góp thì không
 // tính vào — không coi là 0). null nếu chưa có task nào có điểm.
+// Chỉ lấy TRUNG BÌNH các task "Thực hiện chính" (hoặc chưa phân loại) —
+// task "Hỗ trợ" KHÔNG tính vào trung bình mà CỘNG THẲNG điểm thêm vào sau
+// (điểm cộng, không chia lại theo số lượng). VD 3 việc thực hiện chính + 1
+// việc hỗ trợ -> trung bình 3 việc chính + điểm việc hỗ trợ cộng thêm.
 function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
   const scored = row.tasks.filter((t) => t.diem !== null);
-  if (scored.length === 0) return null;
-  return Math.round((scored.reduce((sum, t) => sum + t.diem, 0) / scored.length) * 100) / 100;
+  const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
+  const bonusTasks = scored.filter((t) => t.phan_loai === HO_TRO_LABEL);
+  if (mainTasks.length === 0 && bonusTasks.length === 0) return null;
+  const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
+  const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
+  return Math.round((mainAvg + bonus) * 100) / 100;
 }
 
 function openMemberTaskDetailDialog(member) {
