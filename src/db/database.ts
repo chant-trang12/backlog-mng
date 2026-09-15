@@ -406,6 +406,19 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // departments.cach_tinh_kpi — 1 số phòng ban không tổ chức KPI theo team
+    // (VD team quá nhỏ/lẻ, hoặc nhân sự làm việc xuyên team theo từng task)
+    // nên tab "Tổng hợp"/"Ranking" theo Team (dựa vào Tiêu chí + team_name)
+    // không phù hợp. "theo_task" chuyển sang tính KPI trực tiếp theo từng
+    // NHÂN SỰ, cộng dồn Điểm cá nhân từ mọi task họ tham gia trong tháng
+    // (xem task_members — dialog "Nhân sự tham gia" của Backlog), không cần
+    // chia theo team. Mặc định "theo_team" — hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("departments", "cach_tinh_kpi"))) {
+      await db.schema.alterTable("departments", (table) => {
+        table.string("cach_tinh_kpi", 20).notNullable().defaultTo("theo_team");
+      });
+    }
+
     const firstDept = await db("departments").orderBy("thu_tu", "asc").first();
     const firstDeptId = Number((firstDept as any)?.id ?? 1);
 

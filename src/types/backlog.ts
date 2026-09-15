@@ -21,6 +21,10 @@ export interface Department {
   // Phòng này có dùng chung danh mục Tiêu chí (department_id NULL) hay CHỈ
   // dùng đúng tiêu chí riêng của mình — xem tieuchi.service.ts.
   dung_tieu_chi_chung: boolean;
+  // "theo_team" (mặc định) = KPI tính theo Team (tab Tổng hợp/Ranking);
+  // "theo_task" = KPI tính trực tiếp theo từng nhân sự, cộng dồn Điểm cá
+  // nhân từ các task họ tham gia (task_members), không chia theo team.
+  cach_tinh_kpi: "theo_team" | "theo_task";
   created_at: string;
 }
 
@@ -208,6 +212,28 @@ export interface UpdateTaskMemberInput {
   diem_ca_nhan?: number | null;
   phan_loai?: string | null;
   ghi_chu?: string;
+}
+
+// KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =
+// "theo_task") — cộng dồn Điểm cá nhân của 1 nhân sự từ mọi task họ tham
+// gia trong 1 tháng backlog, không chia theo team. Xem
+// taskMember.service.ts#listKpiTheoTask.
+export interface KpiTheoTaskTaskEntry {
+  task_id: number;
+  nhiem_vu: string;
+  team: string;
+  phan_loai: string | null;
+  diem: number | null;
+}
+
+export interface KpiTheoTaskRow {
+  member_id: number;
+  member_name: string;
+  member_chuc_vu: string | null;
+  team_name: string | null;
+  so_task: number;
+  tong_diem: number;
+  tasks: KpiTheoTaskTaskEntry[];
 }
 
 // Chi tiết công việc theo tháng của 1 dòng roadmap.

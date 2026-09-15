@@ -55,6 +55,7 @@ const state = {
   homeSupportRecords: [],
   homeTrainingRecords: [],
   homeDanhGiaRecords: [],
+  homeKpiTheoTask: [], // KPI nhân sự theo task (phòng ban cach_tinh_kpi="theo_task") — xem GET /api/kpi-theo-task
   homeRankingSelectedTeam: null, // Team đang xem chi tiết ở tab Ranking (Home)
   attendanceHeaders: [], // cột động lấy từ dòng tiêu đề file Excel đã import
   attendanceRecords: [],
@@ -913,6 +914,20 @@ async function refreshHomeFilters() {
   await refreshHomeForPeriod(state.homePeriodId);
 }
 
+// Phòng ban hiện tại tính KPI trực tiếp theo task (không chia team)?
+function homeCachTinhKpiTheoTask() {
+  const dept = state.departments.find((d) => d.id === state.currentDepartmentId);
+  return dept?.cach_tinh_kpi === "theo_task";
+}
+
+async function loadHomeKpiTheoTask(periodId) {
+  if (!periodId || !homeCachTinhKpiTheoTask()) {
+    state.homeKpiTheoTask = [];
+    return;
+  }
+  state.homeKpiTheoTask = await api(`/api/kpi-theo-task?period_id=${periodId}${deptParam()}`);
+}
+
 async function refreshHomeForPeriod(periodId) {
   if (!periodId) {
     state.homeTeams = [];
@@ -924,6 +939,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = [];
     state.homeTrainingRecords = [];
     state.homeDanhGiaRecords = [];
+    state.homeKpiTheoTask = [];
   } else if (periodId === state.currentPeriodId) {
     state.homeTeams = state.teams;
     state.homeMembers = state.members;
@@ -934,6 +950,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
     state.homeDanhGiaRecords = state.danhGiaRecords;
+    await loadHomeKpiTheoTask(periodId);
   } else {
     const [teams, members, tasks, compliance, attendance, noiQuyOverrides, support, training, danhGia] = await Promise.all([
       api(`/api/teams?period_id=${periodId}${deptParam()}`),
@@ -955,6 +972,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = support;
     state.homeTrainingRecords = training;
     state.homeDanhGiaRecords = danhGia;
+    await loadHomeKpiTheoTask(periodId);
   }
   populateHomeTeamFilterOptions();
   renderHomeDashboard();
@@ -987,6 +1005,7 @@ function syncHomeFromCurrentIfNeeded() {
     state.homeDanhGiaRecords = state.danhGiaRecords;
     populateHomeTeamFilterOptions();
     renderHomeDashboard();
+    loadHomeKpiTheoTask(state.homePeriodId).then(renderHomeDashboard);
   }
 }
 
@@ -2570,7 +2589,7 @@ document.querySelectorAll("#home-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#home-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["ranking", "tonghop", "tyle-hoanthanh"].forEach((tab) => {
+    ["ranking", "tonghop", "tyle-hoanthanh", "kpi-theo-task"].forEach((tab) => {
       document.getElementById(`home-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
   });
@@ -4494,6 +4513,12 @@ function renderDepartmentConfig(allTeams) {
       <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" title="${d.code ?? ""}" style="width:100%" /></td>
       <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
       <td style="text-align:center"><input type="checkbox" class="dept-dung-tieuchi-chung-input" data-id="${d.id}" ${d.dung_tieu_chi_chung ? "checked" : ""} title="Bỏ chọn để phòng này chỉ dùng tiêu chí riêng, không thấy tiêu chí dùng chung" /></td>
+      <td>
+        <select class="inline-cell-input dept-cach-tinh-kpi-input" data-id="${d.id}" title="Theo Task: KPI cộng dồn trực tiếp theo từng nhân sự từ các task họ tham gia, không chia theo team">
+          <option value="theo_team"${d.cach_tinh_kpi !== "theo_task" ? " selected" : ""}>Theo Team</option>
+          <option value="theo_task"${d.cach_tinh_kpi === "theo_task" ? " selected" : ""}>Theo Task</option>
+        </select>
+      </td>
       <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
     </tr>`,
     )
@@ -4545,6 +4570,22 @@ function renderDepartmentConfig(allTeams) {
       } catch (err) {
         showToast(err.message);
         checkbox.checked = !nextValue; // revert đúng thuộc tính checked, không phải value
+      }
+    });
+  });
+  el.departmentConfigTbody.querySelectorAll(".dept-cach-tinh-kpi-input").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const prevValue = select.value === "theo_task" ? "theo_team" : "theo_task";
+      try {
+        await api(`/api/departments/${select.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ cach_tinh_kpi: select.value }),
+        });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+      } catch (err) {
+        showToast(err.message);
+        select.value = prevValue;
       }
     });
   });
@@ -5257,6 +5298,48 @@ function renderHomeDashboard() {
   renderHomeCompletionRateTable(teamNames, filteredTasks);
   renderHomeCompletionTable(teamNames, filteredTasks);
   renderHomeRankingTab(rankingData, eligibleForRanking);
+  renderHomeKpiTheoTask();
+}
+
+// Tab "KPI theo Task" — chỉ hiện pill khi phòng ban đang chọn có
+// cach_tinh_kpi = "theo_task" (xem homeCachTinhKpiTheoTask). Nếu pill đang
+// active mà bị ẩn đi (đổi phòng ban), tự chuyển về tab Ranking.
+function renderHomeKpiTheoTask() {
+  const pill = document.getElementById("home-tab-kpi-theo-task-pill");
+  if (!pill) return;
+  const show = homeCachTinhKpiTheoTask();
+  pill.hidden = !show;
+  if (!show && pill.classList.contains("active")) {
+    pill.classList.remove("active");
+    document.getElementById("home-tab-kpi-theo-task").hidden = true;
+    const rankingPill = document.querySelector('#home-subnav .pill[data-tab="ranking"]');
+    if (rankingPill) {
+      rankingPill.classList.add("active");
+      document.getElementById("home-tab-ranking").hidden = false;
+    }
+  }
+
+  const teamNames = state.homeTeamFilter ? [state.homeTeamFilter] : state.homeTeams.map((t) => t.name);
+  const rows = state.homeKpiTheoTask.filter(
+    (r) => !state.homeTeamFilter || teamNames.includes(r.team_name),
+  );
+  const tbody = document.getElementById("home-kpi-theo-task-tbody");
+  const empty = document.getElementById("home-kpi-theo-task-empty");
+  if (!tbody) return;
+  empty.hidden = rows.length > 0;
+  tbody.innerHTML = rows
+    .map(
+      (r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r.member_name}</td>
+      <td>${r.member_chuc_vu ?? ""}</td>
+      <td>${r.team_name ?? ""}</td>
+      <td>${r.so_task}</td>
+      <td>${r.tong_diem}</td>
+    </tr>`,
+    )
+    .join("");
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];

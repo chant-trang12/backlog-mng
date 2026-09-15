@@ -83,6 +83,7 @@
             <span class="pill active" data-tab="ranking">Ranking</span>
             <span class="pill" data-tab="tonghop">Tổng hợp</span>
             <span class="pill" data-tab="tyle-hoanthanh">Tỉ lệ hoàn thành nhiệm vụ</span>
+            <span class="pill" data-tab="kpi-theo-task" id="home-tab-kpi-theo-task-pill" hidden>KPI theo Task</span>
           </div>
 
           <div id="home-tab-ranking">
@@ -191,6 +192,27 @@
                 <tbody id="home-completion-tbody"></tbody>
               </table>
             </div>
+          </section>
+
+          <section class="card" id="home-tab-kpi-theo-task" hidden>
+            <h2 style="margin:0 0 6px">KPI nhân sự theo Task</h2>
+            <p class="muted" style="margin:0 0 12px">Dành cho phòng ban tính KPI trực tiếp theo từng nhân sự (không chia theo team) — điểm mỗi task lấy Điểm cá nhân đã ghi đè, hoặc tự tính = % Đánh giá × Tỷ lệ đóng góp.</p>
+            <div class="table-wrap">
+              <table id="home-kpi-theo-task-table">
+                <thead>
+                  <tr>
+                    <th style="width:70px">Rank</th>
+                    <th>Họ và tên</th>
+                    <th>Chức vụ</th>
+                    <th>Team</th>
+                    <th style="width:100px">Số task</th>
+                    <th style="width:110px">Tổng điểm</th>
+                  </tr>
+                </thead>
+                <tbody id="home-kpi-theo-task-tbody"></tbody>
+              </table>
+            </div>
+            <p class="muted" id="home-kpi-theo-task-empty" hidden style="margin-top:12px">Chưa có dữ liệu nhân sự tham gia task trong tháng này.</p>
           </section>
           </div>
         </div>
@@ -907,7 +929,7 @@
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
             <div class="table-wrap">
               <table id="department-config-table">
-                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:140px"></th></tr></thead>
+                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:150px">Cách tính KPI</th><th style="width:140px"></th></tr></thead>
                 <tbody id="department-config-tbody"></tbody>
               </table>
               <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>

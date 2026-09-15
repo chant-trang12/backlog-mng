@@ -33,7 +33,12 @@ export async function createDepartment(input: { name: string; code?: string }): 
 
 export async function updateDepartment(
   id: number,
-  input: { name?: string; code?: string; dung_tieu_chi_chung?: boolean },
+  input: {
+    name?: string;
+    code?: string;
+    dung_tieu_chi_chung?: boolean;
+    cach_tinh_kpi?: "theo_team" | "theo_task";
+  },
 ): Promise<Department | undefined> {
   const existing = await getDepartment(id);
   if (!existing) return undefined;
@@ -45,6 +50,7 @@ export async function updateDepartment(
       code: input.code !== undefined ? input.code.trim() || null : existing.code,
       dung_tieu_chi_chung:
         input.dung_tieu_chi_chung !== undefined ? (input.dung_tieu_chi_chung ? 1 : 0) : existing.dung_tieu_chi_chung ? 1 : 0,
+      cach_tinh_kpi: input.cach_tinh_kpi ?? existing.cach_tinh_kpi,
     })
     .returning("*");
   return toDepartment(updated);
