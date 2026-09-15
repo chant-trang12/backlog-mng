@@ -1061,6 +1061,19 @@ select.tm-phanloai-select {
   background-size: 10px;
 }
 
+/* BUG đã sửa: .row đặt display:flex (CSS tác giả) nên ĐÈ luôn lên hành vi
+   ẩn mặc định của thuộc tính [hidden] (display:none của UA stylesheet có
+   độ ưu tiên thấp hơn CSS tác giả) — 3 dòng % Đánh giá/Đơn vị điểm/Tổng đã
+   phân bổ dùng class="row" nên dù set hidden vẫn hiện, giữ nguyên nội dung
+   CŨ từ lần mở dialog trước (VD task chưa chấm điểm vẫn thấy "% Đánh giá:
+   79%" của task đã chấm điểm mở trước đó). Phải khai báo riêng display:none
+   khi có [hidden] để thắng .row. */
+#task-member-score-row[hidden],
+#task-member-unit-row[hidden],
+#task-member-total-row[hidden] {
+  display: none;
+}
+
 /* Khung "Thêm nhân sự" trong dialog "Nhân sự tham gia" — nền khác màu để
    tách biệt khỏi bảng danh sách bên dưới. */
 .tm-add-frame {

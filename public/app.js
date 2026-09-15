@@ -2142,7 +2142,7 @@ async function openTaskMemberDialog(task) {
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
   el.taskMemberDialogTeam.textContent = `Team ${task.team}`;
   el.taskMemberScoreRow.hidden = !graded;
-  if (graded) el.taskMemberScoreBadge.textContent = `% Đánh giá: ${state.taskMemberTaskScore}%`;
+  el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
   el.tmScoreUnit.value = "percent";
   fillTaskMemberPhanLoaiSelect();
@@ -2368,7 +2368,10 @@ function renderTaskMembers() {
 }
 
 function updateTaskMemberTotalBadge() {
-  if (state.taskMemberTaskScore == null) return;
+  if (state.taskMemberTaskScore == null) {
+    el.taskMemberTotalBadge.textContent = ""; // task chưa chấm điểm — không để lại nội dung cũ
+    return;
+  }
   const total = round2(
     state.taskMembers.reduce((s, tm) => s + (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0), 0),
   );
