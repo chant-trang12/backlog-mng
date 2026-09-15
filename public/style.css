@@ -1301,6 +1301,35 @@ dialog.confirm-dialog form {
 }
 dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn giữa, không cần chừa chỗ nút X */
 
+/* Gợi ý tìm nhân sự (dialog "Nhân sự tham gia") — tự dựng bằng div thay vì
+   <input list> + <datalist>: datalist để trình duyệt tự định vị popup gợi
+   ý, và bên trong <dialog> (top layer) Chrome tính toán sai vị trí (bung ra
+   góc màn hình thay vì ngay dưới ô nhập) — không sửa được bằng CSS vì đó là
+   UI gốc hệ điều hành/trình duyệt. Tự vẽ thì kiểm soát được vị trí. */
+.tm-suggest-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(56, 66, 43, 0.18);
+  padding: 4px;
+}
+.tm-suggest-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+.tm-suggest-item:hover { background: var(--primary); color: #fff; }
+.tm-suggest-empty { padding: 8px 10px; color: var(--muted); font-size: 0.88rem; }
+
 .confirm-icon {
   width: 42px;
   height: 42px;

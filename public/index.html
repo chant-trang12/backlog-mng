@@ -1489,10 +1489,10 @@
         <p class="muted" id="task-member-empty" hidden style="padding:16px;text-align:center">Chưa có nhân sự nào tham gia task này.</p>
       </div>
 
-      <div>
+      <div style="position:relative">
         <label for="tm-member">Nhân sự</label>
-        <input id="tm-member" list="tm-member-datalist" placeholder="Gõ tên để tìm..." autocomplete="off" />
-        <datalist id="tm-member-datalist"></datalist>
+        <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
+        <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
       </div>
       <div class="field-row" style="align-items:flex-end">
         <div style="flex:1">

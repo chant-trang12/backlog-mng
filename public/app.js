@@ -33,7 +33,8 @@ const state = {
   mucTieuOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
-  taskMemberLookup: new Map(), // nhãn hiển thị (ô tìm kiếm) -> member_id
+  taskMemberAvailable: [], // nhân sự chưa gán, để gõ tìm/gợi ý
+  taskMemberSelectedId: null, // member_id đã chọn từ gợi ý (bấm "+ Thêm" cần có)
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
   roadmapSearch: "",
@@ -209,6 +210,7 @@ const el = {
   taskMemberEmpty: document.getElementById("task-member-empty"),
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
   tmMember: document.getElementById("tm-member"),
+  tmMemberSuggestions: document.getElementById("tm-member-suggestions"),
   tmGhiChu: document.getElementById("tm-ghi-chu"),
   tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
@@ -2127,24 +2129,61 @@ async function openTaskMemberDialog(task) {
 // nguồn dữ liệu ở trang Team & Nhân sự) — bớt các nhân sự đã gán vào task
 // này rồi (1 người chỉ tham gia 1 lần / task, "vai trò" hiển thị ở bảng bên
 // trên lấy thẳng theo Chức vụ có sẵn của người đó, không chọn riêng ở đây).
-// Dùng input + <datalist> thay vì <select> để gõ tìm theo tên (select
-// thường không hỗ trợ tìm kiếm trong danh sách dài); nhãn hiển thị được map
-// ngược lại member_id qua state.taskMemberLookup khi bấm "+ Thêm".
+// Gợi ý gõ tìm tự vẽ bằng div (không dùng <input list> + <datalist>) vì bên
+// trong <dialog>, Chrome định vị popup gợi ý của datalist sai chỗ (bung ra
+// góc màn hình thay vì ngay dưới ô nhập) — lỗi UI gốc trình duyệt, không
+// sửa được bằng CSS.
 function fillTaskMemberSelect() {
   const assignedIds = new Set(state.taskMembers.map((tm) => tm.member_id));
-  const available = state.members.filter((m) => !assignedIds.has(m.id));
-  state.taskMemberLookup = new Map();
+  state.taskMemberAvailable = state.members.filter((m) => !assignedIds.has(m.id));
+  state.taskMemberSelectedId = null;
   el.tmMember.value = "";
-  el.tmMember.disabled = available.length === 0;
-  el.tmMember.placeholder = available.length > 0 ? "Gõ tên để tìm..." : "Đã gán hết nhân sự";
-  document.getElementById("tm-member-datalist").innerHTML = available
-    .map((m) => {
-      const label = `${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}`;
-      state.taskMemberLookup.set(label, m.id);
-      return `<option value="${label}"></option>`;
-    })
-    .join("");
+  el.tmMember.disabled = state.taskMemberAvailable.length === 0;
+  el.tmMember.placeholder = state.taskMemberAvailable.length > 0 ? "Gõ tên để tìm..." : "Đã gán hết nhân sự";
+  hideTaskMemberSuggestions();
 }
+
+function taskMemberLabel(m) {
+  return `${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}`;
+}
+
+function hideTaskMemberSuggestions() {
+  el.tmMemberSuggestions.hidden = true;
+}
+
+function renderTaskMemberSuggestions() {
+  const q = el.tmMember.value.trim().toLowerCase();
+  const matches = state.taskMemberAvailable.filter((m) => !q || taskMemberLabel(m).toLowerCase().includes(q));
+  el.tmMemberSuggestions.innerHTML = matches.length
+    ? matches
+        .slice(0, 30)
+        .map((m) => `<div class="tm-suggest-item" data-id="${m.id}">${taskMemberLabel(m)}</div>`)
+        .join("")
+    : `<div class="tm-suggest-empty">Không tìm thấy nhân sự phù hợp.</div>`;
+  el.tmMemberSuggestions.hidden = false;
+
+  el.tmMemberSuggestions.querySelectorAll(".tm-suggest-item").forEach((item) => {
+    // mousedown (không phải click) để chạy TRƯỚC sự kiện blur của input —
+    // giữ được lựa chọn thay vì bị ẩn gợi ý mất trước khi kịp xử lý.
+    item.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const id = Number(item.dataset.id);
+      const m = state.taskMemberAvailable.find((x) => x.id === id);
+      el.tmMember.value = m ? taskMemberLabel(m) : "";
+      state.taskMemberSelectedId = id;
+      hideTaskMemberSuggestions();
+    });
+  });
+}
+
+el.tmMember.addEventListener("input", () => {
+  state.taskMemberSelectedId = null; // sửa lại chữ thì phải chọn lại từ gợi ý
+  if (!el.tmMember.disabled) renderTaskMemberSuggestions();
+});
+el.tmMember.addEventListener("focus", () => {
+  if (!el.tmMember.disabled) renderTaskMemberSuggestions();
+});
+el.tmMember.addEventListener("blur", () => hideTaskMemberSuggestions());
 
 async function loadTaskMembers() {
   if (!state.taskMemberTaskId) return;
@@ -2182,7 +2221,7 @@ function renderTaskMembers() {
 }
 
 el.tmAddBtn.addEventListener("click", async () => {
-  const memberId = state.taskMemberLookup.get(el.tmMember.value.trim());
+  const memberId = state.taskMemberSelectedId;
   if (!memberId) {
     showToast("Gõ tên và chọn đúng 1 nhân sự trong danh sách gợi ý.");
     return;
