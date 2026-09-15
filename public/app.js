@@ -1401,15 +1401,22 @@ function memberKpiTheoTaskRow(memberId) {
 // task "Hỗ trợ" KHÔNG tính vào trung bình mà CỘNG THẲNG điểm thêm vào sau
 // (điểm cộng, không chia lại theo số lượng). VD 3 việc thực hiện chính + 1
 // việc hỗ trợ -> trung bình 3 việc chính + điểm việc hỗ trợ cộng thêm.
+//
+// Dùng t.diem_goc (% Đánh giá gốc / điểm ghi đè, KHÔNG nhân tỷ lệ đóng
+// góp) thay vì t.diem (đã nhân tỷ lệ đóng góp) — nếu dùng "diem" thì task
+// càng nhiều người chia sẻ (tỷ lệ đóng góp thấp) càng kéo điểm xuống, còn
+// task 1 người làm trọn (100%) luôn cao hơn hẳn dù chất lượng công việc (%
+// Đánh giá) không khác gì nhau — không phản ánh đúng nỗ lực, đặc biệt bất
+// lợi cho người tham gia nhiều task phối hợp cùng người khác.
 function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
-  const scored = row.tasks.filter((t) => t.diem !== null);
+  const scored = row.tasks.filter((t) => t.diem_goc !== null);
   const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
   const bonusTasks = scored.filter((t) => t.phan_loai === HO_TRO_LABEL);
   if (mainTasks.length === 0 && bonusTasks.length === 0) return null;
-  const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
-  const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
+  const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem_goc, 0) / mainTasks.length : 0;
+  const bonus = bonusTasks.reduce((sum, t) => sum + t.diem_goc, 0);
   return Math.round((mainAvg + bonus) * 100) / 100;
 }
 

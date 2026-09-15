@@ -188,6 +188,15 @@ export async function listKpiTheoTask(
         : cpoDanhGia !== null && tyLeDongGop !== null
           ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
           : null;
+    // "Điểm gốc" — diem_ca_nhan ghi đè (nếu có, đã là điểm riêng cho người
+    // đó rồi) hoặc thẳng % Đánh giá của task, KHÔNG nhân tỷ lệ đóng góp.
+    // Dùng riêng cho "Điểm cá nhân (Tính theo task)" ở bảng Nhân sự — tránh
+    // vấn đề: task nhiều người chia tỷ lệ thấp thì "diem" (đã nhân tỷ lệ)
+    // luôn thấp hơn hẳn task 1 người làm 100%, khiến ai tham gia nhiều task
+    // chung với người khác bị kéo điểm trung bình xuống dù chất lượng công
+    // việc (% Đánh giá) không hề thấp hơn. Trường "diem" ở trên giữ nguyên
+    // (không đổi ý nghĩa) vì vẫn dùng cho tong_diem (KPI theo Task) ở nơi khác.
+    const diemGoc = diemCaNhan !== null ? diemCaNhan : cpoDanhGia;
 
     if (!byMember.has(r.member_id)) {
       byMember.set(r.member_id, {
@@ -211,6 +220,7 @@ export async function listKpiTheoTask(
       ty_le_dong_gop: tyLeDongGop,
       cpo_danh_gia: cpoDanhGia,
       diem,
+      diem_goc: diemGoc,
     });
   }
 
