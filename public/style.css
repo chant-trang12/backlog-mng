@@ -1044,6 +1044,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .phan-loai-ns-chinh { background: var(--success); color: #fff; }
 .phan-loai-ns-hotro { background: #d6ebf5; color: #1f5f80; }
 
+/* Bảng Tiêu chí — badge "Riêng phòng này" (tiêu chí chỉ phòng đang xem mới
+   có, xem listTieuChiConfigs trong tieuchi.service.ts). */
+.tieuchi-scope-rieng { background: #d6ebf5; color: #1f5f80; }
+
 /* Select "Phân loại" trong bảng nhân sự tham gia task — trông như badge
    (bo tròn, không viền) nhưng vẫn là <select> để đổi trực tiếp trên bảng,
    không cần mở lại form riêng. */
@@ -1245,6 +1249,20 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 }
 .home-tag-head { padding: 10px 6px; }
 .home-tag-head .status-badge { font-weight: 700; white-space: normal; line-height: 1.3; }
+/* Team column ở các bảng Home dùng width cố định (table-layout: fixed) —
+   tên team dài cần tự xuống dòng trong đúng độ rộng cột hiện có (giữ
+   nguyên width cột, không co giãn theo tên team), không tràn ra ngoài đè
+   lên cột bên cạnh. max-width:100% để badge (vốn inline-block) bị ép co
+   lại theo bề rộng ô thay vì tự giãn theo độ dài chữ không ngắt dòng. */
+#home-completion-table td:first-child .status-badge,
+#home-completion-rate-table td:first-child .status-badge,
+#home-tonghop-table td:first-child .status-badge {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
 #home-completion-table tr.home-tongdiem-row td,
 #home-completion-rate-table tr.home-tongdiem-row td {
   background: var(--bg);
@@ -1374,6 +1392,16 @@ dialog.confirm-dialog form {
   gap: 6px;
 }
 dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn giữa, không cần chừa chỗ nút X */
+
+/* select "Kiểu tính điểm"/"Nguồn dữ liệu" ở dialog Tiêu chí có nhãn dài (VD
+   "Tỷ lệ (nguồn dữ liệu) × Điểm chuẩn") — max-width: 220px chung bị chặn
+   quá hẹp, chữ tràn đè lên mũi tên (xem lý do text-overflow không ăn với
+   appearance: base-select ở ghi chú của rule select gốc). Bỏ giới hạn, dùng
+   hết chiều rộng khung "card" chứa 2 select này. */
+#tc-kieu-tinh,
+#tc-nguon {
+  max-width: 100%;
+}
 
 /* Gợi ý tìm nhân sự (dialog "Nhân sự tham gia") — tự dựng bằng div thay vì
    <input list> + <datalist>: datalist để trình duyệt tự định vị popup gợi

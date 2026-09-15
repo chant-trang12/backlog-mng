@@ -3,6 +3,7 @@ import { getTask } from "../services/task.service.js";
 import {
   createTaskMember,
   deleteTaskMember,
+  listKpiTheoTask,
   listTaskMembers,
   updateTaskMember,
 } from "../services/taskMember.service.js";
@@ -80,4 +81,16 @@ export async function deleteTaskMemberHandler(req: Request, res: Response) {
   const ok = await deleteTaskMember(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy dòng gán nhân sự" });
   res.status(204).send();
+}
+
+// GET /api/kpi-theo-task?period_id=X&department_id=Y — KPI nhân sự tính
+// trực tiếp theo task (không chia team), dùng cho phòng ban đã bật
+// departments.cach_tinh_kpi = "theo_task".
+export async function listKpiTheoTaskHandler(req: Request, res: Response) {
+  const periodId = Number(req.query.period_id);
+  if (!Number.isInteger(periodId) || periodId <= 0) {
+    return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
+  }
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  res.json(await listKpiTheoTask(periodId, departmentId));
 }

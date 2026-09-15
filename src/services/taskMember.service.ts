@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import type {
   CreateTaskMemberInput,
+  KpiTheoTaskRow,
   TaskMemberWithName,
   UpdateTaskMemberInput,
 } from "../types/backlog.js";
@@ -141,4 +142,75 @@ export async function updateTaskMember(
 export async function deleteTaskMember(id: number): Promise<boolean> {
   const count = await db("task_members").where({ id }).delete();
   return count > 0;
+}
+
+// KPI nhân sự tính trực tiếp theo task (dùng cho phòng ban có
+// departments.cach_tinh_kpi = "theo_task", không chia theo team) — cộng dồn
+// Điểm cá nhân của mỗi nhân sự từ mọi task họ tham gia trong 1 tháng
+// backlog. Điểm từng task lấy ĐÚNG cách tính đã dùng ở dialog "Nhân sự tham
+// gia": diem_ca_nhan nếu đã ghi đè tay, không thì tự tính = % Đánh giá của
+// task (cpo_danh_gia) × Tỷ lệ đóng góp; task chưa chấm điểm hoặc chưa có tỷ
+// lệ đóng góp thì task đó không cộng điểm (không phải 0 — vẫn tính vào
+// "số task tham gia" để biết họ có tham gia, chỉ không có điểm).
+export async function listKpiTheoTask(
+  periodId: number,
+  departmentId: number | null,
+): Promise<KpiTheoTaskRow[]> {
+  const query = db("task_members")
+    .join("tasks", "task_members.task_id", "tasks.id")
+    .join("members", "task_members.member_id", "members.id")
+    .leftJoin("teams", "members.team_id", "teams.id")
+    .where("tasks.period_id", periodId);
+  if (departmentId != null) query.where("tasks.department_id", departmentId);
+
+  const rows = await query.select(
+    "members.id as member_id",
+    "members.name as member_name",
+    "members.chuc_vu as member_chuc_vu",
+    "teams.name as team_name",
+    "tasks.id as task_id",
+    "tasks.nhiem_vu as nhiem_vu",
+    "tasks.team as task_team",
+    "tasks.cpo_danh_gia as cpo_danh_gia",
+    "task_members.phan_loai as phan_loai",
+    "task_members.ty_le_dong_gop as ty_le_dong_gop",
+    "task_members.diem_ca_nhan as diem_ca_nhan",
+  );
+
+  const byMember = new Map<number, KpiTheoTaskRow>();
+  for (const r of rows as any[]) {
+    const diemCaNhan = r.diem_ca_nhan !== null && r.diem_ca_nhan !== undefined ? Number(r.diem_ca_nhan) : null;
+    const tyLeDongGop = r.ty_le_dong_gop !== null && r.ty_le_dong_gop !== undefined ? Number(r.ty_le_dong_gop) : null;
+    const cpoDanhGia = r.cpo_danh_gia !== null && r.cpo_danh_gia !== undefined ? Number(r.cpo_danh_gia) : null;
+    const diem =
+      diemCaNhan !== null
+        ? diemCaNhan
+        : cpoDanhGia !== null && tyLeDongGop !== null
+          ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
+          : null;
+
+    if (!byMember.has(r.member_id)) {
+      byMember.set(r.member_id, {
+        member_id: r.member_id,
+        member_name: r.member_name,
+        member_chuc_vu: r.member_chuc_vu,
+        team_name: r.team_name,
+        so_task: 0,
+        tong_diem: 0,
+        tasks: [],
+      });
+    }
+    const entry = byMember.get(r.member_id)!;
+    entry.so_task += 1;
+    entry.tong_diem = Math.round((entry.tong_diem + (diem ?? 0)) * 100) / 100;
+    entry.tasks.push({
+      task_id: r.task_id,
+      nhiem_vu: r.nhiem_vu,
+      team: r.task_team,
+      phan_loai: r.phan_loai,
+      diem,
+    });
+  }
+
+  return Array.from(byMember.values()).sort((a, b) => b.tong_diem - a.tong_diem);
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cloneTieuChiConfigsHandler,
   createTieuChiConfigHandler,
   deleteTieuChiConfigHandler,
   listTieuChiConfigsHandler,
@@ -8,6 +9,9 @@ import {
 } from "../controllers/tieuchi.controller.js";
 
 const router = Router();
+
+// Đặt trước "/tieu-chi/:id" để tránh xung đột path.
+router.post("/tieu-chi/clone", cloneTieuChiConfigsHandler);
 
 router.post("/tieu-chi", createTieuChiConfigHandler);
 router.get("/tieu-chi", listTieuChiConfigsHandler);

@@ -17,6 +17,7 @@ import {
 import {
   createTaskMemberHandler,
   deleteTaskMemberHandler,
+  listKpiTheoTaskHandler,
   listTaskMembersHandler,
   updateTaskMemberHandler,
 } from "../controllers/taskMember.controller.js";
@@ -49,5 +50,9 @@ router.get("/tasks/:taskId/members", listTaskMembersHandler);
 router.post("/tasks/:taskId/members", createTaskMemberHandler);
 router.put("/task-members/:id", updateTaskMemberHandler);
 router.delete("/task-members/:id", deleteTaskMemberHandler);
+
+// KPI nhân sự tính trực tiếp theo task, không chia team (phòng ban bật
+// departments.cach_tinh_kpi = "theo_task").
+router.get("/kpi-theo-task", listKpiTheoTaskHandler);
 
 export default router;

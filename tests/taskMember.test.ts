@@ -277,4 +277,105 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(created.body.phan_loai).toBeNull();
     });
   });
+
+  describe("KPI theo Task (GET /api/kpi-theo-task) — phòng ban cach_tinh_kpi=theo_task", () => {
+    it("cộng dồn điểm 1 nhân sự từ nhiều task: ưu tiên diem_ca_nhan ghi đè, không thì tự tính = cpo_danh_gia x ty_le_dong_gop/100; task chưa chấm điểm không cộng điểm nhưng vẫn tính vào so_task", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1998, 1);
+      const teamId = await makeTeam(app, "KPI task team", periodId);
+      const memberId = await makeMember(app, "Phan Văn P", teamId, periodId, "Dev");
+
+      const task1 = await makeTask(app, periodId, "KPI task team", "Task 1 - tự tính theo %");
+      await request(app).put(`/api/tasks/${task1}`).send({ cpo_danh_gia: 80 });
+      await request(app).post(`/api/tasks/${task1}/members`).send({ member_id: memberId, ty_le_dong_gop: 50 });
+
+      const task2 = await makeTask(app, periodId, "KPI task team", "Task 2 - ghi đè điểm cá nhân");
+      await request(app).put(`/api/tasks/${task2}`).send({ cpo_danh_gia: 60 });
+      const tm2 = await request(app)
+        .post(`/api/tasks/${task2}/members`)
+        .send({ member_id: memberId, ty_le_dong_gop: 100 });
+      await request(app).put(`/api/task-members/${tm2.body.id}`).send({ diem_ca_nhan: 95 });
+
+      const task3 = await makeTask(app, periodId, "KPI task team", "Task 3 - chưa chấm điểm");
+      await request(app).post(`/api/tasks/${task3}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
+
+      const res = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      expect(res.status).toBe(200);
+      const row = res.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(row.so_task).toBe(3);
+      // 80*50/100 = 40, + 95 (ghi đè) = 135; task3 chưa chấm điểm không cộng.
+      expect(row.tong_diem).toBe(135);
+      expect(row.member_name).toBe("Phan Văn P");
+      expect(row.team_name).toBe("KPI task team");
+      const t3Entry = row.tasks.find((t: { task_id: number }) => t.task_id === task3);
+      expect(t3Entry.diem).toBeNull();
+    });
+
+    it("lọc theo department_id — chỉ cộng điểm từ task thuộc đúng phòng ban", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1997, 1);
+      const teamId = await makeTeam(app, "KPI dept team", periodId);
+      const memberId = await makeMember(app, "Quách Thị Q", teamId, periodId, "QA/Tester");
+
+      const deptA = (await request(app).post("/api/departments").send({ name: "KPI Dept A" })).body.id;
+      const deptB = (await request(app).post("/api/departments").send({ name: "KPI Dept B" })).body.id;
+
+      const taskA = (
+        await request(app)
+          .post(`/api/periods/${periodId}/tasks`)
+          .send({ team: "KPI dept team", nhiem_vu: "Task dept A", department_id: deptA })
+      ).body.id;
+      await request(app).put(`/api/tasks/${taskA}`).send({ cpo_danh_gia: 100 });
+      await request(app).post(`/api/tasks/${taskA}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
+
+      const taskB = (
+        await request(app)
+          .post(`/api/periods/${periodId}/tasks`)
+          .send({ team: "KPI dept team", nhiem_vu: "Task dept B", department_id: deptB })
+      ).body.id;
+      await request(app).put(`/api/tasks/${taskB}`).send({ cpo_danh_gia: 50 });
+      await request(app).post(`/api/tasks/${taskB}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
+
+      const resA = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}&department_id=${deptA}`);
+      const rowA = resA.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(rowA.so_task).toBe(1);
+      expect(rowA.tong_diem).toBe(100);
+
+      const resB = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}&department_id=${deptB}`);
+      const rowB = resB.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(rowB.so_task).toBe(1);
+      expect(rowB.tong_diem).toBe(50);
+    });
+
+    it("không có nhân sự nào tham gia task trong tháng -> trả mảng rỗng", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1996, 1);
+      const res = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it("rejects period_id không hợp lệ", async () => {
+      const app = createApp();
+      const res = await request(app).get(`/api/kpi-theo-task?period_id=abc`);
+      expect(res.status).toBe(400);
+    });
+
+    it("PUT /api/departments/:id cập nhật được cach_tinh_kpi, rejects giá trị không hợp lệ", async () => {
+      const app = createApp();
+      const dept = (await request(app).post("/api/departments").send({ name: "KPI mode dept" })).body;
+      expect(dept.cach_tinh_kpi).toBe("theo_team"); // mặc định
+
+      const updated = await request(app)
+        .put(`/api/departments/${dept.id}`)
+        .send({ cach_tinh_kpi: "theo_task" });
+      expect(updated.status).toBe(200);
+      expect(updated.body.cach_tinh_kpi).toBe("theo_task");
+
+      const rejected = await request(app)
+        .put(`/api/departments/${dept.id}`)
+        .send({ cach_tinh_kpi: "khong_hop_le" });
+      expect(rejected.status).toBe(400);
+    });
+  });
 });

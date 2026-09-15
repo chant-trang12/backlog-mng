@@ -55,6 +55,7 @@ const state = {
   homeSupportRecords: [],
   homeTrainingRecords: [],
   homeDanhGiaRecords: [],
+  homeKpiTheoTask: [], // KPI nhân sự theo task (phòng ban cach_tinh_kpi="theo_task") — xem GET /api/kpi-theo-task
   homeRankingSelectedTeam: null, // Team đang xem chi tiết ở tab Ranking (Home)
   attendanceHeaders: [], // cột động lấy từ dòng tiêu đề file Excel đã import
   attendanceRecords: [],
@@ -181,6 +182,16 @@ const el = {
   tieuChiDialogTitle: document.getElementById("tieuchi-dialog-title"),
   tieuChiForm: document.getElementById("tieuchi-form"),
   tieuChiCancelBtn: document.getElementById("tieuchi-cancel-btn"),
+  cloneTieuChiBtn: document.getElementById("clone-tieuchi-btn"),
+  cloneTieuChiDialog: document.getElementById("clone-tieuchi-dialog"),
+  cloneTieuChiForm: document.getElementById("clone-tieuchi-form"),
+  cloneTieuChiCancelBtn: document.getElementById("clone-tieuchi-cancel-btn"),
+  tcKieuTinh: document.getElementById("tc-kieu-tinh"),
+  tcNguonRow: document.getElementById("tc-nguon-row"),
+  tcNguon: document.getElementById("tc-nguon"),
+  tcHeSoWrap: document.getElementById("tc-he-so-wrap"),
+  tcHeSo: document.getElementById("tc-he-so"),
+  tcKieuTinhHint: document.getElementById("tc-kieu-tinh-hint"),
   addRankingColumnBtn: document.getElementById("add-ranking-column-btn"),
   addRankingRowBtn: document.getElementById("add-ranking-row-btn"),
   rankingTheadRow: document.getElementById("ranking-thead-row"),
@@ -291,6 +302,30 @@ const el = {
   creationRateForm: document.getElementById("creation-rate-form"),
   creationRateCancelBtn: document.getElementById("creation-rate-cancel-btn"),
 };
+
+// Công thức tính điểm cho 1 tiêu chí, dùng ở dialog Tiêu chí (Cấu hình) và
+// khi tính Tổng điểm ở tab Tổng hợp (homeTieuChiContribution) — thay cho
+// việc hard-code theo tên tiêu chí trong code như trước. needsNguon/needsHeSo
+// quyết định 2 trường "Nguồn dữ liệu"/"Hệ số" có hiện trong dialog không.
+const TIEU_CHI_KIEU_TINH = [
+  { value: "khong_tinh", label: "Không tính vào Tổng điểm", needsNguon: false, needsHeSo: false, hint: "Tiêu chí thuần thông tin — không cộng/trừ vào Tổng điểm ở tab Tổng hợp." },
+  { value: "ty_le_x_diem_chuan", label: "Tỷ lệ (nguồn dữ liệu) × Điểm chuẩn", needsNguon: true, needsHeSo: false, hint: "VD: Tỷ lệ hoàn thành nhiệm vụ × Điểm chuẩn đã cấu hình cho team đó." },
+  { value: "ty_le_chia_chi_tieu_x_diem_chuan", label: "(Thực tế ÷ Chỉ tiêu) × Điểm chuẩn", needsNguon: true, needsHeSo: false, hint: "Cần bật \"Có dòng Chỉ tiêu riêng\" ở trên và nhập Chỉ tiêu cho từng team." },
+  { value: "tru_theo_loi", label: "Điểm chuẩn − Điểm chuẩn × (SL lỗi × Hệ số)", needsNguon: true, needsHeSo: true, hint: "Hệ số = % trừ cho mỗi lỗi (VD 0.1 = trừ 10%/lỗi). Chưa có lỗi nào thì lấy đúng Điểm chuẩn." },
+  { value: "dem_dong_cong", label: "Đếm số dòng khai báo ÷ Hệ số (cộng +)", needsNguon: true, needsHeSo: true, hint: "Hệ số = số dòng cần để được +1 điểm (VD 2 = cứ 2 dòng +1 điểm)." },
+  { value: "dem_dong_tru", label: "Đếm số dòng khai báo ÷ Hệ số (trừ −)", needsNguon: true, needsHeSo: true, hint: "Hệ số = số dòng cần để bị -1 điểm (VD 2 = cứ 2 dòng -1 điểm)." },
+];
+
+const TIEU_CHI_NGUON_DU_LIEU = [
+  { value: "ty_le_hoan_thanh_nhiem_vu", label: "Tỷ lệ hoàn thành nhiệm vụ (Backlog)" },
+  { value: "so_luong_su_co", label: "SL sự cố (CSKH → Sự cố)" },
+  { value: "ty_le_xu_ly_ticket", label: "Tỷ lệ xử lý ticket (CSKH → Hỗ trợ ticket)" },
+  { value: "ty_le_khoi_tao", label: "Tỷ lệ khởi tạo (CSKH → Tỉ lệ khởi tạo)" },
+  { value: "dem_tuan_thu", label: "Số dòng khai báo (Team & Nhân sự → Tuân thủ)" },
+  { value: "dem_noi_quy", label: "Tổng Lượt đi muộn (Nội quy)" },
+  { value: "dem_ho_tro", label: "Số dòng khai báo (CSKH → Hỗ trợ)" },
+  { value: "dem_dao_tao", label: "Số dòng khai báo (Đào tạo)" },
+];
 
 const STATUS_CLASS = {
   "Chưa thực hiện": "status-default",
@@ -637,6 +672,22 @@ function renderDeptSwitcher() {
     document.querySelector('.nav-item[data-page="config"]')?.click();
     document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
   });
+
+  applyDeptModeSidebarNav();
+}
+
+// Menu "CSKH" (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — đều tính theo team) ẩn
+// đi với phòng ban tính KPI theo Task (không chia team, xem
+// homeCachTinhKpiTheoTask). Đang đứng ở trang CSKH mà đổi sang phòng loại
+// này thì tự chuyển về Home.
+function applyDeptModeSidebarNav() {
+  const cskhNav = document.querySelector('.nav-item[data-page="cskh"]');
+  if (!cskhNav) return;
+  const theoTask = homeCachTinhKpiTheoTask();
+  cskhNav.hidden = theoTask;
+  if (theoTask && cskhNav.classList.contains("active")) {
+    document.querySelector('.nav-item[data-page="home"]')?.click();
+  }
 }
 
 function openDeptPanel() {
@@ -683,6 +734,7 @@ async function selectDepartment(id) {
     await loadTeams(); // kéo theo loadTasks()
     await loadMembers();
     await loadRoadmap();
+    await loadTieuChi(); // tiêu chí "thấy được" khác nhau theo từng phòng
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -878,6 +930,20 @@ async function refreshHomeFilters() {
   await refreshHomeForPeriod(state.homePeriodId);
 }
 
+// Phòng ban hiện tại tính KPI trực tiếp theo task (không chia team)?
+function homeCachTinhKpiTheoTask() {
+  const dept = state.departments.find((d) => d.id === state.currentDepartmentId);
+  return dept?.cach_tinh_kpi === "theo_task";
+}
+
+async function loadHomeKpiTheoTask(periodId) {
+  if (!periodId || !homeCachTinhKpiTheoTask()) {
+    state.homeKpiTheoTask = [];
+    return;
+  }
+  state.homeKpiTheoTask = await api(`/api/kpi-theo-task?period_id=${periodId}${deptParam()}`);
+}
+
 async function refreshHomeForPeriod(periodId) {
   if (!periodId) {
     state.homeTeams = [];
@@ -889,6 +955,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = [];
     state.homeTrainingRecords = [];
     state.homeDanhGiaRecords = [];
+    state.homeKpiTheoTask = [];
   } else if (periodId === state.currentPeriodId) {
     state.homeTeams = state.teams;
     state.homeMembers = state.members;
@@ -899,6 +966,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
     state.homeDanhGiaRecords = state.danhGiaRecords;
+    await loadHomeKpiTheoTask(periodId);
   } else {
     const [teams, members, tasks, compliance, attendance, noiQuyOverrides, support, training, danhGia] = await Promise.all([
       api(`/api/teams?period_id=${periodId}${deptParam()}`),
@@ -920,6 +988,7 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = support;
     state.homeTrainingRecords = training;
     state.homeDanhGiaRecords = danhGia;
+    await loadHomeKpiTheoTask(periodId);
   }
   populateHomeTeamFilterOptions();
   renderHomeDashboard();
@@ -952,6 +1021,7 @@ function syncHomeFromCurrentIfNeeded() {
     state.homeDanhGiaRecords = state.danhGiaRecords;
     populateHomeTeamFilterOptions();
     renderHomeDashboard();
+    loadHomeKpiTheoTask(state.homePeriodId).then(renderHomeDashboard);
   }
 }
 
@@ -2535,7 +2605,7 @@ document.querySelectorAll("#home-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#home-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["ranking", "tonghop", "tyle-hoanthanh"].forEach((tab) => {
+    ["ranking", "tonghop", "tyle-hoanthanh", "kpi-theo-task"].forEach((tab) => {
       document.getElementById(`home-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
   });
@@ -3794,7 +3864,7 @@ el.creationRateForm.addEventListener("submit", async (e) => {
 // loadTeams), không cần tải lại dữ liệu tiêu chí.
 
 async function loadTieuChi() {
-  state.tieuChiConfigs = await api("/api/tieu-chi");
+  state.tieuChiConfigs = await api(`/api/tieu-chi${deptParam("?")}`);
   renderTieuChi();
   renderHomeDashboard();
 }
@@ -3809,6 +3879,7 @@ function renderTieuChi() {
     <th style="min-width:140px">Nhóm</th>
     <th style="min-width:180px">Tiêu chí</th>
     <th style="min-width:280px">Cách tính điểm</th>
+    <th style="min-width:130px">Phạm vi</th>
     ${teamHeaderCells}
     <th style="min-width:170px"></th>`;
 
@@ -3823,11 +3894,19 @@ function renderTieuChi() {
           return `<td><input class="inline-cell-input tieuchi-diem-chuan-input" data-tieu-chi-id="${c.id}" data-team="${name}" value="${value}" /></td>`;
         })
         .join("");
+      // Phạm vi: department_id null = tiêu chí dùng chung mọi phòng; có giá
+      // trị = tiêu chí riêng — vì listTieuChiConfigs() chỉ trả về tiêu chí
+      // riêng của ĐÚNG phòng đang xem nên ở đây luôn là "của phòng này".
+      const scopeBadge =
+        c.department_id == null
+          ? `<span class="status-badge status-default">Dùng chung</span>`
+          : `<span class="status-badge tieuchi-scope-rieng">Riêng phòng này</span>`;
       const mainRow = `
     <tr data-id="${c.id}">
       <td><span class="status-badge ${nhomColorClass(c.nhom)}">${c.nhom}</span></td>
       <td>${c.ten_tieu_chi}</td>
       <td style="white-space:pre-wrap">${c.cach_tinh_diem ?? ""}</td>
+      <td>${scopeBadge}</td>
       ${mainCells}
       <td><div class="actions-cell">
         <button class="small btn-edit edit-tieuchi-btn">Sửa</button>
@@ -3845,7 +3924,7 @@ function renderTieuChi() {
         .join("");
       const chiTieuRow = `
     <tr class="tieuchi-chitieu-row" data-id="${c.id}">
-      <td colspan="3"><em>Chỉ tiêu</em></td>
+      <td colspan="4"><em>Chỉ tiêu</em></td>
       ${chiTieuCells}
       <td></td>
     </tr>`;
@@ -3866,7 +3945,7 @@ function renderTieuChi() {
     })
     .join("");
   el.tieuChiTongDiemRow.innerHTML = `
-    <td colspan="3" style="font-weight:600">Tổng điểm</td>
+    <td colspan="4" style="font-weight:600">Tổng điểm</td>
     ${tongDiemCells}
     <td></td>`;
 
@@ -3905,7 +3984,7 @@ async function saveTieuChiDiemChuan(tieuChiId, teamName) {
     `.tieuchi-chi-tieu-input[data-tieu-chi-id="${tieuChiId}"][data-team="${teamName}"]`,
   );
   try {
-    const updated = await api(`/api/tieu-chi/${tieuChiId}/diem-chuan`, {
+    const updated = await api(`/api/tieu-chi/${tieuChiId}/diem-chuan${deptParam("?")}`, {
       method: "PUT",
       body: JSON.stringify({
         team_name: teamName,
@@ -3935,19 +4014,47 @@ function openTieuChiDialog(config) {
   document.getElementById("tc-ten").value = config?.ten_tieu_chi ?? "";
   document.getElementById("tc-cach-tinh").value = config?.cach_tinh_diem ?? "";
   document.getElementById("tc-co-chi-tieu").checked = Boolean(config?.co_chi_tieu);
+  // Thêm mới: mặc định KHÔNG dùng chung (riêng phòng đang xem) — dùng chung
+  // là hành động chủ động, không phải mặc định. Sửa: giữ đúng phạm vi hiện
+  // có của tiêu chí đó.
+  document.getElementById("tc-dung-chung").checked = config ? config.department_id == null : false;
+
+  el.tcKieuTinh.innerHTML = TIEU_CHI_KIEU_TINH.map((k) => `<option value="${k.value}">${k.label}</option>`).join("");
+  el.tcNguon.innerHTML = TIEU_CHI_NGUON_DU_LIEU.map((n) => `<option value="${n.value}">${n.label}</option>`).join("");
+  el.tcKieuTinh.value = config?.kieu_tinh ?? "khong_tinh";
+  el.tcNguon.value = config?.nguon_du_lieu ?? TIEU_CHI_NGUON_DU_LIEU[0].value;
+  el.tcHeSo.value = config?.he_so ?? "";
+  updateTieuChiKieuTinhFields();
+
   el.tieuChiDialog.showModal();
 }
+
+// Ẩn/hiện "Nguồn dữ liệu"/"Hệ số" theo đúng kiểu tính đang chọn — không
+// phải kiểu nào cũng cần cả 2 (VD "Không tính" thì ẩn hết).
+function updateTieuChiKieuTinhFields() {
+  const kieu = TIEU_CHI_KIEU_TINH.find((k) => k.value === el.tcKieuTinh.value) ?? TIEU_CHI_KIEU_TINH[0];
+  el.tcNguonRow.hidden = !kieu.needsNguon;
+  el.tcHeSoWrap.hidden = !kieu.needsHeSo;
+  el.tcKieuTinhHint.textContent = kieu.hint;
+}
+el.tcKieuTinh.addEventListener("change", updateTieuChiKieuTinhFields);
 
 el.addTieuChiBtn.addEventListener("click", () => openTieuChiDialog(null));
 el.tieuChiCancelBtn.addEventListener("click", () => el.tieuChiDialog.close());
 el.tieuChiForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("tc-id").value;
+  const kieu = TIEU_CHI_KIEU_TINH.find((k) => k.value === el.tcKieuTinh.value) ?? TIEU_CHI_KIEU_TINH[0];
   const payload = {
     nhom: document.getElementById("tc-nhom").value.trim(),
     ten_tieu_chi: document.getElementById("tc-ten").value.trim(),
     cach_tinh_diem: document.getElementById("tc-cach-tinh").value.trim() || undefined,
     co_chi_tieu: document.getElementById("tc-co-chi-tieu").checked,
+    dung_chung: document.getElementById("tc-dung-chung").checked,
+    department_id: state.currentDepartmentId,
+    kieu_tinh: kieu.value,
+    nguon_du_lieu: kieu.needsNguon ? el.tcNguon.value : null,
+    he_so: kieu.needsHeSo && el.tcHeSo.value.trim() !== "" ? Number(el.tcHeSo.value) : null,
   };
   try {
     if (id) {
@@ -3961,6 +4068,38 @@ el.tieuChiForm.addEventListener("submit", async (e) => {
       await loadTieuChi();
       showToast("Đã thêm tiêu chí.", "success");
     }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Sao chép tiêu chí từ 1 phòng khác thành tiêu chí riêng của phòng đang
+// xem — bộ khởi điểm nhanh cho phòng có tiêu chí "gần giống" phòng khác.
+el.cloneTieuChiBtn.addEventListener("click", () => {
+  const fromSelect = document.getElementById("clone-tieuchi-from");
+  const others = state.departments.filter((d) => d.id !== state.currentDepartmentId);
+  if (others.length === 0) {
+    showToast("Chưa có phòng ban nào khác để sao chép tiêu chí.");
+    return;
+  }
+  fromSelect.innerHTML = others.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
+  el.cloneTieuChiDialog.showModal();
+});
+el.cloneTieuChiCancelBtn.addEventListener("click", () => el.cloneTieuChiDialog.close());
+el.cloneTieuChiForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fromDepartmentId = Number(document.getElementById("clone-tieuchi-from").value);
+  try {
+    const result = await api("/api/tieu-chi/clone", {
+      method: "POST",
+      body: JSON.stringify({ from_department_id: fromDepartmentId, to_department_id: state.currentDepartmentId }),
+    });
+    el.cloneTieuChiDialog.close();
+    await loadTieuChi();
+    showToast(
+      result.cloned > 0 ? `Đã sao chép ${result.cloned} tiêu chí.` : "Không có tiêu chí mới để sao chép (đã có sẵn hết).",
+      "success",
+    );
   } catch (err) {
     showToast(err.message);
   }
@@ -4389,6 +4528,13 @@ function renderDepartmentConfig(allTeams) {
       <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" title="${d.name}" style="width:100%;text-align:left" /></td>
       <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" title="${d.code ?? ""}" style="width:100%" /></td>
       <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
+      <td style="text-align:center"><input type="checkbox" class="dept-dung-tieuchi-chung-input" data-id="${d.id}" ${d.dung_tieu_chi_chung ? "checked" : ""} title="Bỏ chọn để phòng này chỉ dùng tiêu chí riêng, không thấy tiêu chí dùng chung" /></td>
+      <td>
+        <select class="inline-cell-input dept-cach-tinh-kpi-input" data-id="${d.id}" title="Theo Task: KPI cộng dồn trực tiếp theo từng nhân sự từ các task họ tham gia, không chia theo team">
+          <option value="theo_team"${d.cach_tinh_kpi !== "theo_task" ? " selected" : ""}>Theo Team</option>
+          <option value="theo_task"${d.cach_tinh_kpi === "theo_task" ? " selected" : ""}>Theo Task</option>
+        </select>
+      </td>
       <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
     </tr>`,
     )
@@ -4427,6 +4573,38 @@ function renderDepartmentConfig(allTeams) {
       save(input.dataset.id, { code: input.value.trim() });
     });
   });
+  el.departmentConfigTbody.querySelectorAll(".dept-dung-tieuchi-chung-input").forEach((checkbox) => {
+    checkbox.addEventListener("change", async () => {
+      const nextValue = checkbox.checked;
+      try {
+        await api(`/api/departments/${checkbox.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ dung_tieu_chi_chung: nextValue }),
+        });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+      } catch (err) {
+        showToast(err.message);
+        checkbox.checked = !nextValue; // revert đúng thuộc tính checked, không phải value
+      }
+    });
+  });
+  el.departmentConfigTbody.querySelectorAll(".dept-cach-tinh-kpi-input").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const prevValue = select.value === "theo_task" ? "theo_team" : "theo_task";
+      try {
+        await api(`/api/departments/${select.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ cach_tinh_kpi: select.value }),
+        });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+      } catch (err) {
+        showToast(err.message);
+        select.value = prevValue;
+      }
+    });
+  });
   el.departmentConfigTbody.querySelectorAll(".delete-dept-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!await confirmDialog("Xóa phòng này? Chỉ xóa được khi phòng không còn team nào.")) return;
@@ -4457,17 +4635,31 @@ async function refreshAfterDeptChange() {
     await loadTeams();
     await loadMembers();
     await loadRoadmap();
+    await loadTieuChi(); // dung_tieu_chi_chung có thể vừa đổi -> tiêu chí thấy được cũng đổi theo
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
   }
 }
 
-el.addDepartmentBtn.addEventListener("click", async () => {
-  const name = prompt("Tên phòng mới:");
-  if (!name || !name.trim()) return;
+el.addDepartmentBtn.addEventListener("click", () => {
+  document.getElementById("department-form").reset();
+  document.getElementById("department-dialog").showModal();
+});
+document.getElementById("department-cancel-btn").addEventListener("click", () => {
+  document.getElementById("department-dialog").close();
+});
+document.getElementById("department-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("department-name").value.trim();
+  const code = document.getElementById("department-code").value.trim();
+  if (!name) {
+    showToast("Tên phòng không được để trống.");
+    return;
+  }
   try {
-    await api("/api/departments", { method: "POST", body: JSON.stringify({ name: name.trim() }) });
+    await api("/api/departments", { method: "POST", body: JSON.stringify({ name, code: code || undefined }) });
+    document.getElementById("department-dialog").close();
     await loadDepartmentConfig();
     showToast("Đã thêm phòng.", "success");
   } catch (err) {
@@ -5117,8 +5309,12 @@ function homeTeamBarHex(teamName) {
 function renderHomeDashboard() {
   if (!document.getElementById("home-vbar-chart")) return;
 
+  const theoTask = homeApplyKpiModeUI();
+
+  // Phòng theo_task: KPI không chia team -> bộ lọc Team (ẩn) không áp dụng,
+  // luôn coi như "Tất cả team" cho các bảng còn tính theo team bên dưới.
   const allTeamNames = state.homeTeams.map((t) => t.name);
-  const teamNames = state.homeTeamFilter ? allTeamNames.filter((n) => n === state.homeTeamFilter) : allTeamNames;
+  const teamNames = !theoTask && state.homeTeamFilter ? allTeamNames.filter((n) => n === state.homeTeamFilter) : allTeamNames;
 
   const filteredTasks = state.homeTasks.filter((t) => teamNames.includes(t.team));
   const eligibleForRanking = homeEligibleTasks(filteredTasks);
@@ -5130,11 +5326,97 @@ function renderHomeDashboard() {
     .sort((a, b) => b.value - a.value);
 
   renderHomeTaskStatCard(filteredTasks);
-  renderHomeVBarChart(rankingData);
+
+  if (theoTask) {
+    // Ranking nhân sự (không chia team) — lấy thẳng từ KPI theo Task, đã
+    // sắp theo tong_diem giảm dần từ backend (listKpiTheoTask).
+    const personRanking = state.homeKpiTheoTask.map((r) => ({ label: r.member_name, value: r.tong_diem }));
+    renderHomeVBarChart(personRanking, {
+      topLabel: "Nhân sự dẫn đầu",
+      emptyText: "Chưa có nhân sự nào tham gia task ở tháng đang chọn.",
+    });
+  } else {
+    renderHomeVBarChart(
+      rankingData.map((d) => ({ label: d.team, value: d.value, team: d.team })),
+      {
+        colorHex: (d) => homeTeamBarHex(d.team),
+        colorClass: (d) => homeTeamBarColorClass(d.team),
+        topLabel: "Team dẫn đầu",
+      },
+    );
+  }
+
   renderHomeTonghopTable(teamNames, filteredTasks);
   renderHomeCompletionRateTable(teamNames, filteredTasks);
   renderHomeCompletionTable(teamNames, filteredTasks);
   renderHomeRankingTab(rankingData, eligibleForRanking);
+  renderHomeKpiTheoTaskTable();
+}
+
+// Bật/tắt các phần tử UI ở Home theo cách tính KPI của phòng ban đang chọn
+// (departments.cach_tinh_kpi — xem homeCachTinhKpiTheoTask): phòng
+// "theo_task" (KPI tính thẳng theo nhân sự, không chia team) ẩn 3 tab
+// Ranking/Tổng hợp/Tỉ lệ hoàn thành nhiệm vụ (không còn ý nghĩa) + ẩn bộ lọc
+// Team ở khung Tìm kiếm, chỉ còn tab "KPI theo Task"; phòng "theo_team" thì
+// ngược lại. Trả về true/false theo đúng chế độ hiện tại để
+// renderHomeDashboard() dùng tiếp (chọn nguồn dữ liệu vẽ biểu đồ Ranking).
+function homeApplyKpiModeUI() {
+  const theoTask = homeCachTinhKpiTheoTask();
+
+  const vbarTitle = document.getElementById("home-vbar-title");
+  if (vbarTitle) vbarTitle.textContent = theoTask ? "Ranking nhân sự" : "Ranking Team";
+
+  const teamFilterWrap = document.getElementById("home-filter-team-wrap");
+  if (teamFilterWrap) teamFilterWrap.hidden = theoTask;
+
+  const teamBasedTabs = ["ranking", "tonghop", "tyle-hoanthanh"];
+  const taskBasedTabs = ["kpi-theo-task"];
+  const tabsToHide = theoTask ? teamBasedTabs : taskBasedTabs;
+  const tabsToShow = theoTask ? taskBasedTabs : teamBasedTabs;
+
+  tabsToHide.forEach((tab) => {
+    const pill = document.querySelector(`#home-subnav .pill[data-tab="${tab}"]`);
+    if (!pill) return;
+    pill.hidden = true;
+    if (pill.classList.contains("active")) {
+      pill.classList.remove("active");
+      document.getElementById(`home-tab-${tab}`).hidden = true;
+      const fallbackPill = document.querySelector(`#home-subnav .pill[data-tab="${tabsToShow[0]}"]`);
+      if (fallbackPill) {
+        fallbackPill.classList.add("active");
+        document.getElementById(`home-tab-${tabsToShow[0]}`).hidden = false;
+      }
+    }
+  });
+  tabsToShow.forEach((tab) => {
+    const pill = document.querySelector(`#home-subnav .pill[data-tab="${tab}"]`);
+    if (pill) pill.hidden = false;
+  });
+
+  return theoTask;
+}
+
+// Bảng dữ liệu tab "KPI theo Task" — hiện pill/toggle tab do
+// homeApplyKpiModeUI() phụ trách, hàm này chỉ đổ dữ liệu bảng.
+function renderHomeKpiTheoTaskTable() {
+  const tbody = document.getElementById("home-kpi-theo-task-tbody");
+  const empty = document.getElementById("home-kpi-theo-task-empty");
+  if (!tbody) return;
+  const rows = state.homeKpiTheoTask;
+  empty.hidden = rows.length > 0;
+  tbody.innerHTML = rows
+    .map(
+      (r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r.member_name}</td>
+      <td>${r.member_chuc_vu ?? ""}</td>
+      <td>${r.team_name ?? ""}</td>
+      <td>${r.so_task}</td>
+      <td>${r.tong_diem}</td>
+    </tr>`,
+    )
+    .join("");
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
@@ -5266,20 +5548,31 @@ function niceAxisMax(value) {
 
 // Biểu đồ cột Điểm chuẩn theo team (mỗi team 1 màu) — cột thu gọn bề rộng,
 // đặt gần nhau cho thanh thoát. (Biểu đồ đường "SL thành viên" tạm bỏ.)
-function renderHomeVBarChart(rankingData) {
+// Biểu đồ cột dọc dùng chung cho "Ranking Team" (phòng theo_team) và
+// "Ranking nhân sự" (phòng theo_task) — items: [{label, value}]. Không
+// truyền colorHex/colorClass thì tô màu theo VỊ TRÍ trong mảng (đủ dùng khi
+// không cần màu ổn định theo định danh qua các lần render, như ranking
+// nhân sự); Ranking Team truyền riêng để giữ màu ổn định theo team (khớp
+// màu ở các biểu đồ team khác trên trang), không nhảy màu theo thứ hạng.
+function renderHomeVBarChart(items, opts = {}) {
   const chartEl = document.getElementById("home-vbar-chart");
   const legendEl = document.getElementById("home-vbar-legend");
   const calloutEl = document.getElementById("home-vbar-callout");
+  const colorHex = opts.colorHex ?? ((d, i) => TEAM_BAR_HEX[i % TEAM_BAR_HEX.length]);
+  const colorClass = opts.colorClass ?? ((d, i) => `team-bar-${i % TEAM_COLOR_COUNT}`);
+  const axisLabel = opts.axisLabel ?? "Tổng điểm";
+  const topLabel = opts.topLabel ?? "Dẫn đầu";
+  const emptyText = opts.emptyText ?? "Chưa có team nào ở tháng đang chọn.";
 
-  if (rankingData.length === 0) {
-    chartEl.innerHTML = `<p class="hbar-empty">Chưa có team nào ở tháng đang chọn.</p>`;
+  if (items.length === 0) {
+    chartEl.innerHTML = `<p class="hbar-empty">${emptyText}</p>`;
     legendEl.innerHTML = "";
     calloutEl.innerHTML = "";
     return;
   }
 
-  const teams = rankingData.map((d) => d.team);
-  const barValues = rankingData.map((d) => d.value);
+  const labels = items.map((d) => d.label);
+  const barValues = items.map((d) => d.value);
 
   const width = 420;
   const height = 210;
@@ -5289,16 +5582,16 @@ function renderHomeVBarChart(rankingData) {
   const padBottom = 22;
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - padBottom;
-  const n = teams.length;
+  const n = labels.length;
 
   // Cột trải đều sát 2 bên trục (không chừa lề thừa), nhưng bề rộng mỗi cột
   // vẫn cố định thon gọn — phần dư trong mỗi ô là khoảng cách giữa các cột.
   const step = plotW / n;
-  const xCenters = teams.map((_, i) => padLeft + step * (i + 0.5));
+  const xCenters = labels.map((_, i) => padLeft + step * (i + 0.5));
   const barWidth = 34;
 
-  // Trục Tổng điểm mặc định hiển thị tối đa 120 — chỉ nới rộng hơn nếu có
-  // team thực đạt điểm cao hơn 120.
+  // Trục mặc định hiển thị tối đa 120 — chỉ nới rộng hơn nếu có giá trị
+  // thực cao hơn 120.
   const rawBarMax = Math.max(...barValues, 1);
   const barMax = rawBarMax <= 120 ? 120 : niceAxisMax(rawBarMax);
   const yBar = (v) => padTop + plotH - (v / barMax) * plotH;
@@ -5314,11 +5607,11 @@ function renderHomeVBarChart(rankingData) {
 
   let bars = "";
   let xLabels = "";
-  teams.forEach((name, i) => {
+  labels.forEach((name, i) => {
     const x = xCenters[i] - barWidth / 2;
     const yTop = yBar(barValues[i]);
     const barH = Math.max(3, padTop + plotH - yTop);
-    bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${homeTeamBarHex(name)}" />`;
+    bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${colorHex(items[i], i)}" />`;
     bars += `<text class="home-combo-barvalue" x="${xCenters[i].toFixed(1)}" y="${(yTop + 12).toFixed(1)}" text-anchor="middle">${barValues[i].toFixed(0)}</text>`;
     xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${name}</text>`;
   });
@@ -5326,31 +5619,35 @@ function renderHomeVBarChart(rankingData) {
   chartEl.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}">
       ${gridLines}
-      <text class="home-combo-axis-label" x="${padLeft}" y="12">Tổng điểm</text>
+      <text class="home-combo-axis-label" x="${padLeft}" y="12">${axisLabel}</text>
       ${bars}
       ${xLabels}
     </svg>`;
 
-  legendEl.innerHTML = rankingData
+  legendEl.innerHTML = items
     .map(
-      (d) => `
+      (d, i) => `
     <div class="home-legend-item">
-      <span class="home-legend-dot ${homeTeamBarColorClass(d.team)}"></span>
-      <span>${d.team}</span>
+      <span class="home-legend-dot ${colorClass(d, i)}"></span>
+      <span>${d.label}</span>
     </div>`,
     )
     .join("");
 
-  const top = rankingData[0];
-  calloutEl.innerHTML = `<div class="big">${top.value.toFixed(1)}</div><div class="small">Team dẫn đầu: ${top.team}</div>`;
+  const top = items[0];
+  calloutEl.innerHTML = `<div class="big">${top.value.toFixed(1)}</div><div class="small">${topLabel}: ${top.label}</div>`;
 }
 
 // Danh sách Tag (theo danh mục Tag ở Cấu hình → Tag & Phân loại) — dùng làm
 // nhóm cột trong bảng tổng hợp "Tỉ lệ hoàn thành nhiệm vụ" ở Home. Đọc trực
 // tiếp từ state.tags mỗi lần dùng để luôn khớp danh mục hiện tại (thêm/xóa/
-// đổi tên tag ở Cấu hình phản ánh ngay ở Home).
-function homeCompletionTagCategories() {
-  return state.tags.map((t) => t.ten_tag);
+// đổi tên tag ở Cấu hình phản ánh ngay ở Home). Chỉ giữ lại Tag nào có ít
+// nhất 1 đầu việc khớp điều kiện (eligible, theo team đang xem) — ẩn cột Tag
+// chưa có đầu việc nào để đỡ rối mắt (toàn "-").
+function homeCompletionTagCategories(eligibleTasks, teamNames) {
+  return state.tags
+    .map((t) => t.ten_tag)
+    .filter((tag) => eligibleTasks.some((t) => teamNames.includes(t.team) && t.tag === tag));
 }
 
 // Làm tròn 2 chữ số thập phân và bỏ số 0 thừa ở cuối (0.79 → "0.79", 1 → "1").
@@ -5499,6 +5796,68 @@ function homeAdditionCell(n) {
 // Tuân thủ quy trình,KH chung − Tuân thủ nội quy + Hỗ trợ,phối hợp + Đào tạo
 // (2 cột Tuân thủ đã là số âm nên cộng thẳng vào, không trừ thêm lần nữa).
 const HOME_TONGHOP_TRAILING_COLUMNS = 1 + 2 + 2; // Tổng điểm + 2 điểm trừ + 2 điểm cộng
+
+// Trả về giá trị thô (tỷ lệ 0-1, % thực tế, hoặc số dòng đếm được) của 1
+// nguồn dữ liệu — dùng bởi homeTieuChiContribution() để tính điểm theo đúng
+// kieu_tinh đã cấu hình cho tiêu chí đó, thay vì hard-code theo tên tiêu chí.
+function homeResolveDataSource(key, team, eligible) {
+  switch (key) {
+    case "ty_le_hoan_thanh_nhiem_vu":
+      return homeTeamCompletionRatio(team, eligible); // 0-1 hoặc null
+    case "so_luong_su_co":
+      return state.incidents.filter((i) => i.period_id === state.homePeriodId && i.team_name === team).length;
+    case "ty_le_xu_ly_ticket": {
+      const t = state.tickets.find((x) => x.period_id === state.homePeriodId && x.team_name === team);
+      return t ? t.ty_le * 100 : null; // %
+    }
+    case "ty_le_khoi_tao": {
+      const r = state.creationRates.find((x) => x.period_id === state.homePeriodId && x.team_name === team);
+      return r ? r.grand_total : null; // %
+    }
+    case "dem_tuan_thu":
+      return homeComplianceCount(team);
+    case "dem_noi_quy":
+      return homeNoiQuyCount(team);
+    case "dem_ho_tro":
+      return homeSupportCount(team);
+    case "dem_dao_tao":
+      return homeTrainingCount(team);
+    default:
+      return null;
+  }
+}
+
+// Tính điểm đóng góp vào Tổng điểm của 1 tiêu chí (cfg từ state.tieuChiConfigs,
+// đã có sẵn diem_chuan theo từng team) cho 1 team, theo đúng kieu_tinh đã cấu
+// hình ở dialog Tiêu chí — nguồn duy nhất cho cả "Tổng điểm" (tổng hợp mọi
+// tiêu chí có kieu_tinh khác "khong_tinh") lẫn phần hiển thị chi tiết.
+function homeTieuChiContribution(cfg, team, eligible) {
+  if (!cfg.kieu_tinh || cfg.kieu_tinh === "khong_tinh") return null;
+  const entry = cfg.diem_chuan.find((d) => d.team_name === team);
+  const diemChuan = entry?.diem_chuan !== null && entry?.diem_chuan !== undefined && entry.diem_chuan !== "" ? Number(entry.diem_chuan) : null;
+  const chiTieu = entry?.chi_tieu ? parseFloat(entry.chi_tieu) : null;
+  const heSo = cfg.he_so !== null && cfg.he_so !== undefined ? Number(cfg.he_so) : null;
+  const raw = homeResolveDataSource(cfg.nguon_du_lieu, team, eligible);
+
+  switch (cfg.kieu_tinh) {
+    case "ty_le_x_diem_chuan":
+      return raw !== null && diemChuan !== null ? raw * diemChuan : null;
+    case "ty_le_chia_chi_tieu_x_diem_chuan":
+      return raw !== null && diemChuan !== null && chiTieu ? (raw / chiTieu) * diemChuan : null;
+    case "tru_theo_loi": {
+      if (diemChuan === null) return null;
+      const rate = heSo ?? 0.1;
+      return raw === null || raw === 0 ? diemChuan : diemChuan - diemChuan * (raw * rate);
+    }
+    case "dem_dong_cong":
+      return (raw ?? 0) / (heSo ?? 2);
+    case "dem_dong_tru":
+      return -((raw ?? 0) / (heSo ?? 2));
+    default:
+      return null;
+  }
+}
+
 // Tính đủ các thành phần của bảng Tổng hợp cho 1 team (dùng chung cho bảng
 // Tổng hợp điểm theo Team và cho biểu đồ Ranking Team, vì Ranking Team lấy
 // dữ liệu trực tiếp từ đúng cột Tổng điểm này).
@@ -5529,15 +5888,18 @@ function homeComputeTeamScores(team, eligible) {
       ? ((periodCreationRate.grand_total * 100) / khoiTaoCfg.chiTieu) * khoiTaoCfg.diemChuan
       : null;
 
-  // Tổng điểm = Sprint Goal + Sự cố + Tỷ lệ xử lý ticket + Tỷ lệ khởi tạo
-  // − Tuân thủ quy trình,KH chung − Tuân thủ nội quy + Hỗ trợ,phối hợp +
-  // Đào tạo. 2 cột Tuân thủ đã hiển thị dạng số âm (VD -1) nên cộng thẳng
-  // giá trị đó vào (không trừ thêm lần nữa).
-  const tuanThuSigned = -(homeComplianceCount(team) / 2);
-  const noiQuySigned = -(homeNoiQuyCount(team) / 2);
-  const hoTroSigned = homeSupportCount(team) / 2;
-  const daoTaoSigned = homeTrainingCount(team) / 2;
-  const tongDiem = (sprintGoal ?? 0) + (suCo ?? 0) + (tyLeTicket ?? 0) + (tyLeKhoiTao ?? 0) + tuanThuSigned + noiQuySigned + hoTroSigned + daoTaoSigned;
+  // Tổng điểm = tổng đóng góp của MỌI tiêu chí "thấy được" của phòng đang
+  // xem (state.tieuChiConfigs, đã lọc theo phòng) có kieu_tinh khác
+  // "khong_tinh" — cấu hình được trên giao diện (dialog Tiêu chí), không
+  // còn hard-code cứng theo tên 4+4 tiêu chí cố định như trước. Deployment
+  // nào đã cấu hình đúng kieu_tinh cho các tiêu chí quen thuộc (Sprint
+  // Goal, Sự cố, Tuân thủ, Nội quy, Hỗ trợ, Đào tạo...) thì ra kết quả y hệt
+  // công thức cũ; phòng ban dùng bộ tiêu chí khác thì Tổng điểm tự đúng
+  // theo tiêu chí CỦA HỌ thay vì bị bỏ qua/tính sai.
+  const tongDiem = state.tieuChiConfigs.reduce(
+    (sum, c) => sum + (homeTieuChiContribution(c, team, eligible) ?? 0),
+    0,
+  );
 
   return { sprintGoal, sprintGoalCfg, suCo, suCoCfg, tyLeTicket, ticketCfg, tyLeKhoiTao, khoiTaoCfg, tongDiem };
 }
@@ -5738,10 +6100,10 @@ function renderHomeCompletionRateTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-rate-tbody");
   if (!tbody) return;
 
-  const tagCategories = homeCompletionTagCategories();
+  const eligible = homeEligibleTasks(tasksInScope);
+  const tagCategories = homeCompletionTagCategories(eligible, teamNames);
   renderHomeCompletionRateThead(tagCategories);
   const colCount = 1 + tagCategories.length + 1;
-  const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colCount}" class="hbar-empty">Chưa có team nào ở tháng đang chọn.</td></tr>`;
@@ -5823,10 +6185,10 @@ function renderHomeCompletionTable(teamNames, tasksInScope) {
   const tbody = document.getElementById("home-completion-tbody");
   if (!tbody) return;
 
-  const tagCategories = homeCompletionTagCategories();
+  const eligible = homeEligibleTasks(tasksInScope);
+  const tagCategories = homeCompletionTagCategories(eligible, teamNames);
   renderHomeCompletionThead(tagCategories);
   const colCount = 1 + (tagCategories.length + 1) * 2;
-  const eligible = homeEligibleTasks(tasksInScope);
 
   if (teamNames.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${colCount}" class="hbar-empty">Chưa có team nào ở tháng đang chọn.</td></tr>`;

@@ -218,6 +218,13 @@ export interface UpsertDanhGiaEntry {
 
 // Trang Cấu hình, tab Tiêu chí — cấu hình tiêu chí + công thức tính điểm cho
 // team, dùng chung mọi tháng backlog. Điểm chuẩn/chỉ tiêu lưu theo team_name.
+// department_id null = tiêu chí DÙNG CHUNG cho mọi phòng; có giá trị = tiêu
+// chí RIÊNG của đúng 1 phòng (xem listTieuChiConfigs() ở tieuchi.service.ts).
+// kieu_tinh/nguon_du_lieu/he_so — công thức tính điểm cho tiêu chí này ở tab
+// Tổng hợp (Home), thay cho việc hard-code theo tên trong app.js. kieu_tinh
+// "khong_tinh" (mặc định) = tiêu chí thuần thông tin, không cộng vào Tổng
+// điểm. Xem TIEU_CHI_KIEU_TINH ở app.js để biết đầy đủ danh sách kiểu tính +
+// nguồn dữ liệu hợp lệ cho từng kiểu.
 export interface TieuChiConfig {
   id: number;
   nhom: string;
@@ -225,6 +232,10 @@ export interface TieuChiConfig {
   cach_tinh_diem: string | null;
   co_chi_tieu: boolean;
   thu_tu: number;
+  department_id: number | null;
+  kieu_tinh: string;
+  nguon_du_lieu: string | null;
+  he_so: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -245,6 +256,10 @@ export interface CreateTieuChiConfigInput {
   cach_tinh_diem?: string;
   co_chi_tieu?: boolean;
   thu_tu?: number;
+  department_id?: number | null;
+  kieu_tinh?: string;
+  nguon_du_lieu?: string | null;
+  he_so?: number | null;
 }
 
 export interface UpdateTieuChiConfigInput {
@@ -253,6 +268,10 @@ export interface UpdateTieuChiConfigInput {
   cach_tinh_diem?: string;
   co_chi_tieu?: boolean;
   thu_tu?: number;
+  department_id?: number | null;
+  kieu_tinh?: string;
+  nguon_du_lieu?: string | null;
+  he_so?: number | null;
 }
 
 // Trang Cấu hình, tab Ranking team — bảng tự do: hàng = vị trí xếp hạng, cột
