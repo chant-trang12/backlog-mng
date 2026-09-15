@@ -1301,10 +1301,6 @@ dialog.confirm-dialog form {
 }
 dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn giữa, không cần chừa chỗ nút X */
 
-/* Dialog "Nhân sự tham gia task" rộng hơn dialog mặc định (640px) — cho
-   select "Nhân sự" (tên + team, có thể dài) giãn hết chiều rộng cột thay vì
-   bị chặn ở max-width: 220px chung, tránh bị cắt "…" quá sớm. */
-#task-member-dialog select { max-width: 100%; }
 .confirm-icon {
   width: 42px;
   height: 42px;

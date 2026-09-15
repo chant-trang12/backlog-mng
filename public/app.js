@@ -33,6 +33,7 @@ const state = {
   mucTieuOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
+  taskMemberLookup: new Map(), // nhãn hiển thị (ô tìm kiếm) -> member_id
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
   roadmapSearch: "",
@@ -2126,16 +2127,23 @@ async function openTaskMemberDialog(task) {
 // nguồn dữ liệu ở trang Team & Nhân sự) — bớt các nhân sự đã gán vào task
 // này rồi (1 người chỉ tham gia 1 lần / task, "vai trò" hiển thị ở bảng bên
 // trên lấy thẳng theo Chức vụ có sẵn của người đó, không chọn riêng ở đây).
+// Dùng input + <datalist> thay vì <select> để gõ tìm theo tên (select
+// thường không hỗ trợ tìm kiếm trong danh sách dài); nhãn hiển thị được map
+// ngược lại member_id qua state.taskMemberLookup khi bấm "+ Thêm".
 function fillTaskMemberSelect() {
   const assignedIds = new Set(state.taskMembers.map((tm) => tm.member_id));
   const available = state.members.filter((m) => !assignedIds.has(m.id));
-  // Chỉ hiện Tên (Team) — Chức vụ đã hiện ở cột "Vai trò" ngay khi thêm
-  // xong, không nhắc lại ở đây để lựa chọn không bị dài dòng/tràn khung.
-  el.tmMember.innerHTML = available.length
-    ? available
-        .map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`)
-        .join("")
-    : `<option value="">— Đã gán hết nhân sự —</option>`;
+  state.taskMemberLookup = new Map();
+  el.tmMember.value = "";
+  el.tmMember.disabled = available.length === 0;
+  el.tmMember.placeholder = available.length > 0 ? "Gõ tên để tìm..." : "Đã gán hết nhân sự";
+  document.getElementById("tm-member-datalist").innerHTML = available
+    .map((m) => {
+      const label = `${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}`;
+      state.taskMemberLookup.set(label, m.id);
+      return `<option value="${label}"></option>`;
+    })
+    .join("");
 }
 
 async function loadTaskMembers() {
@@ -2152,7 +2160,7 @@ function renderTaskMembers() {
       (tm) => `
     <tr data-id="${tm.id}">
       <td>${tm.member_name}</td>
-      <td>${tm.member_chuc_vu ? `<span class="status-badge status-default">${tm.member_chuc_vu}</span>` : ""}</td>
+      <td>${tm.member_chuc_vu ?? ""}</td>
       <td>${tm.ghi_chu ?? ""}</td>
       <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
     </tr>`,
@@ -2174,9 +2182,9 @@ function renderTaskMembers() {
 }
 
 el.tmAddBtn.addEventListener("click", async () => {
-  const memberId = Number(el.tmMember.value);
+  const memberId = state.taskMemberLookup.get(el.tmMember.value.trim());
   if (!memberId) {
-    showToast("Chưa có nhân sự nào để thêm — khai báo nhân sự cho tháng này ở tab Team & Nhân sự trước.");
+    showToast("Gõ tên và chọn đúng 1 nhân sự trong danh sách gợi ý.");
     return;
   }
   try {
