@@ -32,9 +32,11 @@ const state = {
   heThongOptions: [],
   mucTieuOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
+  taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
   taskMemberAvailable: [], // nhân sự chưa gán, để gõ tìm/gợi ý
   taskMemberSelectedId: null, // member_id đã chọn từ gợi ý (bấm "+ Thêm" cần có)
+  taskMemberScoreUnit: "percent", // đơn vị hiển thị/nhập cột Điểm cá nhân: "percent" | "scale5"
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
   roadmapSearch: "",
@@ -206,6 +208,11 @@ const el = {
   taskMemberDialog: document.getElementById("task-member-dialog"),
   taskMemberDialogTitle: document.getElementById("task-member-dialog-title"),
   taskMemberDialogSub: document.getElementById("task-member-dialog-sub"),
+  taskMemberScoreBar: document.getElementById("task-member-score-bar"),
+  taskMemberTotalBadge: document.getElementById("task-member-total-badge"),
+  tmScoreUnit: document.getElementById("tm-score-unit"),
+  tmSplitEvenBtn: document.getElementById("tm-split-even-btn"),
+  taskMemberThead: document.getElementById("task-member-thead"),
   taskMemberTbody: document.getElementById("task-member-tbody"),
   taskMemberEmpty: document.getElementById("task-member-empty"),
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
@@ -2119,10 +2126,29 @@ el.progressForm.addEventListener("submit", async (e) => {
 async function openTaskMemberDialog(task) {
   if (!task) return;
   state.taskMemberTaskId = task.id;
+  // % Đánh giá của task (cpo_danh_gia) — có giá trị thì mới hiện phần phân
+  // bổ tỷ lệ đóng góp/điểm cá nhân, task chưa chấm điểm thì chưa có gì để
+  // quy đổi.
+  state.taskMemberTaskScore = task.cpo_danh_gia;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
-  el.taskMemberDialogSub.textContent = `Team ${task.team}`;
+  el.taskMemberDialogSub.textContent =
+    `Team ${task.team}` + (state.taskMemberTaskScore != null ? ` · % Đánh giá: ${state.taskMemberTaskScore}%` : "");
+  state.taskMemberScoreUnit = "percent";
+  el.tmScoreUnit.value = "percent";
+  renderTaskMemberThead();
   await loadTaskMembers();
   el.taskMemberDialog.showModal();
+}
+
+function renderTaskMemberThead() {
+  const graded = state.taskMemberTaskScore != null;
+  el.taskMemberThead.innerHTML = `<tr>
+    <th>Nhân sự</th>
+    <th>Vai trò</th>
+    ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}
+    <th>Ghi chú</th>
+    <th style="width:56px"></th>
+  </tr>`;
 }
 
 // Chọn nhân sự từ danh sách nhân sự đã khai báo của tháng đang xem (giống
@@ -2192,18 +2218,47 @@ async function loadTaskMembers() {
   fillTaskMemberSelect();
 }
 
+const round2 = (n) => Math.round(n * 100) / 100;
+const percentToScale5 = (p) => round2(p / 20);
+const scale5ToPercent = (s) => round2(s * 20);
+
 function renderTaskMembers() {
+  const graded = state.taskMemberTaskScore != null;
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
+  el.taskMemberScoreBar.hidden = !graded;
+  const unit = state.taskMemberScoreUnit;
+
   el.taskMemberTbody.innerHTML = state.taskMembers
-    .map(
-      (tm) => `
+    .map((tm) => {
+      let scoreCell = "";
+      if (graded) {
+        const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
+        const auto = contrib != null ? round2((state.taskMemberTaskScore * contrib) / 100) : null;
+        const isManual = tm.diem_ca_nhan != null;
+        const rawPercent = isManual ? Number(tm.diem_ca_nhan) : auto;
+        const displayScore = rawPercent == null ? "" : unit === "scale5" ? percentToScale5(rawPercent) : rawPercent;
+        scoreCell = `
+      <td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>
+      <td>
+        <div class="row" style="align-items:center;gap:4px;flex-wrap:nowrap">
+          <input type="number" class="inline-cell-input tm-score-input" data-id="${tm.id}" step="0.1" value="${displayScore}" placeholder="—" style="width:64px" />
+          ${
+            isManual
+              ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %">↺</span>`
+              : `<span class="muted" style="font-size:0.68rem;white-space:nowrap" title="Tự tính = % Đánh giá của task × Tỷ lệ đóng góp">(tự tính)</span>`
+          }
+        </div>
+      </td>`;
+      }
+      return `
     <tr data-id="${tm.id}">
       <td>${tm.member_name}</td>
       <td>${tm.member_chuc_vu ?? ""}</td>
+      ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
       <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
-    </tr>`,
-    )
+    </tr>`;
+    })
     .join("");
 
   el.taskMemberTbody.querySelectorAll(".tm-del-btn").forEach((btn) => {
@@ -2218,7 +2273,105 @@ function renderTaskMembers() {
       }
     });
   });
+
+  if (graded) {
+    el.taskMemberTbody.querySelectorAll(".tm-contrib-input").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const val = input.value.trim();
+        try {
+          await api(`/api/task-members/${input.dataset.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ ty_le_dong_gop: val === "" ? null : Number(val) }),
+          });
+          await loadTaskMembers();
+        } catch (err) {
+          showToast(err.message);
+          await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
+        }
+      });
+    });
+    el.taskMemberTbody.querySelectorAll(".tm-score-input").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const val = input.value.trim();
+        const percentValue = val === "" ? null : state.taskMemberScoreUnit === "scale5" ? scale5ToPercent(Number(val)) : Number(val);
+        try {
+          await api(`/api/task-members/${input.dataset.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ diem_ca_nhan: percentValue }),
+          });
+          await loadTaskMembers();
+        } catch (err) {
+          showToast(err.message);
+          await loadTaskMembers();
+        }
+      });
+    });
+    el.taskMemberTbody.querySelectorAll(".tm-score-reset").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        try {
+          await api(`/api/task-members/${btn.dataset.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ diem_ca_nhan: null }),
+          });
+          await loadTaskMembers();
+        } catch (err) {
+          showToast(err.message);
+        }
+      });
+    });
+  }
+
+  updateTaskMemberTotalBadge();
 }
+
+function updateTaskMemberTotalBadge() {
+  if (state.taskMemberTaskScore == null) return;
+  const total = round2(
+    state.taskMembers.reduce((s, tm) => s + (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0), 0),
+  );
+  el.taskMemberTotalBadge.textContent = `Tổng đã phân bổ: ${total}% / 100%`;
+  el.taskMemberTotalBadge.className =
+    "status-badge " + (Math.abs(total - 100) < 0.01 ? "status-hoan-thanh" : total > 100 ? "status-huy" : "status-default");
+}
+
+el.tmScoreUnit.addEventListener("change", () => {
+  state.taskMemberScoreUnit = el.tmScoreUnit.value;
+  renderTaskMembers();
+});
+
+// Chia đều tỷ lệ đóng góp cho tất cả nhân sự đang có trong task (làm tròn 1
+// chữ số thập phân, dồn phần dư vào người cuối để tổng luôn đúng 100%). Áp
+// dụng giảm trước/tăng sau để tổng không bao giờ tạm thời vượt quá 100% khi
+// đang lưu tuần tự từng dòng (backend chặn cứng > 100%).
+el.tmSplitEvenBtn.addEventListener("click", async () => {
+  const members = state.taskMembers;
+  if (members.length === 0) return;
+  const base = Math.floor((100 / members.length) * 10) / 10;
+  const values = new Array(members.length).fill(base);
+  values[values.length - 1] = round2(base + round2(100 - base * members.length));
+
+  const updates = members
+    .map((tm, i) => ({
+      id: tm.id,
+      newVal: values[i],
+      delta: values[i] - (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0),
+    }))
+    .sort((a, b) => a.delta - b.delta);
+
+  try {
+    for (const u of updates) {
+      await api(`/api/task-members/${u.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ ty_le_dong_gop: u.newVal }),
+      });
+    }
+    await loadTaskMembers();
+    showToast("Đã chia đều tỷ lệ đóng góp.", "success");
+  } catch (err) {
+    showToast(err.message);
+    await loadTaskMembers();
+  }
+});
 
 el.tmAddBtn.addEventListener("click", async () => {
   const memberId = state.taskMemberSelectedId;

@@ -143,4 +143,101 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       (await request(app).post(`/api/tasks/999999/members`).send({ member_id: 1 })).status,
     ).toBe(404);
   });
+
+  describe("Phân bổ tỷ lệ đóng góp (%) và điểm cá nhân", () => {
+    it("tổng tỷ lệ đóng góp trong 1 task không được vượt 100%", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2003, 1);
+      const teamId = await makeTeam(app, "TM contrib team", periodId);
+      const m1 = await makeMember(app, "Bùi Văn H", teamId, periodId, "Dev");
+      const m2 = await makeMember(app, "Cao Thị I", teamId, periodId, "QA/Tester");
+      const taskId = await makeTask(app, periodId, "TM contrib team", "Task chia tỷ lệ");
+
+      const a1 = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: m1, ty_le_dong_gop: 60 });
+      expect(a1.status).toBe(201);
+      expect(a1.body.ty_le_dong_gop).toBe(60);
+
+      const a2ok = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: m2, ty_le_dong_gop: 40 });
+      expect(a2ok.status).toBe(201);
+
+      // Sửa m2 lên 41% -> tổng 101% -> phải bị từ chối.
+      const overLimit = await request(app)
+        .put(`/api/task-members/${a2ok.body.id}`)
+        .send({ ty_le_dong_gop: 41 });
+      expect(overLimit.status).toBe(400);
+
+      // Giá trị cũ (40%) phải còn nguyên, không bị đổi bởi request lỗi ở trên.
+      const list = await request(app).get(`/api/tasks/${taskId}/members`);
+      const m2Row = list.body.find((r: { member_id: number }) => r.member_id === m2);
+      expect(m2Row.ty_le_dong_gop).toBe(40);
+    });
+
+    it("sửa lại tỷ lệ của chính dòng đó (không đổi) vẫn hợp lệ dù tổng đã ở mức 100%", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2004, 1);
+      const teamId = await makeTeam(app, "TM self team", periodId);
+      const memberId = await makeMember(app, "Dương Văn K", teamId, periodId, "PM/SM");
+      const taskId = await makeTask(app, periodId, "TM self team", "Task tự sửa");
+
+      const created = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: memberId, ty_le_dong_gop: 100 });
+      expect(created.status).toBe(201);
+
+      // Loại trừ chính dòng đang sửa khi tính tổng — không được coi là "cộng dồn".
+      const resaved = await request(app)
+        .put(`/api/task-members/${created.body.id}`)
+        .send({ ty_le_dong_gop: 100 });
+      expect(resaved.status).toBe(200);
+    });
+
+    it("điểm cá nhân: nhập tay để ghi đè, gửi null để xóa (về tự tính theo %)", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2002, 1);
+      const teamId = await makeTeam(app, "TM score team", periodId);
+      const memberId = await makeMember(app, "Giang Thị L", teamId, periodId, "Dev");
+      const taskId = await makeTask(app, periodId, "TM score team", "Task điểm cá nhân");
+
+      const created = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: memberId, ty_le_dong_gop: 50 });
+      expect(created.body.diem_ca_nhan).toBeNull();
+
+      const withScore = await request(app)
+        .put(`/api/task-members/${created.body.id}`)
+        .send({ diem_ca_nhan: 92.5 });
+      expect(withScore.status).toBe(200);
+      expect(withScore.body.diem_ca_nhan).toBe(92.5);
+
+      const cleared = await request(app)
+        .put(`/api/task-members/${created.body.id}`)
+        .send({ diem_ca_nhan: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.diem_ca_nhan).toBeNull();
+    });
+
+    it("rejects tỷ lệ đóng góp ngoài khoảng 0-100 hoặc không phải số", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 2001, 1);
+      const teamId = await makeTeam(app, "TM invalid team", periodId);
+      const memberId = await makeMember(app, "Hồ Văn M", teamId, periodId);
+      const taskId = await makeTask(app, periodId, "TM invalid team", "Task invalid");
+
+      expect(
+        (await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, ty_le_dong_gop: 150 }))
+          .status,
+      ).toBe(400);
+      expect(
+        (
+          await request(app)
+            .post(`/api/tasks/${taskId}/members`)
+            .send({ member_id: memberId, ty_le_dong_gop: "abc" })
+        ).status,
+      ).toBe(400);
+    });
+  });
 });

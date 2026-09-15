@@ -549,6 +549,20 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // task_members.ty_le_dong_gop / diem_ca_nhan — phân bổ điểm % Đánh giá
+    // của task cho từng nhân sự tham gia (chỉ áp dụng khi task đã được chấm
+    // điểm). ty_le_dong_gop: % đóng góp (0-100), tổng theo task không được
+    // vượt 100% (validate ở service). diem_ca_nhan: điểm cá nhân quy theo %
+    // (0-100) — nếu để trống thì tự tính = % Đánh giá của task × tỷ lệ đóng
+    // góp; nhập tay ở đây (kể cả gõ theo thang điểm 5, FE tự quy đổi sang %
+    // trước khi lưu) để ghi đè khi cần chấm riêng cho người đó.
+    if (!(await db.schema.hasColumn("task_members", "ty_le_dong_gop"))) {
+      await db.schema.alterTable("task_members", (table) => {
+        table.decimal("ty_le_dong_gop", 5, 2);
+        table.decimal("diem_ca_nhan", 5, 2);
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

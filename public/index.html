@@ -1481,9 +1481,23 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-sub" style="margin:0"></p>
 
+      <!-- Chỉ hiện khi task đã có % Đánh giá — chọn đơn vị nhập điểm cá nhân
+           + chia đều tỷ lệ đóng góp + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
+      <div class="row" id="task-member-score-bar" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div class="row" style="align-items:center;gap:8px">
+          <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
+          <select id="tm-score-unit" style="max-width:140px">
+            <option value="percent">% (theo task)</option>
+            <option value="scale5">Thang điểm 5</option>
+          </select>
+          <button type="button" id="tm-split-even-btn" class="small">Chia đều tỷ lệ</button>
+        </div>
+        <span id="task-member-total-badge" class="status-badge status-default"></span>
+      </div>
+
       <div class="table-wrap">
         <table id="task-member-table">
-          <thead><tr><th>Nhân sự</th><th>Vai trò</th><th>Ghi chú</th><th style="width:56px"></th></tr></thead>
+          <thead id="task-member-thead"></thead>
           <tbody id="task-member-tbody"></tbody>
         </table>
         <p class="muted" id="task-member-empty" hidden style="padding:16px;text-align:center">Chưa có nhân sự nào tham gia task này.</p>

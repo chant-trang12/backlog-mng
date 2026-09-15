@@ -163,10 +163,20 @@ export type UpdateRoadmapItemInput = Partial<CreateRoadmapItemInput>;
 // Nhân sự tham gia 1 task ở Backlog — quản lý sâu hơn "ai làm task này". Vai
 // trò KHÔNG có danh mục riêng — lấy thẳng theo Chức vụ đã khai báo sẵn cho
 // nhân sự đó ở Team & Nhân sự (member_chuc_vu, join qua members.chuc_vu).
+//
+// ty_le_dong_gop: % đóng góp của người này trong task (0-100) — tổng theo
+// từng task không được vượt 100% (validate ở service). diem_ca_nhan: điểm
+// cá nhân quy theo thang % (0-100), CHỈ có ý nghĩa khi task đã được chấm
+// (tasks.cpo_danh_gia khác null) — để trống thì FE tự tính
+// = cpo_danh_gia × ty_le_dong_gop / 100; nhập giá trị ở đây (FE cho nhập cả
+// theo thang điểm 5, tự quy đổi sang % trước khi gửi lên) để ghi đè, chấm
+// riêng cho người đó thay vì suy ra thuần theo tỷ lệ.
 export interface TaskMember {
   id: number;
   task_id: number;
   member_id: number;
+  ty_le_dong_gop: number | null;
+  diem_ca_nhan: number | null;
   ghi_chu: string | null;
   created_at: string;
   updated_at: string;
@@ -181,10 +191,14 @@ export interface TaskMemberWithName extends TaskMember {
 
 export interface CreateTaskMemberInput {
   member_id: number;
+  ty_le_dong_gop?: number | null;
+  diem_ca_nhan?: number | null;
   ghi_chu?: string;
 }
 
 export interface UpdateTaskMemberInput {
+  ty_le_dong_gop?: number | null;
+  diem_ca_nhan?: number | null;
   ghi_chu?: string;
 }
 
