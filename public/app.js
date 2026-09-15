@@ -2129,9 +2129,11 @@ async function openTaskMemberDialog(task) {
 function fillTaskMemberSelect() {
   const assignedIds = new Set(state.taskMembers.map((tm) => tm.member_id));
   const available = state.members.filter((m) => !assignedIds.has(m.id));
+  // Chỉ hiện Tên (Team) — Chức vụ đã hiện ở cột "Vai trò" ngay khi thêm
+  // xong, không nhắc lại ở đây để lựa chọn không bị dài dòng/tràn khung.
   el.tmMember.innerHTML = available.length
     ? available
-        .map((m) => `<option value="${m.id}">${m.name}${m.chuc_vu ? " — " + m.chuc_vu : ""}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`)
+        .map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`)
         .join("")
     : `<option value="">— Đã gán hết nhân sự —</option>`;
 }
