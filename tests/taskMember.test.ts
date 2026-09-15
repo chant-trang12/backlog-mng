@@ -279,7 +279,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
   });
 
   describe("KPI theo Task (GET /api/kpi-theo-task) — phòng ban cach_tinh_kpi=theo_task", () => {
-    it("cộng dồn điểm 1 nhân sự từ nhiều task: ưu tiên diem_ca_nhan ghi đè, không thì tự tính = cpo_danh_gia x ty_le_dong_gop/100; task chưa chấm điểm không cộng điểm nhưng vẫn tính vào so_task", async () => {
+    it("cộng dồn điểm 1 nhân sự từ nhiều task: ưu tiên diem_ca_nhan ghi đè, không thì thẳng % Đánh giá (KHÔNG nhân ty_le_dong_gop); task chưa chấm điểm không cộng điểm nhưng vẫn tính vào so_task", async () => {
       const app = createApp();
       const periodId = await makePeriod(app, 1998, 1);
       const teamId = await makeTeam(app, "KPI task team", periodId);
@@ -303,10 +303,13 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(res.status).toBe(200);
       const row = res.body.find((r: { member_id: number }) => r.member_id === memberId);
       expect(row.so_task).toBe(3);
-      // 80*50/100 = 40, + 95 (ghi đè) = 135; task3 chưa chấm điểm không cộng.
-      expect(row.tong_diem).toBe(135);
+      // Task 1: thẳng % Đánh giá = 80 (ty_le_dong_gop 50% không còn nhân vào
+      // nữa) + 95 (ghi đè) = 175; task3 chưa chấm điểm không cộng.
+      expect(row.tong_diem).toBe(175);
       expect(row.member_name).toBe("Phan Văn P");
       expect(row.team_name).toBe("KPI task team");
+      const t1Entry = row.tasks.find((t: { task_id: number }) => t.task_id === task1);
+      expect(t1Entry.diem).toBe(80); // không bị nhân ty_le_dong_gop
       const t3Entry = row.tasks.find((t: { task_id: number }) => t.task_id === task3);
       expect(t3Entry.diem).toBeNull();
     });

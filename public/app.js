@@ -1395,28 +1395,28 @@ function memberKpiTheoTaskRow(memberId) {
 }
 
 // "Điểm cá nhân (Tính theo task)" = ĐIỂM TRUNG BÌNH (không phải tổng) của
-// các task ĐÃ CÓ điểm (task chưa chấm điểm/chưa có tỷ lệ đóng góp thì không
-// tính vào — không coi là 0). null nếu chưa có task nào có điểm.
+// các task ĐÃ CÓ điểm. null nếu chưa có task nào có điểm.
 // Chỉ lấy TRUNG BÌNH các task "Thực hiện chính" (hoặc chưa phân loại) —
 // task "Hỗ trợ" KHÔNG tính vào trung bình mà CỘNG THẲNG điểm thêm vào sau
 // (điểm cộng, không chia lại theo số lượng). VD 3 việc thực hiện chính + 1
 // việc hỗ trợ -> trung bình 3 việc chính + điểm việc hỗ trợ cộng thêm.
 //
-// Dùng t.diem_goc (% Đánh giá gốc / điểm ghi đè, KHÔNG nhân tỷ lệ đóng
-// góp) thay vì t.diem (đã nhân tỷ lệ đóng góp) — nếu dùng "diem" thì task
-// càng nhiều người chia sẻ (tỷ lệ đóng góp thấp) càng kéo điểm xuống, còn
-// task 1 người làm trọn (100%) luôn cao hơn hẳn dù chất lượng công việc (%
-// Đánh giá) không khác gì nhau — không phản ánh đúng nỗ lực, đặc biệt bất
-// lợi cho người tham gia nhiều task phối hợp cùng người khác.
+// t.diem = diem_ca_nhân ghi đè, hoặc thẳng % Đánh giá của task — Tỷ lệ đóng
+// góp KHÔNG còn nhân vào công thức ở bất kỳ đâu nữa (chỉ còn là trường tham
+// chiếu/hiển thị, xem taskMember.service.ts#listKpiTheoTask): nếu nhân tỷ
+// lệ thì task càng nhiều người chia sẻ (tỷ lệ thấp) càng kéo điểm xuống,
+// còn task 1 người làm trọn (100%) luôn cao hơn hẳn dù chất lượng công việc
+// (% Đánh giá) không khác gì nhau — không phản ánh đúng nỗ lực, đặc biệt
+// bất lợi cho người tham gia nhiều task phối hợp cùng người khác.
 function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
-  const scored = row.tasks.filter((t) => t.diem_goc !== null);
+  const scored = row.tasks.filter((t) => t.diem !== null);
   const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
   const bonusTasks = scored.filter((t) => t.phan_loai === HO_TRO_LABEL);
   if (mainTasks.length === 0 && bonusTasks.length === 0) return null;
-  const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem_goc, 0) / mainTasks.length : 0;
-  const bonus = bonusTasks.reduce((sum, t) => sum + t.diem_goc, 0);
+  const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
+  const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
   return Math.round((mainAvg + bonus) * 100) / 100;
 }
 
@@ -1436,7 +1436,7 @@ function openMemberTaskDetailDialog(member) {
       <td>${t.phan_loai ?? ""}</td>
       <td>${t.ty_le_dong_gop ?? "-"}</td>
       <td>${t.cpo_danh_gia ?? "-"}</td>
-      <td>${t.diem_goc ?? "-"}</td>
+      <td>${t.diem ?? "-"}</td>
     </tr>`,
     )
     .join("");

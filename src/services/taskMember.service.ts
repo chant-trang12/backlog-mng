@@ -147,11 +147,15 @@ export async function deleteTaskMember(id: number): Promise<boolean> {
 // KPI nhân sự tính trực tiếp theo task (dùng cho phòng ban có
 // departments.cach_tinh_kpi = "theo_task", không chia theo team) — cộng dồn
 // Điểm cá nhân của mỗi nhân sự từ mọi task họ tham gia trong 1 tháng
-// backlog. Điểm từng task lấy ĐÚNG cách tính đã dùng ở dialog "Nhân sự tham
-// gia": diem_ca_nhan nếu đã ghi đè tay, không thì tự tính = % Đánh giá của
-// task (cpo_danh_gia) × Tỷ lệ đóng góp; task chưa chấm điểm hoặc chưa có tỷ
-// lệ đóng góp thì task đó không cộng điểm (không phải 0 — vẫn tính vào
-// "số task tham gia" để biết họ có tham gia, chỉ không có điểm).
+// backlog. Điểm từng task = diem_ca_nhan nếu đã ghi đè tay, không thì thẳng
+// % Đánh giá của task (cpo_danh_gia) — Tỷ lệ đóng góp KHÔNG còn nhân vào
+// công thức nữa (chỉ còn là trường tham chiếu/hiển thị), theo yêu cầu: task
+// nhiều người chia sẻ tỷ lệ thấp trước đây luôn kéo điểm xuống so với task 1
+// người làm trọn dù % Đánh giá như nhau, không phản ánh đúng nỗ lực. Áp
+// dụng thống nhất cho cả tong_diem (KPI theo Task/Ranking nhân sự ở Home)
+// lẫn diem từng task (Điểm cá nhân (Tính theo task)/popup chi tiết ở bảng
+// Nhân sự). Task chưa chấm điểm thì không cộng điểm (không phải 0 — vẫn
+// tính vào "số task tham gia" để biết họ có tham gia, chỉ không có điểm).
 export async function listKpiTheoTask(
   periodId: number,
   departmentId: number | null,
@@ -182,21 +186,9 @@ export async function listKpiTheoTask(
     const diemCaNhan = r.diem_ca_nhan !== null && r.diem_ca_nhan !== undefined ? Number(r.diem_ca_nhan) : null;
     const tyLeDongGop = r.ty_le_dong_gop !== null && r.ty_le_dong_gop !== undefined ? Number(r.ty_le_dong_gop) : null;
     const cpoDanhGia = r.cpo_danh_gia !== null && r.cpo_danh_gia !== undefined ? Number(r.cpo_danh_gia) : null;
-    const diem =
-      diemCaNhan !== null
-        ? diemCaNhan
-        : cpoDanhGia !== null && tyLeDongGop !== null
-          ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
-          : null;
-    // "Điểm gốc" — diem_ca_nhan ghi đè (nếu có, đã là điểm riêng cho người
-    // đó rồi) hoặc thẳng % Đánh giá của task, KHÔNG nhân tỷ lệ đóng góp.
-    // Dùng riêng cho "Điểm cá nhân (Tính theo task)" ở bảng Nhân sự — tránh
-    // vấn đề: task nhiều người chia tỷ lệ thấp thì "diem" (đã nhân tỷ lệ)
-    // luôn thấp hơn hẳn task 1 người làm 100%, khiến ai tham gia nhiều task
-    // chung với người khác bị kéo điểm trung bình xuống dù chất lượng công
-    // việc (% Đánh giá) không hề thấp hơn. Trường "diem" ở trên giữ nguyên
-    // (không đổi ý nghĩa) vì vẫn dùng cho tong_diem (KPI theo Task) ở nơi khác.
-    const diemGoc = diemCaNhan !== null ? diemCaNhan : cpoDanhGia;
+    // diem_ca_nhan ghi đè (nếu có) hoặc thẳng % Đánh giá — không nhân
+    // ty_le_dong_gop nữa (trường này giờ chỉ để tham chiếu/hiển thị).
+    const diem = diemCaNhan !== null ? diemCaNhan : cpoDanhGia;
 
     if (!byMember.has(r.member_id)) {
       byMember.set(r.member_id, {
@@ -220,7 +212,6 @@ export async function listKpiTheoTask(
       ty_le_dong_gop: tyLeDongGop,
       cpo_danh_gia: cpoDanhGia,
       diem,
-      diem_goc: diemGoc,
     });
   }
 

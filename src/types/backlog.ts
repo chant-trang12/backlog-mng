@@ -223,13 +223,12 @@ export interface KpiTheoTaskTaskEntry {
   nhiem_vu: string;
   team: string;
   phan_loai: string | null;
+  // Trường tham chiếu/hiển thị — KHÔNG còn dùng để tính diem (xem
+  // taskMember.service.ts#listKpiTheoTask).
   ty_le_dong_gop: number | null;
   cpo_danh_gia: number | null;
+  // diem_ca_nhan ghi đè (nếu có) hoặc thẳng % Đánh giá (cpo_danh_gia).
   diem: number | null;
-  // diem_ca_nhan ghi đè (nếu có) hoặc thẳng % Đánh giá (cpo_danh_gia), KHÔNG
-  // nhân tỷ lệ đóng góp — dùng cho "Điểm cá nhân (Tính theo task)" ở bảng
-  // Nhân sự, xem giải thích ở taskMember.service.ts#listKpiTheoTask.
-  diem_goc: number | null;
 }
 
 export interface KpiTheoTaskRow {
