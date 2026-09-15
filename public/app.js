@@ -31,6 +31,9 @@ const state = {
   chucVuOptions: [],
   heThongOptions: [],
   mucTieuOptions: [],
+  vaiTroOptions: [],
+  taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
+  taskMembers: [], // danh sách nhân sự của task đang mở dialog
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
   roadmapSearch: "",
@@ -199,6 +202,19 @@ const el = {
   addMucTieuBtn: document.getElementById("add-muctieu-btn"),
   mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
   mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
+  addVaiTroBtn: document.getElementById("add-vaitro-btn"),
+  vaiTroConfigTbody: document.getElementById("vaitro-config-tbody"),
+  vaiTroConfigEmpty: document.getElementById("vaitro-config-empty"),
+  taskMemberDialog: document.getElementById("task-member-dialog"),
+  taskMemberDialogTitle: document.getElementById("task-member-dialog-title"),
+  taskMemberDialogSub: document.getElementById("task-member-dialog-sub"),
+  taskMemberTbody: document.getElementById("task-member-tbody"),
+  taskMemberEmpty: document.getElementById("task-member-empty"),
+  taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
+  tmMember: document.getElementById("tm-member"),
+  tmVaiTro: document.getElementById("tm-vai-tro"),
+  tmGhiChu: document.getElementById("tm-ghi-chu"),
+  tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
   roadmapYearValue: document.getElementById("roadmap-year-value"),
   roadmapYearPrev: document.getElementById("roadmap-year-prev"),
@@ -1646,6 +1662,7 @@ function renderTasks() {
         <button class="small btn-delete delete-btn">Xóa</button>
         <button class="small btn-grade grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
+        <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này">👤 Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
       </div></td>
     </tr>`;
     })
@@ -1678,6 +1695,12 @@ function renderTasks() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openProgressDialog(state.tasks.find((t) => t.id === id));
+    });
+  });
+  el.taskTbody.querySelectorAll(".member-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      openTaskMemberDialog(state.tasks.find((t) => t.id === id));
     });
   });
   el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
@@ -2091,6 +2114,90 @@ el.progressForm.addEventListener("submit", async (e) => {
     showToast(err.message);
   }
 });
+
+// ---- Nhân sự tham gia task (quản lý sâu hơn: ai làm task này, vai trò gì —
+// VD 1 task dự án phần mềm có SM, PO, Dev, QA cùng tham gia) ----
+
+async function openTaskMemberDialog(task) {
+  if (!task) return;
+  state.taskMemberTaskId = task.id;
+  el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
+  el.taskMemberDialogSub.textContent = `Team ${task.team}`;
+  fillTaskMemberSelects();
+  await loadTaskMembers();
+  el.taskMemberDialog.showModal();
+}
+
+// Chọn nhân sự từ danh sách nhân sự đã khai báo của tháng đang xem (giống
+// nguồn dữ liệu ở trang Team & Nhân sự) — chọn vai trò từ danh mục Vai trò.
+function fillTaskMemberSelects() {
+  el.tmMember.innerHTML = state.members
+    .map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " — " + m.team_name : ""}</option>`)
+    .join("");
+  el.tmVaiTro.innerHTML =
+    `<option value="">— Không —</option>` +
+    state.vaiTroOptions.map((v) => `<option value="${v.ten_vai_tro}">${v.ten_vai_tro}</option>`).join("");
+}
+
+async function loadTaskMembers() {
+  if (!state.taskMemberTaskId) return;
+  state.taskMembers = await api(`/api/tasks/${state.taskMemberTaskId}/members`);
+  renderTaskMembers();
+}
+
+function renderTaskMembers() {
+  el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
+  el.taskMemberTbody.innerHTML = state.taskMembers
+    .map(
+      (tm) => `
+    <tr data-id="${tm.id}">
+      <td>${tm.member_name}</td>
+      <td>${tm.vai_tro ? `<span class="status-badge status-default">${tm.vai_tro}</span>` : ""}</td>
+      <td>${tm.ghi_chu ?? ""}</td>
+      <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
+    </tr>`,
+    )
+    .join("");
+
+  el.taskMemberTbody.querySelectorAll(".tm-del-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!(await confirmDialog("Bỏ nhân sự này khỏi task?", { danger: false }))) return;
+      try {
+        await api(`/api/task-members/${btn.dataset.id}`, { method: "DELETE" });
+        await loadTaskMembers();
+        await loadTasks(); // cập nhật lại số đếm ở nút "👤 Nhân sự (N)"
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+el.tmAddBtn.addEventListener("click", async () => {
+  const memberId = Number(el.tmMember.value);
+  if (!memberId) {
+    showToast("Chưa có nhân sự nào để thêm — khai báo nhân sự cho tháng này ở tab Team & Nhân sự trước.");
+    return;
+  }
+  try {
+    await api(`/api/tasks/${state.taskMemberTaskId}/members`, {
+      method: "POST",
+      body: JSON.stringify({
+        member_id: memberId,
+        vai_tro: el.tmVaiTro.value || undefined,
+        ghi_chu: el.tmGhiChu.value.trim() || undefined,
+      }),
+    });
+    el.tmGhiChu.value = "";
+    await loadTaskMembers();
+    await loadTasks();
+    showToast("Đã thêm nhân sự.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+el.taskMemberCloseBtn.addEventListener("click", () => el.taskMemberDialog.close());
 
 // ---- Export ----
 
@@ -4175,6 +4282,19 @@ el.addMucTieuBtn.addEventListener("click", async () => {
   }
 });
 
+async function loadVaiTro() {
+  state.vaiTroOptions = await api("/api/vai-tro");
+  renderSimpleCatalog(el.vaiTroConfigTbody, el.vaiTroConfigEmpty, state.vaiTroOptions, "ten_vai_tro", "/api/vai-tro", loadVaiTro, "vai trò");
+}
+el.addVaiTroBtn.addEventListener("click", async () => {
+  try {
+    await api("/api/vai-tro", { method: "POST", body: JSON.stringify({ ten_vai_tro: "Vai trò mới" }) });
+    await loadVaiTro();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // ---- Roadmap năm (theo phòng ban + năm) ----
 
 // 1 năm 4 quý, 3 tháng = 1 quý — suy ra từ Thời gian kết thúc.
@@ -5517,6 +5637,7 @@ async function checkAuth() {
         loadDepartmentConfig(),
         loadHeThong(),
         loadMucTieu(),
+        loadVaiTro(),
         loadRoadmap(),
       ]),
     )

@@ -403,3 +403,19 @@ export interface UpdateMucTieuInput {
   ten_muc_tieu?: string;
   thu_tu?: number;
 }
+
+// Danh mục Vai trò (PM/SM, PO, BA, Dev, QA/Tester...) — dùng khi gán nhân sự
+// tham gia 1 task ở Backlog.
+export interface VaiTroOption {
+  id: number;
+  ten_vai_tro: string;
+  thu_tu: number;
+  created_at: string;
+}
+export interface CreateVaiTroInput {
+  ten_vai_tro: string;
+}
+export interface UpdateVaiTroInput {
+  ten_vai_tro?: string;
+  thu_tu?: number;
+}

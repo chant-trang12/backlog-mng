@@ -56,7 +56,7 @@ export async function listTasks(filter: {
   period_id: number;
   team?: string;
   department_id?: number | null;
-}): Promise<Task[]> {
+}): Promise<(Task & { member_count: number })[]> {
   const query = db("tasks").where({ period_id: filter.period_id });
   if (filter.team) {
     query.where({ team: filter.team });
@@ -64,8 +64,21 @@ export async function listTasks(filter: {
   if (filter.department_id != null) {
     query.where({ department_id: filter.department_id });
   }
-  const rows = await query.orderBy("stt", "asc");
-  return rows as Task[];
+  const rows = (await query.orderBy("stt", "asc")) as Task[];
+  if (rows.length === 0) return [];
+
+  // Đếm số nhân sự tham gia mỗi task (gộp theo task_id) — 1 query duy nhất
+  // thay vì N+1, gắn vào từng dòng ở phía JS thay vì subquery tương quan để
+  // an toàn cho cả 2 engine (SQLite/MSSQL) đang hỗ trợ.
+  const counts = await db("task_members")
+    .whereIn("task_id", rows.map((t) => t.id))
+    .groupBy("task_id")
+    .select("task_id")
+    .count({ c: "*" });
+  const countMap = new Map<number, number>(
+    counts.map((r: any) => [Number(r.task_id), Number(r.c)]),
+  );
+  return rows.map((t) => ({ ...t, member_count: countMap.get(t.id) ?? 0 }));
 }
 
 export async function getTask(id: number): Promise<Task | undefined> {

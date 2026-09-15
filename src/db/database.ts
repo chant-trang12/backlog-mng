@@ -533,6 +533,39 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 29. vai_tro_options — danh mục Vai trò (PM/SM, PO, BA, Dev, QA...),
+    // dùng khi gán nhân sự tham gia 1 task ở Backlog.
+    if (!(await db.schema.hasTable("vai_tro_options"))) {
+      await db.schema.createTable("vai_tro_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_vai_tro", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+    const vaiTroCountRes = await db("vai_tro_options").count({ c: "*" }).first();
+    if (Number((vaiTroCountRes as any)?.c ?? 0) === 0) {
+      const seed = ["PM/SM", "PO", "BA", "Dev", "QA/Tester", "Designer", "DevOps"];
+      for (let i = 0; i < seed.length; i++) {
+        await db("vai_tro_options").insert({ ten_vai_tro: seed[i], thu_tu: i });
+      }
+    }
+
+    // 30. task_members — nhân sự tham gia 1 task ở Backlog + vai trò (VD 1
+    // task dự án phần mềm có nhiều người: SM, PO, Dev, QA...). 1 nhân sự có
+    // thể tham gia 1 task với nhiều vai trò khác nhau (nhiều dòng).
+    if (!(await db.schema.hasTable("task_members"))) {
+      await db.schema.createTable("task_members", (table) => {
+        table.increments("id").primary();
+        table.integer("task_id").notNullable().references("id").inTable("tasks").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("CASCADE");
+        table.string("vai_tro", 255);
+        table.text("ghi_chu");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);

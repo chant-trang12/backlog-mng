@@ -446,6 +446,8 @@ button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
 button.btn-grade:hover { background: #c3d7b3; }
 button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
 button.btn-progress:hover { background: #b7d9ea; }
+button.btn-member { background: #e6dcf5; border-color: #cbb8e8; color: #5c3494; }
+button.btn-member:hover { background: #cbb8e8; }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }

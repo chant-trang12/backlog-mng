@@ -162,6 +162,24 @@ describe("Cấu hình: Tag & Phân loại", () => {
     expect((await request(app).post("/api/muc-tieu").send({})).status).toBe(400);
   });
 
+  it("creates, lists, updates, and deletes a vai trò option", async () => {
+    const app = createApp();
+    const created = await request(app).post("/api/vai-tro").send({ ten_vai_tro: "Test Vai trò A" });
+    expect(created.status).toBe(201);
+    const list = await request(app).get("/api/vai-tro");
+    expect(list.body.some((v: { id: number }) => v.id === created.body.id)).toBe(true);
+    const updated = await request(app)
+      .put(`/api/vai-tro/${created.body.id}`)
+      .send({ ten_vai_tro: "Test Vai trò A (sửa)" });
+    expect(updated.body.ten_vai_tro).toBe("Test Vai trò A (sửa)");
+    expect((await request(app).delete(`/api/vai-tro/${created.body.id}`)).status).toBe(204);
+  });
+
+  it("rejects vai trò missing name", async () => {
+    const app = createApp();
+    expect((await request(app).post("/api/vai-tro").send({})).status).toBe(400);
+  });
+
   it('bấm "+ Thêm nhóm" nhiều lần liên tiếp (tên mặc định trùng) không lỗi — tự thêm hậu tố', async () => {
     const app = createApp();
     const a = await request(app).post("/api/nhom").send({ ten_nhom: "Nhóm mới test" });

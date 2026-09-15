@@ -25,6 +25,12 @@ import {
   listMucTieuHandler,
   updateMucTieuHandler,
 } from "../controllers/muctieu.controller.js";
+import {
+  createVaiTroHandler,
+  deleteVaiTroHandler,
+  listVaiTroHandler,
+  updateVaiTroHandler,
+} from "../controllers/vaitro.controller.js";
 
 const router = Router();
 
@@ -57,5 +63,10 @@ router.get("/muc-tieu", listMucTieuHandler);
 router.post("/muc-tieu", createMucTieuHandler);
 router.put("/muc-tieu/:id", updateMucTieuHandler);
 router.delete("/muc-tieu/:id", deleteMucTieuHandler);
+
+router.get("/vai-tro", listVaiTroHandler);
+router.post("/vai-tro", createVaiTroHandler);
+router.put("/vai-tro/:id", updateVaiTroHandler);
+router.delete("/vai-tro/:id", deleteVaiTroHandler);
 
 export default router;
