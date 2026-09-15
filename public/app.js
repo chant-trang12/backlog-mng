@@ -1506,7 +1506,25 @@ function renderMemberTable() {
   });
 
   updateMemberSelectionUI();
+  syncMemberStickyOffsets();
 }
+
+// 3 cột đầu (checkbox/STT/Họ và Tên) của #member-table cố định khi cuộn
+// ngang (xem CSS "left: var(--member-col2-left...)") — đo ĐÚNG width thật
+// đã render của 2 cột đầu (table-layout: auto nên width khai ở HTML chỉ là
+// gợi ý, trình duyệt có thể co giãn khác đi) thay vì hard-code px, tránh hở
+// khoảng trắng/đè chồng giữa các cột cố định khi width thực tế lệch.
+function syncMemberStickyOffsets() {
+  const table = document.getElementById("member-table");
+  const th1 = table?.querySelector("thead th:nth-child(1)");
+  const th2 = table?.querySelector("thead th:nth-child(2)");
+  if (!table || !th1 || !th2) return;
+  const col2Left = th1.getBoundingClientRect().width;
+  const col3Left = col2Left + th2.getBoundingClientRect().width;
+  table.style.setProperty("--member-col2-left", `${col2Left}px`);
+  table.style.setProperty("--member-col3-left", `${col3Left}px`);
+}
+window.addEventListener("resize", () => syncMemberStickyOffsets());
 
 el.memberSearch.addEventListener("input", () => {
   state.memberSearch = el.memberSearch.value;

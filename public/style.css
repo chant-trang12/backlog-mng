@@ -734,11 +734,14 @@ th {
 }
 #member-table td:nth-child(1),
 #member-table th:nth-child(1) { left: 0; }
+/* --member-col2-left/--member-col3-left do JS đo width thật của 2 cột đầu
+   sau mỗi lần render (syncMemberStickyOffsets trong app.js) — 36px/96px chỉ
+   là giá trị dự phòng trước khi JS chạy lần đầu. */
 #member-table td:nth-child(2),
-#member-table th:nth-child(2) { left: 36px; }
+#member-table th:nth-child(2) { left: var(--member-col2-left, 36px); }
 #member-table td:nth-child(3),
 #member-table th:nth-child(3) {
-  left: 96px;
+  left: var(--member-col3-left, 96px);
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
 }
 
