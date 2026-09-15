@@ -4626,11 +4626,24 @@ async function refreshAfterDeptChange() {
   }
 }
 
-el.addDepartmentBtn.addEventListener("click", async () => {
-  const name = prompt("Tên phòng mới:");
-  if (!name || !name.trim()) return;
+el.addDepartmentBtn.addEventListener("click", () => {
+  document.getElementById("department-form").reset();
+  document.getElementById("department-dialog").showModal();
+});
+document.getElementById("department-cancel-btn").addEventListener("click", () => {
+  document.getElementById("department-dialog").close();
+});
+document.getElementById("department-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("department-name").value.trim();
+  const code = document.getElementById("department-code").value.trim();
+  if (!name) {
+    showToast("Tên phòng không được để trống.");
+    return;
+  }
   try {
-    await api("/api/departments", { method: "POST", body: JSON.stringify({ name: name.trim() }) });
+    await api("/api/departments", { method: "POST", body: JSON.stringify({ name, code: code || undefined }) });
+    document.getElementById("department-dialog").close();
     await loadDepartmentConfig();
     showToast("Đã thêm phòng.", "success");
   } catch (err) {

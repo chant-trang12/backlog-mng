@@ -1365,6 +1365,25 @@
     </form>
   </dialog>
 
+  <dialog id="department-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="department-form">
+      <h2 style="margin:0">Thêm phòng ban mới</h2>
+      <div>
+        <label for="department-name">Tên phòng</label>
+        <input id="department-name" required />
+      </div>
+      <div>
+        <label for="department-code">Mã phòng (không bắt buộc)</label>
+        <input id="department-code" />
+      </div>
+      <div class="actions">
+        <button type="button" id="department-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Thêm phòng</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="ticket-dialog">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <form id="ticket-form">
