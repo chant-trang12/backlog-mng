@@ -2284,7 +2284,7 @@ function renderTaskMembers() {
       </td>
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
-      <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
+      <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
     </tr>`;
     })
     .join("");
