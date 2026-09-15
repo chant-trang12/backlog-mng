@@ -907,7 +907,7 @@
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
             <div class="table-wrap">
               <table id="department-config-table">
-                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:140px"></th></tr></thead>
+                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:140px"></th></tr></thead>
                 <tbody id="department-config-tbody"></tbody>
               </table>
               <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>
@@ -917,9 +917,12 @@
           <section class="card" id="config-tab-tieuchi">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Tiêu chí</h2>
-              <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+              <div class="row">
+                <button id="clone-tieuchi-btn" class="small">Sao chép từ phòng khác</button>
+                <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+              </div>
             </div>
-            <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — dùng chung cho mọi tháng backlog. Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
+            <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — theo phòng ban đang xem (mỗi tiêu chí có thể dùng chung cho mọi phòng, hoặc riêng của đúng phòng này). Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
             <div class="table-wrap">
               <table id="tieuchi-table">
                 <thead>
@@ -927,13 +930,14 @@
                     <th style="min-width:140px">Nhóm</th>
                     <th style="min-width:180px">Tiêu chí</th>
                     <th style="min-width:280px">Cách tính điểm</th>
+                    <th style="min-width:130px">Phạm vi</th>
                     <th style="min-width:170px"></th>
                   </tr>
                 </thead>
                 <tbody id="tieuchi-tbody"></tbody>
                 <tfoot>
                   <tr id="tieuchi-tongdiem-row">
-                    <td colspan="3" style="font-weight:600">Tổng điểm</td>
+                    <td colspan="4" style="font-weight:600">Tổng điểm</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1294,9 +1298,32 @@
       <div>
         <label><input type="checkbox" id="tc-co-chi-tieu" style="width:auto" /> Có dòng "Chỉ tiêu" riêng (VD: tỷ lệ mục tiêu %)</label>
       </div>
+      <div>
+        <label><input type="checkbox" id="tc-dung-chung" style="width:auto" /> Dùng chung cho tất cả phòng ban</label>
+        <p class="muted" style="margin:4px 0 0">Bỏ chọn để tiêu chí này chỉ riêng phòng đang xem mới thấy.</p>
+      </div>
       <div class="actions">
         <button type="button" id="tieuchi-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Sao chép toàn bộ tiêu chí "thấy được" của 1 phòng khác thành tiêu chí
+       riêng mới của phòng đang xem — bộ khởi điểm nhanh cho phòng có tiêu
+       chí "gần giống" phòng khác thay vì gõ lại từ đầu. -->
+  <dialog id="clone-tieuchi-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="clone-tieuchi-form">
+      <h2 style="margin:0">Sao chép tiêu chí từ phòng khác</h2>
+      <p class="muted" style="margin:0">Các tiêu chí <strong>riêng</strong> của phòng nguồn (không gồm tiêu chí dùng chung — phòng đang xem đã tự thấy sẵn rồi) sẽ được sao chép thành tiêu chí riêng mới của phòng đang xem — bỏ qua tiêu chí trùng nhóm + tên đã có sẵn. Điểm chuẩn/chỉ tiêu theo team không được sao chép (team của 2 phòng khác nhau), cần nhập lại.</p>
+      <div>
+        <label for="clone-tieuchi-from">Sao chép từ phòng</label>
+        <select id="clone-tieuchi-from" required></select>
+      </div>
+      <div class="actions">
+        <button type="button" id="clone-tieuchi-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Sao chép</button>
       </div>
     </form>
   </dialog>

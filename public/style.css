@@ -1044,6 +1044,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .phan-loai-ns-chinh { background: var(--success); color: #fff; }
 .phan-loai-ns-hotro { background: #d6ebf5; color: #1f5f80; }
 
+/* Bảng Tiêu chí — badge "Riêng phòng này" (tiêu chí chỉ phòng đang xem mới
+   có, xem listTieuChiConfigs trong tieuchi.service.ts). */
+.tieuchi-scope-rieng { background: #d6ebf5; color: #1f5f80; }
+
 /* Select "Phân loại" trong bảng nhân sự tham gia task — trông như badge
    (bo tròn, không viền) nhưng vẫn là <select> để đổi trực tiếp trên bảng,
    không cần mở lại form riêng. */

@@ -91,4 +91,134 @@ describe("Cấu hình: Tiêu chí", () => {
     const res = await request(app).post("/api/tieu-chi").send({ ten_tieu_chi: "X" });
     expect(res.status).toBe(400);
   });
+
+  describe("Tiêu chí theo phòng ban (dùng chung / riêng từng phòng)", () => {
+    async function makeDept(app: ReturnType<typeof createApp>, name: string) {
+      const res = await request(app).post("/api/departments").send({ name });
+      return res.body.id as number;
+    }
+
+    it("mặc định (không gửi department_id) -> tiêu chí dùng chung, mọi phòng đều thấy", async () => {
+      const app = createApp();
+      const deptA = await makeDept(app, "TC Phòng A");
+      const deptB = await makeDept(app, "TC Phòng B");
+
+      const created = await request(app)
+        .post("/api/tieu-chi")
+        .send({ nhom: "Khách hàng", ten_tieu_chi: "TC Dùng chung mặc định" });
+      expect(created.body.department_id).toBeNull();
+
+      const listA = await request(app).get(`/api/tieu-chi?department_id=${deptA}`);
+      const listB = await request(app).get(`/api/tieu-chi?department_id=${deptB}`);
+      expect(listA.body.some((c: { id: number }) => c.id === created.body.id)).toBe(true);
+      expect(listB.body.some((c: { id: number }) => c.id === created.body.id)).toBe(true);
+
+      await request(app).delete(`/api/tieu-chi/${created.body.id}`);
+    });
+
+    it("tiêu chí riêng (dung_chung=false) của phòng A -> phòng B không thấy", async () => {
+      const app = createApp();
+      const deptA = await makeDept(app, "TC Phòng A2");
+      const deptB = await makeDept(app, "TC Phòng B2");
+
+      const created = await request(app)
+        .post("/api/tieu-chi")
+        .send({
+          nhom: "Vận hành",
+          ten_tieu_chi: "TC Riêng phòng A",
+          dung_chung: false,
+          department_id: deptA,
+        });
+      expect(created.body.department_id).toBe(deptA);
+
+      const listA = await request(app).get(`/api/tieu-chi?department_id=${deptA}`);
+      const listB = await request(app).get(`/api/tieu-chi?department_id=${deptB}`);
+      expect(listA.body.some((c: { id: number }) => c.id === created.body.id)).toBe(true);
+      expect(listB.body.some((c: { id: number }) => c.id === created.body.id)).toBe(false);
+
+      await request(app).delete(`/api/tieu-chi/${created.body.id}`);
+    });
+
+    it("phòng tắt dung_tieu_chi_chung -> chỉ thấy tiêu chí riêng, không còn thấy tiêu chí dùng chung", async () => {
+      const app = createApp();
+      const deptC = await makeDept(app, "TC Phòng C khác hẳn");
+
+      const shared = await request(app)
+        .post("/api/tieu-chi")
+        .send({ nhom: "Khách hàng", ten_tieu_chi: "TC Dùng chung 2" });
+      const own = await request(app)
+        .post("/api/tieu-chi")
+        .send({ nhom: "Khách hàng", ten_tieu_chi: "TC Riêng của C", dung_chung: false, department_id: deptC });
+
+      const beforeToggle = await request(app).get(`/api/tieu-chi?department_id=${deptC}`);
+      expect(beforeToggle.body.some((c: { id: number }) => c.id === shared.body.id)).toBe(true);
+      expect(beforeToggle.body.some((c: { id: number }) => c.id === own.body.id)).toBe(true);
+
+      const toggled = await request(app).put(`/api/departments/${deptC}`).send({ dung_tieu_chi_chung: false });
+      expect(toggled.body.dung_tieu_chi_chung).toBe(false);
+
+      const afterToggle = await request(app).get(`/api/tieu-chi?department_id=${deptC}`);
+      expect(afterToggle.body.some((c: { id: number }) => c.id === shared.body.id)).toBe(false);
+      expect(afterToggle.body.some((c: { id: number }) => c.id === own.body.id)).toBe(true);
+
+      await request(app).delete(`/api/tieu-chi/${shared.body.id}`);
+      await request(app).delete(`/api/tieu-chi/${own.body.id}`);
+    });
+
+    it("sao chép tiêu chí từ phòng khác -> tạo bản riêng mới của phòng đích, bỏ qua trùng nhóm+tên", async () => {
+      const app = createApp();
+      const deptSrc = await makeDept(app, "TC Phòng nguồn");
+      const deptDst = await makeDept(app, "TC Phòng đích");
+
+      const c1 = await request(app)
+        .post("/api/tieu-chi")
+        .send({ nhom: "Vận hành", ten_tieu_chi: "TC Clone 1", dung_chung: false, department_id: deptSrc });
+      const c2 = await request(app)
+        .post("/api/tieu-chi")
+        .send({ nhom: "Vận hành", ten_tieu_chi: "TC Clone 2", dung_chung: false, department_id: deptSrc });
+
+      const clone1 = await request(app)
+        .post("/api/tieu-chi/clone")
+        .send({ from_department_id: deptSrc, to_department_id: deptDst });
+      expect(clone1.status).toBe(201);
+      expect(clone1.body.cloned).toBe(2);
+
+      const listDst = await request(app).get(`/api/tieu-chi?department_id=${deptDst}`);
+      const namesDst = listDst.body.map((c: { ten_tieu_chi: string }) => c.ten_tieu_chi);
+      expect(namesDst).toEqual(expect.arrayContaining(["TC Clone 1", "TC Clone 2"]));
+      // Bản sao là RIÊNG của phòng đích, không phải dùng chung.
+      listDst.body
+        .filter((c: { ten_tieu_chi: string }) => c.ten_tieu_chi.startsWith("TC Clone"))
+        .forEach((c: { department_id: number }) => expect(c.department_id).toBe(deptDst));
+
+      // Sao chép lại lần 2 -> không tạo trùng (đã có sẵn ở phòng đích).
+      const clone2 = await request(app)
+        .post("/api/tieu-chi/clone")
+        .send({ from_department_id: deptSrc, to_department_id: deptDst });
+      expect(clone2.body.cloned).toBe(0);
+
+      const listDstAfter = await request(app).get(`/api/tieu-chi?department_id=${deptDst}`);
+      const cloneCount = listDstAfter.body.filter((c: { ten_tieu_chi: string }) => c.ten_tieu_chi.startsWith("TC Clone")).length;
+      expect(cloneCount).toBe(2); // vẫn đúng 2, không nhân đôi
+
+      const idsToDelete = [
+        c1.body.id,
+        c2.body.id,
+        ...listDstAfter.body.filter((c: { ten_tieu_chi: string }) => c.ten_tieu_chi.startsWith("TC Clone") && c.department_id === deptDst).map((c: { id: number }) => c.id),
+      ];
+      for (const id of idsToDelete) {
+        await request(app).delete(`/api/tieu-chi/${id}`);
+      }
+    });
+
+    it("rejects clone khi thiếu tham số hoặc phòng nguồn = phòng đích", async () => {
+      const app = createApp();
+      const dept = await makeDept(app, "TC Phòng tự sao chép");
+      expect((await request(app).post("/api/tieu-chi/clone").send({})).status).toBe(400);
+      expect(
+        (await request(app).post("/api/tieu-chi/clone").send({ from_department_id: dept, to_department_id: dept }))
+          .status,
+      ).toBe(400);
+    });
+  });
 });

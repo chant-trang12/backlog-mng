@@ -23,8 +23,12 @@ export async function createDepartmentHandler(req: Request, res: Response) {
 export async function updateDepartmentHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const { name, code } = req.body ?? {};
-  const department = await updateDepartment(id, { name, code });
+  const { name, code, dung_tieu_chi_chung } = req.body ?? {};
+  const department = await updateDepartment(id, {
+    name,
+    code,
+    dung_tieu_chi_chung: dung_tieu_chi_chung !== undefined ? Boolean(dung_tieu_chi_chung) : undefined,
+  });
   if (!department) return res.status(404).json({ error: "Không tìm thấy phòng" });
   res.json(department);
 }

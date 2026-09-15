@@ -218,6 +218,8 @@ export interface UpsertDanhGiaEntry {
 
 // Trang Cấu hình, tab Tiêu chí — cấu hình tiêu chí + công thức tính điểm cho
 // team, dùng chung mọi tháng backlog. Điểm chuẩn/chỉ tiêu lưu theo team_name.
+// department_id null = tiêu chí DÙNG CHUNG cho mọi phòng; có giá trị = tiêu
+// chí RIÊNG của đúng 1 phòng (xem listTieuChiConfigs() ở tieuchi.service.ts).
 export interface TieuChiConfig {
   id: number;
   nhom: string;
@@ -225,6 +227,7 @@ export interface TieuChiConfig {
   cach_tinh_diem: string | null;
   co_chi_tieu: boolean;
   thu_tu: number;
+  department_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -245,6 +248,7 @@ export interface CreateTieuChiConfigInput {
   cach_tinh_diem?: string;
   co_chi_tieu?: boolean;
   thu_tu?: number;
+  department_id?: number | null;
 }
 
 export interface UpdateTieuChiConfigInput {
@@ -253,6 +257,7 @@ export interface UpdateTieuChiConfigInput {
   cach_tinh_diem?: string;
   co_chi_tieu?: boolean;
   thu_tu?: number;
+  department_id?: number | null;
 }
 
 // Trang Cấu hình, tab Ranking team — bảng tự do: hàng = vị trí xếp hạng, cột

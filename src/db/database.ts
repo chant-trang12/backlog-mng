@@ -397,6 +397,15 @@ export async function initDatabase(): Promise<void> {
       ]);
     }
 
+    // departments.dung_tieu_chi_chung — phòng này có dùng chung danh mục
+    // Tiêu chí (department_id NULL, xem bên dưới) không, hay CHỈ dùng đúng
+    // tiêu chí riêng của mình. Mặc định bật (true) để hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("departments", "dung_tieu_chi_chung"))) {
+      await db.schema.alterTable("departments", (table) => {
+        table.integer("dung_tieu_chi_chung").notNullable().defaultTo(1);
+      });
+    }
+
     const firstDept = await db("departments").orderBy("thu_tu", "asc").first();
     const firstDeptId = Number((firstDept as any)?.id ?? 1);
 
@@ -424,6 +433,18 @@ export async function initDatabase(): Promise<void> {
           .where({ id: (t as any).id })
           .update({ department_id: Number((team as any)?.department_id ?? firstDeptId) });
       }
+    }
+
+    // tieu_chi_configs.department_id — NULL = tiêu chí DÙNG CHUNG cho mọi
+    // phòng (giữ nguyên hành vi cũ: toàn bộ tiêu chí có sẵn đều để NULL khi
+    // thêm cột này, không phòng nào bị mất tiêu chí đang dùng); có giá trị =
+    // tiêu chí RIÊNG của đúng 1 phòng đó. 1 phòng "thấy" được: tiêu chí dùng
+    // chung (nếu departments.dung_tieu_chi_chung = true) + tiêu chí riêng
+    // của chính phòng đó — xem listTieuChiConfigs() ở tieuchi.service.ts.
+    if (!(await db.schema.hasColumn("tieu_chi_configs", "department_id"))) {
+      await db.schema.alterTable("tieu_chi_configs", (table) => {
+        table.integer("department_id").references("id").inTable("departments").onDelete("CASCADE");
+      });
     }
 
     // tasks: thời điểm chấm điểm + snapshot đánh giá của tháng trước (giữ lại

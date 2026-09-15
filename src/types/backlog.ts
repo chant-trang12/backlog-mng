@@ -18,6 +18,9 @@ export interface Department {
   name: string;
   code: string | null;
   thu_tu: number;
+  // Phòng này có dùng chung danh mục Tiêu chí (department_id NULL) hay CHỈ
+  // dùng đúng tiêu chí riêng của mình — xem tieuchi.service.ts.
+  dung_tieu_chi_chung: boolean;
   created_at: string;
 }
 

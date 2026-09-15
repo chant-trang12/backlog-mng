@@ -181,6 +181,10 @@ const el = {
   tieuChiDialogTitle: document.getElementById("tieuchi-dialog-title"),
   tieuChiForm: document.getElementById("tieuchi-form"),
   tieuChiCancelBtn: document.getElementById("tieuchi-cancel-btn"),
+  cloneTieuChiBtn: document.getElementById("clone-tieuchi-btn"),
+  cloneTieuChiDialog: document.getElementById("clone-tieuchi-dialog"),
+  cloneTieuChiForm: document.getElementById("clone-tieuchi-form"),
+  cloneTieuChiCancelBtn: document.getElementById("clone-tieuchi-cancel-btn"),
   addRankingColumnBtn: document.getElementById("add-ranking-column-btn"),
   addRankingRowBtn: document.getElementById("add-ranking-row-btn"),
   rankingTheadRow: document.getElementById("ranking-thead-row"),
@@ -683,6 +687,7 @@ async function selectDepartment(id) {
     await loadTeams(); // kéo theo loadTasks()
     await loadMembers();
     await loadRoadmap();
+    await loadTieuChi(); // tiêu chí "thấy được" khác nhau theo từng phòng
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -3794,7 +3799,7 @@ el.creationRateForm.addEventListener("submit", async (e) => {
 // loadTeams), không cần tải lại dữ liệu tiêu chí.
 
 async function loadTieuChi() {
-  state.tieuChiConfigs = await api("/api/tieu-chi");
+  state.tieuChiConfigs = await api(`/api/tieu-chi${deptParam("?")}`);
   renderTieuChi();
   renderHomeDashboard();
 }
@@ -3809,6 +3814,7 @@ function renderTieuChi() {
     <th style="min-width:140px">Nhóm</th>
     <th style="min-width:180px">Tiêu chí</th>
     <th style="min-width:280px">Cách tính điểm</th>
+    <th style="min-width:130px">Phạm vi</th>
     ${teamHeaderCells}
     <th style="min-width:170px"></th>`;
 
@@ -3823,11 +3829,19 @@ function renderTieuChi() {
           return `<td><input class="inline-cell-input tieuchi-diem-chuan-input" data-tieu-chi-id="${c.id}" data-team="${name}" value="${value}" /></td>`;
         })
         .join("");
+      // Phạm vi: department_id null = tiêu chí dùng chung mọi phòng; có giá
+      // trị = tiêu chí riêng — vì listTieuChiConfigs() chỉ trả về tiêu chí
+      // riêng của ĐÚNG phòng đang xem nên ở đây luôn là "của phòng này".
+      const scopeBadge =
+        c.department_id == null
+          ? `<span class="status-badge status-default">Dùng chung</span>`
+          : `<span class="status-badge tieuchi-scope-rieng">Riêng phòng này</span>`;
       const mainRow = `
     <tr data-id="${c.id}">
       <td><span class="status-badge ${nhomColorClass(c.nhom)}">${c.nhom}</span></td>
       <td>${c.ten_tieu_chi}</td>
       <td style="white-space:pre-wrap">${c.cach_tinh_diem ?? ""}</td>
+      <td>${scopeBadge}</td>
       ${mainCells}
       <td><div class="actions-cell">
         <button class="small btn-edit edit-tieuchi-btn">Sửa</button>
@@ -3845,7 +3859,7 @@ function renderTieuChi() {
         .join("");
       const chiTieuRow = `
     <tr class="tieuchi-chitieu-row" data-id="${c.id}">
-      <td colspan="3"><em>Chỉ tiêu</em></td>
+      <td colspan="4"><em>Chỉ tiêu</em></td>
       ${chiTieuCells}
       <td></td>
     </tr>`;
@@ -3866,7 +3880,7 @@ function renderTieuChi() {
     })
     .join("");
   el.tieuChiTongDiemRow.innerHTML = `
-    <td colspan="3" style="font-weight:600">Tổng điểm</td>
+    <td colspan="4" style="font-weight:600">Tổng điểm</td>
     ${tongDiemCells}
     <td></td>`;
 
@@ -3905,7 +3919,7 @@ async function saveTieuChiDiemChuan(tieuChiId, teamName) {
     `.tieuchi-chi-tieu-input[data-tieu-chi-id="${tieuChiId}"][data-team="${teamName}"]`,
   );
   try {
-    const updated = await api(`/api/tieu-chi/${tieuChiId}/diem-chuan`, {
+    const updated = await api(`/api/tieu-chi/${tieuChiId}/diem-chuan${deptParam("?")}`, {
       method: "PUT",
       body: JSON.stringify({
         team_name: teamName,
@@ -3935,6 +3949,10 @@ function openTieuChiDialog(config) {
   document.getElementById("tc-ten").value = config?.ten_tieu_chi ?? "";
   document.getElementById("tc-cach-tinh").value = config?.cach_tinh_diem ?? "";
   document.getElementById("tc-co-chi-tieu").checked = Boolean(config?.co_chi_tieu);
+  // Thêm mới: mặc định KHÔNG dùng chung (riêng phòng đang xem) — dùng chung
+  // là hành động chủ động, không phải mặc định. Sửa: giữ đúng phạm vi hiện
+  // có của tiêu chí đó.
+  document.getElementById("tc-dung-chung").checked = config ? config.department_id == null : false;
   el.tieuChiDialog.showModal();
 }
 
@@ -3948,6 +3966,8 @@ el.tieuChiForm.addEventListener("submit", async (e) => {
     ten_tieu_chi: document.getElementById("tc-ten").value.trim(),
     cach_tinh_diem: document.getElementById("tc-cach-tinh").value.trim() || undefined,
     co_chi_tieu: document.getElementById("tc-co-chi-tieu").checked,
+    dung_chung: document.getElementById("tc-dung-chung").checked,
+    department_id: state.currentDepartmentId,
   };
   try {
     if (id) {
@@ -3961,6 +3981,38 @@ el.tieuChiForm.addEventListener("submit", async (e) => {
       await loadTieuChi();
       showToast("Đã thêm tiêu chí.", "success");
     }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Sao chép tiêu chí từ 1 phòng khác thành tiêu chí riêng của phòng đang
+// xem — bộ khởi điểm nhanh cho phòng có tiêu chí "gần giống" phòng khác.
+el.cloneTieuChiBtn.addEventListener("click", () => {
+  const fromSelect = document.getElementById("clone-tieuchi-from");
+  const others = state.departments.filter((d) => d.id !== state.currentDepartmentId);
+  if (others.length === 0) {
+    showToast("Chưa có phòng ban nào khác để sao chép tiêu chí.");
+    return;
+  }
+  fromSelect.innerHTML = others.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
+  el.cloneTieuChiDialog.showModal();
+});
+el.cloneTieuChiCancelBtn.addEventListener("click", () => el.cloneTieuChiDialog.close());
+el.cloneTieuChiForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fromDepartmentId = Number(document.getElementById("clone-tieuchi-from").value);
+  try {
+    const result = await api("/api/tieu-chi/clone", {
+      method: "POST",
+      body: JSON.stringify({ from_department_id: fromDepartmentId, to_department_id: state.currentDepartmentId }),
+    });
+    el.cloneTieuChiDialog.close();
+    await loadTieuChi();
+    showToast(
+      result.cloned > 0 ? `Đã sao chép ${result.cloned} tiêu chí.` : "Không có tiêu chí mới để sao chép (đã có sẵn hết).",
+      "success",
+    );
   } catch (err) {
     showToast(err.message);
   }
@@ -4389,6 +4441,7 @@ function renderDepartmentConfig(allTeams) {
       <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" title="${d.name}" style="width:100%;text-align:left" /></td>
       <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" title="${d.code ?? ""}" style="width:100%" /></td>
       <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
+      <td style="text-align:center"><input type="checkbox" class="dept-dung-tieuchi-chung-input" data-id="${d.id}" ${d.dung_tieu_chi_chung ? "checked" : ""} title="Bỏ chọn để phòng này chỉ dùng tiêu chí riêng, không thấy tiêu chí dùng chung" /></td>
       <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
     </tr>`,
     )
@@ -4427,6 +4480,22 @@ function renderDepartmentConfig(allTeams) {
       save(input.dataset.id, { code: input.value.trim() });
     });
   });
+  el.departmentConfigTbody.querySelectorAll(".dept-dung-tieuchi-chung-input").forEach((checkbox) => {
+    checkbox.addEventListener("change", async () => {
+      const nextValue = checkbox.checked;
+      try {
+        await api(`/api/departments/${checkbox.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ dung_tieu_chi_chung: nextValue }),
+        });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+      } catch (err) {
+        showToast(err.message);
+        checkbox.checked = !nextValue; // revert đúng thuộc tính checked, không phải value
+      }
+    });
+  });
   el.departmentConfigTbody.querySelectorAll(".delete-dept-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!await confirmDialog("Xóa phòng này? Chỉ xóa được khi phòng không còn team nào.")) return;
@@ -4457,6 +4526,7 @@ async function refreshAfterDeptChange() {
     await loadTeams();
     await loadMembers();
     await loadRoadmap();
+    await loadTieuChi(); // dung_tieu_chi_chung có thể vừa đổi -> tiêu chí thấy được cũng đổi theo
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
