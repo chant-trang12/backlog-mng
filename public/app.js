@@ -31,7 +31,6 @@ const state = {
   chucVuOptions: [],
   heThongOptions: [],
   mucTieuOptions: [],
-  vaiTroOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
   roadmapItems: [],
@@ -202,9 +201,6 @@ const el = {
   addMucTieuBtn: document.getElementById("add-muctieu-btn"),
   mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
   mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
-  addVaiTroBtn: document.getElementById("add-vaitro-btn"),
-  vaiTroConfigTbody: document.getElementById("vaitro-config-tbody"),
-  vaiTroConfigEmpty: document.getElementById("vaitro-config-empty"),
   taskMemberDialog: document.getElementById("task-member-dialog"),
   taskMemberDialogTitle: document.getElementById("task-member-dialog-title"),
   taskMemberDialogSub: document.getElementById("task-member-dialog-sub"),
@@ -212,7 +208,6 @@ const el = {
   taskMemberEmpty: document.getElementById("task-member-empty"),
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
   tmMember: document.getElementById("tm-member"),
-  tmVaiTro: document.getElementById("tm-vai-tro"),
   tmGhiChu: document.getElementById("tm-ghi-chu"),
   tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
@@ -2123,26 +2118,29 @@ async function openTaskMemberDialog(task) {
   state.taskMemberTaskId = task.id;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
   el.taskMemberDialogSub.textContent = `Team ${task.team}`;
-  fillTaskMemberSelects();
   await loadTaskMembers();
   el.taskMemberDialog.showModal();
 }
 
 // Chọn nhân sự từ danh sách nhân sự đã khai báo của tháng đang xem (giống
-// nguồn dữ liệu ở trang Team & Nhân sự) — chọn vai trò từ danh mục Vai trò.
-function fillTaskMemberSelects() {
-  el.tmMember.innerHTML = state.members
-    .map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " — " + m.team_name : ""}</option>`)
-    .join("");
-  el.tmVaiTro.innerHTML =
-    `<option value="">— Không —</option>` +
-    state.vaiTroOptions.map((v) => `<option value="${v.ten_vai_tro}">${v.ten_vai_tro}</option>`).join("");
+// nguồn dữ liệu ở trang Team & Nhân sự) — bớt các nhân sự đã gán vào task
+// này rồi (1 người chỉ tham gia 1 lần / task, "vai trò" hiển thị ở bảng bên
+// trên lấy thẳng theo Chức vụ có sẵn của người đó, không chọn riêng ở đây).
+function fillTaskMemberSelect() {
+  const assignedIds = new Set(state.taskMembers.map((tm) => tm.member_id));
+  const available = state.members.filter((m) => !assignedIds.has(m.id));
+  el.tmMember.innerHTML = available.length
+    ? available
+        .map((m) => `<option value="${m.id}">${m.name}${m.chuc_vu ? " — " + m.chuc_vu : ""}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`)
+        .join("")
+    : `<option value="">— Đã gán hết nhân sự —</option>`;
 }
 
 async function loadTaskMembers() {
   if (!state.taskMemberTaskId) return;
   state.taskMembers = await api(`/api/tasks/${state.taskMemberTaskId}/members`);
   renderTaskMembers();
+  fillTaskMemberSelect();
 }
 
 function renderTaskMembers() {
@@ -2152,7 +2150,7 @@ function renderTaskMembers() {
       (tm) => `
     <tr data-id="${tm.id}">
       <td>${tm.member_name}</td>
-      <td>${tm.vai_tro ? `<span class="status-badge status-default">${tm.vai_tro}</span>` : ""}</td>
+      <td>${tm.member_chuc_vu ? `<span class="status-badge status-default">${tm.member_chuc_vu}</span>` : ""}</td>
       <td>${tm.ghi_chu ?? ""}</td>
       <td><span class="pill-x tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</span></td>
     </tr>`,
@@ -2184,7 +2182,6 @@ el.tmAddBtn.addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({
         member_id: memberId,
-        vai_tro: el.tmVaiTro.value || undefined,
         ghi_chu: el.tmGhiChu.value.trim() || undefined,
       }),
     });
@@ -4282,19 +4279,6 @@ el.addMucTieuBtn.addEventListener("click", async () => {
   }
 });
 
-async function loadVaiTro() {
-  state.vaiTroOptions = await api("/api/vai-tro");
-  renderSimpleCatalog(el.vaiTroConfigTbody, el.vaiTroConfigEmpty, state.vaiTroOptions, "ten_vai_tro", "/api/vai-tro", loadVaiTro, "vai trò");
-}
-el.addVaiTroBtn.addEventListener("click", async () => {
-  try {
-    await api("/api/vai-tro", { method: "POST", body: JSON.stringify({ ten_vai_tro: "Vai trò mới" }) });
-    await loadVaiTro();
-  } catch (err) {
-    showToast(err.message);
-  }
-});
-
 // ---- Roadmap năm (theo phòng ban + năm) ----
 
 // 1 năm 4 quý, 3 tháng = 1 quý — suy ra từ Thời gian kết thúc.
@@ -5637,7 +5621,6 @@ async function checkAuth() {
         loadDepartmentConfig(),
         loadHeThong(),
         loadMucTieu(),
-        loadVaiTro(),
         loadRoadmap(),
       ]),
     )

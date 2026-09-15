@@ -1056,21 +1056,6 @@
 
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
-                <h2 style="margin:0">Vai trò</h2>
-                <button id="add-vaitro-btn" class="primary">+ Thêm vai trò</button>
-              </div>
-              <p class="muted" style="margin:12px 0">Danh sách Vai trò (VD: PM/SM, PO, BA, Dev, QA…) — dùng khi gán nhân sự tham gia 1 task ở Backlog.</p>
-              <div class="table-wrap">
-                <table id="vaitro-config-table">
-                  <thead><tr><th>Vai trò</th><th style="width:56px"></th></tr></thead>
-                  <tbody id="vaitro-config-tbody"></tbody>
-                </table>
-                <p class="muted" id="vaitro-config-empty" hidden style="padding:16px;text-align:center">Chưa có vai trò nào — bấm "+ Thêm vai trò" để bắt đầu.</p>
-              </div>
-            </section>
-
-            <section class="card row-split-equal">
-              <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Team</h2>
               </div>
               <p class="muted" style="margin:12px 0">Team khai báo <strong>theo từng tháng</strong> — mỗi tháng có danh sách riêng, số lượng có thể khác nhau. Tháng mới kế thừa từ tháng gần nhất; xóa team sẽ xóa nhân sự của team đó.</p>
@@ -1486,8 +1471,10 @@
     </form>
   </dialog>
 
-  <!-- Quản lý nhân sự tham gia 1 task + vai trò (VD 1 task dự án phần mềm có
-       SM, PO, Dev, QA...) — mở từ nút "Nhân sự" ở bảng Danh sách nhiệm vụ. -->
+  <!-- Quản lý nhân sự tham gia 1 task (VD 1 task dự án phần mềm có nhiều
+       người cùng làm) — mở từ nút "Nhân sự" ở bảng Danh sách nhiệm vụ. Cột
+       "Vai trò" lấy thẳng theo Chức vụ đã khai báo sẵn của nhân sự đó ở
+       Team & Nhân sự, không chọn riêng ở đây. -->
   <dialog id="task-member-dialog" style="max-width:640px">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <form method="dialog" style="padding:20px;display:flex;flex-direction:column;gap:12px">
@@ -1503,15 +1490,11 @@
       </div>
 
       <div class="field-row" style="align-items:flex-end">
-        <div>
+        <div style="flex:1.4">
           <label for="tm-member">Nhân sự</label>
           <select id="tm-member"></select>
         </div>
-        <div>
-          <label for="tm-vai-tro">Vai trò</label>
-          <select id="tm-vai-tro"></select>
-        </div>
-        <div>
+        <div style="flex:1.4">
           <label for="tm-ghi-chu">Ghi chú</label>
           <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
         </div>

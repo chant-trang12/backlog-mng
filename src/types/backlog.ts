@@ -160,32 +160,31 @@ export interface CreateRoadmapItemInput {
 
 export type UpdateRoadmapItemInput = Partial<CreateRoadmapItemInput>;
 
-// Nhân sự tham gia 1 task ở Backlog — quản lý sâu hơn "ai làm task này, vai
-// trò gì" (VD 1 task dự án phần mềm có SM, PO, Dev, QA cùng tham gia).
+// Nhân sự tham gia 1 task ở Backlog — quản lý sâu hơn "ai làm task này". Vai
+// trò KHÔNG có danh mục riêng — lấy thẳng theo Chức vụ đã khai báo sẵn cho
+// nhân sự đó ở Team & Nhân sự (member_chuc_vu, join qua members.chuc_vu).
 export interface TaskMember {
   id: number;
   task_id: number;
   member_id: number;
-  vai_tro: string | null;
   ghi_chu: string | null;
   created_at: string;
   updated_at: string;
 }
 
-// Kèm tên nhân sự (join bảng members) để hiển thị trực tiếp, không cần
-// FE tự tra cứu lại theo member_id.
+// Kèm tên + chức vụ nhân sự (join bảng members) để hiển thị trực tiếp,
+// không cần FE tự tra cứu lại theo member_id.
 export interface TaskMemberWithName extends TaskMember {
   member_name: string;
+  member_chuc_vu: string | null;
 }
 
 export interface CreateTaskMemberInput {
   member_id: number;
-  vai_tro?: string;
   ghi_chu?: string;
 }
 
 export interface UpdateTaskMemberInput {
-  vai_tro?: string;
   ghi_chu?: string;
 }
 

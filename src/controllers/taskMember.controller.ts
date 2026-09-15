@@ -17,7 +17,8 @@ export async function listTaskMembersHandler(req: Request, res: Response) {
   res.json(await listTaskMembers(taskId));
 }
 
-// POST /api/tasks/:taskId/members — gán 1 nhân sự + vai trò vào task.
+// POST /api/tasks/:taskId/members — gán 1 nhân sự vào task ("vai trò" hiển
+// thị ở FE lấy thẳng theo Chức vụ có sẵn của nhân sự, không gửi kèm ở đây).
 export async function createTaskMemberHandler(req: Request, res: Response) {
   const taskId = parsePositiveInt(req.params.taskId);
   if (!Number.isFinite(taskId)) return res.status(400).json({ error: "taskId không hợp lệ" });
@@ -28,16 +29,16 @@ export async function createTaskMemberHandler(req: Request, res: Response) {
   if (!Number.isInteger(memberId) || memberId <= 0) {
     return res.status(400).json({ error: "Trường 'member_id' là bắt buộc" });
   }
-  const { vai_tro, ghi_chu } = req.body ?? {};
-  const row = await createTaskMember(taskId, { member_id: memberId, vai_tro, ghi_chu });
+  const { ghi_chu } = req.body ?? {};
+  const row = await createTaskMember(taskId, { member_id: memberId, ghi_chu });
   res.status(201).json(row);
 }
 
 export async function updateTaskMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const { vai_tro, ghi_chu } = req.body ?? {};
-  const row = await updateTaskMember(id, { vai_tro, ghi_chu });
+  const { ghi_chu } = req.body ?? {};
+  const row = await updateTaskMember(id, { ghi_chu });
   if (!row) return res.status(404).json({ error: "Không tìm thấy dòng gán nhân sự" });
   res.json(row);
 }

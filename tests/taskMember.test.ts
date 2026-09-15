@@ -12,8 +12,16 @@ async function makeTeam(app: ReturnType<typeof createApp>, name: string, periodI
   return res.body.id as number;
 }
 
-async function makeMember(app: ReturnType<typeof createApp>, name: string, teamId: number, periodId: number) {
-  const res = await request(app).post("/api/members").send({ name, team_id: teamId, period_id: periodId });
+async function makeMember(
+  app: ReturnType<typeof createApp>,
+  name: string,
+  teamId: number,
+  periodId: number,
+  chucVu?: string,
+) {
+  const res = await request(app)
+    .post("/api/members")
+    .send({ name, team_id: teamId, period_id: periodId, chuc_vu: chucVu });
   return res.body.id as number;
 }
 
@@ -25,24 +33,23 @@ async function makeTask(app: ReturnType<typeof createApp>, periodId: number, tea
 // Năm rất thấp, không dùng ở test file nào khác — tránh bị chọn làm "tháng
 // gần nhất" khi test khác tạo period mới và kế thừa team (xem lưu ý tương tự
 // ở roadmap.test.ts).
-describe("Nhân sự tham gia task (Backlog)", () => {
-  it("gán nhân sự + vai trò vào task, list ra kèm tên nhân sự, xóa được", async () => {
+describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ có sẵn", () => {
+  it("gán nhân sự vào task, list ra kèm tên + chức vụ (vai trò), xóa được", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2005, 1);
     const teamId = await makeTeam(app, "TM test team", periodId);
-    const m1 = await makeMember(app, "Nguyễn Văn A", teamId, periodId);
-    const m2 = await makeMember(app, "Trần Thị B", teamId, periodId);
+    const m1 = await makeMember(app, "Nguyễn Văn A", teamId, periodId, "Dev");
+    const m2 = await makeMember(app, "Trần Thị B", teamId, periodId, "PO");
     const taskId = await makeTask(app, periodId, "TM test team", "Task cần nhiều người");
 
-    const a1 = await request(app)
-      .post(`/api/tasks/${taskId}/members`)
-      .send({ member_id: m1, vai_tro: "Dev", ghi_chu: "Backend" });
+    const a1 = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: m1, ghi_chu: "Backend" });
     expect(a1.status).toBe(201);
     expect(a1.body.member_name).toBe("Nguyễn Văn A");
-    expect(a1.body.vai_tro).toBe("Dev");
+    expect(a1.body.member_chuc_vu).toBe("Dev"); // "vai trò" = chức vụ có sẵn của nhân sự
 
-    const a2 = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: m2, vai_tro: "PO" });
+    const a2 = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: m2 });
     expect(a2.status).toBe(201);
+    expect(a2.body.member_chuc_vu).toBe("PO");
 
     const list = await request(app).get(`/api/tasks/${taskId}/members`);
     expect(list.status).toBe(200);
@@ -57,48 +64,47 @@ describe("Nhân sự tham gia task (Backlog)", () => {
     expect(afterDel.body).toHaveLength(1);
   });
 
-  it("1 nhân sự tham gia cùng task với nhiều vai trò khác nhau — gán trùng (member_id, vai_tro) thì idempotent", async () => {
+  it("1 nhân sự chỉ gán được 1 lần / task — gán lại (idempotent) trả về đúng dòng cũ, cập nhật ghi chú nếu gửi kèm", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2006, 1);
     const teamId = await makeTeam(app, "TM dup team", periodId);
-    const memberId = await makeMember(app, "Lê Văn C", teamId, periodId);
-    const taskId = await makeTask(app, periodId, "TM dup team", "Task đa vai trò");
+    const memberId = await makeMember(app, "Lê Văn C", teamId, periodId, "QA/Tester");
+    const taskId = await makeTask(app, periodId, "TM dup team", "Task chỉ 1 vai trò / người");
 
-    const dev = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, vai_tro: "Dev" });
-    const qa = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, vai_tro: "QA/Tester" });
-    expect(dev.body.id).not.toBe(qa.body.id);
-
-    // Gán lại đúng cặp (member_id, vai_tro) đã có -> không tạo dòng mới.
-    const devAgain = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, vai_tro: "Dev" });
-    expect(devAgain.body.id).toBe(dev.body.id);
+    const first = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, ghi_chu: "v1" });
+    const again = await request(app)
+      .post(`/api/tasks/${taskId}/members`)
+      .send({ member_id: memberId, ghi_chu: "v2" });
+    expect(again.body.id).toBe(first.body.id);
+    expect(again.body.ghi_chu).toBe("v2"); // ghi chú được cập nhật theo lần gán sau
 
     const list = await request(app).get(`/api/tasks/${taskId}/members`);
-    expect(list.body).toHaveLength(2);
+    expect(list.body).toHaveLength(1);
   });
 
-  it("cập nhật vai trò/ghi chú của 1 dòng đã gán", async () => {
+  it("cập nhật ghi chú của 1 dòng đã gán", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2007, 1);
     const teamId = await makeTeam(app, "TM update team", periodId);
-    const memberId = await makeMember(app, "Phạm Thị D", teamId, periodId);
-    const taskId = await makeTask(app, periodId, "TM update team", "Task sửa vai trò");
+    const memberId = await makeMember(app, "Phạm Thị D", teamId, periodId, "BA");
+    const taskId = await makeTask(app, periodId, "TM update team", "Task sửa ghi chú");
 
     const created = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
     const updated = await request(app)
       .put(`/api/task-members/${created.body.id}`)
-      .send({ vai_tro: "BA", ghi_chu: "Chuyển sang BA" });
+      .send({ ghi_chu: "Cập nhật ghi chú" });
     expect(updated.status).toBe(200);
-    expect(updated.body.vai_tro).toBe("BA");
-    expect(updated.body.ghi_chu).toBe("Chuyển sang BA");
+    expect(updated.body.ghi_chu).toBe("Cập nhật ghi chú");
+    expect(updated.body.member_chuc_vu).toBe("BA"); // vai trò không đổi — vẫn theo chức vụ nhân sự
   });
 
-  it("xóa task -> xóa theo các dòng gán nhân sự (CASCADE); xóa nhân sự -> xóa theo (CASCADE)", async () => {
+  it("xóa task -> mất luôn các dòng gán nhân sự (CASCADE)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2008, 1);
     const teamId = await makeTeam(app, "TM cascade team", periodId);
-    const memberId = await makeMember(app, "Vũ Văn E", teamId, periodId);
+    const memberId = await makeMember(app, "Vũ Văn E", teamId, periodId, "Dev");
     const taskId = await makeTask(app, periodId, "TM cascade team", "Task xóa cascade");
-    await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, vai_tro: "Dev" });
+    await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
 
     await request(app).delete(`/api/tasks/${taskId}`);
     // Task đã xóa -> route trả 404 khi list (getTask không còn tìm thấy).

@@ -5,22 +5,26 @@ import type {
   UpdateTaskMemberInput,
 } from "../types/backlog.js";
 
-// Danh sách nhân sự tham gia 1 task, kèm tên nhân sự (join members) để FE
-// hiển thị trực tiếp — sắp theo thời điểm gán (id tăng dần).
+const SELECT_COLUMNS = [
+  "task_members.id",
+  "task_members.task_id",
+  "task_members.member_id",
+  "task_members.ghi_chu",
+  "task_members.created_at",
+  "task_members.updated_at",
+  "members.name as member_name",
+  "members.chuc_vu as member_chuc_vu",
+];
+
+// Danh sách nhân sự tham gia 1 task, kèm tên + chức vụ (join members) để FE
+// hiển thị trực tiếp — sắp theo thời điểm gán (id tăng dần). "Vai trò" hiển
+// thị ở FE chính là member_chuc_vu — không có danh mục riêng, lấy thẳng
+// theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự.
 export async function listTaskMembers(taskId: number): Promise<TaskMemberWithName[]> {
   const rows = await db("task_members")
     .join("members", "task_members.member_id", "members.id")
     .where({ task_id: taskId })
-    .select(
-      "task_members.id",
-      "task_members.task_id",
-      "task_members.member_id",
-      "task_members.vai_tro",
-      "task_members.ghi_chu",
-      "task_members.created_at",
-      "task_members.updated_at",
-      "members.name as member_name",
-    )
+    .select(SELECT_COLUMNS)
     .orderBy("task_members.id", "asc");
   return rows as TaskMemberWithName[];
 }
@@ -29,39 +33,35 @@ export async function getTaskMember(id: number): Promise<TaskMemberWithName | un
   const row = await db("task_members")
     .join("members", "task_members.member_id", "members.id")
     .where({ "task_members.id": id })
-    .select(
-      "task_members.id",
-      "task_members.task_id",
-      "task_members.member_id",
-      "task_members.vai_tro",
-      "task_members.ghi_chu",
-      "task_members.created_at",
-      "task_members.updated_at",
-      "members.name as member_name",
-    )
+    .select(SELECT_COLUMNS)
     .first();
   return row as TaskMemberWithName | undefined;
 }
 
-// Gán 1 nhân sự vào task với 1 vai trò — idempotent theo (task_id,
-// member_id, vai_tro): gán lại đúng cặp đã có sẽ trả về dòng cũ, tránh
-// trùng lặp khi bấm nhiều lần. 1 nhân sự vẫn có thể tham gia cùng task với
-// NHIỀU vai trò khác nhau (mỗi vai trò là 1 dòng riêng).
+// Gán 1 nhân sự vào task — idempotent theo (task_id, member_id): gán lại
+// nhân sự đã có sẽ trả về dòng cũ (chỉ cập nhật ghi chú nếu có gửi kèm),
+// tránh trùng lặp khi bấm nhiều lần. Không còn khái niệm "vai trò" riêng
+// theo dòng — 1 nhân sự chỉ tham gia 1 lần / task.
 export async function createTaskMember(
   taskId: number,
   input: CreateTaskMemberInput,
 ): Promise<TaskMemberWithName> {
-  const vaiTro = input.vai_tro?.trim() || null;
   const existing = await db("task_members")
-    .where({ task_id: taskId, member_id: input.member_id, vai_tro: vaiTro })
+    .where({ task_id: taskId, member_id: input.member_id })
     .first();
-  if (existing) return (await getTaskMember(existing.id)) as TaskMemberWithName;
+  if (existing) {
+    if (input.ghi_chu !== undefined) {
+      await db("task_members")
+        .where({ id: existing.id })
+        .update({ ghi_chu: input.ghi_chu.trim() || null, updated_at: db.fn.now() });
+    }
+    return (await getTaskMember(existing.id)) as TaskMemberWithName;
+  }
 
   const [created] = await db("task_members")
     .insert({
       task_id: taskId,
       member_id: input.member_id,
-      vai_tro: vaiTro,
       ghi_chu: input.ghi_chu?.trim() || null,
     })
     .returning("*");
@@ -77,7 +77,6 @@ export async function updateTaskMember(
   await db("task_members")
     .where({ id })
     .update({
-      vai_tro: input.vai_tro !== undefined ? input.vai_tro.trim() || null : existing.vai_tro,
       ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
       updated_at: db.fn.now(),
     });

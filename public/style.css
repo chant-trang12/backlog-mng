@@ -364,6 +364,13 @@ select {
   background-position: right 8px center;
   background-size: 12px;
   padding-right: 26px;
+  /* appearance: base-select (bật ở @supports dưới) vẽ nội dung select y hệt
+     text thường — nếu không ép 1 dòng thì option dài (VD "Nguyễn Văn A —
+     DMP") sẽ xuống dòng trong khung kín, dồn cục lôm côm thay vì cắt "…"
+     như select gốc vẫn làm. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 select:focus {
   outline: none;
@@ -1293,6 +1300,11 @@ dialog.confirm-dialog form {
   gap: 6px;
 }
 dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn giữa, không cần chừa chỗ nút X */
+
+/* Dialog "Nhân sự tham gia task" rộng hơn dialog mặc định (640px) — cho
+   select "Nhân sự" (tên + team, có thể dài) giãn hết chiều rộng cột thay vì
+   bị chặn ở max-width: 220px chung, tránh bị cắt "…" quá sớm. */
+#task-member-dialog select { max-width: 100%; }
 .confirm-icon {
   width: 42px;
   height: 42px;
