@@ -1436,7 +1436,7 @@ function openMemberTaskDetailDialog(member) {
       <td>${t.phan_loai ?? ""}</td>
       <td>${t.ty_le_dong_gop ?? "-"}</td>
       <td>${t.cpo_danh_gia ?? "-"}</td>
-      <td>${t.diem ?? "-"}</td>
+      <td>${t.diem_goc ?? "-"}</td>
     </tr>`,
     )
     .join("");
