@@ -1237,7 +1237,7 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 #home-completion-table td:first-child,
 #home-completion-rate-table th:first-child,
 #home-completion-rate-table td:first-child {
-  width: 140px;
+  width: 90px;
 }
 #home-completion-table thead tr:nth-child(2) th,
 #home-completion-table td:not(:first-child) {
@@ -1250,12 +1250,17 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 .home-tag-head { padding: 10px 6px; }
 .home-tag-head .status-badge { font-weight: 700; white-space: normal; line-height: 1.3; }
 /* Team column ở các bảng Home dùng width cố định (table-layout: fixed) —
-   tên team dài cần được xuống dòng trong ô thay vì tràn ra ngoài, đè lên
-   cột bên cạnh. */
+   tên team dài cần tự xuống dòng trong đúng độ rộng cột hiện có (giữ
+   nguyên width cột, không co giãn theo tên team), không tràn ra ngoài đè
+   lên cột bên cạnh. max-width:100% để badge (vốn inline-block) bị ép co
+   lại theo bề rộng ô thay vì tự giãn theo độ dài chữ không ngắt dòng. */
 #home-completion-table td:first-child .status-badge,
 #home-completion-rate-table td:first-child .status-badge,
 #home-tonghop-table td:first-child .status-badge {
+  display: inline-block;
+  max-width: 100%;
   white-space: normal;
+  overflow-wrap: break-word;
   line-height: 1.3;
 }
 #home-completion-table tr.home-tongdiem-row td,
