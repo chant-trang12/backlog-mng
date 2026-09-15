@@ -1078,13 +1078,13 @@ select.tm-phanloai-select {
 button.btn-split-even { background: var(--warning); border-color: var(--warning); color: #fff; }
 button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 
-/* Bảng "Nhân sự tham gia" — cột Tỷ lệ đóng góp/Điểm cá nhân căn giữa cho dễ
-   nhìn (số liệu, không phải text dài). text-align chỉ đủ cho tiêu đề/ô
-   trống; 2 ô này chứa input/flex-row nên phải canh riêng (input tự căn
-   giữa + đưa vào chính giữa ô, .row bên trong ô Điểm cá nhân canh giữa cả
-   cụm input + nút/nhãn "(tự tính)"). */
-#task-member-table th:nth-child(4),
-#task-member-table th:nth-child(5),
+/* Bảng "Nhân sự tham gia" — toàn bộ tiêu đề cột căn giữa. */
+#task-member-table th { text-align: center; }
+
+/* Cột Tỷ lệ đóng góp/Điểm cá nhân căn giữa cả nội dung (số liệu, không
+   phải text dài) — 2 ô này chứa input/flex-row nên phải canh riêng (input
+   tự căn giữa + đưa vào chính giữa ô, .row bên trong ô Điểm cá nhân canh
+   giữa cả cụm input + nút/nhãn "(tự tính)"). */
 #task-member-table td:nth-child(4),
 #task-member-table td:nth-child(5) {
   text-align: center;

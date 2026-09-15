@@ -215,6 +215,7 @@ const el = {
   taskMemberScoreRow: document.getElementById("task-member-score-row"),
   taskMemberScoreBadge: document.getElementById("task-member-score-badge"),
   taskMemberUnitRow: document.getElementById("task-member-unit-row"),
+  taskMemberTotalRow: document.getElementById("task-member-total-row"),
   taskMemberTotalBadge: document.getElementById("task-member-total-badge"),
   tmScoreUnit: document.getElementById("tm-score-unit"),
   tmSplitEvenBtn: document.getElementById("tm-split-even-btn"),
@@ -2160,10 +2161,10 @@ function renderTaskMemberThead() {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberThead.innerHTML = `<tr>
     <th>Nhân sự</th>
-    <th>Vai trò</th>
-    <th>Phân loại</th>
+    <th style="width:190px">Vai trò</th>
+    <th style="width:150px">Phân loại</th>
     ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}
-    <th>Ghi chú</th>
+    <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
   </tr>`;
 }
@@ -2244,6 +2245,7 @@ function renderTaskMembers() {
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberUnitRow.hidden = !graded;
+  el.taskMemberTotalRow.hidden = !graded;
   const unit = state.taskMemberScoreUnit;
 
   el.taskMemberTbody.innerHTML = state.taskMembers

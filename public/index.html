@@ -1496,12 +1496,12 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
-      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật) +
-           nút Chia đều tỷ lệ (nổi bật, góc phải). Dòng 2: đơn vị nhập điểm cá
-           nhân + tổng đã phân bổ (đủ 100% mới hết cảnh báo). -->
-      <div class="row" id="task-member-score-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật).
+           Dòng 2: đơn vị nhập điểm cá nhân + nút Chia đều tỷ lệ (nổi bật,
+           góc phải, cùng dòng với đơn vị). Tổng đã phân bổ chuyển xuống
+           riêng 1 dòng, ngay trên bảng danh sách (xem task-member-total-row). -->
+      <div class="row" id="task-member-score-row" hidden style="align-items:center;gap:8px">
         <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
-        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
       <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div class="row" style="align-items:center;gap:8px">
@@ -1511,7 +1511,7 @@
             <option value="scale5">Thang điểm 5</option>
           </select>
         </div>
-        <span id="task-member-total-badge" class="status-badge status-default"></span>
+        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
 
       <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
@@ -1533,6 +1533,10 @@
           </div>
           <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
         </div>
+      </div>
+
+      <div class="row" id="task-member-total-row" hidden style="justify-content:flex-end">
+        <span id="task-member-total-badge" class="status-badge status-default"></span>
       </div>
 
       <div class="table-wrap">
