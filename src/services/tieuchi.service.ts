@@ -16,6 +16,9 @@ export async function createTieuChiConfig(input: CreateTieuChiConfigInput): Prom
       co_chi_tieu: input.co_chi_tieu ? 1 : 0,
       thu_tu: input.thu_tu ?? 0,
       department_id: input.department_id ?? null,
+      kieu_tinh: input.kieu_tinh ?? "khong_tinh",
+      nguon_du_lieu: input.nguon_du_lieu ?? null,
+      he_so: input.he_so ?? null,
     })
     .returning("*");
 
@@ -93,6 +96,9 @@ export async function updateTieuChiConfig(
     co_chi_tieu: input.co_chi_tieu !== undefined ? (input.co_chi_tieu ? 1 : 0) : existing.co_chi_tieu ? 1 : 0,
     thu_tu: input.thu_tu ?? existing.thu_tu,
     department_id: input.department_id !== undefined ? input.department_id : existing.department_id,
+    kieu_tinh: input.kieu_tinh ?? existing.kieu_tinh,
+    nguon_du_lieu: input.nguon_du_lieu !== undefined ? input.nguon_du_lieu : existing.nguon_du_lieu,
+    he_so: input.he_so !== undefined ? input.he_so : existing.he_so,
   };
 
   const [row] = await db("tieu_chi_configs")
@@ -170,6 +176,9 @@ export async function cloneTieuChiConfigs(
       co_chi_tieu: c.co_chi_tieu ? 1 : 0,
       thu_tu: c.thu_tu,
       department_id: toDepartmentId,
+      kieu_tinh: c.kieu_tinh,
+      nguon_du_lieu: c.nguon_du_lieu,
+      he_so: c.he_so,
     }));
   if (rows.length === 0) return 0;
   await db("tieu_chi_configs").insert(rows);

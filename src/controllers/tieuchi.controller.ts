@@ -9,8 +9,19 @@ import {
 } from "../services/tieuchi.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 
+// undefined -> không đổi (chỉ dùng ở update), null/"" -> xóa (về null),
+// giá trị khác -> Number(). Number(null) === 0 nên PHẢI loại null ra trước,
+// không thì "xóa hệ số" lại lưu nhầm thành 0.
+function toNullableFloat(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function createTieuChiConfigHandler(req: Request, res: Response) {
-  const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu, department_id, dung_chung } = req.body ?? {};
+  const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu, department_id, dung_chung, kieu_tinh, nguon_du_lieu, he_so } =
+    req.body ?? {};
   if (!isNonEmptyText(nhom)) {
     return res.status(400).json({ error: "Trường 'nhom' là bắt buộc" });
   }
@@ -30,6 +41,9 @@ export async function createTieuChiConfigHandler(req: Request, res: Response) {
     co_chi_tieu: Boolean(co_chi_tieu),
     thu_tu: thu_tu !== undefined ? Number(thu_tu) : undefined,
     department_id: scopedDepartmentId,
+    kieu_tinh: kieu_tinh || undefined,
+    nguon_du_lieu: nguon_du_lieu || null,
+    he_so: toNullableFloat(he_so) ?? null,
   });
   res.status(201).json(config);
 }
@@ -43,7 +57,8 @@ export async function listTieuChiConfigsHandler(req: Request, res: Response) {
 }
 
 export async function updateTieuChiConfigHandler(req: Request, res: Response) {
-  const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu, department_id, dung_chung } = req.body ?? {};
+  const { nhom, ten_tieu_chi, cach_tinh_diem, co_chi_tieu, thu_tu, department_id, dung_chung, kieu_tinh, nguon_du_lieu, he_so } =
+    req.body ?? {};
   const scopedDepartmentId =
     dung_chung !== undefined || department_id !== undefined
       ? dung_chung || department_id == null
@@ -58,6 +73,9 @@ export async function updateTieuChiConfigHandler(req: Request, res: Response) {
     co_chi_tieu: co_chi_tieu !== undefined ? Boolean(co_chi_tieu) : undefined,
     thu_tu: thu_tu !== undefined ? Number(thu_tu) : undefined,
     department_id: scopedDepartmentId,
+    kieu_tinh: kieu_tinh || undefined,
+    nguon_du_lieu: nguon_du_lieu !== undefined ? nguon_du_lieu || null : undefined,
+    he_so: toNullableFloat(he_so),
   });
   if (!config) return res.status(404).json({ error: "Không tìm thấy tiêu chí" });
   res.json(config);

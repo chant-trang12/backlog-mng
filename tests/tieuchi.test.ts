@@ -31,6 +31,77 @@ describe("Cấu hình: Tiêu chí", () => {
     expect(listAfter.body.some((c: { id: number }) => c.id === created.body.id)).toBe(false);
   });
 
+  it("mặc định kieu_tinh = 'khong_tinh' khi không cấu hình công thức", async () => {
+    const app = createApp();
+    const created = await request(app)
+      .post("/api/tieu-chi")
+      .send({ nhom: "Khách hàng", ten_tieu_chi: "Test không công thức" });
+    expect(created.body.kieu_tinh).toBe("khong_tinh");
+    expect(created.body.nguon_du_lieu).toBeNull();
+    expect(created.body.he_so).toBeNull();
+    await request(app).delete(`/api/tieu-chi/${created.body.id}`);
+  });
+
+  it("cấu hình công thức tính điểm (kieu_tinh/nguon_du_lieu/he_so) cho tiêu chí, sửa lại được", async () => {
+    const app = createApp();
+    const created = await request(app).post("/api/tieu-chi").send({
+      nhom: "Khách hàng",
+      ten_tieu_chi: "Test công thức",
+      kieu_tinh: "tru_theo_loi",
+      nguon_du_lieu: "so_luong_su_co",
+      he_so: 0.15,
+    });
+    expect(created.body.kieu_tinh).toBe("tru_theo_loi");
+    expect(created.body.nguon_du_lieu).toBe("so_luong_su_co");
+    expect(created.body.he_so).toBe(0.15);
+
+    const updated = await request(app)
+      .put(`/api/tieu-chi/${created.body.id}`)
+      .send({ kieu_tinh: "dem_dong_cong", nguon_du_lieu: "dem_ho_tro", he_so: 3 });
+    expect(updated.body.kieu_tinh).toBe("dem_dong_cong");
+    expect(updated.body.nguon_du_lieu).toBe("dem_ho_tro");
+    expect(updated.body.he_so).toBe(3);
+
+    // Xóa công thức (về "không tính") -> nguon_du_lieu/he_so cũng về null.
+    const cleared = await request(app)
+      .put(`/api/tieu-chi/${created.body.id}`)
+      .send({ kieu_tinh: "khong_tinh", nguon_du_lieu: null, he_so: null });
+    expect(cleared.body.kieu_tinh).toBe("khong_tinh");
+    expect(cleared.body.nguon_du_lieu).toBeNull();
+    expect(cleared.body.he_so).toBeNull();
+
+    await request(app).delete(`/api/tieu-chi/${created.body.id}`);
+  });
+
+  it("sao chép tiêu chí giữ nguyên công thức tính điểm (kieu_tinh/nguon_du_lieu/he_so)", async () => {
+    const app = createApp();
+    const deptSrc = await request(app).post("/api/departments").send({ name: "TC Formula Src" });
+    const deptDst = await request(app).post("/api/departments").send({ name: "TC Formula Dst" });
+
+    const created = await request(app).post("/api/tieu-chi").send({
+      nhom: "Vận hành",
+      ten_tieu_chi: "TC Formula Clone",
+      dung_chung: false,
+      department_id: deptSrc.body.id,
+      kieu_tinh: "dem_dong_tru",
+      nguon_du_lieu: "dem_tuan_thu",
+      he_so: 4,
+    });
+
+    await request(app)
+      .post("/api/tieu-chi/clone")
+      .send({ from_department_id: deptSrc.body.id, to_department_id: deptDst.body.id });
+
+    const listDst = await request(app).get(`/api/tieu-chi?department_id=${deptDst.body.id}`);
+    const cloned = listDst.body.find((c: { ten_tieu_chi: string }) => c.ten_tieu_chi === "TC Formula Clone");
+    expect(cloned.kieu_tinh).toBe("dem_dong_tru");
+    expect(cloned.nguon_du_lieu).toBe("dem_tuan_thu");
+    expect(cloned.he_so).toBe(4);
+
+    await request(app).delete(`/api/tieu-chi/${created.body.id}`);
+    await request(app).delete(`/api/tieu-chi/${cloned.id}`);
+  });
+
   it("upserts điểm chuẩn/chỉ tiêu theo team, không tạo trùng khi lưu lại", async () => {
     const app = createApp();
     const created = await request(app)

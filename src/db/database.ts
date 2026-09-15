@@ -447,6 +447,58 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // tieu_chi_configs.kieu_tinh / nguon_du_lieu / he_so — trước đây công
+    // thức tính "Tổng điểm" ở tab Tổng hợp hard-code cứng theo ĐÚNG TÊN của
+    // vài tiêu chí cố định trong code (homeComputeTeamScores ở app.js) — đổi
+    // tên/xóa tiêu chí đó (VD phòng ban dùng bộ tiêu chí khác hẳn) là Tổng
+    // điểm ra sai/rỗng. 3 cột này đưa công thức đó thành DỮ LIỆU cấu hình
+    // được trên giao diện (dialog Tiêu chí), không cần sửa code nữa:
+    // - kieu_tinh: 1 trong các kiểu tính đã hỗ trợ sẵn (không phải công thức
+    //   tự do) — xem TIEU_CHI_KIEU_TINH ở app.js để biết danh sách + ý nghĩa.
+    // - nguon_du_lieu: nguồn số liệu thực tế dùng cho kiểu tính đó (VD tỷ lệ
+    //   hoàn thành nhiệm vụ, SL sự cố CSKH, số dòng khai báo Hỗ trợ...).
+    // - he_so: tham số đi kèm (VD % trừ mỗi lỗi, hệ số chia số dòng khai báo).
+    // Mặc định "khong_tinh" — tiêu chí thuần thông tin, không cộng vào Tổng
+    // điểm (giữ đúng hành vi cũ cho tiêu chí chưa từng được tính vào).
+    if (!(await db.schema.hasColumn("tieu_chi_configs", "kieu_tinh"))) {
+      await db.schema.alterTable("tieu_chi_configs", (table) => {
+        table.string("kieu_tinh", 50).notNullable().defaultTo("khong_tinh");
+        table.string("nguon_du_lieu", 50);
+        table.decimal("he_so", 10, 4);
+      });
+
+      // Backfill: nếu deployment này đã có sẵn tiêu chí trùng ĐÚNG tên với
+      // công thức cũ hard-code trong app.js, gán đúng kiểu tính tương ứng để
+      // Tổng điểm KHÔNG đổi so với trước (không phá dữ liệu/điểm đang có).
+      // Không có tiêu chí nào trùng tên (cài đặt mới, hoặc phòng đã đổi tên)
+      // thì các UPDATE này chỉ đơn giản không khớp dòng nào, vô hại.
+      const backfill: { name: string; kieuTinh: string; nguon: string; heSo: number | null }[] = [
+        { name: "Tiến độ hoàn thành Sprint goal", kieuTinh: "ty_le_x_diem_chuan", nguon: "ty_le_hoan_thanh_nhiem_vu", heSo: null },
+        {
+          name: "Số lượng sự cố mức độ ảnh hưởng nghiêm trọng đến khách hàng",
+          kieuTinh: "tru_theo_loi",
+          nguon: "so_luong_su_co",
+          heSo: 0.1,
+        },
+        { name: "Tỷ lệ xử lý yêu cầu hỗ trợ đúng hạn", kieuTinh: "ty_le_chia_chi_tieu_x_diem_chuan", nguon: "ty_le_xu_ly_ticket", heSo: null },
+        { name: "Tỷ lệ khởi tạo dịch vụ thành công đúng hạn", kieuTinh: "ty_le_chia_chi_tieu_x_diem_chuan", nguon: "ty_le_khoi_tao", heSo: null },
+        { name: "Thực hiện theo quy trình, kế hoạch chung", kieuTinh: "dem_dong_tru", nguon: "dem_tuan_thu", heSo: 2 },
+        {
+          name: "Tuân thủ nội quy quy định công ty  (đi muộn/về sớm; trang phục; nề nếp nội vụ; hội họp giao ban…)",
+          kieuTinh: "dem_dong_tru",
+          nguon: "dem_noi_quy",
+          heSo: 2,
+        },
+        { name: "Hỗ trợ, phối hợp", kieuTinh: "dem_dong_cong", nguon: "dem_ho_tro", heSo: 2 },
+        { name: "Đào tạo và phát triển đội nhóm", kieuTinh: "dem_dong_cong", nguon: "dem_dao_tao", heSo: 2 },
+      ];
+      for (const b of backfill) {
+        await db("tieu_chi_configs")
+          .where({ ten_tieu_chi: b.name })
+          .update({ kieu_tinh: b.kieuTinh, nguon_du_lieu: b.nguon, he_so: b.heSo });
+      }
+    }
+
     // tasks: thời điểm chấm điểm + snapshot đánh giá của tháng trước (giữ lại
     // khi task được chuyển sang tháng sau để user biết tháng trước chấm bao
     // nhiêu, đồng thời reset đánh giá cho tháng mới).
