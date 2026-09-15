@@ -5293,8 +5293,12 @@ function homeTeamBarHex(teamName) {
 function renderHomeDashboard() {
   if (!document.getElementById("home-vbar-chart")) return;
 
+  const theoTask = homeApplyKpiModeUI();
+
+  // Phòng theo_task: KPI không chia team -> bộ lọc Team (ẩn) không áp dụng,
+  // luôn coi như "Tất cả team" cho các bảng còn tính theo team bên dưới.
   const allTeamNames = state.homeTeams.map((t) => t.name);
-  const teamNames = state.homeTeamFilter ? allTeamNames.filter((n) => n === state.homeTeamFilter) : allTeamNames;
+  const teamNames = !theoTask && state.homeTeamFilter ? allTeamNames.filter((n) => n === state.homeTeamFilter) : allTeamNames;
 
   const filteredTasks = state.homeTasks.filter((t) => teamNames.includes(t.team));
   const eligibleForRanking = homeEligibleTasks(filteredTasks);
@@ -5306,39 +5310,83 @@ function renderHomeDashboard() {
     .sort((a, b) => b.value - a.value);
 
   renderHomeTaskStatCard(filteredTasks);
-  renderHomeVBarChart(rankingData);
+
+  if (theoTask) {
+    // Ranking nhân sự (không chia team) — lấy thẳng từ KPI theo Task, đã
+    // sắp theo tong_diem giảm dần từ backend (listKpiTheoTask).
+    const personRanking = state.homeKpiTheoTask.map((r) => ({ label: r.member_name, value: r.tong_diem }));
+    renderHomeVBarChart(personRanking, {
+      topLabel: "Nhân sự dẫn đầu",
+      emptyText: "Chưa có nhân sự nào tham gia task ở tháng đang chọn.",
+    });
+  } else {
+    renderHomeVBarChart(
+      rankingData.map((d) => ({ label: d.team, value: d.value, team: d.team })),
+      {
+        colorHex: (d) => homeTeamBarHex(d.team),
+        colorClass: (d) => homeTeamBarColorClass(d.team),
+        topLabel: "Team dẫn đầu",
+      },
+    );
+  }
+
   renderHomeTonghopTable(teamNames, filteredTasks);
   renderHomeCompletionRateTable(teamNames, filteredTasks);
   renderHomeCompletionTable(teamNames, filteredTasks);
   renderHomeRankingTab(rankingData, eligibleForRanking);
-  renderHomeKpiTheoTask();
+  renderHomeKpiTheoTaskTable();
 }
 
-// Tab "KPI theo Task" — chỉ hiện pill khi phòng ban đang chọn có
-// cach_tinh_kpi = "theo_task" (xem homeCachTinhKpiTheoTask). Nếu pill đang
-// active mà bị ẩn đi (đổi phòng ban), tự chuyển về tab Ranking.
-function renderHomeKpiTheoTask() {
-  const pill = document.getElementById("home-tab-kpi-theo-task-pill");
-  if (!pill) return;
-  const show = homeCachTinhKpiTheoTask();
-  pill.hidden = !show;
-  if (!show && pill.classList.contains("active")) {
-    pill.classList.remove("active");
-    document.getElementById("home-tab-kpi-theo-task").hidden = true;
-    const rankingPill = document.querySelector('#home-subnav .pill[data-tab="ranking"]');
-    if (rankingPill) {
-      rankingPill.classList.add("active");
-      document.getElementById("home-tab-ranking").hidden = false;
-    }
-  }
+// Bật/tắt các phần tử UI ở Home theo cách tính KPI của phòng ban đang chọn
+// (departments.cach_tinh_kpi — xem homeCachTinhKpiTheoTask): phòng
+// "theo_task" (KPI tính thẳng theo nhân sự, không chia team) ẩn 3 tab
+// Ranking/Tổng hợp/Tỉ lệ hoàn thành nhiệm vụ (không còn ý nghĩa) + ẩn bộ lọc
+// Team ở khung Tìm kiếm, chỉ còn tab "KPI theo Task"; phòng "theo_team" thì
+// ngược lại. Trả về true/false theo đúng chế độ hiện tại để
+// renderHomeDashboard() dùng tiếp (chọn nguồn dữ liệu vẽ biểu đồ Ranking).
+function homeApplyKpiModeUI() {
+  const theoTask = homeCachTinhKpiTheoTask();
 
-  const teamNames = state.homeTeamFilter ? [state.homeTeamFilter] : state.homeTeams.map((t) => t.name);
-  const rows = state.homeKpiTheoTask.filter(
-    (r) => !state.homeTeamFilter || teamNames.includes(r.team_name),
-  );
+  const vbarTitle = document.getElementById("home-vbar-title");
+  if (vbarTitle) vbarTitle.textContent = theoTask ? "Ranking nhân sự" : "Ranking Team";
+
+  const teamFilterWrap = document.getElementById("home-filter-team-wrap");
+  if (teamFilterWrap) teamFilterWrap.hidden = theoTask;
+
+  const teamBasedTabs = ["ranking", "tonghop", "tyle-hoanthanh"];
+  const taskBasedTabs = ["kpi-theo-task"];
+  const tabsToHide = theoTask ? teamBasedTabs : taskBasedTabs;
+  const tabsToShow = theoTask ? taskBasedTabs : teamBasedTabs;
+
+  tabsToHide.forEach((tab) => {
+    const pill = document.querySelector(`#home-subnav .pill[data-tab="${tab}"]`);
+    if (!pill) return;
+    pill.hidden = true;
+    if (pill.classList.contains("active")) {
+      pill.classList.remove("active");
+      document.getElementById(`home-tab-${tab}`).hidden = true;
+      const fallbackPill = document.querySelector(`#home-subnav .pill[data-tab="${tabsToShow[0]}"]`);
+      if (fallbackPill) {
+        fallbackPill.classList.add("active");
+        document.getElementById(`home-tab-${tabsToShow[0]}`).hidden = false;
+      }
+    }
+  });
+  tabsToShow.forEach((tab) => {
+    const pill = document.querySelector(`#home-subnav .pill[data-tab="${tab}"]`);
+    if (pill) pill.hidden = false;
+  });
+
+  return theoTask;
+}
+
+// Bảng dữ liệu tab "KPI theo Task" — hiện pill/toggle tab do
+// homeApplyKpiModeUI() phụ trách, hàm này chỉ đổ dữ liệu bảng.
+function renderHomeKpiTheoTaskTable() {
   const tbody = document.getElementById("home-kpi-theo-task-tbody");
   const empty = document.getElementById("home-kpi-theo-task-empty");
   if (!tbody) return;
+  const rows = state.homeKpiTheoTask;
   empty.hidden = rows.length > 0;
   tbody.innerHTML = rows
     .map(
@@ -5484,20 +5532,31 @@ function niceAxisMax(value) {
 
 // Biểu đồ cột Điểm chuẩn theo team (mỗi team 1 màu) — cột thu gọn bề rộng,
 // đặt gần nhau cho thanh thoát. (Biểu đồ đường "SL thành viên" tạm bỏ.)
-function renderHomeVBarChart(rankingData) {
+// Biểu đồ cột dọc dùng chung cho "Ranking Team" (phòng theo_team) và
+// "Ranking nhân sự" (phòng theo_task) — items: [{label, value}]. Không
+// truyền colorHex/colorClass thì tô màu theo VỊ TRÍ trong mảng (đủ dùng khi
+// không cần màu ổn định theo định danh qua các lần render, như ranking
+// nhân sự); Ranking Team truyền riêng để giữ màu ổn định theo team (khớp
+// màu ở các biểu đồ team khác trên trang), không nhảy màu theo thứ hạng.
+function renderHomeVBarChart(items, opts = {}) {
   const chartEl = document.getElementById("home-vbar-chart");
   const legendEl = document.getElementById("home-vbar-legend");
   const calloutEl = document.getElementById("home-vbar-callout");
+  const colorHex = opts.colorHex ?? ((d, i) => TEAM_BAR_HEX[i % TEAM_BAR_HEX.length]);
+  const colorClass = opts.colorClass ?? ((d, i) => `team-bar-${i % TEAM_COLOR_COUNT}`);
+  const axisLabel = opts.axisLabel ?? "Tổng điểm";
+  const topLabel = opts.topLabel ?? "Dẫn đầu";
+  const emptyText = opts.emptyText ?? "Chưa có team nào ở tháng đang chọn.";
 
-  if (rankingData.length === 0) {
-    chartEl.innerHTML = `<p class="hbar-empty">Chưa có team nào ở tháng đang chọn.</p>`;
+  if (items.length === 0) {
+    chartEl.innerHTML = `<p class="hbar-empty">${emptyText}</p>`;
     legendEl.innerHTML = "";
     calloutEl.innerHTML = "";
     return;
   }
 
-  const teams = rankingData.map((d) => d.team);
-  const barValues = rankingData.map((d) => d.value);
+  const labels = items.map((d) => d.label);
+  const barValues = items.map((d) => d.value);
 
   const width = 420;
   const height = 210;
@@ -5507,16 +5566,16 @@ function renderHomeVBarChart(rankingData) {
   const padBottom = 22;
   const plotW = width - padLeft - padRight;
   const plotH = height - padTop - padBottom;
-  const n = teams.length;
+  const n = labels.length;
 
   // Cột trải đều sát 2 bên trục (không chừa lề thừa), nhưng bề rộng mỗi cột
   // vẫn cố định thon gọn — phần dư trong mỗi ô là khoảng cách giữa các cột.
   const step = plotW / n;
-  const xCenters = teams.map((_, i) => padLeft + step * (i + 0.5));
+  const xCenters = labels.map((_, i) => padLeft + step * (i + 0.5));
   const barWidth = 34;
 
-  // Trục Tổng điểm mặc định hiển thị tối đa 120 — chỉ nới rộng hơn nếu có
-  // team thực đạt điểm cao hơn 120.
+  // Trục mặc định hiển thị tối đa 120 — chỉ nới rộng hơn nếu có giá trị
+  // thực cao hơn 120.
   const rawBarMax = Math.max(...barValues, 1);
   const barMax = rawBarMax <= 120 ? 120 : niceAxisMax(rawBarMax);
   const yBar = (v) => padTop + plotH - (v / barMax) * plotH;
@@ -5532,11 +5591,11 @@ function renderHomeVBarChart(rankingData) {
 
   let bars = "";
   let xLabels = "";
-  teams.forEach((name, i) => {
+  labels.forEach((name, i) => {
     const x = xCenters[i] - barWidth / 2;
     const yTop = yBar(barValues[i]);
     const barH = Math.max(3, padTop + plotH - yTop);
-    bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${homeTeamBarHex(name)}" />`;
+    bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${colorHex(items[i], i)}" />`;
     bars += `<text class="home-combo-barvalue" x="${xCenters[i].toFixed(1)}" y="${(yTop + 12).toFixed(1)}" text-anchor="middle">${barValues[i].toFixed(0)}</text>`;
     xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${name}</text>`;
   });
@@ -5544,23 +5603,23 @@ function renderHomeVBarChart(rankingData) {
   chartEl.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}">
       ${gridLines}
-      <text class="home-combo-axis-label" x="${padLeft}" y="12">Tổng điểm</text>
+      <text class="home-combo-axis-label" x="${padLeft}" y="12">${axisLabel}</text>
       ${bars}
       ${xLabels}
     </svg>`;
 
-  legendEl.innerHTML = rankingData
+  legendEl.innerHTML = items
     .map(
-      (d) => `
+      (d, i) => `
     <div class="home-legend-item">
-      <span class="home-legend-dot ${homeTeamBarColorClass(d.team)}"></span>
-      <span>${d.team}</span>
+      <span class="home-legend-dot ${colorClass(d, i)}"></span>
+      <span>${d.label}</span>
     </div>`,
     )
     .join("");
 
-  const top = rankingData[0];
-  calloutEl.innerHTML = `<div class="big">${top.value.toFixed(1)}</div><div class="small">Team dẫn đầu: ${top.team}</div>`;
+  const top = items[0];
+  calloutEl.innerHTML = `<div class="big">${top.value.toFixed(1)}</div><div class="small">${topLabel}: ${top.label}</div>`;
 }
 
 // Danh sách Tag (theo danh mục Tag ở Cấu hình → Tag & Phân loại) — dùng làm
