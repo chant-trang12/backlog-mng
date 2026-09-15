@@ -672,6 +672,22 @@ function renderDeptSwitcher() {
     document.querySelector('.nav-item[data-page="config"]')?.click();
     document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
   });
+
+  applyDeptModeSidebarNav();
+}
+
+// Menu "CSKH" (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — đều tính theo team) ẩn
+// đi với phòng ban tính KPI theo Task (không chia team, xem
+// homeCachTinhKpiTheoTask). Đang đứng ở trang CSKH mà đổi sang phòng loại
+// này thì tự chuyển về Home.
+function applyDeptModeSidebarNav() {
+  const cskhNav = document.querySelector('.nav-item[data-page="cskh"]');
+  if (!cskhNav) return;
+  const theoTask = homeCachTinhKpiTheoTask();
+  cskhNav.hidden = theoTask;
+  if (theoTask && cskhNav.classList.contains("active")) {
+    document.querySelector('.nav-item[data-page="home"]')?.click();
+  }
 }
 
 function openDeptPanel() {
