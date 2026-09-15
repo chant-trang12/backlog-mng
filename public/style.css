@@ -1237,7 +1237,7 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 #home-completion-table td:first-child,
 #home-completion-rate-table th:first-child,
 #home-completion-rate-table td:first-child {
-  width: 90px;
+  width: 140px;
 }
 #home-completion-table thead tr:nth-child(2) th,
 #home-completion-table td:not(:first-child) {
@@ -1249,6 +1249,15 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 }
 .home-tag-head { padding: 10px 6px; }
 .home-tag-head .status-badge { font-weight: 700; white-space: normal; line-height: 1.3; }
+/* Team column ở các bảng Home dùng width cố định (table-layout: fixed) —
+   tên team dài cần được xuống dòng trong ô thay vì tràn ra ngoài, đè lên
+   cột bên cạnh. */
+#home-completion-table td:first-child .status-badge,
+#home-completion-rate-table td:first-child .status-badge,
+#home-tonghop-table td:first-child .status-badge {
+  white-space: normal;
+  line-height: 1.3;
+}
 #home-completion-table tr.home-tongdiem-row td,
 #home-completion-rate-table tr.home-tongdiem-row td {
   background: var(--bg);
