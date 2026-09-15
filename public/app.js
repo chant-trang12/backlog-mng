@@ -2437,10 +2437,29 @@ function renderTaskMembers() {
       let scoreCell = "";
       if (graded) {
         const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
-        const auto = contrib != null ? round2((state.taskMemberTaskScore * contrib) / 100) : null;
+        // Phòng ban tính KPI theo task (cach_tinh_kpi=theo_task): khớp đúng
+        // công thức đã dùng ở "Điểm cá nhân (Tính theo task)"/tong_diem —
+        // task "Hỗ trợ" vẫn nhân Tỷ lệ đóng góp, "Thực hiện chính" (hoặc
+        // chưa phân loại) thì thẳng % Đánh giá, không cần Tỷ lệ đóng góp.
+        // Phòng theo_team giữ nguyên công thức cũ (luôn nhân tỷ lệ đóng góp)
+        // — không liên quan tính năng KPI theo task.
+        const auto = homeCachTinhKpiTheoTask()
+          ? tm.phan_loai === HO_TRO_LABEL
+            ? contrib != null
+              ? round2((state.taskMemberTaskScore * contrib) / 100)
+              : null
+            : state.taskMemberTaskScore
+          : contrib != null
+            ? round2((state.taskMemberTaskScore * contrib) / 100)
+            : null;
         const isManual = tm.diem_ca_nhan != null;
         const rawPercent = isManual ? Number(tm.diem_ca_nhan) : auto;
         const displayScore = rawPercent == null ? "" : unit === "scale5" ? percentToScale5(rawPercent) : rawPercent;
+        const autoTitle = homeCachTinhKpiTheoTask()
+          ? tm.phan_loai === HO_TRO_LABEL
+            ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
+            : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp"
+          : "Tự tính = % Đánh giá của task × Tỷ lệ đóng góp";
         scoreCell = `
       <td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>
       <td>
@@ -2449,7 +2468,7 @@ function renderTaskMembers() {
           ${
             isManual
               ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %">↺</span>`
-              : `<span class="muted" style="font-size:0.68rem;white-space:nowrap" title="Tự tính = % Đánh giá của task × Tỷ lệ đóng góp">(tự tính)</span>`
+              : `<span class="muted" style="font-size:0.68rem;white-space:nowrap" title="${autoTitle}">(tự tính)</span>`
           }
         </div>
       </td>`;
