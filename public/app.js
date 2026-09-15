@@ -313,6 +313,7 @@ function tagBadgeAttrs(value) {
 
 function phanLoaiBadgeAttrs(value) {
   if (value === "Nhiệm vụ tồn") return `class="status-badge tinh-chat-ton"`;
+  if (value === "NV năm") return `class="status-badge tinh-chat-nv-nam"`;
   const idx = state.phanLoaiOptions.findIndex((p) => p.ten_phan_loai === value);
   if (idx === -1) return `class="status-badge status-default"`;
   const c = PHAN_LOAI_PALETTE[idx % PHAN_LOAI_PALETTE.length];

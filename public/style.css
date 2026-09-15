@@ -1024,6 +1024,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .tinh-chat-ton { background: #e3e9d5; color: var(--maroon); }
 .tinh-chat-khong-tinh-diem { background: var(--border); color: var(--muted); }
 .tinh-chat-da-chuyen { background: #d6ebf5; color: #1f5f80; }
+/* "NV năm" — task được Roadmap năm tự động đưa vào backlog (cùng kiểu giá
+   trị hệ thống như "Nhiệm vụ tồn" ở trên), màu xanh lá đồng bộ với badge
+   "✓ Đã vào Backlog" ở bảng Roadmap năm để liên tưởng cùng 1 nguồn gốc. */
+.tinh-chat-nv-nam { background: #dceed0; color: #3f6b2f; }
 
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem teamColorClass trong app.js). */
 .team-badge { background: #dcfce7; color: #166534; }

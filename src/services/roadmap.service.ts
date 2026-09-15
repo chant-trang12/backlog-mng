@@ -8,7 +8,7 @@ import type {
   UpdateRoadmapItemInput,
 } from "../types/backlog.js";
 import { getPeriodByYearMonth } from "./period.service.js";
-import { createTask } from "./task.service.js";
+import { addTinhChatTag, createTask, TINH_CHAT_NV_NAM } from "./task.service.js";
 
 const FIELDS = [
   "team",
@@ -85,6 +85,8 @@ export async function updateRoadmapItem(
 // thúc roadmap). Không đưa chi tiết theo tháng. Chỉ đưa đúng 1 lần (đánh dấu
 // qua synced_task_id) — nếu chưa xong thì đã có sẵn tính năng "Chuyển sang
 // tháng sau" của Backlog để tự đẩy tiếp, roadmap không lặp lại việc đưa vào.
+// Task tự đưa vào luôn được gắn thêm "NV năm" ở Tính chất (giữ nguyên giá
+// trị Phân loại gốc của roadmap nếu có) để phân biệt với task nhập tay.
 async function syncRoadmapItemToBacklog(item: RoadmapItem): Promise<RoadmapItem> {
   if (item.synced_task_id || !item.thoi_gian_bat_dau) return item;
   const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(item.thoi_gian_bat_dau);
@@ -97,7 +99,7 @@ async function syncRoadmapItemToBacklog(item: RoadmapItem): Promise<RoadmapItem>
     team: item.team,
     nhiem_vu: item.nhiem_vu,
     dod: item.dod ?? undefined,
-    tinh_chat: item.phan_loai ?? undefined,
+    tinh_chat: addTinhChatTag(item.phan_loai ?? null, TINH_CHAT_NV_NAM),
     deadline: item.thoi_gian_ket_thuc ?? undefined,
   });
   const [updated] = await db("roadmap_items")

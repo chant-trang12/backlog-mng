@@ -5,6 +5,11 @@ import { createPeriod, getPeriod } from "./period.service.js";
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
 
+// Giá trị Tính chất hệ thống tự gắn cho task được Roadmap năm tự động đưa
+// vào backlog (xem roadmap.service.ts#syncRoadmapItemToBacklog) — cùng kiểu
+// với "Nhiệm vụ tồn": không nằm trong danh mục Phân loại quản lý ở Cấu hình.
+export const TINH_CHAT_NV_NAM = "NV năm";
+
 async function nextStt(periodId: number): Promise<number> {
   const row = await db("tasks")
     .where({ period_id: periodId })
@@ -128,13 +133,21 @@ export async function deleteTasks(ids: number[]): Promise<number> {
   return Number(count);
 }
 
-function addTinhChatTon(tinhChat: string | null): string {
+// Thêm 1 giá trị (tag hệ thống như "Nhiệm vụ tồn", hoặc giá trị danh mục
+// Phân loại) vào cột Tính chất — giữ nguyên các giá trị đã có, không thêm
+// trùng. Tính chất là danh sách các giá trị nối bằng ", " (xem
+// renderTinhChatBadges ở app.js).
+export function addTinhChatTag(tinhChat: string | null | undefined, tag: string): string {
   const items = (tinhChat ?? "")
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
-  if (!items.includes(TINH_CHAT_TON)) items.push(TINH_CHAT_TON);
+  if (!items.includes(tag)) items.push(tag);
   return items.join(", ");
+}
+
+function addTinhChatTon(tinhChat: string | null): string {
+  return addTinhChatTag(tinhChat, TINH_CHAT_TON);
 }
 
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {
