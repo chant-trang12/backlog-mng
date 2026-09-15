@@ -1419,6 +1419,8 @@ function openMemberTaskDetailDialog(member) {
       <td>${t.nhiem_vu}</td>
       <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.phan_loai ?? ""}</td>
+      <td>${t.ty_le_dong_gop ?? "-"}</td>
+      <td>${t.cpo_danh_gia ?? "-"}</td>
       <td>${t.diem ?? "-"}</td>
     </tr>`,
     )

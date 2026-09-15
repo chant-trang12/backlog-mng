@@ -208,6 +208,8 @@ export async function listKpiTheoTask(
       nhiem_vu: r.nhiem_vu,
       team: r.task_team,
       phan_loai: r.phan_loai,
+      ty_le_dong_gop: tyLeDongGop,
+      cpo_danh_gia: cpoDanhGia,
       diem,
     });
   }

@@ -223,6 +223,8 @@ export interface KpiTheoTaskTaskEntry {
   nhiem_vu: string;
   team: string;
   phan_loai: string | null;
+  ty_le_dong_gop: number | null;
+  cpo_danh_gia: number | null;
   diem: number | null;
 }
 
