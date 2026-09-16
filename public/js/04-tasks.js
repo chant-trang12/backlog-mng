@@ -160,7 +160,32 @@ function renderTasks() {
   });
 
   updateTaskSelectionUI();
+  syncTaskStickyOffsets();
 }
+
+// 6 cột đầu (checkbox/STT/Tag/Phân loại/Team/Nhiệm vụ) của #task-table cố
+// định khi cuộn ngang (xem CSS "left: var(--task-col2-left...)") — đo ĐÚNG
+// width thật đã render của 5 cột đầu, giống syncMemberStickyOffsets() ở
+// 03-members.js. Cột Team bị ẩn (hidden) ở phòng ban tính KPI theo task thì
+// width đo được tự động là 0, nên các cột sau nó tự co lại đúng vị trí mà
+// không cần code riêng cho từng cách tính KPI.
+function syncTaskStickyOffsets() {
+  const table = document.getElementById("task-table");
+  const ths = table?.querySelectorAll("thead th");
+  if (!table || !ths || ths.length < 6) return;
+  let left = 0;
+  const lefts = [];
+  for (let i = 0; i < 5; i++) {
+    left += ths[i].getBoundingClientRect().width;
+    lefts.push(left);
+  }
+  table.style.setProperty("--task-col2-left", `${lefts[0]}px`);
+  table.style.setProperty("--task-col3-left", `${lefts[1]}px`);
+  table.style.setProperty("--task-col4-left", `${lefts[2]}px`);
+  table.style.setProperty("--task-col5-left", `${lefts[3]}px`);
+  table.style.setProperty("--task-col6-left", `${lefts[4]}px`);
+}
+window.addEventListener("resize", () => syncTaskStickyOffsets());
 
 function updateTaskSelectionUI() {
   const visible = state.tasks;

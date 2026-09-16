@@ -696,11 +696,11 @@ th {
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
 
 /* Cố định cột checkbox (chọn nhiều dòng) khi cuộn ngang — áp dụng cho mọi
-   bảng có cột chọn: Backlog, Nội quy, Roadmap năm, Chấm công (bảng Nhân sự
+   bảng có cột chọn: Nội quy, Roadmap năm, Chấm công (bảng Backlog cố định
+   riêng tới hết cột "Nhiệm vụ", xem khối #task-table bên dưới; bảng Nhân sự
    cố định riêng tới hết cột "Họ và Tên", xem khối #member-table bên dưới).
    z-index: ô góc (th cột 1) > td cột 1 > th thường, để ô góc luôn nổi trên
    cùng khi cuộn cả 2 chiều. */
-#task-table td:first-child,
 #noiquy-table td:first-child,
 #roadmap-table td:first-child,
 #attendance-table td:first-child {
@@ -709,7 +709,6 @@ th {
   z-index: 1;
   background: var(--card-bg);
 }
-#task-table th:first-child,
 #noiquy-table th:first-child,
 #roadmap-table th:first-child,
 #attendance-table th:first-child {
@@ -747,16 +746,69 @@ th {
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
 }
 
+/* Bảng Backlog (#task-table) — cố định 6 cột đầu (checkbox, STT, Tag, Phân
+   loại, Team, Nhiệm vụ) khi cuộn ngang, áp dụng cho mọi cách tính KPI theo
+   phòng ban (kể cả phòng theo_task ẩn cột Team — width đo thật là 0 khi cột
+   bị hidden nên các offset sau tự co lại đúng, không cần code riêng). left
+   của cột 2-6 do JS đo width thật đã render (table-layout: auto nên width
+   khai ở HTML chỉ là gợi ý) — xem syncTaskStickyOffsets() trong 04-tasks.js. */
+#task-table td:nth-child(1),
+#task-table td:nth-child(2),
+#task-table td:nth-child(3),
+#task-table td:nth-child(4),
+#task-table td:nth-child(5),
+#task-table td:nth-child(6) {
+  position: sticky;
+  z-index: 1;
+  background: var(--card-bg);
+}
+#task-table th:nth-child(1),
+#task-table th:nth-child(2),
+#task-table th:nth-child(3),
+#task-table th:nth-child(4),
+#task-table th:nth-child(5),
+#task-table th:nth-child(6) {
+  z-index: 3;
+}
+#task-table td:nth-child(1),
+#task-table th:nth-child(1) { left: 0; }
+#task-table td:nth-child(2),
+#task-table th:nth-child(2) { left: var(--task-col2-left, 36px); }
+#task-table td:nth-child(3),
+#task-table th:nth-child(3) { left: var(--task-col3-left, 86px); }
+#task-table td:nth-child(4),
+#task-table th:nth-child(4) { left: var(--task-col4-left, 176px); }
+#task-table td:nth-child(5),
+#task-table th:nth-child(5) { left: var(--task-col5-left, 266px); }
+#task-table td:nth-child(6),
+#task-table th:nth-child(6) {
+  left: var(--task-col6-left, 356px);
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
+}
+#task-table tbody tr:hover td:nth-child(1),
+#task-table tbody tr:hover td:nth-child(2),
+#task-table tbody tr:hover td:nth-child(3),
+#task-table tbody tr:hover td:nth-child(4),
+#task-table tbody tr:hover td:nth-child(5),
+#task-table tbody tr:hover td:nth-child(6) { background: var(--bg); }
+#task-table tbody tr.row-highlighted td:nth-child(1),
+#task-table tbody tr.row-highlighted td:nth-child(2),
+#task-table tbody tr.row-highlighted td:nth-child(3),
+#task-table tbody tr.row-highlighted td:nth-child(4),
+#task-table tbody tr.row-highlighted td:nth-child(5),
+#task-table tbody tr.row-highlighted td:nth-child(6) { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted:hover td:nth-child(1),
+#task-table tbody tr.row-highlighted:hover td:nth-child(2),
+#task-table tbody tr.row-highlighted:hover td:nth-child(3),
+#task-table tbody tr.row-highlighted:hover td:nth-child(4),
+#task-table tbody tr.row-highlighted:hover td:nth-child(5),
+#task-table tbody tr.row-highlighted:hover td:nth-child(6) { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
+
 #task-table th { text-align: center; }
 #task-table td { vertical-align: middle; }
 #task-table tbody tr:hover { background: var(--bg); }
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
-/* Cột checkbox cố định có background riêng (để che nội dung cuộn qua bên
-   dưới) — đồng bộ lại màu theo trạng thái hover/nổi bật của dòng. */
-#task-table tbody tr:hover td:first-child { background: var(--bg); }
-#task-table tbody tr.row-highlighted td:first-child { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
-#task-table tbody tr.row-highlighted:hover td:first-child { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */
