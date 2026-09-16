@@ -1,21 +1,21 @@
 // ---- Cấu hình: Tiêu chí (dùng chung mọi tháng backlog) ----
 // Cột điểm chuẩn theo team lấy theo state.teams của tháng đang chọn (map
-// theo team_name) — đổi tháng thì render lại (renderTieuChi gọi từ
+// theo team_name) — đổi tháng thì render lại (renderCriteria gọi từ
 // loadTeams), không cần tải lại dữ liệu tiêu chí.
 
-async function loadTieuChi() {
-  state.tieuChiConfigs = await api(`/api/tieu-chi${deptParam("?")}`);
-  renderTieuChi();
+async function loadCriteria() {
+  state.criteriaConfigs = await api(`/api/tieu-chi${deptParam("?")}`);
+  renderCriteria();
   renderHomeDashboard();
 }
 
-function renderTieuChi() {
-  if (!el.tieuChiTbody) return;
+function renderCriteria() {
+  if (!el.criteriaTbody) return;
   const teamNames = state.teams.map((t) => t.name);
 
   // Dựng lại header (cột team) theo đúng team của tháng đang chọn.
   const teamHeaderCells = teamNames.map((name) => `<th style="min-width:100px">${name}</th>`).join("");
-  el.tieuChiTheadRow.innerHTML = `
+  el.criteriaTheadRow.innerHTML = `
     <th style="min-width:140px">Nhóm</th>
     <th style="min-width:180px">Tiêu chí</th>
     <th style="min-width:280px">Cách tính điểm</th>
@@ -23,9 +23,9 @@ function renderTieuChi() {
     ${teamHeaderCells}
     <th style="min-width:170px"></th>`;
 
-  el.tieuChiEmpty.hidden = state.tieuChiConfigs.length > 0;
+  el.criteriaEmpty.hidden = state.criteriaConfigs.length > 0;
 
-  el.tieuChiTbody.innerHTML = state.tieuChiConfigs
+  el.criteriaTbody.innerHTML = state.criteriaConfigs
     .map((c) => {
       const diemChuanByTeam = new Map(c.diem_chuan.map((d) => [d.team_name, d]));
       const mainCells = teamNames
@@ -35,7 +35,7 @@ function renderTieuChi() {
         })
         .join("");
       // Phạm vi: department_id null = tiêu chí dùng chung mọi phòng; có giá
-      // trị = tiêu chí riêng — vì listTieuChiConfigs() chỉ trả về tiêu chí
+      // trị = tiêu chí riêng — vì listCriteriaConfigs() chỉ trả về tiêu chí
       // riêng của ĐÚNG phòng đang xem nên ở đây luôn là "của phòng này".
       const scopeBadge =
         c.department_id == null
@@ -43,7 +43,7 @@ function renderTieuChi() {
           : `<span class="status-badge tieuchi-scope-rieng">Riêng phòng này</span>`;
       const mainRow = `
     <tr data-id="${c.id}">
-      <td><span class="status-badge ${nhomColorClass(c.nhom)}">${c.nhom}</span></td>
+      <td><span class="status-badge ${groupColorClass(c.nhom)}">${c.nhom}</span></td>
       <td>${c.ten_tieu_chi}</td>
       <td style="white-space:pre-wrap">${c.cach_tinh_diem ?? ""}</td>
       <td>${scopeBadge}</td>
@@ -76,7 +76,7 @@ function renderTieuChi() {
   // tiêu) của tất cả tiêu chí theo từng team, không cho nhập tay.
   const tongDiemCells = teamNames
     .map((name) => {
-      const total = state.tieuChiConfigs.reduce((sum, c) => {
+      const total = state.criteriaConfigs.reduce((sum, c) => {
         const raw = c.diem_chuan.find((d) => d.team_name === name)?.diem_chuan;
         const n = Number(raw);
         return sum + (Number.isFinite(n) ? n : 0);
@@ -84,28 +84,28 @@ function renderTieuChi() {
       return `<td style="font-weight:600">${total}</td>`;
     })
     .join("");
-  el.tieuChiTongDiemRow.innerHTML = `
+  el.criteriaTongDiemRow.innerHTML = `
     <td colspan="4" style="font-weight:600">Tổng điểm</td>
     ${tongDiemCells}
     <td></td>`;
 
-  el.tieuChiTbody.querySelectorAll(".tieuchi-diem-chuan-input, .tieuchi-chi-tieu-input").forEach((input) => {
-    input.addEventListener("change", () => saveTieuChiDiemChuan(input.dataset.tieuChiId, input.dataset.team));
+  el.criteriaTbody.querySelectorAll(".tieuchi-diem-chuan-input, .tieuchi-chi-tieu-input").forEach((input) => {
+    input.addEventListener("change", () => saveCriteriaDiemChuan(input.dataset.tieuChiId, input.dataset.team));
   });
 
-  el.tieuChiTbody.querySelectorAll(".edit-tieuchi-btn").forEach((btn) => {
+  el.criteriaTbody.querySelectorAll(".edit-tieuchi-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      openTieuChiDialog(state.tieuChiConfigs.find((c) => c.id === id));
+      openCriteriaDialog(state.criteriaConfigs.find((c) => c.id === id));
     });
   });
-  el.tieuChiTbody.querySelectorAll(".delete-tieuchi-btn").forEach((btn) => {
+  el.criteriaTbody.querySelectorAll(".delete-tieuchi-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       if (!await confirmDialog("Xóa tiêu chí này? Toàn bộ điểm chuẩn đã cấu hình cho tiêu chí này cũng sẽ bị xóa.")) return;
       try {
         await api(`/api/tieu-chi/${id}`, { method: "DELETE" });
-        await loadTieuChi();
+        await loadCriteria();
         showToast("Đã xóa tiêu chí.", "success");
       } catch (err) {
         showToast(err.message);
@@ -116,15 +116,15 @@ function renderTieuChi() {
 
 // Đọc giá trị hiện tại của cả 2 ô (Điểm chuẩn + Chỉ tiêu nếu có) cho đúng 1
 // cặp (tiêu chí, team) rồi lưu cùng lúc — API upsert theo cặp giá trị.
-async function saveTieuChiDiemChuan(tieuChiId, teamName) {
-  const diemChuanInput = el.tieuChiTbody.querySelector(
-    `.tieuchi-diem-chuan-input[data-tieu-chi-id="${tieuChiId}"][data-team="${teamName}"]`,
+async function saveCriteriaDiemChuan(criteriaId, teamName) {
+  const diemChuanInput = el.criteriaTbody.querySelector(
+    `.tieuchi-diem-chuan-input[data-tieu-chi-id="${criteriaId}"][data-team="${teamName}"]`,
   );
-  const chiTieuInput = el.tieuChiTbody.querySelector(
-    `.tieuchi-chi-tieu-input[data-tieu-chi-id="${tieuChiId}"][data-team="${teamName}"]`,
+  const chiTieuInput = el.criteriaTbody.querySelector(
+    `.tieuchi-chi-tieu-input[data-tieu-chi-id="${criteriaId}"][data-team="${teamName}"]`,
   );
   try {
-    const updated = await api(`/api/tieu-chi/${tieuChiId}/diem-chuan${deptParam("?")}`, {
+    const updated = await api(`/api/tieu-chi/${criteriaId}/diem-chuan${deptParam("?")}`, {
       method: "PUT",
       body: JSON.stringify({
         team_name: teamName,
@@ -134,23 +134,23 @@ async function saveTieuChiDiemChuan(tieuChiId, teamName) {
     });
     // Cập nhật lại state cục bộ để hàng Tổng điểm tính lại ngay, không cần
     // tải lại toàn bộ danh sách tiêu chí.
-    const index = state.tieuChiConfigs.findIndex((c) => c.id === Number(tieuChiId));
-    if (index !== -1) state.tieuChiConfigs[index] = updated;
-    renderTieuChi();
+    const index = state.criteriaConfigs.findIndex((c) => c.id === Number(criteriaId));
+    if (index !== -1) state.criteriaConfigs[index] = updated;
+    renderCriteria();
     renderHomeDashboard();
   } catch (err) {
     showToast(err.message);
   }
 }
 
-function openTieuChiDialog(config) {
-  el.tieuChiForm.reset();
+function openCriteriaDialog(config) {
+  el.criteriaForm.reset();
   document.getElementById("tc-id").value = config?.id ?? "";
-  el.tieuChiDialogTitle.textContent = config ? "Sửa tiêu chí" : "Thêm tiêu chí";
+  el.criteriaDialogTitle.textContent = config ? "Sửa tiêu chí" : "Thêm tiêu chí";
 
-  const nhomSelect = document.getElementById("tc-nhom");
-  nhomSelect.innerHTML = state.nhomOptions.map((n) => `<option value="${n.ten_nhom}">${n.ten_nhom}</option>`).join("");
-  nhomSelect.value = config?.nhom ?? state.nhomOptions[0]?.ten_nhom ?? "";
+  const groupSelect = document.getElementById("tc-nhom");
+  groupSelect.innerHTML = state.groupOptions.map((n) => `<option value="${n.ten_nhom}">${n.ten_nhom}</option>`).join("");
+  groupSelect.value = config?.nhom ?? state.groupOptions[0]?.ten_nhom ?? "";
   document.getElementById("tc-ten").value = config?.ten_tieu_chi ?? "";
   document.getElementById("tc-cach-tinh").value = config?.cach_tinh_diem ?? "";
   document.getElementById("tc-co-chi-tieu").checked = Boolean(config?.co_chi_tieu);
@@ -159,32 +159,32 @@ function openTieuChiDialog(config) {
   // có của tiêu chí đó.
   document.getElementById("tc-dung-chung").checked = config ? config.department_id == null : false;
 
-  el.tcKieuTinh.innerHTML = TIEU_CHI_KIEU_TINH.map((k) => `<option value="${k.value}">${k.label}</option>`).join("");
-  el.tcNguon.innerHTML = TIEU_CHI_NGUON_DU_LIEU.map((n) => `<option value="${n.value}">${n.label}</option>`).join("");
-  el.tcKieuTinh.value = config?.kieu_tinh ?? "khong_tinh";
-  el.tcNguon.value = config?.nguon_du_lieu ?? TIEU_CHI_NGUON_DU_LIEU[0].value;
-  el.tcHeSo.value = config?.he_so ?? "";
-  updateTieuChiKieuTinhFields();
+  el.tcCalcType.innerHTML = CRITERIA_CALC_TYPES.map((k) => `<option value="${k.value}">${k.label}</option>`).join("");
+  el.tcSource.innerHTML = CRITERIA_DATA_SOURCES.map((n) => `<option value="${n.value}">${n.label}</option>`).join("");
+  el.tcCalcType.value = config?.kieu_tinh ?? "khong_tinh";
+  el.tcSource.value = config?.nguon_du_lieu ?? CRITERIA_DATA_SOURCES[0].value;
+  el.tcFactor.value = config?.he_so ?? "";
+  updateCriteriaCalcTypeFields();
 
-  el.tieuChiDialog.showModal();
+  el.criteriaDialog.showModal();
 }
 
 // Ẩn/hiện "Nguồn dữ liệu"/"Hệ số" theo đúng kiểu tính đang chọn — không
 // phải kiểu nào cũng cần cả 2 (VD "Không tính" thì ẩn hết).
-function updateTieuChiKieuTinhFields() {
-  const kieu = TIEU_CHI_KIEU_TINH.find((k) => k.value === el.tcKieuTinh.value) ?? TIEU_CHI_KIEU_TINH[0];
-  el.tcNguonRow.hidden = !kieu.needsNguon;
-  el.tcHeSoWrap.hidden = !kieu.needsHeSo;
-  el.tcKieuTinhHint.textContent = kieu.hint;
+function updateCriteriaCalcTypeFields() {
+  const kieu = CRITERIA_CALC_TYPES.find((k) => k.value === el.tcCalcType.value) ?? CRITERIA_CALC_TYPES[0];
+  el.tcSourceRow.hidden = !kieu.needsSource;
+  el.tcFactorWrap.hidden = !kieu.needsFactor;
+  el.tcCalcTypeHint.textContent = kieu.hint;
 }
-el.tcKieuTinh.addEventListener("change", updateTieuChiKieuTinhFields);
+el.tcCalcType.addEventListener("change", updateCriteriaCalcTypeFields);
 
-el.addTieuChiBtn.addEventListener("click", () => openTieuChiDialog(null));
-el.tieuChiCancelBtn.addEventListener("click", () => el.tieuChiDialog.close());
-el.tieuChiForm.addEventListener("submit", async (e) => {
+el.addCriteriaBtn.addEventListener("click", () => openCriteriaDialog(null));
+el.criteriaCancelBtn.addEventListener("click", () => el.criteriaDialog.close());
+el.criteriaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("tc-id").value;
-  const kieu = TIEU_CHI_KIEU_TINH.find((k) => k.value === el.tcKieuTinh.value) ?? TIEU_CHI_KIEU_TINH[0];
+  const kieu = CRITERIA_CALC_TYPES.find((k) => k.value === el.tcCalcType.value) ?? CRITERIA_CALC_TYPES[0];
   const payload = {
     nhom: document.getElementById("tc-nhom").value.trim(),
     ten_tieu_chi: document.getElementById("tc-ten").value.trim(),
@@ -193,19 +193,19 @@ el.tieuChiForm.addEventListener("submit", async (e) => {
     dung_chung: document.getElementById("tc-dung-chung").checked,
     department_id: state.currentDepartmentId,
     kieu_tinh: kieu.value,
-    nguon_du_lieu: kieu.needsNguon ? el.tcNguon.value : null,
-    he_so: kieu.needsHeSo && el.tcHeSo.value.trim() !== "" ? Number(el.tcHeSo.value) : null,
+    nguon_du_lieu: kieu.needsSource ? el.tcSource.value : null,
+    he_so: kieu.needsFactor && el.tcFactor.value.trim() !== "" ? Number(el.tcFactor.value) : null,
   };
   try {
     if (id) {
       await api(`/api/tieu-chi/${id}`, { method: "PUT", body: JSON.stringify(payload) });
-      el.tieuChiDialog.close();
-      await loadTieuChi();
+      el.criteriaDialog.close();
+      await loadCriteria();
       showToast("Đã cập nhật tiêu chí.", "success");
     } else {
       await api("/api/tieu-chi", { method: "POST", body: JSON.stringify(payload) });
-      el.tieuChiDialog.close();
-      await loadTieuChi();
+      el.criteriaDialog.close();
+      await loadCriteria();
       showToast("Đã thêm tiêu chí.", "success");
     }
   } catch (err) {
@@ -215,7 +215,7 @@ el.tieuChiForm.addEventListener("submit", async (e) => {
 
 // Sao chép tiêu chí từ 1 phòng khác thành tiêu chí riêng của phòng đang
 // xem — bộ khởi điểm nhanh cho phòng có tiêu chí "gần giống" phòng khác.
-el.cloneTieuChiBtn.addEventListener("click", () => {
+el.cloneCriteriaBtn.addEventListener("click", () => {
   const fromSelect = document.getElementById("clone-tieuchi-from");
   const others = state.departments.filter((d) => d.id !== state.currentDepartmentId);
   if (others.length === 0) {
@@ -223,10 +223,10 @@ el.cloneTieuChiBtn.addEventListener("click", () => {
     return;
   }
   fromSelect.innerHTML = others.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
-  el.cloneTieuChiDialog.showModal();
+  el.cloneCriteriaDialog.showModal();
 });
-el.cloneTieuChiCancelBtn.addEventListener("click", () => el.cloneTieuChiDialog.close());
-el.cloneTieuChiForm.addEventListener("submit", async (e) => {
+el.cloneCriteriaCancelBtn.addEventListener("click", () => el.cloneCriteriaDialog.close());
+el.cloneCriteriaForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const fromDepartmentId = Number(document.getElementById("clone-tieuchi-from").value);
   try {
@@ -234,8 +234,8 @@ el.cloneTieuChiForm.addEventListener("submit", async (e) => {
       method: "POST",
       body: JSON.stringify({ from_department_id: fromDepartmentId, to_department_id: state.currentDepartmentId }),
     });
-    el.cloneTieuChiDialog.close();
-    await loadTieuChi();
+    el.cloneCriteriaDialog.close();
+    await loadCriteria();
     showToast(
       result.cloned > 0 ? `Đã sao chép ${result.cloned} tiêu chí.` : "Không có tiêu chí mới để sao chép (đã có sẵn hết).",
       "success",
@@ -386,11 +386,11 @@ async function loadTags() {
   renderFilterTagDependents();
 }
 
-async function loadPhanLoai() {
-  state.phanLoaiOptions = await api("/api/phan-loai");
-  renderPhanLoaiConfig();
+async function loadCategory() {
+  state.categoryOptions = await api("/api/phan-loai");
+  renderCategoryConfig();
   renderTasks();
-  renderFilterTinhChatOptions();
+  renderFilterNatureOptions();
 }
 
 // Các phần phụ thuộc vào state.tags ngoài chính bảng cấu hình: bộ lọc Backlog
@@ -448,16 +448,16 @@ function renderTagConfig() {
   });
 }
 
-function renderPhanLoaiConfig() {
-  if (!el.phanLoaiConfigTbody) return;
-  el.phanLoaiConfigEmpty.hidden = state.phanLoaiOptions.length > 0;
-  el.phanLoaiConfigTbody.innerHTML = state.phanLoaiOptions
+function renderCategoryConfig() {
+  if (!el.categoryConfigTbody) return;
+  el.categoryConfigEmpty.hidden = state.categoryOptions.length > 0;
+  el.categoryConfigTbody.innerHTML = state.categoryOptions
     .map(
       (p) => `
     <tr data-id="${p.id}">
       <td>
         <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
-          <span ${phanLoaiBadgeAttrs(p.ten_phan_loai)}>&nbsp;</span>
+          <span ${categoryBadgeAttrs(p.ten_phan_loai)}>&nbsp;</span>
           <input class="inline-cell-input phanloai-name-input" data-id="${p.id}" value="${p.ten_phan_loai}" style="flex:1" />
         </div>
       </td>
@@ -466,12 +466,12 @@ function renderPhanLoaiConfig() {
     )
     .join("");
 
-  el.phanLoaiConfigTbody.querySelectorAll(".phanloai-name-input").forEach((input) => {
+  el.categoryConfigTbody.querySelectorAll(".phanloai-name-input").forEach((input) => {
     input.addEventListener("change", async () => {
       const value = input.value.trim();
       if (!value) {
         showToast("Tên phân loại không được để trống.");
-        input.value = state.phanLoaiOptions.find((p) => p.id === Number(input.dataset.id))?.ten_phan_loai ?? "";
+        input.value = state.categoryOptions.find((p) => p.id === Number(input.dataset.id))?.ten_phan_loai ?? "";
         return;
       }
       try {
@@ -479,18 +479,18 @@ function renderPhanLoaiConfig() {
           method: "PUT",
           body: JSON.stringify({ ten_phan_loai: value }),
         });
-        await loadPhanLoai();
+        await loadCategory();
       } catch (err) {
         showToast(err.message);
       }
     });
   });
-  el.phanLoaiConfigTbody.querySelectorAll(".delete-phanloai-btn").forEach((btn) => {
+  el.categoryConfigTbody.querySelectorAll(".delete-phanloai-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!await confirmDialog("Xóa phân loại này? Các task đang gắn phân loại này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/phan-loai/${btn.dataset.id}`, { method: "DELETE" });
-        await loadPhanLoai();
+        await loadCategory();
         showToast("Đã xóa phân loại.", "success");
       } catch (err) {
         showToast(err.message);
@@ -507,34 +507,34 @@ el.addTagBtn.addEventListener("click", async () => {
     showToast(err.message);
   }
 });
-el.addPhanLoaiBtn.addEventListener("click", async () => {
+el.addCategoryBtn.addEventListener("click", async () => {
   try {
     await api("/api/phan-loai", { method: "POST", body: JSON.stringify({ ten_phan_loai: "Phân loại mới" }) });
-    await loadPhanLoai();
+    await loadCategory();
   } catch (err) {
     showToast(err.message);
   }
 });
 
 // Danh mục Nhóm hiển thị ở cột "Nhóm" của tab Tiêu chí — đổi ở đây ảnh hưởng
-// ngay tới màu badge (nhomColorClass) và dropdown "Nhóm" ở dialog Thêm/Sửa
+// ngay tới màu badge (groupColorClass) và dropdown "Nhóm" ở dialog Thêm/Sửa
 // tiêu chí.
-async function loadNhom() {
-  state.nhomOptions = await api("/api/nhom");
-  renderNhomConfig();
-  renderTieuChi();
+async function loadGroup() {
+  state.groupOptions = await api("/api/nhom");
+  renderGroupConfig();
+  renderCriteria();
 }
 
-function renderNhomConfig() {
-  if (!el.nhomConfigTbody) return;
-  el.nhomConfigEmpty.hidden = state.nhomOptions.length > 0;
-  el.nhomConfigTbody.innerHTML = state.nhomOptions
+function renderGroupConfig() {
+  if (!el.groupConfigTbody) return;
+  el.groupConfigEmpty.hidden = state.groupOptions.length > 0;
+  el.groupConfigTbody.innerHTML = state.groupOptions
     .map(
       (n) => `
     <tr data-id="${n.id}">
       <td>
         <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
-          <span class="status-badge ${nhomColorClass(n.ten_nhom)}">&nbsp;</span>
+          <span class="status-badge ${groupColorClass(n.ten_nhom)}">&nbsp;</span>
           <input class="inline-cell-input nhom-name-input" data-id="${n.id}" value="${n.ten_nhom}" style="flex:1" />
         </div>
       </td>
@@ -543,28 +543,28 @@ function renderNhomConfig() {
     )
     .join("");
 
-  el.nhomConfigTbody.querySelectorAll(".nhom-name-input").forEach((input) => {
+  el.groupConfigTbody.querySelectorAll(".nhom-name-input").forEach((input) => {
     input.addEventListener("change", async () => {
       const value = input.value.trim();
       if (!value) {
         showToast("Tên nhóm không được để trống.");
-        input.value = state.nhomOptions.find((n) => n.id === Number(input.dataset.id))?.ten_nhom ?? "";
+        input.value = state.groupOptions.find((n) => n.id === Number(input.dataset.id))?.ten_nhom ?? "";
         return;
       }
       try {
         await api(`/api/nhom/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ten_nhom: value }) });
-        await loadNhom();
+        await loadGroup();
       } catch (err) {
         showToast(err.message);
       }
     });
   });
-  el.nhomConfigTbody.querySelectorAll(".delete-nhom-btn").forEach((btn) => {
+  el.groupConfigTbody.querySelectorAll(".delete-nhom-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!await confirmDialog("Xóa nhóm này? Các tiêu chí đang gắn nhóm này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/nhom/${btn.dataset.id}`, { method: "DELETE" });
-        await loadNhom();
+        await loadGroup();
         showToast("Đã xóa nhóm.", "success");
       } catch (err) {
         showToast(err.message);
@@ -573,25 +573,25 @@ function renderNhomConfig() {
   });
 }
 
-el.addNhomBtn.addEventListener("click", async () => {
+el.addGroupBtn.addEventListener("click", async () => {
   try {
     await api("/api/nhom", { method: "POST", body: JSON.stringify({ ten_nhom: "Nhóm mới" }) });
-    await loadNhom();
+    await loadGroup();
   } catch (err) {
     showToast(err.message);
   }
 });
 
 // Danh mục Chức vụ ở dropdown "Chức vụ" khi thêm/sửa nhân sự (Team & Nhân sự).
-async function loadChucVu() {
-  state.chucVuOptions = await api("/api/chuc-vu");
-  renderChucVuConfig();
+async function loadPosition() {
+  state.positionOptions = await api("/api/chuc-vu");
+  renderPositionConfig();
 }
 
-function renderChucVuConfig() {
-  if (!el.chucVuConfigTbody) return;
-  el.chucVuConfigEmpty.hidden = state.chucVuOptions.length > 0;
-  el.chucVuConfigTbody.innerHTML = state.chucVuOptions
+function renderPositionConfig() {
+  if (!el.positionConfigTbody) return;
+  el.positionConfigEmpty.hidden = state.positionOptions.length > 0;
+  el.positionConfigTbody.innerHTML = state.positionOptions
     .map(
       (c) => `
     <tr data-id="${c.id}">
@@ -601,28 +601,28 @@ function renderChucVuConfig() {
     )
     .join("");
 
-  el.chucVuConfigTbody.querySelectorAll(".chucvu-name-input").forEach((input) => {
+  el.positionConfigTbody.querySelectorAll(".chucvu-name-input").forEach((input) => {
     input.addEventListener("change", async () => {
       const value = input.value.trim();
       if (!value) {
         showToast("Tên chức vụ không được để trống.");
-        input.value = state.chucVuOptions.find((c) => c.id === Number(input.dataset.id))?.ten_chuc_vu ?? "";
+        input.value = state.positionOptions.find((c) => c.id === Number(input.dataset.id))?.ten_chuc_vu ?? "";
         return;
       }
       try {
         await api(`/api/chuc-vu/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ten_chuc_vu: value }) });
-        await loadChucVu();
+        await loadPosition();
       } catch (err) {
         showToast(err.message);
       }
     });
   });
-  el.chucVuConfigTbody.querySelectorAll(".delete-chucvu-btn").forEach((btn) => {
+  el.positionConfigTbody.querySelectorAll(".delete-chucvu-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (!await confirmDialog("Xóa chức vụ này? Các nhân sự đang gắn chức vụ này sẽ giữ nguyên giá trị cũ nhưng không còn khớp danh mục.")) return;
       try {
         await api(`/api/chuc-vu/${btn.dataset.id}`, { method: "DELETE" });
-        await loadChucVu();
+        await loadPosition();
         showToast("Đã xóa chức vụ.", "success");
       } catch (err) {
         showToast(err.message);
@@ -631,10 +631,10 @@ function renderChucVuConfig() {
   });
 }
 
-el.addChucVuBtn.addEventListener("click", async () => {
+el.addPositionBtn.addEventListener("click", async () => {
   try {
     await api("/api/chuc-vu", { method: "POST", body: JSON.stringify({ ten_chuc_vu: "Chức vụ mới" }) });
-    await loadChucVu();
+    await loadPosition();
   } catch (err) {
     showToast(err.message);
   }
@@ -775,7 +775,7 @@ async function refreshAfterDeptChange() {
     await loadTeams();
     await loadMembers();
     await loadRoadmap();
-    await loadTieuChi(); // dung_tieu_chi_chung có thể vừa đổi -> tiêu chí thấy được cũng đổi theo
+    await loadCriteria(); // dung_tieu_chi_chung có thể vừa đổi -> tiêu chí thấy được cũng đổi theo
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -942,51 +942,51 @@ function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload
   });
 }
 
-async function loadHeThong() {
-  state.heThongOptions = await api("/api/he-thong");
-  renderSimpleCatalog(el.heThongConfigTbody, el.heThongConfigEmpty, state.heThongOptions, "ten_he_thong", "/api/he-thong", loadHeThong, "hệ thống", heThongColorClass);
+async function loadSystem() {
+  state.systemOptions = await api("/api/he-thong");
+  renderSimpleCatalog(el.systemConfigTbody, el.systemConfigEmpty, state.systemOptions, "ten_he_thong", "/api/he-thong", loadSystem, "hệ thống", systemColorClass);
   renderRoadmap();
 }
-async function loadMucTieu() {
-  state.mucTieuOptions = await api("/api/muc-tieu");
-  renderSimpleCatalog(el.mucTieuConfigTbody, el.mucTieuConfigEmpty, state.mucTieuOptions, "ten_muc_tieu", "/api/muc-tieu", loadMucTieu, "mục tiêu", mucTieuColorClass);
+async function loadObjective() {
+  state.objectiveOptions = await api("/api/muc-tieu");
+  renderSimpleCatalog(el.objectiveConfigTbody, el.objectiveConfigEmpty, state.objectiveOptions, "ten_muc_tieu", "/api/muc-tieu", loadObjective, "mục tiêu", objectiveColorClass);
   renderRoadmap();
 }
 
-el.addHeThongBtn.addEventListener("click", async () => {
+el.addSystemBtn.addEventListener("click", async () => {
   try {
     await api("/api/he-thong", { method: "POST", body: JSON.stringify({ ten_he_thong: "Hệ thống mới" }) });
-    await loadHeThong();
+    await loadSystem();
   } catch (err) {
     showToast(err.message);
   }
 });
-el.addMucTieuBtn.addEventListener("click", async () => {
+el.addObjectiveBtn.addEventListener("click", async () => {
   try {
     await api("/api/muc-tieu", { method: "POST", body: JSON.stringify({ ten_muc_tieu: "Mục tiêu mới" }) });
-    await loadMucTieu();
+    await loadObjective();
   } catch (err) {
     showToast(err.message);
   }
 });
 
-async function loadPhanLoaiNhanSu() {
-  state.phanLoaiNhanSuOptions = await api("/api/phan-loai-nhan-su");
+async function loadMemberParticipation() {
+  state.memberParticipationOptions = await api("/api/phan-loai-nhan-su");
   renderSimpleCatalog(
-    el.phanLoaiNhanSuConfigTbody,
-    el.phanLoaiNhanSuConfigEmpty,
-    state.phanLoaiNhanSuOptions,
+    el.memberParticipationConfigTbody,
+    el.memberParticipationConfigEmpty,
+    state.memberParticipationOptions,
     "ten_phan_loai",
     "/api/phan-loai-nhan-su",
-    loadPhanLoaiNhanSu,
+    loadMemberParticipation,
     "phân loại",
-    phanLoaiNhanSuColorClass,
+    memberParticipationColorClass,
   );
 }
-el.addPhanLoaiNhanSuBtn.addEventListener("click", async () => {
+el.addMemberParticipationBtn.addEventListener("click", async () => {
   try {
     await api("/api/phan-loai-nhan-su", { method: "POST", body: JSON.stringify({ ten_phan_loai: "Phân loại mới" }) });
-    await loadPhanLoaiNhanSu();
+    await loadMemberParticipation();
   } catch (err) {
     showToast(err.message);
   }

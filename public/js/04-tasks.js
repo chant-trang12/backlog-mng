@@ -50,7 +50,7 @@ function renderTasks() {
       <td><input type="checkbox" class="task-row-checkbox" ${state.selectedTaskIds.has(t.id) ? "checked" : ""} /></td>
       <td>${t.stt}</td>
       <td>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
-      <td>${renderTinhChatBadges(t.tinh_chat)}</td>
+      <td>${renderNatureBadges(t.tinh_chat)}</td>
       <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
       <td>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
@@ -176,7 +176,7 @@ function selectedTasks() {
   return state.tasksAll.filter((t) => state.selectedTaskIds.has(t.id));
 }
 
-function taskHasTinhChatTon(t) {
+function taskHasNatureTon(t) {
   return (t.tinh_chat ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -190,7 +190,7 @@ function updateBulkMenuItems() {
   const anyMoved = sel.some((t) => t.da_chuyen_thang);
   const allNoScore = sel.length > 0 && sel.every((t) => t.khong_tinh_diem);
   const anyNoScore = sel.some((t) => t.khong_tinh_diem);
-  const allTon = sel.length > 0 && sel.every(taskHasTinhChatTon);
+  const allTon = sel.length > 0 && sel.every(taskHasNatureTon);
 
   const setItem = (action, { disabled = false, title = "" }) => {
     const item = el.bulkActionsMenu.querySelector(`[data-bulk-action="${action}"]`);
@@ -370,7 +370,7 @@ async function doMarkTasksTon() {
 
 const teamSelect = document.getElementById("f-team");
 
-function setTinhChatValue(value) {
+function setNatureValue(value) {
   const selected = new Set(
     (value ?? "")
       .split(",")
@@ -382,7 +382,7 @@ function setTinhChatValue(value) {
   });
 }
 
-function getTinhChatValue() {
+function getNatureValue() {
   return [...document.querySelectorAll('#f-tinh-chat-group input[type="checkbox"]:checked')]
     .map((cb) => cb.value)
     .join(", ");
@@ -397,7 +397,7 @@ function openTaskDialog(task) {
   el.taskForm.reset();
   document.getElementById("task-id").value = task?.id ?? "";
   el.taskDialogTitle.textContent = task ? `Sửa task #${task.stt}` : "Nhập task mới";
-  editingTaskHasTon = task ? taskHasTinhChatTon(task) : false;
+  editingTaskHasTon = task ? taskHasNatureTon(task) : false;
 
   teamSelect.innerHTML = state.teams
     .map((t) => `<option value="${t.name}">${t.name}</option>`)
@@ -411,10 +411,10 @@ function openTaskDialog(task) {
     state.tags.map((t) => `<option value="${t.ten_tag}">${t.ten_tag}</option>`).join("");
   tagSelect.value = task?.tag ?? "";
 
-  document.getElementById("f-tinh-chat-group").innerHTML = state.phanLoaiOptions
+  document.getElementById("f-tinh-chat-group").innerHTML = state.categoryOptions
     .map((p) => `<label class="checkbox-option"><input type="checkbox" value="${p.ten_phan_loai}" /> ${p.ten_phan_loai}</label>`)
     .join("");
-  setTinhChatValue(task?.tinh_chat ?? "");
+  setNatureValue(task?.tinh_chat ?? "");
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
   document.getElementById("f-dod").value = task?.dod ?? "";
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
@@ -438,15 +438,15 @@ el.cancelBtn.addEventListener("click", () => el.taskDialog.close());
 el.taskForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("task-id").value;
-  let tinhChat = getTinhChatValue();
+  let nature = getNatureValue();
   if (editingTaskHasTon) {
-    const items = tinhChat.split(",").map((v) => v.trim()).filter(Boolean);
+    const items = nature.split(",").map((v) => v.trim()).filter(Boolean);
     if (!items.includes("Nhiệm vụ tồn")) items.push("Nhiệm vụ tồn");
-    tinhChat = items.join(", ");
+    nature = items.join(", ");
   }
   const payload = {
     team: document.getElementById("f-team").value.trim(),
-    tinh_chat: tinhChat || undefined,
+    tinh_chat: nature || undefined,
     tag: document.getElementById("f-tag").value || undefined,
     nhiem_vu: document.getElementById("f-nhiem-vu").value.trim(),
     dod: document.getElementById("f-dod").value.trim() || undefined,
@@ -555,16 +555,16 @@ async function openTaskMemberDialog(task) {
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
   el.tmScoreUnit.value = "percent";
-  fillTaskMemberPhanLoaiSelect();
+  fillTaskMemberCategorySelect();
   renderTaskMemberThead();
   await loadTaskMembers();
   el.taskMemberDialog.showModal();
 }
 
-function fillTaskMemberPhanLoaiSelect() {
-  el.tmPhanLoai.innerHTML =
+function fillTaskMemberCategorySelect() {
+  el.tmCategory.innerHTML =
     `<option value="">— Không —</option>` +
-    state.phanLoaiNhanSuOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`).join("");
+    state.memberParticipationOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`).join("");
 }
 
 function renderTaskMemberThead() {
@@ -699,9 +699,9 @@ function renderTaskMembers() {
         </div>
       </td>`;
       }
-      const phanLoaiOptions =
+      const categoryOptions =
         `<option value="">— Không —</option>` +
-        state.phanLoaiNhanSuOptions
+        state.memberParticipationOptions
           .map((p) => `<option value="${p.ten_phan_loai}"${p.ten_phan_loai === tm.phan_loai ? " selected" : ""}>${p.ten_phan_loai}</option>`)
           .join("");
       return `
@@ -709,7 +709,7 @@ function renderTaskMembers() {
       <td>${tm.member_name}</td>
       <td>${tm.member_chuc_vu ?? ""}</td>
       <td>
-        <select class="tm-phanloai-select ${phanLoaiNhanSuColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${phanLoaiOptions}</select>
+        <select class="tm-phanloai-select ${memberParticipationColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${categoryOptions}</select>
       </td>
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
@@ -886,12 +886,12 @@ el.tmAddBtn.addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({
         member_id: memberId,
-        phan_loai: el.tmPhanLoai.value || undefined,
-        ghi_chu: el.tmGhiChu.value.trim() || undefined,
+        phan_loai: el.tmCategory.value || undefined,
+        ghi_chu: el.tmNote.value.trim() || undefined,
       }),
     });
-    el.tmGhiChu.value = "";
-    el.tmPhanLoai.value = "";
+    el.tmNote.value = "";
+    el.tmCategory.value = "";
     await loadTaskMembers();
     await loadTasks();
     showToast("Đã thêm nhân sự.", "success");

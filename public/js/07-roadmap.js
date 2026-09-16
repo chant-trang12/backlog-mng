@@ -79,23 +79,23 @@ el.roadmapSearch.addEventListener("input", () => {
 // "Tính năng mới" cùng ở vị trí đầu danh mục thì cùng ra team-color-0).
 // Nay mỗi danh mục có bảng màu riêng (ht-color-N / mt-color-N, xem
 // style.css) để không bao giờ trùng màu với nhau lẫn với Team.
-function heThongColorClass(value) {
-  const i = state.heThongOptions.findIndex((h) => h.ten_he_thong === value);
+function systemColorClass(value) {
+  const i = state.systemOptions.findIndex((h) => h.ten_he_thong === value);
   return `ht-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
-function mucTieuColorClass(value) {
-  const i = state.mucTieuOptions.findIndex((m) => m.ten_muc_tieu === value);
+function objectiveColorClass(value) {
+  const i = state.objectiveOptions.findIndex((m) => m.ten_muc_tieu === value);
   return `mt-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 
 // Phân loại nhân sự tham gia task — 2 giá trị mặc định (Thực hiện chính /
 // Hỗ trợ) có màu cố định riêng, dễ nhận ngay (xanh lá = chính, xanh dương =
 // hỗ trợ); phân loại tự thêm khác thì quay vòng theo bảng màu team-color.
-function phanLoaiNhanSuColorClass(value) {
+function memberParticipationColorClass(value) {
   if (!value) return "status-default";
   if (value === "Thực hiện chính") return "phan-loai-ns-chinh";
   if (value === "Hỗ trợ") return "phan-loai-ns-hotro";
-  const i = state.phanLoaiNhanSuOptions.findIndex((p) => p.ten_phan_loai === value);
+  const i = state.memberParticipationOptions.findIndex((p) => p.ten_phan_loai === value);
   return `team-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
 }
 
@@ -132,12 +132,12 @@ function renderRoadmap() {
       <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
       <td style="text-align:center">${offset + i + 1}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
-      <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${heThongColorClass(it.he_thong)}"`)}</td>
-      <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${mucTieuColorClass(it.muc_tieu)}"`)}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${systemColorClass(it.he_thong)}"`)}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${objectiveColorClass(it.muc_tieu)}"`)}</td>
       <td class="rm-nv-cell${it.synced_task_id ? " has-sync-badge" : ""}">${it.synced_task_id ? '<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog theo tháng bắt đầu">✓ Đã vào Backlog</span>' : ""}${nl2br(it.nhiem_vu)}</td>
       <td>${nl2br(it.dod)}</td>
       <td>${nl2br(it.dieu_kien_dam_bao)}</td>
-      <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, phanLoaiBadgeAttrs(it.phan_loai))}</td>
+      <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, categoryBadgeAttrs(it.phan_loai))}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_bat_dau)}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_ket_thuc)}</td>
       <td style="text-align:center">${quyFromDate(it.thoi_gian_ket_thuc)}</td>
@@ -412,9 +412,9 @@ function openRoadmapDialog(item) {
     item?.team ?? state.currentTeam ?? state.teams[0]?.name ?? "",
     null,
   );
-  rmFillSelect(document.getElementById("rm-he-thong"), state.heThongOptions.map((h) => h.ten_he_thong), item?.he_thong, "— Không —");
-  rmFillSelect(document.getElementById("rm-muc-tieu"), state.mucTieuOptions.map((m) => m.ten_muc_tieu), item?.muc_tieu, "— Không —");
-  rmFillSelect(document.getElementById("rm-phan-loai"), state.phanLoaiOptions.map((p) => p.ten_phan_loai), item?.phan_loai, "— Không —");
+  rmFillSelect(document.getElementById("rm-he-thong"), state.systemOptions.map((h) => h.ten_he_thong), item?.he_thong, "— Không —");
+  rmFillSelect(document.getElementById("rm-muc-tieu"), state.objectiveOptions.map((m) => m.ten_muc_tieu), item?.muc_tieu, "— Không —");
+  rmFillSelect(document.getElementById("rm-phan-loai"), state.categoryOptions.map((p) => p.ten_phan_loai), item?.phan_loai, "— Không —");
   document.getElementById("rm-nhiem-vu").value = item?.nhiem_vu ?? "";
   document.getElementById("rm-dod").value = item?.dod ?? "";
   document.getElementById("rm-dieu-kien").value = item?.dieu_kien_dam_bao ?? "";

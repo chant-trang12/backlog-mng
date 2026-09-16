@@ -14,7 +14,7 @@ const state = {
   memberKpiTheoTask: [], // dữ liệu task đã tham gia của từng nhân sự (GET /api/kpi-theo-task) — dùng cho cột "Điểm cá nhân (Tính theo task)" + popup chi tiết ở tab Nhân sự
   tasksAll: [], // toàn bộ task của tháng đang chọn (chưa lọc)
   tasks: [], // task sau khi áp bộ lọc (Tính chất / Team / Trạng thái)
-  taskFilters: { tinhChat: "", khongTinhDiem: "", team: "", trangThai: "", tag: "" },
+  taskFilters: { nature: "", excludedFromScore: "", team: "", status: "", tag: "" },
   taskSearch: "",
   taskWarningFilter: "", // "" | "no-score" | "overdue" | "upcoming" — bấm vào 1 cảnh báo để lọc nhanh
   selectedTaskIds: new Set(),
@@ -24,16 +24,16 @@ const state = {
   complianceRecords: [],
   trainingRecords: [],
   supportRecords: [],
-  danhGiaRecords: [],
-  tieuChiConfigs: [],
+  evaluationRecords: [],
+  criteriaConfigs: [],
   rankingConfig: { rows: [], columns: [], cells: [] },
   tags: [],
-  phanLoaiOptions: [],
-  nhomOptions: [],
-  chucVuOptions: [],
-  heThongOptions: [],
-  mucTieuOptions: [],
-  phanLoaiNhanSuOptions: [],
+  categoryOptions: [],
+  groupOptions: [],
+  positionOptions: [],
+  systemOptions: [],
+  objectiveOptions: [],
+  memberParticipationOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
@@ -53,19 +53,19 @@ const state = {
   homeTasks: [],
   homeComplianceRecords: [],
   homeAttendanceRecords: [],
-  homeNoiQuyOverrideNames: new Set(),
+  homeWorkRuleOverrideNames: new Set(),
   homeSupportRecords: [],
   homeTrainingRecords: [],
-  homeDanhGiaRecords: [],
+  homeEvaluationRecords: [],
   homeKpiTheoTask: [], // KPI nhân sự theo task (phòng ban cach_tinh_kpi="theo_task") — xem GET /api/kpi-theo-task
   homeRankingSelectedTeam: null, // Team đang xem chi tiết ở tab Ranking (Home)
   attendanceHeaders: [], // cột động lấy từ dòng tiêu đề file Excel đã import
   attendanceRecords: [],
   selectedAttendanceIds: new Set(),
   attendanceSearch: "", // tìm theo từ khoá trên mọi cột (bộ lọc Team không áp dụng cho tab này)
-  noiQuyOverrideNames: new Set(), // nhân sự đã "Không tính đi muộn" trong tháng đang chọn
-  selectedNoiQuyNames: new Set(),
-  noiQuySearch: "",
+  workRuleOverrideNames: new Set(), // nhân sự đã "Không tính đi muộn" trong tháng đang chọn
+  selectedWorkRuleNames: new Set(),
+  workRuleSearch: "",
 };
 
 const el = {
@@ -92,10 +92,10 @@ const el = {
   teamList: document.getElementById("team-list"),
   teamEmpty: document.getElementById("team-empty"),
   teamFilterEmpty: document.getElementById("team-filter-empty"),
-  filterTinhChat: document.getElementById("filter-tinh-chat"),
-  filterKhongTinhDiem: document.getElementById("filter-khong-tinh-diem"),
+  filterNature: document.getElementById("filter-tinh-chat"),
+  filterExcludedFromScore: document.getElementById("filter-khong-tinh-diem"),
   filterTeam: document.getElementById("filter-team"),
-  filterTrangThai: document.getElementById("filter-trang-thai"),
+  filterStatus: document.getElementById("filter-trang-thai"),
   filterTag: document.getElementById("filter-tag"),
   addMemberBtn: document.getElementById("add-member-btn"),
   downloadMemberTemplateBtn: document.getElementById("download-member-template-btn"),
@@ -168,32 +168,32 @@ const el = {
   supportDialogTitle: document.getElementById("support-dialog-title"),
   supportForm: document.getElementById("support-form"),
   supportCancelBtn: document.getElementById("support-cancel-btn"),
-  addDanhGiaBtn: document.getElementById("add-danhgia-btn"),
-  danhGiaTbody: document.getElementById("danhgia-tbody"),
-  danhGiaEmpty: document.getElementById("danhgia-empty"),
-  danhGiaDialog: document.getElementById("danhgia-dialog"),
-  danhGiaDialogTitle: document.getElementById("danhgia-dialog-title"),
-  danhGiaForm: document.getElementById("danhgia-form"),
-  danhGiaCancelBtn: document.getElementById("danhgia-cancel-btn"),
-  addTieuChiBtn: document.getElementById("add-tieuchi-btn"),
-  tieuChiTbody: document.getElementById("tieuchi-tbody"),
-  tieuChiEmpty: document.getElementById("tieuchi-empty"),
-  tieuChiTheadRow: document.getElementById("tieuchi-thead-row"),
-  tieuChiTongDiemRow: document.getElementById("tieuchi-tongdiem-row"),
-  tieuChiDialog: document.getElementById("tieuchi-dialog"),
-  tieuChiDialogTitle: document.getElementById("tieuchi-dialog-title"),
-  tieuChiForm: document.getElementById("tieuchi-form"),
-  tieuChiCancelBtn: document.getElementById("tieuchi-cancel-btn"),
-  cloneTieuChiBtn: document.getElementById("clone-tieuchi-btn"),
-  cloneTieuChiDialog: document.getElementById("clone-tieuchi-dialog"),
-  cloneTieuChiForm: document.getElementById("clone-tieuchi-form"),
-  cloneTieuChiCancelBtn: document.getElementById("clone-tieuchi-cancel-btn"),
-  tcKieuTinh: document.getElementById("tc-kieu-tinh"),
-  tcNguonRow: document.getElementById("tc-nguon-row"),
-  tcNguon: document.getElementById("tc-nguon"),
-  tcHeSoWrap: document.getElementById("tc-he-so-wrap"),
-  tcHeSo: document.getElementById("tc-he-so"),
-  tcKieuTinhHint: document.getElementById("tc-kieu-tinh-hint"),
+  addEvaluationBtn: document.getElementById("add-danhgia-btn"),
+  evaluationTbody: document.getElementById("danhgia-tbody"),
+  evaluationEmpty: document.getElementById("danhgia-empty"),
+  evaluationDialog: document.getElementById("danhgia-dialog"),
+  evaluationDialogTitle: document.getElementById("danhgia-dialog-title"),
+  evaluationForm: document.getElementById("danhgia-form"),
+  evaluationCancelBtn: document.getElementById("danhgia-cancel-btn"),
+  addCriteriaBtn: document.getElementById("add-tieuchi-btn"),
+  criteriaTbody: document.getElementById("tieuchi-tbody"),
+  criteriaEmpty: document.getElementById("tieuchi-empty"),
+  criteriaTheadRow: document.getElementById("tieuchi-thead-row"),
+  criteriaTongDiemRow: document.getElementById("tieuchi-tongdiem-row"),
+  criteriaDialog: document.getElementById("tieuchi-dialog"),
+  criteriaDialogTitle: document.getElementById("tieuchi-dialog-title"),
+  criteriaForm: document.getElementById("tieuchi-form"),
+  criteriaCancelBtn: document.getElementById("tieuchi-cancel-btn"),
+  cloneCriteriaBtn: document.getElementById("clone-tieuchi-btn"),
+  cloneCriteriaDialog: document.getElementById("clone-tieuchi-dialog"),
+  cloneCriteriaForm: document.getElementById("clone-tieuchi-form"),
+  cloneCriteriaCancelBtn: document.getElementById("clone-tieuchi-cancel-btn"),
+  tcCalcType: document.getElementById("tc-kieu-tinh"),
+  tcSourceRow: document.getElementById("tc-nguon-row"),
+  tcSource: document.getElementById("tc-nguon"),
+  tcFactorWrap: document.getElementById("tc-he-so-wrap"),
+  tcFactor: document.getElementById("tc-he-so"),
+  tcCalcTypeHint: document.getElementById("tc-kieu-tinh-hint"),
   addRankingColumnBtn: document.getElementById("add-ranking-column-btn"),
   addRankingRowBtn: document.getElementById("add-ranking-row-btn"),
   rankingTheadRow: document.getElementById("ranking-thead-row"),
@@ -202,26 +202,26 @@ const el = {
   addTagBtn: document.getElementById("add-tag-btn"),
   tagConfigTbody: document.getElementById("tag-config-tbody"),
   tagConfigEmpty: document.getElementById("tag-config-empty"),
-  addPhanLoaiBtn: document.getElementById("add-phanloai-btn"),
-  phanLoaiConfigTbody: document.getElementById("phanloai-config-tbody"),
-  phanLoaiConfigEmpty: document.getElementById("phanloai-config-empty"),
-  addNhomBtn: document.getElementById("add-nhom-btn"),
-  nhomConfigTbody: document.getElementById("nhom-config-tbody"),
-  nhomConfigEmpty: document.getElementById("nhom-config-empty"),
-  addChucVuBtn: document.getElementById("add-chucvu-btn"),
-  chucVuConfigTbody: document.getElementById("chucvu-config-tbody"),
+  addCategoryBtn: document.getElementById("add-phanloai-btn"),
+  categoryConfigTbody: document.getElementById("phanloai-config-tbody"),
+  categoryConfigEmpty: document.getElementById("phanloai-config-empty"),
+  addGroupBtn: document.getElementById("add-nhom-btn"),
+  groupConfigTbody: document.getElementById("nhom-config-tbody"),
+  groupConfigEmpty: document.getElementById("nhom-config-empty"),
+  addPositionBtn: document.getElementById("add-chucvu-btn"),
+  positionConfigTbody: document.getElementById("chucvu-config-tbody"),
   addDepartmentBtn: document.getElementById("add-department-btn"),
   departmentConfigTbody: document.getElementById("department-config-tbody"),
   departmentConfigEmpty: document.getElementById("department-config-empty"),
-  addHeThongBtn: document.getElementById("add-hethong-btn"),
-  heThongConfigTbody: document.getElementById("hethong-config-tbody"),
-  heThongConfigEmpty: document.getElementById("hethong-config-empty"),
-  addMucTieuBtn: document.getElementById("add-muctieu-btn"),
-  mucTieuConfigTbody: document.getElementById("muctieu-config-tbody"),
-  mucTieuConfigEmpty: document.getElementById("muctieu-config-empty"),
-  addPhanLoaiNhanSuBtn: document.getElementById("add-phanloainhansu-btn"),
-  phanLoaiNhanSuConfigTbody: document.getElementById("phanloainhansu-config-tbody"),
-  phanLoaiNhanSuConfigEmpty: document.getElementById("phanloainhansu-config-empty"),
+  addSystemBtn: document.getElementById("add-hethong-btn"),
+  systemConfigTbody: document.getElementById("hethong-config-tbody"),
+  systemConfigEmpty: document.getElementById("hethong-config-empty"),
+  addObjectiveBtn: document.getElementById("add-muctieu-btn"),
+  objectiveConfigTbody: document.getElementById("muctieu-config-tbody"),
+  objectiveConfigEmpty: document.getElementById("muctieu-config-empty"),
+  addMemberParticipationBtn: document.getElementById("add-phanloainhansu-btn"),
+  memberParticipationConfigTbody: document.getElementById("phanloainhansu-config-tbody"),
+  memberParticipationConfigEmpty: document.getElementById("phanloainhansu-config-empty"),
   taskMemberDialog: document.getElementById("task-member-dialog"),
   taskMemberDialogTitle: document.getElementById("task-member-dialog-title"),
   taskMemberDialogTeam: document.getElementById("task-member-dialog-team"),
@@ -238,8 +238,8 @@ const el = {
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
   tmMember: document.getElementById("tm-member"),
   tmMemberSuggestions: document.getElementById("tm-member-suggestions"),
-  tmPhanLoai: document.getElementById("tm-phan-loai"),
-  tmGhiChu: document.getElementById("tm-ghi-chu"),
+  tmCategory: document.getElementById("tm-phan-loai"),
+  tmNote: document.getElementById("tm-ghi-chu"),
   tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
   roadmapYearValue: document.getElementById("roadmap-year-value"),
@@ -273,18 +273,18 @@ const el = {
   confirmDialogMessage: document.getElementById("confirm-dialog-message"),
   confirmOkBtn: document.getElementById("confirm-ok-btn"),
   confirmCancelBtn: document.getElementById("confirm-cancel-btn"),
-  chucVuConfigEmpty: document.getElementById("chucvu-config-empty"),
+  positionConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
   attendanceSearch: document.getElementById("attendance-search"),
   attendanceThead: document.getElementById("attendance-thead"),
   attendanceTbody: document.getElementById("attendance-tbody"),
   attendanceEmpty: document.getElementById("attendance-empty"),
-  noiQuyTbody: document.getElementById("noiquy-tbody"),
-  noiQuyEmpty: document.getElementById("noiquy-empty"),
-  noiQuySearch: document.getElementById("noiquy-search"),
-  markExcludedNoiQuyBtn: document.getElementById("mark-excluded-noiquy-btn"),
-  unmarkExcludedNoiQuyBtn: document.getElementById("unmark-excluded-noiquy-btn"),
+  workRuleTbody: document.getElementById("noiquy-tbody"),
+  workRuleEmpty: document.getElementById("noiquy-empty"),
+  workRuleSearch: document.getElementById("noiquy-search"),
+  markExcludedWorkRuleBtn: document.getElementById("mark-excluded-noiquy-btn"),
+  unmarkExcludedWorkRuleBtn: document.getElementById("unmark-excluded-noiquy-btn"),
   markExcludedAttendanceBtn: document.getElementById("mark-excluded-attendance-btn"),
   unmarkExcludedAttendanceBtn: document.getElementById("unmark-excluded-attendance-btn"),
   deleteSelectedAttendanceBtn: document.getElementById("delete-selected-attendance-btn"),
@@ -306,19 +306,19 @@ const el = {
 };
 
 // Công thức tính điểm cho 1 tiêu chí, dùng ở dialog Tiêu chí (Cấu hình) và
-// khi tính Tổng điểm ở tab Tổng hợp (homeTieuChiContribution) — thay cho
-// việc hard-code theo tên tiêu chí trong code như trước. needsNguon/needsHeSo
+// khi tính Tổng điểm ở tab Tổng hợp (homeCriteriaContribution) — thay cho
+// việc hard-code theo tên tiêu chí trong code như trước. needsSource/needsFactor
 // quyết định 2 trường "Nguồn dữ liệu"/"Hệ số" có hiện trong dialog không.
-const TIEU_CHI_KIEU_TINH = [
-  { value: "khong_tinh", label: "Không tính vào Tổng điểm", needsNguon: false, needsHeSo: false, hint: "Tiêu chí thuần thông tin — không cộng/trừ vào Tổng điểm ở tab Tổng hợp." },
-  { value: "ty_le_x_diem_chuan", label: "Tỷ lệ (nguồn dữ liệu) × Điểm chuẩn", needsNguon: true, needsHeSo: false, hint: "VD: Tỷ lệ hoàn thành nhiệm vụ × Điểm chuẩn đã cấu hình cho team đó." },
-  { value: "ty_le_chia_chi_tieu_x_diem_chuan", label: "(Thực tế ÷ Chỉ tiêu) × Điểm chuẩn", needsNguon: true, needsHeSo: false, hint: "Cần bật \"Có dòng Chỉ tiêu riêng\" ở trên và nhập Chỉ tiêu cho từng team." },
-  { value: "tru_theo_loi", label: "Điểm chuẩn − Điểm chuẩn × (SL lỗi × Hệ số)", needsNguon: true, needsHeSo: true, hint: "Hệ số = % trừ cho mỗi lỗi (VD 0.1 = trừ 10%/lỗi). Chưa có lỗi nào thì lấy đúng Điểm chuẩn." },
-  { value: "dem_dong_cong", label: "Đếm số dòng khai báo ÷ Hệ số (cộng +)", needsNguon: true, needsHeSo: true, hint: "Hệ số = số dòng cần để được +1 điểm (VD 2 = cứ 2 dòng +1 điểm)." },
-  { value: "dem_dong_tru", label: "Đếm số dòng khai báo ÷ Hệ số (trừ −)", needsNguon: true, needsHeSo: true, hint: "Hệ số = số dòng cần để bị -1 điểm (VD 2 = cứ 2 dòng -1 điểm)." },
+const CRITERIA_CALC_TYPES = [
+  { value: "khong_tinh", label: "Không tính vào Tổng điểm", needsSource: false, needsFactor: false, hint: "Tiêu chí thuần thông tin — không cộng/trừ vào Tổng điểm ở tab Tổng hợp." },
+  { value: "ty_le_x_diem_chuan", label: "Tỷ lệ (nguồn dữ liệu) × Điểm chuẩn", needsSource: true, needsFactor: false, hint: "VD: Tỷ lệ hoàn thành nhiệm vụ × Điểm chuẩn đã cấu hình cho team đó." },
+  { value: "ty_le_chia_chi_tieu_x_diem_chuan", label: "(Thực tế ÷ Chỉ tiêu) × Điểm chuẩn", needsSource: true, needsFactor: false, hint: "Cần bật \"Có dòng Chỉ tiêu riêng\" ở trên và nhập Chỉ tiêu cho từng team." },
+  { value: "tru_theo_loi", label: "Điểm chuẩn − Điểm chuẩn × (SL lỗi × Hệ số)", needsSource: true, needsFactor: true, hint: "Hệ số = % trừ cho mỗi lỗi (VD 0.1 = trừ 10%/lỗi). Chưa có lỗi nào thì lấy đúng Điểm chuẩn." },
+  { value: "dem_dong_cong", label: "Đếm số dòng khai báo ÷ Hệ số (cộng +)", needsSource: true, needsFactor: true, hint: "Hệ số = số dòng cần để được +1 điểm (VD 2 = cứ 2 dòng +1 điểm)." },
+  { value: "dem_dong_tru", label: "Đếm số dòng khai báo ÷ Hệ số (trừ −)", needsSource: true, needsFactor: true, hint: "Hệ số = số dòng cần để bị -1 điểm (VD 2 = cứ 2 dòng -1 điểm)." },
 ];
 
-const TIEU_CHI_NGUON_DU_LIEU = [
+const CRITERIA_DATA_SOURCES = [
   { value: "ty_le_hoan_thanh_nhiem_vu", label: "Tỷ lệ hoàn thành nhiệm vụ (Backlog)" },
   { value: "so_luong_su_co", label: "SL sự cố (CSKH → Sự cố)" },
   { value: "ty_le_xu_ly_ticket", label: "Tỷ lệ xử lý ticket (CSKH → Hỗ trợ ticket)" },
@@ -337,7 +337,7 @@ const STATUS_CLASS = {
 };
 
 // Màu badge Tag/Phân loại gán tự động theo VỊ TRÍ trong danh mục (state.tags /
-// state.phanLoaiOptions, quản lý ở Cấu hình → Tag & Phân loại) — không lưu
+// state.categoryOptions, quản lý ở Cấu hình → Tag & Phân loại) — không lưu
 // màu trong DB. 4/8 màu đầu giữ đúng như bảng màu cố định trước đây để không
 // đổi giao diện của các giá trị gốc; các màu sau dùng khi thêm tag/phân loại
 // mới, lặp lại theo chu kỳ nếu vượt quá độ dài palette.
@@ -356,7 +356,7 @@ const TAG_PALETTE = [
   { bg: "#fbe3ec", text: "#8a2f5c" },
 ];
 
-const PHAN_LOAI_PALETTE = [
+const CATEGORY_PALETTE = [
   { bg: "#dbeafe", text: "#1e40af" },
   { bg: "#fce7f3", text: "#9d174d" },
   { bg: "#ede9fe", text: "#5b21b6" },
@@ -377,34 +377,34 @@ function tagBadgeAttrs(value) {
   return `class="status-badge" style="background:${c.bg};color:${c.text}"`;
 }
 
-function phanLoaiBadgeAttrs(value) {
+function categoryBadgeAttrs(value) {
   if (value === "Nhiệm vụ tồn") return `class="status-badge tinh-chat-ton"`;
   if (value === "NV năm") return `class="status-badge tinh-chat-nv-nam"`;
-  const idx = state.phanLoaiOptions.findIndex((p) => p.ten_phan_loai === value);
+  const idx = state.categoryOptions.findIndex((p) => p.ten_phan_loai === value);
   if (idx === -1) return `class="status-badge status-default"`;
-  const c = PHAN_LOAI_PALETTE[idx % PHAN_LOAI_PALETTE.length];
+  const c = CATEGORY_PALETTE[idx % CATEGORY_PALETTE.length];
   return `class="status-badge" style="background:${c.bg};color:${c.text}"`;
 }
 
 // Hiển thị Tính chất dạng badge giống cột Trạng thái — mỗi giá trị đã chọn là
 // 1 badge, mỗi loại 1 màu riêng để dễ phân biệt.
-function renderTinhChatBadges(value) {
+function renderNatureBadges(value) {
   const items = (value ?? "")
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
-  const badges = items.map((item) => `<span ${phanLoaiBadgeAttrs(item)}>${item}</span>`).join("");
+  const badges = items.map((item) => `<span ${categoryBadgeAttrs(item)}>${item}</span>`).join("");
   return badges ? `<div class="badge-group">${badges}</div>` : "";
 }
 
 // Loại (tab Đào tạo) — "Đào tạo" / "Chứng chỉ QT", mỗi loại 1 màu riêng.
-const LOAI_CLASS = {
+const TRAINING_TYPE_CLASS = {
   "Đào tạo": "loai-dao-tao",
   "Chứng chỉ QT": "loai-chung-chi",
 };
 
-function loaiColorClass(value) {
-  return LOAI_CLASS[value] || "status-default";
+function typeColorClass(value) {
+  return TRAINING_TYPE_CLASS[value] || "status-default";
 }
 
 const TEAM_COLOR_COUNT = 6;
@@ -419,9 +419,9 @@ function teamColorClass(teamName) {
 }
 
 // Mỗi Nhóm tiêu chí (trang Cấu hình → Cấu hình → Nhóm) 1 màu riêng, theo vị
-// trí trong danh mục state.nhomOptions — cùng bảng màu với team-color-N.
-function nhomColorClass(nhom) {
-  const index = state.nhomOptions.findIndex((n) => n.ten_nhom === nhom);
+// trí trong danh mục state.groupOptions — cùng bảng màu với team-color-N.
+function groupColorClass(group) {
+  const index = state.groupOptions.findIndex((n) => n.ten_nhom === group);
   const safeIndex = index === -1 ? 0 : index;
   return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
 }
@@ -480,10 +480,10 @@ const creationRatePagination = createPagination("creation-rate", () => renderCre
 const compliancePagination = createPagination("compliance", () => renderComplianceRecords());
 const trainingPagination = createPagination("training", () => renderTrainingRecords());
 const supportPagination = createPagination("support", () => renderSupportRecords());
-const danhGiaPagination = createPagination("danhgia", () => renderDanhGiaRecords());
+const evaluationPagination = createPagination("danhgia", () => renderEvaluationRecords());
 const attendancePagination = createPagination("attendance", () => renderAttendanceTable());
 const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
-const noiQuyPagination = createPagination("noiquy", () => renderNoiQuyTable());
+const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable());
 
 function today() {
   return new Date();

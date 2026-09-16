@@ -314,7 +314,7 @@ function renderTrainingRecords() {
       <td>${t.period_label}</td>
       <td><span class="status-badge ${teamColorClass(t.team_name)}">${t.team_name}</span></td>
       <td>${t.member_name}</td>
-      <td>${t.loai ? `<span class="status-badge ${loaiColorClass(t.loai)}">${t.loai}</span>` : ""}</td>
+      <td>${t.loai ? `<span class="status-badge ${typeColorClass(t.loai)}">${t.loai}</span>` : ""}</td>
       <td>${formatDateDisplay(t.ngay_thuc_hien)}</td>
       <td>${t.nguoi_xac_nhan ?? ""}</td>
       <td>${(t.noi_dung ?? "").replace(/\n/g, "<br/>")}</td>
@@ -583,28 +583,28 @@ el.supportForm.addEventListener("submit", async (e) => {
 // period_id + member_id, 1 nhân sự chỉ có đúng 1 dòng/tháng theo dõi).
 // Sửa/Xóa từng dòng thực hiện ngoài bảng. --
 
-async function loadDanhGiaRecords() {
+async function loadEvaluationRecords() {
   if (!state.currentPeriodId) {
-    state.danhGiaRecords = [];
-    renderDanhGiaRecords();
+    state.evaluationRecords = [];
+    renderEvaluationRecords();
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.danhGiaRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}`);
-  renderDanhGiaRecords();
+  state.evaluationRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}`);
+  renderEvaluationRecords();
   syncHomeFromCurrentIfNeeded();
 }
 
-function filteredDanhGiaRecords() {
-  if (!state.memberFilterTeam) return state.danhGiaRecords;
-  return state.danhGiaRecords.filter((d) => d.team_name === state.memberFilterTeam);
+function filteredEvaluationRecords() {
+  if (!state.memberFilterTeam) return state.evaluationRecords;
+  return state.evaluationRecords.filter((d) => d.team_name === state.memberFilterTeam);
 }
 
-function renderDanhGiaRecords() {
-  const visible = filteredDanhGiaRecords();
-  el.danhGiaEmpty.hidden = visible.length > 0;
-  const pageItems = danhGiaPagination.slice(visible);
-  el.danhGiaTbody.innerHTML = pageItems
+function renderEvaluationRecords() {
+  const visible = filteredEvaluationRecords();
+  el.evaluationEmpty.hidden = visible.length > 0;
+  const pageItems = evaluationPagination.slice(visible);
+  el.evaluationTbody.innerHTML = pageItems
     .map(
       (d) => `
     <tr data-id="${d.id}">
@@ -620,20 +620,20 @@ function renderDanhGiaRecords() {
     )
     .join("");
 
-  el.danhGiaTbody.querySelectorAll(".edit-danhgia-btn").forEach((btn) => {
+  el.evaluationTbody.querySelectorAll(".edit-danhgia-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      const record = state.danhGiaRecords.find((d) => d.id === id);
-      openDanhGiaDialog(record.team_id, "Sửa dữ liệu đánh giá");
+      const record = state.evaluationRecords.find((d) => d.id === id);
+      openEvaluationDialog(record.team_id, "Sửa dữ liệu đánh giá");
     });
   });
-  el.danhGiaTbody.querySelectorAll(".delete-danhgia-btn").forEach((btn) => {
+  el.evaluationTbody.querySelectorAll(".delete-danhgia-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       if (!await confirmDialog("Xóa dữ liệu đánh giá này?")) return;
       try {
         await api(`/api/danh-gia-records/${id}`, { method: "DELETE" });
-        await loadDanhGiaRecords();
+        await loadEvaluationRecords();
         showToast("Đã xóa dữ liệu đánh giá.", "success");
       } catch (err) {
         showToast(err.message);
@@ -645,9 +645,9 @@ function renderDanhGiaRecords() {
 // Chọn Team đánh giá thì hiển thị TẤT CẢ nhân sự của team đó kèm ô nhập Số
 // thứ tự (pre-fill giá trị đã có, nếu có), cho phép nhập/sửa nhiều nhân sự
 // cùng lúc rồi lưu 1 lần (upsert).
-async function openDanhGiaDialog(initialTeamId, title = "Thêm Đánh giá") {
-  el.danhGiaForm.reset();
-  el.danhGiaDialogTitle.textContent = title;
+async function openEvaluationDialog(initialTeamId, title = "Thêm Đánh giá") {
+  el.evaluationForm.reset();
+  el.evaluationDialogTitle.textContent = title;
 
   const teamSelectEl = document.getElementById("dg-team");
   teamSelectEl.innerHTML = teamOptionsHtml();
@@ -661,7 +661,7 @@ async function openDanhGiaDialog(initialTeamId, title = "Thêm Đánh giá") {
     emptyEl.hidden = membersOfTeam.length > 0;
     inputTbody.innerHTML = membersOfTeam
       .map((m) => {
-        const existing = state.danhGiaRecords.find((d) => d.member_id === m.id);
+        const existing = state.evaluationRecords.find((d) => d.member_id === m.id);
         return `
       <tr data-member-id="${m.id}">
         <td>${m.name}</td>
@@ -673,10 +673,10 @@ async function openDanhGiaDialog(initialTeamId, title = "Thêm Đánh giá") {
 
   teamSelectEl.onchange = refreshMemberInputs;
   refreshMemberInputs();
-  el.danhGiaDialog.showModal();
+  el.evaluationDialog.showModal();
 }
 
-el.addDanhGiaBtn.addEventListener("click", () => {
+el.addEvaluationBtn.addEventListener("click", () => {
   if (state.teams.length === 0) {
     showToast("Hãy khai báo ít nhất một team trước.");
     return;
@@ -689,10 +689,10 @@ el.addDanhGiaBtn.addEventListener("click", () => {
     showToast("Chưa có nhân sự nào trong tháng đang chọn — hãy thêm nhân sự trước.");
     return;
   }
-  openDanhGiaDialog(null);
+  openEvaluationDialog(null);
 });
-el.danhGiaCancelBtn.addEventListener("click", () => el.danhGiaDialog.close());
-el.danhGiaForm.addEventListener("submit", async (e) => {
+el.evaluationCancelBtn.addEventListener("click", () => el.evaluationDialog.close());
+el.evaluationForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const teamId = Number(document.getElementById("dg-team").value);
   const entries = Array.from(document.querySelectorAll("#danhgia-member-input-tbody tr"))
@@ -713,8 +713,8 @@ el.danhGiaForm.addEventListener("submit", async (e) => {
       method: "POST",
       body: JSON.stringify({ period_id: state.currentPeriodId, team_id: teamId, entries }),
     });
-    el.danhGiaDialog.close();
-    await loadDanhGiaRecords();
+    el.evaluationDialog.close();
+    await loadEvaluationRecords();
     showToast("Đã lưu dữ liệu đánh giá.", "success");
   } catch (err) {
     showToast(err.message);
@@ -728,16 +728,16 @@ async function loadAttendanceRecords() {
   if (!state.currentPeriodId) {
     state.attendanceHeaders = [];
     state.attendanceRecords = [];
-    state.noiQuyOverrideNames = new Set();
+    state.workRuleOverrideNames = new Set();
     renderAttendanceThead();
     renderAttendanceTable();
-    renderNoiQuyTable();
+    renderWorkRuleTable();
     syncHomeFromCurrentIfNeeded();
     return;
   }
   const [data] = await Promise.all([
     api(`/api/attendance-records?period_id=${state.currentPeriodId}`),
-    loadNoiQuyOverrides(),
+    loadWorkRuleOverrides(),
   ]);
   state.attendanceHeaders = data.headers;
   state.attendanceRecords = data.rows;
@@ -747,24 +747,24 @@ async function loadAttendanceRecords() {
   });
   renderAttendanceThead();
   renderAttendanceTable();
-  renderNoiQuyTable();
+  renderWorkRuleTable();
   syncHomeFromCurrentIfNeeded();
 }
 
-async function loadNoiQuyOverrides() {
+async function loadWorkRuleOverrides() {
   if (!state.currentPeriodId) {
-    state.noiQuyOverrideNames = new Set();
+    state.workRuleOverrideNames = new Set();
     return;
   }
   const overrides = await api(`/api/noiquy-overrides?period_id=${state.currentPeriodId}`);
-  state.noiQuyOverrideNames = new Set(overrides.map((o) => o.member_name));
+  state.workRuleOverrideNames = new Set(overrides.map((o) => o.member_name));
 }
 
 // Tổng hợp Nội quy từ dữ liệu Chấm công đã nhập của tháng đang chọn — không
 // lưu riêng, tính lại mỗi khi dữ liệu Chấm công thay đổi. Dòng Chấm công đã
 // "Không tính đi muộn" (excluded_from_late) bị bỏ qua khi đếm; nhân sự đã
-// "Không tính đi muộn" ở chính tab Nội quy (noiQuyOverrideNames) bị ép về 0.
-function computeNoiQuyRows() {
+// "Không tính đi muộn" ở chính tab Nội quy (workRuleOverrideNames) bị ép về 0.
+function computeWorkRuleRows() {
   if (state.attendanceRecords.length === 0) return [];
 
   const lateCountByName = new Map();
@@ -790,7 +790,7 @@ function computeNoiQuyRows() {
   return Array.from(lateCountByName.entries())
     .map(([name, late]) => {
       const member = state.members.find((m) => m.name === name);
-      const excluded = state.noiQuyOverrideNames.has(name);
+      const excluded = state.workRuleOverrideNames.has(name);
       return {
         name,
         team: member?.team_name ?? "-",
@@ -802,18 +802,18 @@ function computeNoiQuyRows() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function filteredNoiQuyRows() {
-  const term = state.noiQuySearch.trim().toLowerCase();
-  const rows = computeNoiQuyRows();
+function filteredWorkRuleRows() {
+  const term = state.workRuleSearch.trim().toLowerCase();
+  const rows = computeWorkRuleRows();
   if (!term) return rows;
   return rows.filter((r) => r.name.toLowerCase().includes(term) || r.team.toLowerCase().includes(term));
 }
 
-function updateNoiQuySelectionUI() {
-  const visible = filteredNoiQuyRows();
-  const visibleSelectedCount = visible.filter((r) => state.selectedNoiQuyNames.has(r.name)).length;
-  el.markExcludedNoiQuyBtn.hidden = state.selectedNoiQuyNames.size === 0;
-  el.unmarkExcludedNoiQuyBtn.hidden = state.selectedNoiQuyNames.size === 0;
+function updateWorkRuleSelectionUI() {
+  const visible = filteredWorkRuleRows();
+  const visibleSelectedCount = visible.filter((r) => state.selectedWorkRuleNames.has(r.name)).length;
+  el.markExcludedWorkRuleBtn.hidden = state.selectedWorkRuleNames.size === 0;
+  el.unmarkExcludedWorkRuleBtn.hidden = state.selectedWorkRuleNames.size === 0;
   const selectAllEl = document.getElementById("noiquy-select-all");
   if (selectAllEl) {
     selectAllEl.checked = visible.length > 0 && visibleSelectedCount === visible.length;
@@ -821,17 +821,17 @@ function updateNoiQuySelectionUI() {
   }
 }
 
-function renderNoiQuyTable() {
-  const rows = filteredNoiQuyRows();
-  el.noiQuyEmpty.hidden = rows.length > 0;
+function renderWorkRuleTable() {
+  const rows = filteredWorkRuleRows();
+  el.workRuleEmpty.hidden = rows.length > 0;
   const period = state.periods.find((p) => p.id === state.currentPeriodId);
   const periodLabel = period?.label ?? "";
-  const pageItems = noiQuyPagination.slice(rows);
-  el.noiQuyTbody.innerHTML = pageItems
+  const pageItems = workRulePagination.slice(rows);
+  el.workRuleTbody.innerHTML = pageItems
     .map(
       (r) => `
     <tr>
-      <td><input type="checkbox" class="noiquy-row-checkbox" data-name="${r.name}" ${state.selectedNoiQuyNames.has(r.name) ? "checked" : ""} /></td>
+      <td><input type="checkbox" class="noiquy-row-checkbox" data-name="${r.name}" ${state.selectedWorkRuleNames.has(r.name) ? "checked" : ""} /></td>
       <td>${periodLabel}</td>
       <td>${r.team === "-" ? "-" : `<span class="status-badge ${teamColorClass(r.team)}">${r.team}</span>`}</td>
       <td>${r.name}${r.excluded ? ' <span class="muted" style="font-size:0.8em">(Không tính đi muộn)</span>' : ""}</td>
@@ -841,42 +841,42 @@ function renderNoiQuyTable() {
     )
     .join("");
 
-  el.noiQuyTbody.querySelectorAll(".noiquy-row-checkbox").forEach((checkbox) => {
+  el.workRuleTbody.querySelectorAll(".noiquy-row-checkbox").forEach((checkbox) => {
     checkbox.addEventListener("change", (e) => {
       const name = e.target.dataset.name;
       if (e.target.checked) {
-        state.selectedNoiQuyNames.add(name);
+        state.selectedWorkRuleNames.add(name);
       } else {
-        state.selectedNoiQuyNames.delete(name);
+        state.selectedWorkRuleNames.delete(name);
       }
-      updateNoiQuySelectionUI();
+      updateWorkRuleSelectionUI();
     });
   });
 
-  updateNoiQuySelectionUI();
+  updateWorkRuleSelectionUI();
   // Cột "Nội quy" ở bảng Nhân sự tổng hợp từ chính dữ liệu này (cột Total) —
   // render lại mỗi khi Nội quy thay đổi để luôn đồng bộ.
   renderMemberTable();
 }
 
 document.getElementById("noiquy-select-all").addEventListener("change", (e) => {
-  const visible = filteredNoiQuyRows();
+  const visible = filteredWorkRuleRows();
   if (e.target.checked) {
-    visible.forEach((r) => state.selectedNoiQuyNames.add(r.name));
+    visible.forEach((r) => state.selectedWorkRuleNames.add(r.name));
   } else {
-    visible.forEach((r) => state.selectedNoiQuyNames.delete(r.name));
+    visible.forEach((r) => state.selectedWorkRuleNames.delete(r.name));
   }
-  renderNoiQuyTable();
+  renderWorkRuleTable();
 });
 
-el.noiQuySearch.addEventListener("input", () => {
-  state.noiQuySearch = el.noiQuySearch.value;
-  noiQuyPagination.reset();
-  renderNoiQuyTable();
+el.workRuleSearch.addEventListener("input", () => {
+  state.workRuleSearch = el.workRuleSearch.value;
+  workRulePagination.reset();
+  renderWorkRuleTable();
 });
 
-el.markExcludedNoiQuyBtn.addEventListener("click", async () => {
-  const names = [...state.selectedNoiQuyNames];
+el.markExcludedWorkRuleBtn.addEventListener("click", async () => {
+  const names = [...state.selectedWorkRuleNames];
   if (names.length === 0) return;
   if (!await confirmDialog(`Đánh dấu "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ về 0.`, { danger: false })) return;
   try {
@@ -884,17 +884,17 @@ el.markExcludedNoiQuyBtn.addEventListener("click", async () => {
       method: "POST",
       body: JSON.stringify({ period_id: state.currentPeriodId, names }),
     });
-    state.selectedNoiQuyNames.clear();
-    await loadNoiQuyOverrides();
-    renderNoiQuyTable();
+    state.selectedWorkRuleNames.clear();
+    await loadWorkRuleOverrides();
+    renderWorkRuleTable();
     showToast("Đã đánh dấu Không tính đi muộn.", "success");
   } catch (err) {
     showToast(err.message);
   }
 });
 
-el.unmarkExcludedNoiQuyBtn.addEventListener("click", async () => {
-  const names = [...state.selectedNoiQuyNames];
+el.unmarkExcludedWorkRuleBtn.addEventListener("click", async () => {
+  const names = [...state.selectedWorkRuleNames];
   if (names.length === 0) return;
   if (!await confirmDialog(`Bỏ "Không tính đi muộn" cho ${names.length} nhân sự đã chọn? Lượt đi muộn và Total sẽ tính lại như bình thường.`, { danger: false })) return;
   try {
@@ -902,9 +902,9 @@ el.unmarkExcludedNoiQuyBtn.addEventListener("click", async () => {
       method: "DELETE",
       body: JSON.stringify({ period_id: state.currentPeriodId, names }),
     });
-    state.selectedNoiQuyNames.clear();
-    await loadNoiQuyOverrides();
-    renderNoiQuyTable();
+    state.selectedWorkRuleNames.clear();
+    await loadWorkRuleOverrides();
+    renderWorkRuleTable();
     showToast("Đã bỏ Không tính đi muộn.", "success");
   } catch (err) {
     showToast(err.message);
@@ -1037,7 +1037,7 @@ el.attendanceFileInput.addEventListener("change", async () => {
     attendancePagination.reset();
     renderAttendanceThead();
     renderAttendanceTable();
-    renderNoiQuyTable();
+    renderWorkRuleTable();
     showToast(`Đã nhập ${data.rows.length} dòng dữ liệu Chấm công.`, "success");
   } catch (err) {
     showToast(err.message);

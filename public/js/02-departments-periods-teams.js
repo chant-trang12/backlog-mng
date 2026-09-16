@@ -163,7 +163,7 @@ async function selectDepartment(id) {
     await loadTeams(); // kéo theo loadTasks()
     await loadMembers();
     await loadRoadmap();
-    await loadTieuChi(); // tiêu chí "thấy được" khác nhau theo từng phòng
+    await loadCriteria(); // tiêu chí "thấy được" khác nhau theo từng phòng
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -324,7 +324,7 @@ async function loadPeriods() {
     await loadComplianceRecords();
     await loadTrainingRecords();
     await loadSupportRecords();
-    await loadDanhGiaRecords();
+    await loadEvaluationRecords();
     await loadAttendanceRecords();
     await refreshHomeFilters();
     return;
@@ -341,7 +341,7 @@ async function loadPeriods() {
   await loadComplianceRecords();
   await loadTrainingRecords();
   await loadSupportRecords();
-  await loadDanhGiaRecords();
+  await loadEvaluationRecords();
   await loadAttendanceRecords();
   await refreshHomeFilters();
 }
@@ -380,10 +380,10 @@ async function refreshHomeForPeriod(periodId) {
     state.homeTasks = [];
     state.homeComplianceRecords = [];
     state.homeAttendanceRecords = [];
-    state.homeNoiQuyOverrideNames = new Set();
+    state.homeWorkRuleOverrideNames = new Set();
     state.homeSupportRecords = [];
     state.homeTrainingRecords = [];
-    state.homeDanhGiaRecords = [];
+    state.homeEvaluationRecords = [];
     state.homeKpiTheoTask = [];
   } else if (periodId === state.currentPeriodId) {
     state.homeTeams = state.teams;
@@ -391,13 +391,13 @@ async function refreshHomeForPeriod(periodId) {
     state.homeTasks = state.tasksAll;
     state.homeComplianceRecords = state.complianceRecords;
     state.homeAttendanceRecords = state.attendanceRecords;
-    state.homeNoiQuyOverrideNames = state.noiQuyOverrideNames;
+    state.homeWorkRuleOverrideNames = state.workRuleOverrideNames;
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
-    state.homeDanhGiaRecords = state.danhGiaRecords;
+    state.homeEvaluationRecords = state.evaluationRecords;
     await loadHomeKpiTheoTask(periodId);
   } else {
-    const [teams, members, tasks, compliance, attendance, noiQuyOverrides, support, training, danhGia] = await Promise.all([
+    const [teams, members, tasks, compliance, attendance, workRuleOverrides, support, training, evaluation] = await Promise.all([
       api(`/api/teams?period_id=${periodId}${deptParam()}`),
       api(`/api/members?period_id=${periodId}${deptParam()}`),
       api(`/api/periods/${periodId}/tasks`),
@@ -413,10 +413,10 @@ async function refreshHomeForPeriod(periodId) {
     state.homeTasks = tasks;
     state.homeComplianceRecords = compliance;
     state.homeAttendanceRecords = attendance.rows;
-    state.homeNoiQuyOverrideNames = new Set(noiQuyOverrides.map((o) => o.member_name));
+    state.homeWorkRuleOverrideNames = new Set(workRuleOverrides.map((o) => o.member_name));
     state.homeSupportRecords = support;
     state.homeTrainingRecords = training;
-    state.homeDanhGiaRecords = danhGia;
+    state.homeEvaluationRecords = evaluation;
     await loadHomeKpiTheoTask(periodId);
   }
   populateHomeTeamFilterOptions();
@@ -444,10 +444,10 @@ function syncHomeFromCurrentIfNeeded() {
     state.homeTasks = state.tasksAll;
     state.homeComplianceRecords = state.complianceRecords;
     state.homeAttendanceRecords = state.attendanceRecords;
-    state.homeNoiQuyOverrideNames = state.noiQuyOverrideNames;
+    state.homeWorkRuleOverrideNames = state.workRuleOverrideNames;
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
-    state.homeDanhGiaRecords = state.danhGiaRecords;
+    state.homeEvaluationRecords = state.evaluationRecords;
     populateHomeTeamFilterOptions();
     renderHomeDashboard();
     loadHomeKpiTheoTask(state.homePeriodId).then(renderHomeDashboard);
@@ -495,7 +495,7 @@ async function switchPeriod(newId) {
   await loadComplianceRecords();
   await loadTrainingRecords();
   await loadSupportRecords();
-  await loadDanhGiaRecords();
+  await loadEvaluationRecords();
   await loadAttendanceRecords();
 }
 
@@ -536,7 +536,7 @@ async function loadTeams() {
     renderTeamList();
     renderFilterTeamOptions();
     renderMemberTeamFilter();
-    renderTieuChi();
+    renderCriteria();
     syncHomeFromCurrentIfNeeded();
     await loadTasks();
     return;
@@ -558,7 +558,7 @@ async function loadTeams() {
   renderTeamList();
   renderFilterTeamOptions();
   renderMemberTeamFilter();
-  renderTieuChi();
+  renderCriteria();
   syncHomeFromCurrentIfNeeded();
   await loadTasks();
 }
@@ -639,13 +639,13 @@ function renderFilterTeamOptions() {
 // Dropdown "Phân loại" trong bộ lọc Danh sách task (trang Backlog) — lấy
 // theo danh mục Phân loại ở Cấu hình, cộng thêm "Nhiệm vụ tồn" (giá trị hệ
 // thống tự gắn, không nằm trong danh mục) để vẫn lọc được.
-function renderFilterTinhChatOptions() {
+function renderFilterNatureOptions() {
   const options = [`<option value="">Tất cả</option>`]
-    .concat(state.phanLoaiOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`))
+    .concat(state.categoryOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`))
     .concat([`<option value="Nhiệm vụ tồn">Nhiệm vụ tồn</option>`])
     .join("");
-  el.filterTinhChat.innerHTML = options;
-  el.filterTinhChat.value = state.taskFilters.tinhChat;
+  el.filterNature.innerHTML = options;
+  el.filterNature.value = state.taskFilters.nature;
 }
 
 // Dropdown "Tag" trong bộ lọc Danh sách task (trang Backlog) — lấy theo danh
@@ -658,13 +658,13 @@ function renderFilterTagOptions() {
   el.filterTag.value = state.taskFilters.tag;
 }
 
-el.filterTinhChat.addEventListener("change", () => {
-  state.taskFilters.tinhChat = el.filterTinhChat.value;
+el.filterNature.addEventListener("change", () => {
+  state.taskFilters.nature = el.filterNature.value;
   applyTaskFilters();
   renderTasks();
 });
-el.filterKhongTinhDiem.addEventListener("change", () => {
-  state.taskFilters.khongTinhDiem = el.filterKhongTinhDiem.value;
+el.filterExcludedFromScore.addEventListener("change", () => {
+  state.taskFilters.excludedFromScore = el.filterExcludedFromScore.value;
   applyTaskFilters();
   renderTasks();
 });
@@ -673,8 +673,8 @@ el.filterTeam.addEventListener("change", () => {
   applyTaskFilters();
   renderTasks();
 });
-el.filterTrangThai.addEventListener("change", () => {
-  state.taskFilters.trangThai = el.filterTrangThai.value;
+el.filterStatus.addEventListener("change", () => {
+  state.taskFilters.status = el.filterStatus.value;
   applyTaskFilters();
   renderTasks();
 });
@@ -702,17 +702,17 @@ el.taskTbody.addEventListener("click", (e) => {
 });
 
 function applyTaskFilters() {
-  const { tinhChat, khongTinhDiem, team, trangThai, tag } = state.taskFilters;
+  const { nature, excludedFromScore, team, status, tag } = state.taskFilters;
   const term = state.taskSearch.trim().toLowerCase();
   state.tasks = state.tasksAll.filter((t) => {
     if (team && t.team !== team) return false;
-    if (trangThai && t.trang_thai !== trangThai) return false;
+    if (status && t.trang_thai !== status) return false;
     if (tag && t.tag !== tag) return false;
-    if (khongTinhDiem === "Đã chuyển" && !t.da_chuyen_thang) return false;
-    if (khongTinhDiem === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
-    if (tinhChat) {
+    if (excludedFromScore === "Đã chuyển" && !t.da_chuyen_thang) return false;
+    if (excludedFromScore === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
+    if (nature) {
       const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
-      if (!items.includes(tinhChat)) return false;
+      if (!items.includes(nature)) return false;
     }
     if (state.taskWarningFilter === "no-score" && !isTaskNotGraded(t)) return false;
     if (state.taskWarningFilter === "overdue" && !isTaskOverdue(t)) return false;

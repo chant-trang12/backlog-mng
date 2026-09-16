@@ -38,13 +38,13 @@ el.teamFilterTeam.addEventListener("change", () => {
   compliancePagination.reset();
   trainingPagination.reset();
   supportPagination.reset();
-  danhGiaPagination.reset();
+  evaluationPagination.reset();
   renderMemberTeamFilter();
   renderMemberTable();
   renderComplianceRecords();
   renderTrainingRecords();
   renderSupportRecords();
-  renderDanhGiaRecords();
+  renderEvaluationRecords();
 });
 
 function filteredMembers() {
@@ -149,10 +149,10 @@ function renderMemberTable() {
   const pageStart = (memberPagination.page - 1) * memberPagination.pageSize;
   // Cột "Nội quy" tổng hợp từ cột Total của tab Nội quy (map theo tên nhân
   // sự), không còn nhập tay — hiển thị "-N" khi Total > 0, ngược lại để trống.
-  const noiQuyByName = new Map(computeNoiQuyRows().map((r) => [r.name, r.total]));
+  const workRuleByName = new Map(computeWorkRuleRows().map((r) => [r.name, r.total]));
   el.memberTbody.innerHTML = pageItems
     .map((m, i) => {
-      const noiQuyTotal = noiQuyByName.get(m.name) ?? 0;
+      const workRuleTotal = workRuleByName.get(m.name) ?? 0;
       const avgDiem = memberAvgDiemTheoTask(m.id);
       return `
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
@@ -162,7 +162,7 @@ function renderMemberTable() {
       <td>${m.chuc_vu ?? ""}</td>
       <td><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
       <td>${m.tuan_thu ?? ""}</td>
-      <td>${noiQuyTotal > 0 ? `-${noiQuyTotal}` : ""}</td>
+      <td>${workRuleTotal > 0 ? `-${workRuleTotal}` : ""}</td>
       <td>${m.dao_tao ?? ""}</td>
       <td>${m.ho_tro ?? ""}</td>
       <td>${m.danh_gia ?? ""}</td>
@@ -299,11 +299,11 @@ function openMemberDialog(member) {
   teamSelectEl.value = String(member?.team_id ?? state.currentTeamId ?? state.teams[0]?.id ?? "");
 
   document.getElementById("m-name").value = member?.name ?? "";
-  const chucVuSelect = document.getElementById("m-chuc-vu");
-  chucVuSelect.innerHTML =
+  const positionSelect = document.getElementById("m-chuc-vu");
+  positionSelect.innerHTML =
     `<option value="">-- Chọn chức vụ --</option>` +
-    state.chucVuOptions.map((c) => `<option value="${c.ten_chuc_vu}">${c.ten_chuc_vu}</option>`).join("");
-  chucVuSelect.value = member?.chuc_vu ?? "";
+    state.positionOptions.map((c) => `<option value="${c.ten_chuc_vu}">${c.ten_chuc_vu}</option>`).join("");
+  positionSelect.value = member?.chuc_vu ?? "";
   el.memberDialog.showModal();
 }
 

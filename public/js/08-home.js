@@ -1,6 +1,6 @@
 // ---- Home (dashboard) ----
 // Ranking Team lấy đúng theo cột Tổng điểm ở tab Tổng hợp (homeComputeTeamScores);
-// gọi lại renderHomeDashboard() mỗi khi state.teams/tieuChiConfigs/members đổi
+// gọi lại renderHomeDashboard() mỗi khi state.teams/criteriaConfigs/members đổi
 // (period đổi, tiêu chí đổi...).
 
 // Màu team ở Home lấy theo vị trí trong state.homeTeams (team của đúng
@@ -403,8 +403,8 @@ function homeTeamCompletionRatio(team, eligibleTasks) {
 // Lấy Điểm chuẩn/Chỉ tiêu đã cấu hình cho 1 tiêu chí + 1 team tại menu
 // Cấu hình → Tiêu chí. "chi_tieu" lưu dạng chuỗi có thể kèm "%" (VD "98%")
 // nên chỉ lấy phần số. Trả về null nếu tiêu chí hoặc team chưa được cấu hình.
-function homeTieuChiValue(tenTieuChi, team) {
-  const config = state.tieuChiConfigs.find((c) => c.ten_tieu_chi === tenTieuChi);
+function homeCriteriaValue(tenCriteria, team) {
+  const config = state.criteriaConfigs.find((c) => c.ten_tieu_chi === tenCriteria);
   const entry = config?.diem_chuan.find((d) => d.team_name === team);
   const diemChuan = entry?.diem_chuan !== null && entry?.diem_chuan !== undefined && entry.diem_chuan !== "" ? Number(entry.diem_chuan) : null;
   const chiTieu = entry?.chi_tieu ? parseFloat(entry.chi_tieu) : null;
@@ -420,10 +420,10 @@ function homeComplianceCount(team) {
   return state.homeComplianceRecords.filter((c) => c.team_name === team).length;
 }
 
-// Bản sao computeNoiQuyRows() (tab Nội quy) nhưng dùng dữ liệu theo đúng
+// Bản sao computeWorkRuleRows() (tab Nội quy) nhưng dùng dữ liệu theo đúng
 // tháng đang xem ở Home (state.homeAttendanceRecords/homeMembers/
-// homeNoiQuyOverrideNames) thay vì tháng đang chọn ở Backlog/Team.
-function computeHomeNoiQuyRows() {
+// homeWorkRuleOverrideNames) thay vì tháng đang chọn ở Backlog/Team.
+function computeHomeWorkRuleRows() {
   if (state.homeAttendanceRecords.length === 0) return [];
 
   const lateCountByName = new Map();
@@ -446,7 +446,7 @@ function computeHomeNoiQuyRows() {
 
   return Array.from(lateCountByName.entries()).map(([name, late]) => {
     const member = state.homeMembers.find((m) => m.name === name);
-    const excluded = state.homeNoiQuyOverrideNames.has(name);
+    const excluded = state.homeWorkRuleOverrideNames.has(name);
     return {
       name,
       team: member?.team_name ?? "-",
@@ -457,8 +457,8 @@ function computeHomeNoiQuyRows() {
 
 // Điểm trừ Nội quy của 1 team = tổng cột Total (Lượt đi muộn − 3, đã trừ
 // người được "Không tính đi muộn") của tất cả nhân sự team đó, tab Nội quy.
-function homeNoiQuyCount(team) {
-  return computeHomeNoiQuyRows()
+function homeWorkRuleCount(team) {
+  return computeHomeWorkRuleRows()
     .filter((r) => r.team === team)
     .reduce((sum, r) => sum + r.total, 0);
 }
@@ -521,7 +521,7 @@ function homeAdditionCell(n) {
 const HOME_TONGHOP_TRAILING_COLUMNS = 1 + 2 + 2; // Tổng điểm + 2 điểm trừ + 2 điểm cộng
 
 // Trả về giá trị thô (tỷ lệ 0-1, % thực tế, hoặc số dòng đếm được) của 1
-// nguồn dữ liệu — dùng bởi homeTieuChiContribution() để tính điểm theo đúng
+// nguồn dữ liệu — dùng bởi homeCriteriaContribution() để tính điểm theo đúng
 // kieu_tinh đã cấu hình cho tiêu chí đó, thay vì hard-code theo tên tiêu chí.
 function homeResolveDataSource(key, team, eligible) {
   switch (key) {
@@ -540,7 +540,7 @@ function homeResolveDataSource(key, team, eligible) {
     case "dem_tuan_thu":
       return homeComplianceCount(team);
     case "dem_noi_quy":
-      return homeNoiQuyCount(team);
+      return homeWorkRuleCount(team);
     case "dem_ho_tro":
       return homeSupportCount(team);
     case "dem_dao_tao":
@@ -550,16 +550,16 @@ function homeResolveDataSource(key, team, eligible) {
   }
 }
 
-// Tính điểm đóng góp vào Tổng điểm của 1 tiêu chí (cfg từ state.tieuChiConfigs,
+// Tính điểm đóng góp vào Tổng điểm của 1 tiêu chí (cfg từ state.criteriaConfigs,
 // đã có sẵn diem_chuan theo từng team) cho 1 team, theo đúng kieu_tinh đã cấu
 // hình ở dialog Tiêu chí — nguồn duy nhất cho cả "Tổng điểm" (tổng hợp mọi
 // tiêu chí có kieu_tinh khác "khong_tinh") lẫn phần hiển thị chi tiết.
-function homeTieuChiContribution(cfg, team, eligible) {
+function homeCriteriaContribution(cfg, team, eligible) {
   if (!cfg.kieu_tinh || cfg.kieu_tinh === "khong_tinh") return null;
   const entry = cfg.diem_chuan.find((d) => d.team_name === team);
   const diemChuan = entry?.diem_chuan !== null && entry?.diem_chuan !== undefined && entry.diem_chuan !== "" ? Number(entry.diem_chuan) : null;
   const chiTieu = entry?.chi_tieu ? parseFloat(entry.chi_tieu) : null;
-  const heSo = cfg.he_so !== null && cfg.he_so !== undefined ? Number(cfg.he_so) : null;
+  const factor = cfg.he_so !== null && cfg.he_so !== undefined ? Number(cfg.he_so) : null;
   const raw = homeResolveDataSource(cfg.nguon_du_lieu, team, eligible);
 
   switch (cfg.kieu_tinh) {
@@ -569,13 +569,13 @@ function homeTieuChiContribution(cfg, team, eligible) {
       return raw !== null && diemChuan !== null && chiTieu ? (raw / chiTieu) * diemChuan : null;
     case "tru_theo_loi": {
       if (diemChuan === null) return null;
-      const rate = heSo ?? 0.1;
+      const rate = factor ?? 0.1;
       return raw === null || raw === 0 ? diemChuan : diemChuan - diemChuan * (raw * rate);
     }
     case "dem_dong_cong":
-      return (raw ?? 0) / (heSo ?? 2);
+      return (raw ?? 0) / (factor ?? 2);
     case "dem_dong_tru":
-      return -((raw ?? 0) / (heSo ?? 2));
+      return -((raw ?? 0) / (factor ?? 2));
     default:
       return null;
   }
@@ -590,10 +590,10 @@ function homeComputeTeamScores(team, eligible) {
   const periodCreationRate = state.creationRates.find((r) => r.period_id === state.homePeriodId && r.team_name === team);
 
   const ratio = homeTeamCompletionRatio(team, eligible);
-  const sprintGoalCfg = homeTieuChiValue("Tiến độ hoàn thành Sprint goal", team);
+  const sprintGoalCfg = homeCriteriaValue("Tiến độ hoàn thành Sprint goal", team);
   const sprintGoal = ratio !== null && sprintGoalCfg.diemChuan !== null ? ratio * sprintGoalCfg.diemChuan : null;
 
-  const suCoCfg = homeTieuChiValue("Số lượng sự cố mức độ ảnh hưởng nghiêm trọng đến khách hàng", team);
+  const suCoCfg = homeCriteriaValue("Số lượng sự cố mức độ ảnh hưởng nghiêm trọng đến khách hàng", team);
   const slSuCo = periodIncidents.length;
   // Chưa khai báo sự cố nào (CSKH → Sự cố) thì mặc định lấy đúng Điểm
   // chuẩn đã cấu hình; có sự cố mới áp công thức Điểm chuẩn − (Điểm
@@ -601,26 +601,26 @@ function homeComputeTeamScores(team, eligible) {
   // trống, không mặc định về 0.
   const suCo = suCoCfg.diemChuan === null ? null : slSuCo === 0 ? suCoCfg.diemChuan : suCoCfg.diemChuan - suCoCfg.diemChuan * (slSuCo * 0.1);
 
-  const ticketCfg = homeTieuChiValue("Tỷ lệ xử lý yêu cầu hỗ trợ đúng hạn", team);
+  const ticketCfg = homeCriteriaValue("Tỷ lệ xử lý yêu cầu hỗ trợ đúng hạn", team);
   const tyLeTicket =
     ticketCfg.diemChuan !== null && periodTicket && ticketCfg.chiTieu ? ((periodTicket.ty_le * 100) / ticketCfg.chiTieu) * ticketCfg.diemChuan : null;
 
-  const khoiTaoCfg = homeTieuChiValue("Tỷ lệ khởi tạo dịch vụ thành công đúng hạn", team);
+  const khoiTaoCfg = homeCriteriaValue("Tỷ lệ khởi tạo dịch vụ thành công đúng hạn", team);
   const tyLeKhoiTao =
     khoiTaoCfg.diemChuan !== null && periodCreationRate && khoiTaoCfg.chiTieu
       ? ((periodCreationRate.grand_total * 100) / khoiTaoCfg.chiTieu) * khoiTaoCfg.diemChuan
       : null;
 
   // Tổng điểm = tổng đóng góp của MỌI tiêu chí "thấy được" của phòng đang
-  // xem (state.tieuChiConfigs, đã lọc theo phòng) có kieu_tinh khác
+  // xem (state.criteriaConfigs, đã lọc theo phòng) có kieu_tinh khác
   // "khong_tinh" — cấu hình được trên giao diện (dialog Tiêu chí), không
   // còn hard-code cứng theo tên 4+4 tiêu chí cố định như trước. Deployment
   // nào đã cấu hình đúng kieu_tinh cho các tiêu chí quen thuộc (Sprint
   // Goal, Sự cố, Tuân thủ, Nội quy, Hỗ trợ, Đào tạo...) thì ra kết quả y hệt
   // công thức cũ; phòng ban dùng bộ tiêu chí khác thì Tổng điểm tự đúng
   // theo tiêu chí CỦA HỌ thay vì bị bỏ qua/tính sai.
-  const tongDiem = state.tieuChiConfigs.reduce(
-    (sum, c) => sum + (homeTieuChiContribution(c, team, eligible) ?? 0),
+  const tongDiem = state.criteriaConfigs.reduce(
+    (sum, c) => sum + (homeCriteriaContribution(c, team, eligible) ?? 0),
     0,
   );
 
@@ -657,7 +657,7 @@ function renderHomeTonghopTable(teamNames, tasksInScope) {
       ${chiTieuCell(s.tyLeTicket, s.ticketCfg.diemChuan !== null)}
       ${chiTieuCell(s.tyLeKhoiTao, s.khoiTaoCfg.diemChuan !== null)}
       ${homeDeductionCell(homeComplianceCount(team))}
-      ${homeDeductionCell(homeNoiQuyCount(team))}
+      ${homeDeductionCell(homeWorkRuleCount(team))}
       ${homeAdditionCell(homeSupportCount(team))}
       ${homeAdditionCell(homeTrainingCount(team))}
     </tr>`;
@@ -760,7 +760,7 @@ function renderHomeRankingTab(rankingData, eligible) {
       nhom: "Vận hành",
       rows: [
         ["Tuân thủ quy trình, KH chung", null, -(homeComplianceCount(team) / 2)],
-        ["Tuân thủ nội quy", null, -(homeNoiQuyCount(team) / 2)],
+        ["Tuân thủ nội quy", null, -(homeWorkRuleCount(team) / 2)],
         ["Hỗ trợ, phối hợp", null, homeSupportCount(team) / 2],
       ],
     },
@@ -799,7 +799,7 @@ function renderHomeRankingTab(rankingData, eligible) {
   // viên trong chính team này — chỉ tính trên các nhân sự ĐÃ có dữ liệu Đánh
   // giá (so_thu_tu), nhân sự chưa nhập Ranking không có vị trí để tra cột.
   const teamRankPosition = teamNames.indexOf(team) + 1;
-  const rankedMembers = state.homeDanhGiaRecords
+  const rankedMembers = state.homeEvaluationRecords
     .filter((r) => r.team_name === team)
     .sort((a, b) => a.so_thu_tu - b.so_thu_tu);
   // Nhân sự thuộc team nhưng CHƯA nhập Ranking (tab Đánh giá) — vẫn hiển thị
