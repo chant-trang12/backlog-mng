@@ -27,14 +27,18 @@ function renderEmpty() {
 
 function renderTasks() {
   el.emptyState.hidden = state.periods.length !== 0;
+  // Phòng ban tính KPI theo task (không chia team) — ẩn cột Team (tiêu đề
+  // đã ẩn ở applyDeptModeSidebarNav, ở đây ẩn từng ô + trừ colspan tương ứng).
+  const hideTeamColumn = homeCachTinhKpiTheoTask();
+  const colCount = hideTeamColumn ? 14 : 15;
   if (state.tasksAll.length === 0) {
-    el.taskTbody.innerHTML = `<tr><td colspan="15" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
+    el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
     return;
   }
   if (state.tasks.length === 0) {
-    el.taskTbody.innerHTML = `<tr><td colspan="15" class="muted" style="text-align:center;padding:16px">Không có task nào khớp bộ lọc.</td></tr>`;
+    el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Không có task nào khớp bộ lọc.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
     return;
@@ -51,7 +55,7 @@ function renderTasks() {
       <td>${t.stt}</td>
       <td>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
       <td>${renderNatureBadges(t.tinh_chat)}</td>
-      <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
+      <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
       <td>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${formatDateDisplay(t.deadline)}</td>
@@ -555,6 +559,11 @@ async function openTaskMemberDialog(task) {
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
   el.tmScoreUnit.value = "percent";
+  // Phòng ban tính KPI theo task: điểm cá nhân tính thẳng theo % (xem
+  // taskMember.service.ts#listKpiTheoTask) — tạm bỏ lựa chọn "Thang điểm 5"
+  // để tránh nhầm đơn vị (KPI theo task không quy đổi theo thang 5).
+  const scale5Option = document.getElementById("tm-score-unit-scale5");
+  if (scale5Option) scale5Option.hidden = homeCachTinhKpiTheoTask();
   fillTaskMemberCategorySelect();
   renderTaskMemberThead();
   await loadTaskMembers();
@@ -570,7 +579,7 @@ function fillTaskMemberCategorySelect() {
 function renderTaskMemberThead() {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberThead.innerHTML = `<tr>
-    <th>Nhân sự</th>
+    <th style="width:190px">Nhân sự</th>
     <th style="width:190px">Vai trò</th>
     <th style="width:150px">Phân loại</th>
     ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}

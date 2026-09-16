@@ -158,6 +158,8 @@ function renderMemberTable() {
   // Cột "Nội quy" tổng hợp từ cột Total của tab Nội quy (map theo tên nhân
   // sự), không còn nhập tay — hiển thị "-N" khi Total > 0, ngược lại để trống.
   const workRuleByName = new Map(computeWorkRuleRows().map((r) => [r.name, r.total]));
+  // Phòng ban tính KPI theo task (không chia team) — ẩn cột Team.
+  const hideTeamColumn = homeCachTinhKpiTheoTask();
   el.memberTbody.innerHTML = pageItems
     .map((m, i) => {
       const workRuleTotal = workRuleByName.get(m.name) ?? 0;
@@ -168,7 +170,7 @@ function renderMemberTable() {
       <td>${pageStart + i + 1}</td>
       <td><div class="name-with-ha-ki">${m.name}${m.ha_ki ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}</div></td>
       <td>${m.chuc_vu ?? ""}</td>
-      <td><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
+      <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
       <td>${m.tuan_thu ?? ""}</td>
       <td>${workRuleTotal > 0 ? `-${workRuleTotal}` : ""}</td>
       <td>${m.dao_tao ?? ""}</td>

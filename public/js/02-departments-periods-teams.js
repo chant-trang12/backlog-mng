@@ -117,6 +117,32 @@ function applyDeptModeSidebarNav() {
   if (theoTask && cskhNav.classList.contains("active")) {
     document.querySelector('.nav-item[data-page="home"]')?.click();
   }
+
+  // Phòng ban tính KPI theo task (không chia team) — bỏ luôn bộ lọc Team
+  // (Backlog + Team & Nhân sự) và cột Team ở 2 bảng đó, vì không có ý
+  // nghĩa. Cột Team ở BẢNG (task-table/member-table) được ẩn ngay trong
+  // renderTasks()/renderMemberTable() (chạy lại mỗi khi đổi phòng ban) —
+  // ở đây chỉ cần lo phần tiêu đề cột (không tự re-render theo dữ liệu).
+  const filterTeamWrap = document.getElementById("filter-team-wrap");
+  if (filterTeamWrap) filterTeamWrap.hidden = theoTask;
+  const teamFilterTeamWrap = document.getElementById("team-filter-team-wrap");
+  if (teamFilterTeamWrap) teamFilterTeamWrap.hidden = theoTask;
+  const taskTableTeamTh = document.getElementById("task-table-team-th");
+  if (taskTableTeamTh) taskTableTeamTh.hidden = theoTask;
+  const memberTableTeamTh = document.getElementById("member-table-team-th");
+  if (memberTableTeamTh) memberTableTeamTh.hidden = theoTask;
+  // Ẩn bộ lọc thì cũng bỏ luôn giá trị đang lọc (nếu có) — tránh lọc ngầm
+  // theo team cũ mà người dùng không còn thấy/sửa được ở đâu nữa.
+  if (theoTask) {
+    if (state.taskFilters.team) {
+      state.taskFilters.team = "";
+      if (el.filterTeam) el.filterTeam.value = "";
+    }
+    if (state.memberFilterTeam) {
+      state.memberFilterTeam = "";
+      if (el.teamFilterTeam) el.teamFilterTeam.value = "";
+    }
+  }
 }
 
 function openDeptPanel() {

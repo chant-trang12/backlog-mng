@@ -262,7 +262,7 @@
                   </select>
                 </div>
                 <div class="filter-inline-group">
-                  <div>
+                  <div id="filter-team-wrap">
                     <label for="filter-team">Team</label>
                     <select id="filter-team">
                       <option value="">Tất cả</option>
@@ -346,7 +346,7 @@
                     <th style="min-width:50px">STT</th>
                     <th style="min-width:90px">Tag</th>
                     <th style="min-width:90px">Phân loại</th>
-                    <th style="min-width:90px">Team</th>
+                    <th style="min-width:90px" id="task-table-team-th">Team</th>
                     <th style="min-width:280px">Nhiệm vụ</th>
                     <th style="min-width:280px">DoD</th>
                     <th style="min-width:110px">Deadline</th>
@@ -390,7 +390,7 @@
                 <label for="team-period-select">Tháng</label>
                 <select id="team-period-select"></select>
               </div>
-              <div>
+              <div id="team-filter-team-wrap">
                 <label for="team-filter-team">Team</label>
                 <select id="team-filter-team">
                   <option value="">Tất cả</option>
@@ -435,7 +435,7 @@
                     <th style="width:60px">STT</th>
                     <th style="min-width:160px">Họ và Tên</th>
                     <th style="min-width:220px">Chức vụ</th>
-                    <th style="min-width:110px">Team</th>
+                    <th style="min-width:110px" id="member-table-team-th">Team</th>
                     <th style="min-width:110px">Tuân thủ</th>
                     <th style="min-width:110px">Nội quy</th>
                     <th style="min-width:110px">Đào tạo</th>
@@ -1634,7 +1634,7 @@
           <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
           <select id="tm-score-unit" style="max-width:140px">
             <option value="percent">% (theo task)</option>
-            <option value="scale5">Thang điểm 5</option>
+            <option value="scale5" id="tm-score-unit-scale5">Thang điểm 5</option>
           </select>
         </div>
         <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
