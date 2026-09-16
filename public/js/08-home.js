@@ -134,7 +134,6 @@ function renderHomeKpiTheoTaskTable() {
       <td>${i + 1}</td>
       <td>${r.member_name}</td>
       <td>${r.member_chuc_vu ?? ""}</td>
-      <td>${r.team_name ?? ""}</td>
       <td>${r.so_task}</td>
       <td>${r.tong_diem}</td>
     </tr>`,
