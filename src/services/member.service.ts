@@ -152,6 +152,7 @@ export async function deleteMember(id: number): Promise<boolean> {
     await trx("training_records").where({ member_id: id }).delete();
     await trx("support_records").where({ member_id: id }).delete();
     await trx("danh_gia_records").where({ member_id: id }).delete();
+    await trx("task_members").where({ member_id: id }).delete();
     const count = await trx("members").where({ id }).delete();
     return count > 0;
   });
@@ -165,6 +166,7 @@ export async function deleteMembers(ids: number[]): Promise<number> {
     await trx("training_records").whereIn("member_id", ids).delete();
     await trx("support_records").whereIn("member_id", ids).delete();
     await trx("danh_gia_records").whereIn("member_id", ids).delete();
+    await trx("task_members").whereIn("member_id", ids).delete();
     const count = await trx("members").whereIn("id", ids).delete();
     return Number(count);
   });

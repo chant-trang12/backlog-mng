@@ -32,7 +32,7 @@ export async function migrateTaskMembersTables(): Promise<void> {
     await db.schema.createTable("task_members", (table) => {
       table.increments("id").primary();
       table.integer("task_id").notNullable().references("id").inTable("tasks").onDelete("CASCADE");
-      table.integer("member_id").notNullable().references("id").inTable("members").onDelete("CASCADE");
+      table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
       table.text("ghi_chu");
       table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
       table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
