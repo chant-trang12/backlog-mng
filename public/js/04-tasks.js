@@ -584,11 +584,11 @@ async function openTaskMemberDialog(task) {
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
   el.tmScoreUnit.value = "percent";
-  // Phòng ban tính KPI theo task: điểm cá nhân tính thẳng theo % (xem
-  // taskMember.service.ts#listKpiTheoTask) — tạm bỏ lựa chọn "Thang điểm 5"
-  // để tránh nhầm đơn vị (KPI theo task không quy đổi theo thang 5).
+  // Tạm bỏ lựa chọn "Thang điểm 5" ở Đơn vị điểm cá nhân cho mọi phòng ban
+  // (trước đây chỉ ẩn với phòng tính KPI theo task, nay bỏ luôn với phòng
+  // tính KPI theo team để tránh nhầm đơn vị).
   const scale5Option = document.getElementById("tm-score-unit-scale5");
-  if (scale5Option) scale5Option.hidden = homeCachTinhKpiTheoTask();
+  if (scale5Option) scale5Option.hidden = true;
   fillTaskMemberCategorySelect();
   renderTaskMemberThead();
   await loadTaskMembers();
