@@ -123,12 +123,20 @@ function openMemberTaskDetailDialog(member) {
   const tbody = document.getElementById("member-task-detail-tbody");
   const empty = document.getElementById("member-task-detail-empty");
   empty.hidden = tasks.length > 0;
+
+  // Phòng ban tính KPI theo task (không chia team) — cột Team ở bảng chi
+  // tiết này không có ý nghĩa (mọi task đều cùng 1 team hoặc không chia
+  // team), ẩn đi cho gọn. Phòng theo_team vẫn hiện như cũ.
+  const hideTeamColumn = homeCachTinhKpiTheoTask();
+  const teamTh = document.getElementById("member-task-detail-team-th");
+  if (teamTh) teamTh.hidden = hideTeamColumn;
+
   tbody.innerHTML = tasks
     .map(
       (t) => `
     <tr>
       <td>${t.nhiem_vu}</td>
-      <td><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
+      <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.phan_loai ?? ""}</td>
       <td>${t.ty_le_dong_gop ?? "-"}</td>
       <td>${t.cpo_danh_gia ?? "-"}</td>

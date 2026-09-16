@@ -17,6 +17,11 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
       section.hidden = key !== btn.dataset.page;
     });
     if (btn.dataset.page === "roadmap") loadRoadmap().catch((err) => showToast(err.message));
+    // Tải lại Nhân sự (kèm KPI theo task) mỗi lần vào lại trang Team & Nhân
+    // sự — tránh hiển thị dữ liệu cũ nếu vừa sửa Phân loại/Tỷ lệ đóng góp ở
+    // popup "Nhân sự tham gia" bên trang Backlog (2 trang khác nhau, không
+    // tự đồng bộ state cho nhau).
+    if (btn.dataset.page === "team") loadMembers().catch((err) => showToast(err.message));
   });
 });
 
