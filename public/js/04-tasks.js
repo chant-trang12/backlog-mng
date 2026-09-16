@@ -672,29 +672,26 @@ function renderTaskMembers() {
       let scoreCell = "";
       if (graded) {
         const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
-        // Phòng ban tính KPI theo task (cach_tinh_kpi=theo_task): khớp đúng
-        // công thức đã dùng ở "Điểm cá nhân (Tính theo task)"/tong_diem —
-        // task "Hỗ trợ" vẫn nhân Tỷ lệ đóng góp, "Thực hiện chính" (hoặc
-        // chưa phân loại) thì thẳng % Đánh giá, không cần Tỷ lệ đóng góp.
-        // Phòng theo_team giữ nguyên công thức cũ (luôn nhân tỷ lệ đóng góp)
-        // — không liên quan tính năng KPI theo task.
-        const auto = homeCachTinhKpiTheoTask()
-          ? tm.phan_loai === HO_TRO_LABEL
+        // Công thức tự tính (áp dụng mọi phòng ban, không phân biệt
+        // theo_team/theo_task nữa — khớp đúng công thức đã dùng ở "Điểm cá
+        // nhân (Tính theo task)"/tong_diem, xem taskMember.service.ts):
+        // task "Hỗ trợ" nhân Tỷ lệ đóng góp; "Thực hiện chính" (hoặc chưa
+        // phân loại) thì thẳng % Đánh giá, KHÔNG nhân Tỷ lệ đóng góp — tránh
+        // task nhiều người chia sẻ (tỷ lệ thấp) bị kéo điểm xuống so với
+        // task 1 người làm trọn (100%) dù % Đánh giá như nhau.
+        const auto =
+          tm.phan_loai === HO_TRO_LABEL
             ? contrib != null
               ? round2((state.taskMemberTaskScore * contrib) / 100)
               : null
-            : state.taskMemberTaskScore
-          : contrib != null
-            ? round2((state.taskMemberTaskScore * contrib) / 100)
-            : null;
+            : state.taskMemberTaskScore;
         const isManual = tm.diem_ca_nhan != null;
         const rawPercent = isManual ? Number(tm.diem_ca_nhan) : auto;
         const displayScore = rawPercent == null ? "" : unit === "scale5" ? percentToScale5(rawPercent) : rawPercent;
-        const autoTitle = homeCachTinhKpiTheoTask()
-          ? tm.phan_loai === HO_TRO_LABEL
+        const autoTitle =
+          tm.phan_loai === HO_TRO_LABEL
             ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
-            : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp"
-          : "Tự tính = % Đánh giá của task × Tỷ lệ đóng góp";
+            : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp";
         scoreCell = `
       <td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>
       <td>
