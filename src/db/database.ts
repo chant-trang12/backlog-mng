@@ -397,6 +397,28 @@ export async function initDatabase(): Promise<void> {
       ]);
     }
 
+    // departments.dung_tieu_chi_chung — phòng này có dùng chung danh mục
+    // Tiêu chí (department_id NULL, xem bên dưới) không, hay CHỈ dùng đúng
+    // tiêu chí riêng của mình. Mặc định bật (true) để hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("departments", "dung_tieu_chi_chung"))) {
+      await db.schema.alterTable("departments", (table) => {
+        table.integer("dung_tieu_chi_chung").notNullable().defaultTo(1);
+      });
+    }
+
+    // departments.cach_tinh_kpi — 1 số phòng ban không tổ chức KPI theo team
+    // (VD team quá nhỏ/lẻ, hoặc nhân sự làm việc xuyên team theo từng task)
+    // nên tab "Tổng hợp"/"Ranking" theo Team (dựa vào Tiêu chí + team_name)
+    // không phù hợp. "theo_task" chuyển sang tính KPI trực tiếp theo từng
+    // NHÂN SỰ, cộng dồn Điểm cá nhân từ mọi task họ tham gia trong tháng
+    // (xem task_members — dialog "Nhân sự tham gia" của Backlog), không cần
+    // chia theo team. Mặc định "theo_team" — hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("departments", "cach_tinh_kpi"))) {
+      await db.schema.alterTable("departments", (table) => {
+        table.string("cach_tinh_kpi", 20).notNullable().defaultTo("theo_team");
+      });
+    }
+
     const firstDept = await db("departments").orderBy("thu_tu", "asc").first();
     const firstDeptId = Number((firstDept as any)?.id ?? 1);
 
@@ -423,6 +445,70 @@ export async function initDatabase(): Promise<void> {
         await db("tasks")
           .where({ id: (t as any).id })
           .update({ department_id: Number((team as any)?.department_id ?? firstDeptId) });
+      }
+    }
+
+    // tieu_chi_configs.department_id — NULL = tiêu chí DÙNG CHUNG cho mọi
+    // phòng (giữ nguyên hành vi cũ: toàn bộ tiêu chí có sẵn đều để NULL khi
+    // thêm cột này, không phòng nào bị mất tiêu chí đang dùng); có giá trị =
+    // tiêu chí RIÊNG của đúng 1 phòng đó. 1 phòng "thấy" được: tiêu chí dùng
+    // chung (nếu departments.dung_tieu_chi_chung = true) + tiêu chí riêng
+    // của chính phòng đó — xem listTieuChiConfigs() ở tieuchi.service.ts.
+    if (!(await db.schema.hasColumn("tieu_chi_configs", "department_id"))) {
+      await db.schema.alterTable("tieu_chi_configs", (table) => {
+        table.integer("department_id").references("id").inTable("departments").onDelete("CASCADE");
+      });
+    }
+
+    // tieu_chi_configs.kieu_tinh / nguon_du_lieu / he_so — trước đây công
+    // thức tính "Tổng điểm" ở tab Tổng hợp hard-code cứng theo ĐÚNG TÊN của
+    // vài tiêu chí cố định trong code (homeComputeTeamScores ở app.js) — đổi
+    // tên/xóa tiêu chí đó (VD phòng ban dùng bộ tiêu chí khác hẳn) là Tổng
+    // điểm ra sai/rỗng. 3 cột này đưa công thức đó thành DỮ LIỆU cấu hình
+    // được trên giao diện (dialog Tiêu chí), không cần sửa code nữa:
+    // - kieu_tinh: 1 trong các kiểu tính đã hỗ trợ sẵn (không phải công thức
+    //   tự do) — xem TIEU_CHI_KIEU_TINH ở app.js để biết danh sách + ý nghĩa.
+    // - nguon_du_lieu: nguồn số liệu thực tế dùng cho kiểu tính đó (VD tỷ lệ
+    //   hoàn thành nhiệm vụ, SL sự cố CSKH, số dòng khai báo Hỗ trợ...).
+    // - he_so: tham số đi kèm (VD % trừ mỗi lỗi, hệ số chia số dòng khai báo).
+    // Mặc định "khong_tinh" — tiêu chí thuần thông tin, không cộng vào Tổng
+    // điểm (giữ đúng hành vi cũ cho tiêu chí chưa từng được tính vào).
+    if (!(await db.schema.hasColumn("tieu_chi_configs", "kieu_tinh"))) {
+      await db.schema.alterTable("tieu_chi_configs", (table) => {
+        table.string("kieu_tinh", 50).notNullable().defaultTo("khong_tinh");
+        table.string("nguon_du_lieu", 50);
+        table.decimal("he_so", 10, 4);
+      });
+
+      // Backfill: nếu deployment này đã có sẵn tiêu chí trùng ĐÚNG tên với
+      // công thức cũ hard-code trong app.js, gán đúng kiểu tính tương ứng để
+      // Tổng điểm KHÔNG đổi so với trước (không phá dữ liệu/điểm đang có).
+      // Không có tiêu chí nào trùng tên (cài đặt mới, hoặc phòng đã đổi tên)
+      // thì các UPDATE này chỉ đơn giản không khớp dòng nào, vô hại.
+      const backfill: { name: string; kieuTinh: string; nguon: string; heSo: number | null }[] = [
+        { name: "Tiến độ hoàn thành Sprint goal", kieuTinh: "ty_le_x_diem_chuan", nguon: "ty_le_hoan_thanh_nhiem_vu", heSo: null },
+        {
+          name: "Số lượng sự cố mức độ ảnh hưởng nghiêm trọng đến khách hàng",
+          kieuTinh: "tru_theo_loi",
+          nguon: "so_luong_su_co",
+          heSo: 0.1,
+        },
+        { name: "Tỷ lệ xử lý yêu cầu hỗ trợ đúng hạn", kieuTinh: "ty_le_chia_chi_tieu_x_diem_chuan", nguon: "ty_le_xu_ly_ticket", heSo: null },
+        { name: "Tỷ lệ khởi tạo dịch vụ thành công đúng hạn", kieuTinh: "ty_le_chia_chi_tieu_x_diem_chuan", nguon: "ty_le_khoi_tao", heSo: null },
+        { name: "Thực hiện theo quy trình, kế hoạch chung", kieuTinh: "dem_dong_tru", nguon: "dem_tuan_thu", heSo: 2 },
+        {
+          name: "Tuân thủ nội quy quy định công ty  (đi muộn/về sớm; trang phục; nề nếp nội vụ; hội họp giao ban…)",
+          kieuTinh: "dem_dong_tru",
+          nguon: "dem_noi_quy",
+          heSo: 2,
+        },
+        { name: "Hỗ trợ, phối hợp", kieuTinh: "dem_dong_cong", nguon: "dem_ho_tro", heSo: 2 },
+        { name: "Đào tạo và phát triển đội nhóm", kieuTinh: "dem_dong_cong", nguon: "dem_dao_tao", heSo: 2 },
+      ];
+      for (const b of backfill) {
+        await db("tieu_chi_configs")
+          .where({ ten_tieu_chi: b.name })
+          .update({ kieu_tinh: b.kieuTinh, nguon_du_lieu: b.nguon, he_so: b.heSo });
       }
     }
 
@@ -533,6 +619,64 @@ export async function initDatabase(): Promise<void> {
       });
     }
 
+    // 29. task_members — nhân sự tham gia 1 task ở Backlog (VD 1 task dự án
+    // phần mềm có nhiều người cùng làm). "Vai trò" KHÔNG có danh mục riêng —
+    // lấy thẳng theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự
+    // (join qua members.chuc_vu khi đọc), nên 1 nhân sự chỉ gán 1 lần / task.
+    if (!(await db.schema.hasTable("task_members"))) {
+      await db.schema.createTable("task_members", (table) => {
+        table.increments("id").primary();
+        table.integer("task_id").notNullable().references("id").inTable("tasks").onDelete("CASCADE");
+        table.integer("member_id").notNullable().references("id").inTable("members").onDelete("CASCADE");
+        table.text("ghi_chu");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+        table.unique(["task_id", "member_id"]);
+      });
+    }
+
+    // task_members.ty_le_dong_gop / diem_ca_nhan — phân bổ điểm % Đánh giá
+    // của task cho từng nhân sự tham gia (chỉ áp dụng khi task đã được chấm
+    // điểm). ty_le_dong_gop: % đóng góp (0-100), tổng theo task không được
+    // vượt 100% (validate ở service). diem_ca_nhan: điểm cá nhân quy theo %
+    // (0-100) — nếu để trống thì tự tính = % Đánh giá của task × tỷ lệ đóng
+    // góp; nhập tay ở đây (kể cả gõ theo thang điểm 5, FE tự quy đổi sang %
+    // trước khi lưu) để ghi đè khi cần chấm riêng cho người đó.
+    if (!(await db.schema.hasColumn("task_members", "ty_le_dong_gop"))) {
+      await db.schema.alterTable("task_members", (table) => {
+        table.decimal("ty_le_dong_gop", 5, 2);
+        table.decimal("diem_ca_nhan", 5, 2);
+      });
+    }
+
+    // 30. phan_loai_nhan_su_options — danh mục Phân loại nhân sự tham gia
+    // task (Thực hiện chính / Hỗ trợ...), khác với danh mục Phân loại của
+    // Task/Roadmap (NVKH/NVPS...) nên tách bảng riêng, tránh lẫn.
+    if (!(await db.schema.hasTable("phan_loai_nhan_su_options"))) {
+      await db.schema.createTable("phan_loai_nhan_su_options", (table) => {
+        table.increments("id").primary();
+        table.string("ten_phan_loai", 255).notNullable().unique();
+        table.integer("thu_tu").notNullable().defaultTo(0);
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+    const phanLoaiNhanSuCountRes = await db("phan_loai_nhan_su_options").count({ c: "*" }).first();
+    if (Number((phanLoaiNhanSuCountRes as any)?.c ?? 0) === 0) {
+      const seed = ["Thực hiện chính", "Hỗ trợ"];
+      for (let i = 0; i < seed.length; i++) {
+        await db("phan_loai_nhan_su_options").insert({ ten_phan_loai: seed[i], thu_tu: i });
+      }
+    }
+
+    // task_members.phan_loai — Phân loại nhân sự tham gia task (giá trị lấy
+    // từ phan_loai_nhan_su_options ở trên, lưu dạng chuỗi tự do giống các
+    // cột "Phân loại" khác trong hệ thống — không ràng buộc FK).
+    if (!(await db.schema.hasColumn("task_members", "phan_loai"))) {
+      await db.schema.alterTable("task_members", (table) => {
+        table.string("phan_loai", 255);
+      });
+    }
+
     // Seed danh mục Tag
     const tagCountRes = await db("tags").count({ c: "*" }).first();
     const tagCount = Number((tagCountRes as any)?.c ?? 0);
@@ -605,6 +749,40 @@ export async function initDatabase(): Promise<void> {
       for (let i = 0; i < seedChucVu.length; i++) {
         await db("chuc_vu_options").insert({ ten_chuc_vu: seedChucVu[i], thu_tu: i });
       }
+    }
+
+    // Quản lý User + Phân quyền — user cục bộ được tạo tự động khi đăng nhập
+    // SSO lần đầu (upsertUserFromSso), KHÔNG tạo tay ở đây. sso_sub là
+    // "sub" claim từ IdP (định danh không đổi), unique để upsert theo đúng
+    // 1 người dù username/email đổi sau này.
+    const hasUsers = await db.schema.hasTable("users");
+    if (!hasUsers) {
+      await db.schema.createTable("users", (table) => {
+        table.increments("id").primary();
+        table.string("sso_sub", 255).notNullable().unique();
+        table.string("username", 255).notNullable();
+        table.string("name", 255).notNullable();
+        table.string("email", 255);
+        // "admin" | "editor" | "viewer" — xem src/types/user.ts. Người đầu
+        // tiên đăng nhập thành công tự thành admin (bootstrap), những người
+        // sau mặc định "viewer" (quyền thấp nhất) — admin vào Quản lý User
+        // để nâng quyền.
+        table.string("role", 20).notNullable().defaultTo("viewer");
+        table.boolean("active").notNullable().defaultTo(true);
+        table.dateTime("last_login_at");
+        table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+        table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      });
+    }
+
+    // members.ha_ki — nút "Hạ KI" ở tab Nhân sự, hạ KI của nhân sự đó xuống 1
+    // bậc khi hiển thị ở Home > Ranking > "Ranking thành viên team" (thang
+    // A+ > A > B > C > D > E, xem homeLowerKiOneLevel ở app.js). Mặc định
+    // false — hành vi cũ không đổi.
+    if (!(await db.schema.hasColumn("members", "ha_ki"))) {
+      await db.schema.alterTable("members", (table) => {
+        table.boolean("ha_ki").notNullable().defaultTo(false);
+      });
     }
   })();
 

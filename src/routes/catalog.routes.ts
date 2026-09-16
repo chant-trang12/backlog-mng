@@ -25,6 +25,12 @@ import {
   listMucTieuHandler,
   updateMucTieuHandler,
 } from "../controllers/muctieu.controller.js";
+import {
+  createPhanLoaiNhanSuHandler,
+  deletePhanLoaiNhanSuHandler,
+  listPhanLoaiNhanSuHandler,
+  updatePhanLoaiNhanSuHandler,
+} from "../controllers/phanloainhansu.controller.js";
 
 const router = Router();
 
@@ -57,5 +63,10 @@ router.get("/muc-tieu", listMucTieuHandler);
 router.post("/muc-tieu", createMucTieuHandler);
 router.put("/muc-tieu/:id", updateMucTieuHandler);
 router.delete("/muc-tieu/:id", deleteMucTieuHandler);
+
+router.get("/phan-loai-nhan-su", listPhanLoaiNhanSuHandler);
+router.post("/phan-loai-nhan-su", createPhanLoaiNhanSuHandler);
+router.put("/phan-loai-nhan-su/:id", updatePhanLoaiNhanSuHandler);
+router.delete("/phan-loai-nhan-su/:id", deletePhanLoaiNhanSuHandler);
 
 export default router;

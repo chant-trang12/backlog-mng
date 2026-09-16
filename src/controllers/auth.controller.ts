@@ -6,6 +6,7 @@ import {
   handleOidcCallback,
   isSsoEnabled,
 } from "../services/auth.service.js";
+import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -56,6 +57,15 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     const currentUrl = new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`);
 
     const user = await handleOidcCallback(currentUrl, expectedState, codeVerifier);
+    // Tạo/đồng bộ record user cục bộ (bảng users) — người đăng nhập đầu
+    // tiên tự thành admin, những người sau mặc định viewer (xem
+    // upsertUserFromSso). Không chặn login nếu bước này lỗi — chỉ log, để
+    // requireAuth tự phòng vệ tạo lại ở request kế tiếp.
+    try {
+      await upsertUserFromSso(user);
+    } catch (err) {
+      console.error("Lỗi đồng bộ user cục bộ sau đăng nhập SSO:", err);
+    }
 
     if (req.session) {
       req.session.user = user;
@@ -74,14 +84,29 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
   }
 }
 
-export function meHandler(req: Request, res: Response): void {
+export async function meHandler(req: Request, res: Response): Promise<void> {
   const ssoEnabled = isSsoEnabled();
   const user = req.session?.user ?? null;
+
+  // role dùng để FE ẩn/hiện mục "Quản lý User" (admin) và tự vô hiệu hoá
+  // thao tác ghi phía UI cho viewer — chặn thật sự vẫn ở requireWrite phía
+  // server, đây chỉ là gợi ý hiển thị. userId = id cục bộ (bảng users, khác
+  // user.id là sso_sub) — FE dùng để tự nhận ra "chính mình" trong bảng
+  // Quản lý User (không cho tự đổi role/khóa chính mình, khớp guard ở service).
+  let role: string | null = null;
+  let userId: number | null = null;
+  if (user) {
+    const appUser = await getUserBySsoSub(user.id);
+    role = appUser?.role ?? null;
+    userId = appUser?.id ?? null;
+  }
 
   res.json({
     ssoEnabled,
     authenticated: !!user,
     user,
+    role,
+    userId,
   });
 }
 

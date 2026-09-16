@@ -54,7 +54,7 @@
                   <label for="home-filter-period">Tháng</label>
                   <select id="home-filter-period"></select>
                 </div>
-                <div>
+                <div id="home-filter-team-wrap">
                   <label for="home-filter-team">Team</label>
                   <select id="home-filter-team">
                     <option value="">Tất cả team</option>
@@ -70,7 +70,7 @@
 
             <section class="card" style="flex:3 1 400px">
               <div class="row" style="justify-content:space-between;align-items:flex-start">
-                <h2 style="margin:0">Ranking Team</h2>
+                <h2 style="margin:0" id="home-vbar-title">Ranking Team</h2>
                 <div class="home-vbar-callout" id="home-vbar-callout" style="margin-right:32px"></div>
               </div>
               <div class="home-vbar-chart" id="home-vbar-chart" style="max-width:420px;margin:16px auto 0"></div>
@@ -83,6 +83,7 @@
             <span class="pill active" data-tab="ranking">Ranking</span>
             <span class="pill" data-tab="tonghop">Tổng hợp</span>
             <span class="pill" data-tab="tyle-hoanthanh">Tỉ lệ hoàn thành nhiệm vụ</span>
+            <span class="pill" data-tab="kpi-theo-task" id="home-tab-kpi-theo-task-pill" hidden>KPI theo Task</span>
           </div>
 
           <div id="home-tab-ranking">
@@ -191,6 +192,27 @@
                 <tbody id="home-completion-tbody"></tbody>
               </table>
             </div>
+          </section>
+
+          <section class="card" id="home-tab-kpi-theo-task" hidden>
+            <h2 style="margin:0 0 6px">KPI nhân sự theo Task</h2>
+            <p class="muted" style="margin:0 0 12px">Dành cho phòng ban tính KPI trực tiếp theo từng nhân sự (không chia theo team) — điểm mỗi task lấy Điểm cá nhân đã ghi đè, hoặc tự tính = % Đánh giá × Tỷ lệ đóng góp.</p>
+            <div class="table-wrap">
+              <table id="home-kpi-theo-task-table">
+                <thead>
+                  <tr>
+                    <th style="width:70px">Rank</th>
+                    <th>Họ và tên</th>
+                    <th>Chức vụ</th>
+                    <th>Team</th>
+                    <th style="width:100px">Số task</th>
+                    <th style="width:110px">Tổng điểm</th>
+                  </tr>
+                </thead>
+                <tbody id="home-kpi-theo-task-tbody"></tbody>
+              </table>
+            </div>
+            <p class="muted" id="home-kpi-theo-task-empty" hidden style="margin-top:12px">Chưa có dữ liệu nhân sự tham gia task trong tháng này.</p>
           </section>
           </div>
         </div>
@@ -419,6 +441,7 @@
                     <th style="min-width:110px">Đào tạo</th>
                     <th style="min-width:110px">Hỗ trợ</th>
                     <th style="min-width:110px">Ranking</th>
+                    <th style="min-width:170px" title="Trung bình % Đánh giá (không nhân tỷ lệ đóng góp) các task &quot;Thực hiện chính&quot; (hoặc chưa phân loại) + cộng thẳng điểm các task &quot;Hỗ trợ&quot; = Tỷ lệ đóng góp × % Đánh giá (không tính vào trung bình)">Điểm cá nhân (Tính theo task)</th>
                     <th style="min-width:170px"></th>
                   </tr>
                 </thead>
@@ -897,7 +920,20 @@
             <span class="pill" data-tab="ranking">Ranking team</span>
             <span class="pill" data-tab="tagphanloai">Cấu hình</span>
             <span class="pill" data-tab="phongban">Phòng ban</span>
+            <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
           </div>
+
+          <section class="card" id="config-tab-users" hidden>
+            <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
+            <p class="muted" style="margin:12px 0">User được tạo tự động khi đăng nhập SSO lần đầu — không tạo tay ở đây. Người đầu tiên đăng nhập vào hệ thống tự thành Admin; nâng/hạ quyền hoặc khóa tài khoản cho những người sau ở bảng dưới. <strong>Admin</strong>: toàn quyền + Quản lý User. <strong>Biên tập</strong>: sửa/xóa dữ liệu nghiệp vụ bình thường. <strong>Chỉ xem</strong>: chỉ đọc, không sửa/xóa/thêm được gì.</p>
+            <div class="table-wrap">
+              <table id="users-config-table">
+                <thead><tr><th>Họ và tên</th><th>Username</th><th>Email</th><th style="width:150px">Quyền</th><th style="width:120px">Trạng thái</th><th style="width:160px">Đăng nhập gần nhất</th><th style="width:100px"></th></tr></thead>
+                <tbody id="users-config-tbody"></tbody>
+              </table>
+              <p class="muted" id="users-config-empty" hidden style="padding:16px;text-align:center">Chưa có user nào đăng nhập.</p>
+            </div>
+          </section>
 
           <section class="card" id="config-tab-phongban" hidden>
             <div class="row" style="justify-content:space-between">
@@ -907,7 +943,7 @@
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
             <div class="table-wrap">
               <table id="department-config-table">
-                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:140px"></th></tr></thead>
+                <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:150px">Cách tính KPI</th><th style="width:140px"></th></tr></thead>
                 <tbody id="department-config-tbody"></tbody>
               </table>
               <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>
@@ -917,9 +953,12 @@
           <section class="card" id="config-tab-tieuchi">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Tiêu chí</h2>
-              <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+              <div class="row">
+                <button id="clone-tieuchi-btn" class="small">Sao chép từ phòng khác</button>
+                <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+              </div>
             </div>
-            <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — dùng chung cho mọi tháng backlog. Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
+            <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — theo phòng ban đang xem (mỗi tiêu chí có thể dùng chung cho mọi phòng, hoặc riêng của đúng phòng này). Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
             <div class="table-wrap">
               <table id="tieuchi-table">
                 <thead>
@@ -927,13 +966,14 @@
                     <th style="min-width:140px">Nhóm</th>
                     <th style="min-width:180px">Tiêu chí</th>
                     <th style="min-width:280px">Cách tính điểm</th>
+                    <th style="min-width:130px">Phạm vi</th>
                     <th style="min-width:170px"></th>
                   </tr>
                 </thead>
                 <tbody id="tieuchi-tbody"></tbody>
                 <tfoot>
                   <tr id="tieuchi-tongdiem-row">
-                    <td colspan="3" style="font-weight:600">Tổng điểm</td>
+                    <td colspan="4" style="font-weight:600">Tổng điểm</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1051,6 +1091,21 @@
                   <tbody id="muctieu-config-tbody"></tbody>
                 </table>
                 <p class="muted" id="muctieu-config-empty" hidden style="padding:16px;text-align:center">Chưa có mục tiêu nào — bấm "+ Thêm mục tiêu" để bắt đầu.</p>
+              </div>
+            </section>
+
+            <section class="card row-split-equal">
+              <div class="row" style="justify-content:space-between">
+                <h2 style="margin:0">Phân loại nhân sự</h2>
+                <button id="add-phanloainhansu-btn" class="primary">+ Thêm phân loại</button>
+              </div>
+              <p class="muted" style="margin:12px 0">Danh sách Phân loại (VD: Thực hiện chính, Hỗ trợ…) — dùng khi gán nhân sự tham gia 1 task ở Backlog.</p>
+              <div class="table-wrap">
+                <table id="phanloainhansu-config-table">
+                  <thead><tr><th>Phân loại</th><th style="width:56px"></th></tr></thead>
+                  <tbody id="phanloainhansu-config-tbody"></tbody>
+                </table>
+                <p class="muted" id="phanloainhansu-config-empty" hidden style="padding:16px;text-align:center">Chưa có phân loại nào — bấm "+ Thêm phân loại" để bắt đầu.</p>
               </div>
             </section>
 
@@ -1279,9 +1334,66 @@
       <div>
         <label><input type="checkbox" id="tc-co-chi-tieu" style="width:auto" /> Có dòng "Chỉ tiêu" riêng (VD: tỷ lệ mục tiêu %)</label>
       </div>
+      <div>
+        <label><input type="checkbox" id="tc-dung-chung" style="width:auto" /> Dùng chung cho tất cả phòng ban</label>
+        <p class="muted" style="margin:4px 0 0">Bỏ chọn để tiêu chí này chỉ riêng phòng đang xem mới thấy.</p>
+      </div>
+      <div class="card" style="background:var(--bg);padding:12px;margin:0">
+        <label for="tc-kieu-tinh" style="margin-bottom:8px">Công thức tính vào Tổng điểm (tab Tổng hợp)</label>
+        <select id="tc-kieu-tinh" style="width:100%"></select>
+        <div id="tc-nguon-row" class="field-row" style="margin-top:10px">
+          <div style="flex:1;min-width:0">
+            <label for="tc-nguon">Nguồn dữ liệu</label>
+            <select id="tc-nguon" style="width:100%"></select>
+          </div>
+          <div id="tc-he-so-wrap" style="width:110px;flex:0 0 auto">
+            <label for="tc-he-so">Hệ số</label>
+            <input id="tc-he-so" type="number" step="0.01" />
+          </div>
+        </div>
+        <p class="muted" id="tc-kieu-tinh-hint" style="margin:8px 0 0"></p>
+      </div>
       <div class="actions">
         <button type="button" id="tieuchi-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Sao chép toàn bộ tiêu chí "thấy được" của 1 phòng khác thành tiêu chí
+       riêng mới của phòng đang xem — bộ khởi điểm nhanh cho phòng có tiêu
+       chí "gần giống" phòng khác thay vì gõ lại từ đầu. -->
+  <dialog id="clone-tieuchi-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="clone-tieuchi-form">
+      <h2 style="margin:0">Sao chép tiêu chí từ phòng khác</h2>
+      <p class="muted" style="margin:0">Các tiêu chí <strong>riêng</strong> của phòng nguồn (không gồm tiêu chí dùng chung — phòng đang xem đã tự thấy sẵn rồi) sẽ được sao chép thành tiêu chí riêng mới của phòng đang xem — bỏ qua tiêu chí trùng nhóm + tên đã có sẵn. Điểm chuẩn/chỉ tiêu theo team không được sao chép (team của 2 phòng khác nhau), cần nhập lại.</p>
+      <div>
+        <label for="clone-tieuchi-from">Sao chép từ phòng</label>
+        <select id="clone-tieuchi-from" required></select>
+      </div>
+      <div class="actions">
+        <button type="button" id="clone-tieuchi-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Sao chép</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="department-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="department-form">
+      <h2 style="margin:0">Thêm phòng ban mới</h2>
+      <div>
+        <label for="department-name">Tên phòng</label>
+        <input id="department-name" required />
+      </div>
+      <div>
+        <label for="department-code">Mã phòng (không bắt buộc)</label>
+        <input id="department-code" />
+      </div>
+      <div class="actions">
+        <button type="button" id="department-cancel-btn">Hủy</button>
+        <button type="submit" class="primary">Thêm phòng</button>
       </div>
     </form>
   </dialog>
@@ -1382,6 +1494,35 @@
     </form>
   </dialog>
 
+  <dialog id="member-task-detail-dialog" style="max-width:820px">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <div class="dialog-body">
+      <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
+      <p class="muted" style="margin:0">Danh sách task đã gán nhân sự này ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn.</p>
+      <p class="muted" style="margin:0">Cách tính cột Điểm: nếu đã ghi đè tay (Điểm cá nhân) thì lấy đúng giá trị đó. Nếu chưa, task <strong>Thực hiện chính</strong> (hoặc chưa phân loại) lấy thẳng % Đánh giá; task <strong>Hỗ trợ</strong> nhân thêm Tỷ lệ đóng góp (Tỷ lệ đóng góp × % Đánh giá). Task chưa chấm điểm thì để trống.</p>
+      <p class="muted" style="margin:0">"Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm của các task Thực hiện chính, cộng thêm điểm các task Hỗ trợ.</p>
+      <div class="table-wrap">
+        <table id="member-task-detail-table">
+          <thead>
+            <tr>
+              <th>Nhiệm vụ</th>
+              <th style="width:120px">Team</th>
+              <th style="width:130px">Phân loại</th>
+              <th style="width:120px">Tỷ lệ đóng góp (%)</th>
+              <th style="width:110px">% Đánh giá</th>
+              <th style="width:90px">Điểm</th>
+            </tr>
+          </thead>
+          <tbody id="member-task-detail-tbody"></tbody>
+        </table>
+        <p class="muted" id="member-task-detail-empty" hidden style="padding:16px;text-align:center">Nhân sự này chưa được gán vào task nào trong tháng đang chọn.</p>
+      </div>
+      <div class="actions">
+        <button type="button" id="member-task-detail-close-btn">Đóng</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="task-dialog">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <form id="task-form">
@@ -1467,6 +1608,73 @@
       <div class="actions">
         <button type="button" id="progress-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Quản lý nhân sự tham gia 1 task (VD 1 task dự án phần mềm có nhiều
+       người cùng làm) — mở từ nút "Nhân sự" ở bảng Danh sách nhiệm vụ. Cột
+       "Vai trò" lấy thẳng theo Chức vụ đã khai báo sẵn của nhân sự đó ở
+       Team & Nhân sự, không chọn riêng ở đây. -->
+  <dialog id="task-member-dialog" style="max-width:760px">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form method="dialog" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
+      <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
+
+      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật).
+           Dòng 2: đơn vị nhập điểm cá nhân + nút Chia đều tỷ lệ (nổi bật,
+           góc phải, cùng dòng với đơn vị). Tổng đã phân bổ chuyển xuống
+           riêng 1 dòng, ngay trên bảng danh sách (xem task-member-total-row). -->
+      <div class="row" id="task-member-score-row" hidden style="align-items:center;gap:8px">
+        <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
+      </div>
+      <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div class="row" style="align-items:center;gap:8px">
+          <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
+          <select id="tm-score-unit" style="max-width:140px">
+            <option value="percent">% (theo task)</option>
+            <option value="scale5">Thang điểm 5</option>
+          </select>
+        </div>
+        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
+      </div>
+
+      <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
+           dưới. -->
+      <div class="tm-add-frame">
+        <div style="position:relative">
+          <label for="tm-member">Nhân sự</label>
+          <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
+          <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
+        </div>
+        <div class="field-row" style="align-items:flex-end">
+          <div>
+            <label for="tm-phan-loai">Phân loại</label>
+            <select id="tm-phan-loai"></select>
+          </div>
+          <div style="flex:1">
+            <label for="tm-ghi-chu">Ghi chú</label>
+            <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
+          </div>
+          <button type="button" id="tm-add-btn" class="primary">+ Thêm</button>
+        </div>
+      </div>
+
+      <div class="row" id="task-member-total-row" hidden style="justify-content:flex-end">
+        <span id="task-member-total-badge" class="status-badge status-default"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table id="task-member-table">
+          <thead id="task-member-thead"></thead>
+          <tbody id="task-member-tbody"></tbody>
+        </table>
+        <p class="muted" id="task-member-empty" hidden style="padding:16px;text-align:center">Chưa có nhân sự nào tham gia task này.</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="task-member-close-btn">Đóng</button>
       </div>
     </form>
   </dialog>

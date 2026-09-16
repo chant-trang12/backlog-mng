@@ -1,22 +1,26 @@
 import { db } from "../db/database.js";
 import type { Department } from "../types/backlog.js";
 
+function toDepartment(row: any): Department {
+  return { ...row, dung_tieu_chi_chung: Boolean(row.dung_tieu_chi_chung) } as Department;
+}
+
 // Danh sách phòng — dùng chung cho mọi tháng backlog. Team (và nhân sự / task
 // / CSKH qua đó) thuộc đúng 1 phòng.
 export async function listDepartments(): Promise<Department[]> {
   const rows = await db("departments").orderBy("thu_tu", "asc").orderBy("id", "asc");
-  return rows as Department[];
+  return rows.map(toDepartment);
 }
 
 export async function getDepartment(id: number): Promise<Department | undefined> {
   const row = await db("departments").where({ id }).first();
-  return row as Department | undefined;
+  return row ? toDepartment(row) : undefined;
 }
 
 export async function createDepartment(input: { name: string; code?: string }): Promise<Department> {
   const name = input.name.trim();
   const existing = await db("departments").where({ name }).first();
-  if (existing) return existing as Department;
+  if (existing) return toDepartment(existing);
 
   const maxRow = await db("departments").max({ m: "thu_tu" }).first();
   const thuTu = Number((maxRow as any)?.m ?? -1) + 1;
@@ -24,12 +28,17 @@ export async function createDepartment(input: { name: string; code?: string }): 
   const [created] = await db("departments")
     .insert({ name, code: input.code?.trim() || null, thu_tu: thuTu })
     .returning("*");
-  return created as Department;
+  return toDepartment(created);
 }
 
 export async function updateDepartment(
   id: number,
-  input: { name?: string; code?: string },
+  input: {
+    name?: string;
+    code?: string;
+    dung_tieu_chi_chung?: boolean;
+    cach_tinh_kpi?: "theo_team" | "theo_task";
+  },
 ): Promise<Department | undefined> {
   const existing = await getDepartment(id);
   if (!existing) return undefined;
@@ -39,9 +48,12 @@ export async function updateDepartment(
     .update({
       name: input.name?.trim() ?? existing.name,
       code: input.code !== undefined ? input.code.trim() || null : existing.code,
+      dung_tieu_chi_chung:
+        input.dung_tieu_chi_chung !== undefined ? (input.dung_tieu_chi_chung ? 1 : 0) : existing.dung_tieu_chi_chung ? 1 : 0,
+      cach_tinh_kpi: input.cach_tinh_kpi ?? existing.cach_tinh_kpi,
     })
     .returning("*");
-  return updated as Department;
+  return toDepartment(updated);
 }
 
 // Chỉ cho xóa phòng khi không còn team nào thuộc phòng đó (tránh mồ côi

@@ -18,6 +18,13 @@ export interface Department {
   name: string;
   code: string | null;
   thu_tu: number;
+  // Phòng này có dùng chung danh mục Tiêu chí (department_id NULL) hay CHỈ
+  // dùng đúng tiêu chí riêng của mình — xem tieuchi.service.ts.
+  dung_tieu_chi_chung: boolean;
+  // "theo_team" (mặc định) = KPI tính theo Team (tab Tổng hợp/Ranking);
+  // "theo_task" = KPI tính trực tiếp theo từng nhân sự, cộng dồn Điểm cá
+  // nhân từ các task họ tham gia (task_members), không chia theo team.
+  cach_tinh_kpi: "theo_team" | "theo_task";
   created_at: string;
 }
 
@@ -39,6 +46,11 @@ export interface Member {
   dao_tao: string | null;
   ho_tro: string | null;
   danh_gia: string | null;
+  // Nút "Hạ KI" ở tab Nhân sự — hạ KI của nhân sự này xuống 1 bậc (thang
+  // A+ > A > B > C > D > E) khi hiển thị ở Home > Ranking > "Ranking thành
+  // viên team". Toggle được (bấm lại để bỏ hạ). Theo period_id (mỗi tháng
+  // backlog có bảng members riêng nên field này tự động cũng theo tháng).
+  ha_ki: boolean;
   created_at: string;
 }
 
@@ -67,6 +79,7 @@ export interface UpdateMemberInput {
   dao_tao?: string;
   ho_tro?: string;
   danh_gia?: string;
+  ha_ki?: boolean;
 }
 
 export type TaskStatus = "Chưa thực hiện" | "Đang thực hiện" | "Hoàn thành" | "Hủy";
@@ -151,7 +164,7 @@ export interface CreateRoadmapItemInput {
   nhiem_vu: string;
   dod?: string;
   dieu_kien_dam_bao?: string;
-  phan_loai?: string;
+  phan_loai?: string | null;
   thoi_gian_bat_dau?: string;
   thoi_gian_ket_thuc?: string;
   trang_thai?: TaskStatus;
@@ -159,6 +172,80 @@ export interface CreateRoadmapItemInput {
 }
 
 export type UpdateRoadmapItemInput = Partial<CreateRoadmapItemInput>;
+
+// Nhân sự tham gia 1 task ở Backlog — quản lý sâu hơn "ai làm task này". Vai
+// trò KHÔNG có danh mục riêng — lấy thẳng theo Chức vụ đã khai báo sẵn cho
+// nhân sự đó ở Team & Nhân sự (member_chuc_vu, join qua members.chuc_vu).
+//
+// ty_le_dong_gop: % đóng góp của người này trong task (0-100) — tổng theo
+// từng task không được vượt 100% (validate ở service). diem_ca_nhan: điểm
+// cá nhân quy theo thang % (0-100), CHỈ có ý nghĩa khi task đã được chấm
+// (tasks.cpo_danh_gia khác null) — để trống thì FE tự tính
+// = cpo_danh_gia × ty_le_dong_gop / 100; nhập giá trị ở đây (FE cho nhập cả
+// theo thang điểm 5, tự quy đổi sang % trước khi gửi lên) để ghi đè, chấm
+// riêng cho người đó thay vì suy ra thuần theo tỷ lệ.
+export interface TaskMember {
+  id: number;
+  task_id: number;
+  member_id: number;
+  ty_le_dong_gop: number | null;
+  diem_ca_nhan: number | null;
+  // Phân loại nhân sự tham gia (Thực hiện chính / Hỗ trợ...) — giá trị lấy
+  // từ danh mục phan_loai_nhan_su_options, lưu dạng chuỗi tự do (không FK).
+  phan_loai: string | null;
+  ghi_chu: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Kèm tên + chức vụ nhân sự (join bảng members) để hiển thị trực tiếp,
+// không cần FE tự tra cứu lại theo member_id.
+export interface TaskMemberWithName extends TaskMember {
+  member_name: string;
+  member_chuc_vu: string | null;
+}
+
+export interface CreateTaskMemberInput {
+  member_id: number;
+  ty_le_dong_gop?: number | null;
+  diem_ca_nhan?: number | null;
+  phan_loai?: string | null;
+  ghi_chu?: string;
+}
+
+export interface UpdateTaskMemberInput {
+  ty_le_dong_gop?: number | null;
+  diem_ca_nhan?: number | null;
+  phan_loai?: string | null;
+  ghi_chu?: string;
+}
+
+// KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =
+// "theo_task") — cộng dồn Điểm cá nhân của 1 nhân sự từ mọi task họ tham
+// gia trong 1 tháng backlog, không chia theo team. Xem
+// taskMember.service.ts#listKpiTheoTask.
+export interface KpiTheoTaskTaskEntry {
+  task_id: number;
+  nhiem_vu: string;
+  team: string;
+  phan_loai: string | null;
+  // Trường tham chiếu/hiển thị — KHÔNG còn dùng để tính diem (xem
+  // taskMember.service.ts#listKpiTheoTask).
+  ty_le_dong_gop: number | null;
+  cpo_danh_gia: number | null;
+  // diem_ca_nhan ghi đè (nếu có) hoặc thẳng % Đánh giá (cpo_danh_gia).
+  diem: number | null;
+}
+
+export interface KpiTheoTaskRow {
+  member_id: number;
+  member_name: string;
+  member_chuc_vu: string | null;
+  team_name: string | null;
+  so_task: number;
+  tong_diem: number;
+  tasks: KpiTheoTaskTaskEntry[];
+}
 
 // Chi tiết công việc theo tháng của 1 dòng roadmap.
 export interface RoadmapDetail {

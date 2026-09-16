@@ -77,6 +77,35 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
     expect(listAfter.body.some((m: { id: number }) => m.id === member.body.id)).toBe(false);
   });
 
+  it("ha_ki (nút 'Hạ KI'): mặc định false, toggle được, rejects giá trị không phải boolean", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2042, 1);
+    const teamId = await makeTeam(app, "Ha KI test team", periodId);
+
+    const member = await request(app)
+      .post("/api/members")
+      .send({ name: "Trần Văn Hạ KI", team_id: teamId, period_id: periodId });
+    expect(member.body.ha_ki).toBe(false);
+
+    const listBefore = await request(app).get(`/api/members?period_id=${periodId}`);
+    const foundBefore = listBefore.body.find((m: { id: number }) => m.id === member.body.id);
+    expect(foundBefore.ha_ki).toBe(false);
+
+    const raised = await request(app).put(`/api/members/${member.body.id}`).send({ ha_ki: true });
+    expect(raised.status).toBe(200);
+    expect(raised.body.ha_ki).toBe(true);
+
+    const listAfter = await request(app).get(`/api/members?period_id=${periodId}`);
+    const foundAfter = listAfter.body.find((m: { id: number }) => m.id === member.body.id);
+    expect(foundAfter.ha_ki).toBe(true);
+
+    const undone = await request(app).put(`/api/members/${member.body.id}`).send({ ha_ki: false });
+    expect(undone.body.ha_ki).toBe(false);
+
+    const rejected = await request(app).put(`/api/members/${member.body.id}`).send({ ha_ki: "yes" });
+    expect(rejected.status).toBe(400);
+  });
+
   it("rejects creating a member with an invalid team_id", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2041, 2);

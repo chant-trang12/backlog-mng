@@ -22,7 +22,8 @@ import tieuchiRoutes from "./routes/tieuchi.routes.js";
 import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
-import { requireAuth } from "./middleware/auth.middleware.js";
+import userRoutes from "./routes/user.routes.js";
+import { requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
@@ -80,8 +81,13 @@ export function createApp() {
   app.use(healthRoutes);
   app.use(authRoutes);
 
-  // Protected API routes
+  // Protected API routes — requireAuth gắn req.appUser (role/active, bảng
+  // users); requireWrite chặn role "viewer" khỏi mọi request ghi (POST/PUT/
+  // PATCH/DELETE) trên TOÀN BỘ /api bên dưới; Quản lý User riêng chỉ
+  // "admin" mới vào được (requireAdmin).
   app.use("/api", requireAuth);
+  app.use("/api", requireWrite);
+  app.use("/api", requireAdmin, userRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);

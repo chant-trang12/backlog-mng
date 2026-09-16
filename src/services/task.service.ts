@@ -5,6 +5,11 @@ import { createPeriod, getPeriod } from "./period.service.js";
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
 
+// Giá trị Tính chất hệ thống tự gắn cho task được Roadmap năm tự động đưa
+// vào backlog (xem roadmap.service.ts#syncRoadmapItemToBacklog) — cùng kiểu
+// với "Nhiệm vụ tồn": không nằm trong danh mục Phân loại quản lý ở Cấu hình.
+export const TINH_CHAT_NV_NAM = "NV năm";
+
 async function nextStt(periodId: number): Promise<number> {
   const row = await db("tasks")
     .where({ period_id: periodId })
@@ -51,7 +56,7 @@ export async function listTasks(filter: {
   period_id: number;
   team?: string;
   department_id?: number | null;
-}): Promise<Task[]> {
+}): Promise<(Task & { member_count: number })[]> {
   const query = db("tasks").where({ period_id: filter.period_id });
   if (filter.team) {
     query.where({ team: filter.team });
@@ -59,8 +64,21 @@ export async function listTasks(filter: {
   if (filter.department_id != null) {
     query.where({ department_id: filter.department_id });
   }
-  const rows = await query.orderBy("stt", "asc");
-  return rows as Task[];
+  const rows = (await query.orderBy("stt", "asc")) as Task[];
+  if (rows.length === 0) return [];
+
+  // Đếm số nhân sự tham gia mỗi task (gộp theo task_id) — 1 query duy nhất
+  // thay vì N+1, gắn vào từng dòng ở phía JS thay vì subquery tương quan để
+  // an toàn cho cả 2 engine (SQLite/MSSQL) đang hỗ trợ.
+  const counts = await db("task_members")
+    .whereIn("task_id", rows.map((t) => t.id))
+    .groupBy("task_id")
+    .select("task_id")
+    .count({ c: "*" });
+  const countMap = new Map<number, number>(
+    counts.map((r: any) => [Number(r.task_id), Number(r.c)]),
+  );
+  return rows.map((t) => ({ ...t, member_count: countMap.get(t.id) ?? 0 }));
 }
 
 export async function getTask(id: number): Promise<Task | undefined> {
@@ -128,13 +146,21 @@ export async function deleteTasks(ids: number[]): Promise<number> {
   return Number(count);
 }
 
-function addTinhChatTon(tinhChat: string | null): string {
+// Thêm 1 giá trị (tag hệ thống như "Nhiệm vụ tồn", hoặc giá trị danh mục
+// Phân loại) vào cột Tính chất — giữ nguyên các giá trị đã có, không thêm
+// trùng. Tính chất là danh sách các giá trị nối bằng ", " (xem
+// renderTinhChatBadges ở app.js).
+export function addTinhChatTag(tinhChat: string | null | undefined, tag: string): string {
   const items = (tinhChat ?? "")
     .split(",")
     .map((v) => v.trim())
     .filter(Boolean);
-  if (!items.includes(TINH_CHAT_TON)) items.push(TINH_CHAT_TON);
+  if (!items.includes(tag)) items.push(tag);
   return items.join(", ");
+}
+
+function addTinhChatTon(tinhChat: string | null): string {
+  return addTinhChatTag(tinhChat, TINH_CHAT_TON);
 }
 
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {

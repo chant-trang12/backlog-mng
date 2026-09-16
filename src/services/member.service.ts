@@ -1,6 +1,12 @@
 import { db } from "../db/database.js";
 import type { CreateMemberInput, Member, MemberWithTeam, UpdateMemberInput } from "../types/backlog.js";
 
+// sqlite trả boolean dạng 0/1 thô qua knex — ép về đúng kiểu boolean khai
+// trong type Member (ha_ki).
+function toMember(row: any): Member {
+  return { ...row, ha_ki: !!row.ha_ki };
+}
+
 // Khai báo nhân sự — dùng để chọn NVTT (người phụ trách) khi nhập/cập nhật
 // task thay vì gõ tự do. Idempotent theo (period_id, team_id, name) — mỗi
 // tháng backlog có danh sách nhân sự riêng, xóa/sửa ở tháng nào chỉ ảnh
@@ -10,7 +16,7 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
   const existing = await db("members")
     .where({ period_id: input.period_id, team_id: input.team_id, name })
     .first();
-  if (existing) return existing as Member;
+  if (existing) return toMember(existing);
 
   const [created] = await db("members")
     .insert({
@@ -26,12 +32,12 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
     })
     .returning("*");
 
-  return created as Member;
+  return toMember(created);
 }
 
 export async function getMember(id: number): Promise<Member | undefined> {
   const row = await db("members").where({ id }).first();
-  return row as Member | undefined;
+  return row ? toMember(row) : undefined;
 }
 
 // Danh sách nhân sự của 1 tháng backlog (mọi team), kèm tên team — hiển thị
@@ -88,6 +94,7 @@ export async function listMembers(
       "members.name",
       "members.chuc_vu",
       "members.noi_quy",
+      "members.ha_ki",
       "members.created_at",
       "teams.name as team_name",
       "cr.total_vi_pham",
@@ -110,6 +117,7 @@ export async function listMembers(
     dao_tao: r.tr_count != null && Number(r.tr_count) > 0 ? `+${r.tr_count}` : null,
     ho_tro: r.sr_count != null && Number(r.sr_count) > 0 ? `+${r.sr_count}` : null,
     danh_gia: r.danh_gia ?? null,
+    ha_ki: !!r.ha_ki,
     created_at: r.created_at,
   }));
 }
@@ -127,6 +135,7 @@ export async function updateMember(id: number, input: UpdateMemberInput): Promis
     dao_tao: input.dao_tao !== undefined ? input.dao_tao.trim() || null : existing.dao_tao,
     ho_tro: input.ho_tro !== undefined ? input.ho_tro.trim() || null : existing.ho_tro,
     danh_gia: input.danh_gia !== undefined ? input.danh_gia.trim() || null : existing.danh_gia,
+    ha_ki: input.ha_ki !== undefined ? input.ha_ki : existing.ha_ki,
   };
 
   const [updated] = await db("members")
@@ -134,7 +143,7 @@ export async function updateMember(id: number, input: UpdateMemberInput): Promis
     .update(merged)
     .returning("*");
 
-  return updated as Member;
+  return toMember(updated);
 }
 
 export async function deleteMember(id: number): Promise<boolean> {

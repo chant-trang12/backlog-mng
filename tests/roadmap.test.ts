@@ -373,7 +373,7 @@ describe("Roadmap năm", () => {
       expect(t.team).toBe("CRM");
       expect(t.nhiem_vu).toBe("RM sync A");
       expect(t.dod).toBe("Chạy trên prod");
-      expect(t.tinh_chat).toBe("NVKH"); // Phân loại roadmap -> Tính chất task
+      expect(t.tinh_chat).toBe("NVKH, NV năm"); // Phân loại roadmap + tag hệ thống "NV năm"
       expect(t.deadline).toBe("2012-11-30"); // Ngày kết thúc roadmap -> Deadline task
     });
 
@@ -399,6 +399,9 @@ describe("Roadmap năm", () => {
       expect(item.synced_task_id).toBeTruthy();
       const sepTasks = await request(app).get(`/api/periods/${sepId}/tasks`);
       expect(sepTasks.body.some((t: { id: number }) => t.id === item.synced_task_id)).toBe(true);
+      // Roadmap item không có Phân loại -> task chỉ gắn mỗi tag hệ thống "NV năm".
+      const sepTask = sepTasks.body.find((t: { id: number }) => t.id === item.synced_task_id);
+      expect(sepTask.tinh_chat).toBe("NV năm");
 
       // Thêm tiếp tháng 10 — KHÔNG được đưa thêm lần nữa (đã vào tháng 9 rồi,
       // việc kéo sang tháng sau nếu chưa xong là nghiệp vụ riêng của Backlog).
@@ -429,7 +432,7 @@ describe("Roadmap năm", () => {
       const tasks = await request(app).get(`/api/periods/${periodId}/tasks`);
       const t = tasks.body.find((x: { nhiem_vu: string }) => x.nhiem_vu === "RM import sync");
       expect(t).toBeTruthy();
-      expect(t.tinh_chat).toBe("NVPS");
+      expect(t.tinh_chat).toBe("NVPS, NV năm");
       expect(t.deadline).toBe("2014-06-20");
     });
   });
