@@ -672,9 +672,19 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
   cursor: pointer;
 }
 
+/* border-collapse: separate (không phải collapse) — mọi <table> trong app
+   đều có <th> position:sticky (đóng băng header khi cuộn dọc), nhiều bảng
+   còn có <td> sticky (đóng băng cột khi cuộn ngang, VD #task-table). Kết
+   hợp border-collapse:collapse + position:sticky là lỗi render đã biết của
+   Chrome/Firefox: viền ở đường biên giữa ô sticky và ô thường bị "bỏ lại"
+   tại vị trí cũ khi cuộn, nhìn như viền biến mất. border-spacing:0 giữ các
+   ô sát nhau y hệt collapse (không có khe hở), chỉ khác là mỗi ô tự vẽ viền
+   riêng thay vì dùng chung 1 đường viền — viền tại các đường biên chung dày
+   hơn 1px không đáng kể, đổi lại viền không còn mất khi cuộn ngang/dọc. */
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.85rem;
 }
 
