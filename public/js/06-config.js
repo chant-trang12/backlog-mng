@@ -265,7 +265,7 @@ function renderRanking() {
     <th data-column-id="${col.id}">
       <div class="ranking-column-header">
         <input class="ranking-column-name-input" data-column-id="${col.id}" value="${col.ten_cot}" />
-        <span class="pill-x delete-ranking-column-btn" data-column-id="${col.id}" title="Xóa cột">×</span>
+        <button type="button" class="small btn-delete delete-ranking-column-btn" data-column-id="${col.id}" title="Xóa cột">×</button>
       </div>
     </th>`,
     )
@@ -287,7 +287,7 @@ function renderRanking() {
       <td>
         <div class="row" style="justify-content:center;flex-wrap:nowrap;gap:6px">
           <span>${viTri}</span>
-          <span class="pill-x delete-ranking-row-btn" data-vi-tri="${viTri}" title="Xóa dòng">×</span>
+          <button type="button" class="small btn-delete delete-ranking-row-btn" data-vi-tri="${viTri}" title="Xóa dòng">×</button>
         </div>
       </td>
       ${rowCells}
@@ -413,7 +413,7 @@ function renderTagConfig() {
           <input class="inline-cell-input tag-name-input" data-id="${t.id}" value="${t.ten_tag}" style="flex:1" />
         </div>
       </td>
-      <td><span class="pill-x delete-tag-btn" data-id="${t.id}" title="Xóa tag">×</span></td>
+      <td><button type="button" class="small btn-delete delete-tag-btn" data-id="${t.id}" title="Xóa tag">×</button></td>
     </tr>`,
     )
     .join("");
@@ -461,7 +461,7 @@ function renderCategoryConfig() {
           <input class="inline-cell-input phanloai-name-input" data-id="${p.id}" value="${p.ten_phan_loai}" style="flex:1" />
         </div>
       </td>
-      <td><span class="pill-x delete-phanloai-btn" data-id="${p.id}" title="Xóa phân loại">×</span></td>
+      <td><button type="button" class="small btn-delete delete-phanloai-btn" data-id="${p.id}" title="Xóa phân loại">×</button></td>
     </tr>`,
     )
     .join("");
@@ -538,7 +538,7 @@ function renderGroupConfig() {
           <input class="inline-cell-input nhom-name-input" data-id="${n.id}" value="${n.ten_nhom}" style="flex:1" />
         </div>
       </td>
-      <td><span class="pill-x delete-nhom-btn" data-id="${n.id}" title="Xóa nhóm">×</span></td>
+      <td><button type="button" class="small btn-delete delete-nhom-btn" data-id="${n.id}" title="Xóa nhóm">×</button></td>
     </tr>`,
     )
     .join("");
@@ -596,7 +596,7 @@ function renderPositionConfig() {
       (c) => `
     <tr data-id="${c.id}">
       <td><input class="inline-cell-input chucvu-name-input" data-id="${c.id}" value="${c.ten_chuc_vu}" style="width:100%" /></td>
-      <td><span class="pill-x delete-chucvu-btn" data-id="${c.id}" title="Xóa chức vụ">×</span></td>
+      <td><button type="button" class="small btn-delete delete-chucvu-btn" data-id="${c.id}" title="Xóa chức vụ">×</button></td>
     </tr>`,
     )
     .join("");
@@ -675,7 +675,7 @@ function renderDepartmentConfig(allTeams) {
           <option value="theo_task"${d.cach_tinh_kpi === "theo_task" ? " selected" : ""}>Theo Task</option>
         </select>
       </td>
-      <td style="text-align:center"><span class="pill-x delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</span></td>
+      <td style="text-align:center"><button type="button" class="small btn-delete delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</button></td>
     </tr>`,
     )
     .join("");
@@ -904,7 +904,7 @@ function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload
           <input class="inline-cell-input sc-name-input" data-id="${it.id}" value="${it[valueKey]}" style="flex:1;text-align:left" />
         </div>
       </td>
-      <td><span class="pill-x sc-del-btn" data-id="${it.id}" title="Xóa">×</span></td>
+      <td><button type="button" class="small btn-delete sc-del-btn" data-id="${it.id}" title="Xóa">×</button></td>
     </tr>`,
     )
     .join("");

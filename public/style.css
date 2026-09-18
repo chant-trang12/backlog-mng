@@ -1088,8 +1088,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   width: 100%;
 }
 .ranking-column-header input:focus { outline: 1px solid #fff; border-radius: 4px; }
-.ranking-column-header .pill-x { color: #fff; opacity: 0.8; }
-.ranking-column-header .pill-x:hover { opacity: 1; }
+/* Nút xóa cột giờ dùng chung style button.btn-delete (đồng bộ với nút "×"
+   ở popup Nhân sự tham gia, xem .tm-del-btn) thay vì span.pill-x cũ — tự
+   có nền/viền riêng nên không cần override màu trắng theo nền th tối nữa. */
+.ranking-column-header button.btn-delete { flex: 0 0 auto; }
 
 .status-badge {
   display: inline-block;
