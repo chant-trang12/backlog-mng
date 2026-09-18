@@ -14,7 +14,7 @@ import { migrateCoreTables, migrateCskhTables, migrateTeamRecordTables } from ".
 import { migrateRoadmapTables } from "./migrations/roadmap.js";
 import { migrateScoringTables } from "./migrations/scoring.js";
 import { migrateTaskGradingExtras, migrateTaskMembersTables } from "./migrations/tasks.js";
-import { migrateMembersHaKi, migrateUsersTable } from "./migrations/users.js";
+import { migrateMembersGhiChu, migrateMembersHaKi, migrateUsersTable } from "./migrations/users.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -49,6 +49,8 @@ export async function initDatabase(): Promise<void> {
     await migrateUsersTable();
     // members.ha_ki (nút "Hạ KI").
     await migrateMembersHaKi();
+    // members.ghi_chu (Ghi chú tự do ở tab Nhân sự).
+    await migrateMembersGhiChu();
   })();
 
   return initPromise;

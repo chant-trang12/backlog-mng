@@ -19,7 +19,7 @@ const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 // Khai báo nhân sự mới — dạng bảng CRUD: Họ và Tên, Chức vụ, Team. Gắn theo
 // period_id (tháng backlog) — xóa/sửa ở tháng nào chỉ ảnh hưởng tháng đó.
 export async function createMemberHandler(req: Request, res: Response) {
-  const { name, chuc_vu, team_id, period_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia } = req.body ?? {};
+  const { name, chuc_vu, team_id, period_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ghi_chu } = req.body ?? {};
   if (!isNonEmptyText(name)) {
     return res.status(400).json({ error: "Trường 'name' là bắt buộc" });
   }
@@ -44,6 +44,7 @@ export async function createMemberHandler(req: Request, res: Response) {
     dao_tao,
     ho_tro,
     danh_gia,
+    ghi_chu,
   });
   res.status(201).json(member);
 }
@@ -63,7 +64,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
 
-  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ha_ki } = req.body ?? {};
+  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ha_ki, ghi_chu } = req.body ?? {};
   if (team_id !== undefined) {
     const team = await getTeam(Number(team_id));
     if (!team) {
@@ -84,6 +85,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
     ho_tro,
     danh_gia,
     ha_ki,
+    ghi_chu,
   });
   if (!member) return res.status(404).json({ error: "Không tìm thấy nhân sự" });
   res.json(member);
