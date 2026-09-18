@@ -760,6 +760,16 @@ async function loadWorkRuleOverrides() {
   state.workRuleOverrideNames = new Set(overrides.map((o) => o.member_name));
 }
 
+// Cột "Day of the Week" (import Chấm công) = Saturday/Sunday -> không tính
+// vào Lượt đi muộn ở tab Nội quy — cuối tuần không phải ngày làm việc bắt
+// buộc, đi trễ/không chấm công 2 ngày này không phản ánh vi phạm nội quy.
+// Dùng chung cho cả computeWorkRuleRows() (tab Nội quy) và
+// computeHomeWorkRuleRows() (Home, 08-home.js).
+function isAttendanceWeekend(rowData) {
+  const day = String(rowData["Day of the Week"] ?? "").trim();
+  return day === "Saturday" || day === "Sunday";
+}
+
 // Tổng hợp Nội quy từ dữ liệu Chấm công đã nhập của tháng đang chọn — không
 // lưu riêng, tính lại mỗi khi dữ liệu Chấm công thay đổi. Dòng Chấm công đã
 // "Không tính đi muộn" (excluded_from_late) bị bỏ qua khi đếm; nhân sự đã
@@ -771,6 +781,7 @@ function computeWorkRuleRows() {
   state.attendanceRecords.forEach((r) => {
     const name = String(r.row_data["Name"] ?? "").trim();
     if (!name) return;
+    if (isAttendanceWeekend(r.row_data)) return;
     if (r.excluded_from_late) {
       if (!lateCountByName.has(name)) lateCountByName.set(name, 0);
       return;

@@ -429,6 +429,7 @@ function computeHomeWorkRuleRows() {
   state.homeAttendanceRecords.forEach((r) => {
     const name = String(r.row_data["Name"] ?? "").trim();
     if (!name) return;
+    if (isAttendanceWeekend(r.row_data)) return;
     if (r.excluded_from_late) {
       if (!lateCountByName.has(name)) lateCountByName.set(name, 0);
       return;
