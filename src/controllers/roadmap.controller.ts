@@ -19,8 +19,14 @@ import { listHeThong } from "../services/hethong.service.js";
 import { listMucTieu } from "../services/muctieu.service.js";
 import { listPhanLoai } from "../services/phanloai.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, ScopeForbiddenError, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+// Xem ghi chú tương tự ở task.controller.ts#scopeOf.
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // GET /api/roadmap-items?year=YYYY&department_id=X
 export async function listRoadmapItemsHandler(req: Request, res: Response) {
@@ -28,7 +34,9 @@ export async function listRoadmapItemsHandler(req: Request, res: Response) {
   if (!Number.isInteger(year)) {
     return res.status(400).json({ error: "Query 'year' không hợp lệ" });
   }
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listRoadmapItems({ year, department_id: departmentId }));
 }
 
@@ -41,11 +49,14 @@ export async function createRoadmapItemHandler(req: Request, res: Response) {
   if (!isNonEmptyText(body.team) || !isNonEmptyText(body.nhiem_vu)) {
     return res.status(400).json({ error: "Trường 'team' và 'nhiem_vu' là bắt buộc" });
   }
-  const item = await createRoadmapItem({
-    ...body,
-    year,
-    department_id: body.department_id != null ? Number(body.department_id) : null,
-  });
+  const item = await createRoadmapItem(
+    {
+      ...body,
+      year,
+      department_id: body.department_id != null ? Number(body.department_id) : null,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(item);
 }
 
@@ -53,10 +64,14 @@ export async function updateRoadmapItemHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const body = req.body ?? {};
-  const item = await updateRoadmapItem(id, {
-    ...body,
-    year: body.year !== undefined ? Number(body.year) : undefined,
-  });
+  const item = await updateRoadmapItem(
+    id,
+    {
+      ...body,
+      year: body.year !== undefined ? Number(body.year) : undefined,
+    },
+    scopeOf(req),
+  );
   if (!item) return res.status(404).json({ error: "Không tìm thấy dòng roadmap" });
   res.json(item);
 }
@@ -64,7 +79,7 @@ export async function updateRoadmapItemHandler(req: Request, res: Response) {
 export async function deleteRoadmapItemHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteRoadmapItem(id);
+  const ok = await deleteRoadmapItem(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy dòng roadmap" });
   res.status(204).send();
 }
@@ -75,7 +90,7 @@ export async function deleteSelectedRoadmapItemsHandler(req: Request, res: Respo
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const deleted = await deleteRoadmapItems(ids.map((id: unknown) => Number(id)));
+  const deleted = await deleteRoadmapItems(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ deleted });
 }
 
@@ -163,9 +178,10 @@ export async function importRoadmapHandler(req: Request, res: Response) {
   const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
 
   try {
-    const result = await importRoadmapFromWorkbook(year, buffer, departmentId);
+    const result = await importRoadmapFromWorkbook(year, buffer, departmentId, scopeOf(req));
     res.status(201).json(result);
   } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });
   }
 }

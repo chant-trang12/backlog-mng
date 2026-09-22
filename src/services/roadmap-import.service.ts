@@ -7,6 +7,7 @@ import {
   parseFirstSheet,
   pickColumn,
 } from "./workbook.util.js";
+import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 
 const KEYS = {
   team: ["team", "nhom", "doi"],
@@ -75,8 +76,10 @@ export function buildRoadmapImportTemplate(opts?: {
 export async function importRoadmapFromWorkbook(
   year: number,
   buffer: Buffer,
-  departmentId?: number | null,
+  departmentId: number | null | undefined,
+  scope: DataScope,
 ): Promise<ImportRoadmapResult> {
+  assertDepartmentInScope(scope, departmentId ?? null);
   let parsed: Awaited<ReturnType<typeof parseFirstSheet>>;
   try {
     parsed = await parseFirstSheet(buffer);
@@ -117,21 +120,24 @@ export async function importRoadmapFromWorkbook(
     const rawStatus = val(row, col("trang_thai"));
     const trangThai = STATUSES.find((s) => s.toLowerCase() === rawStatus.toLowerCase());
 
-    await createRoadmapItem({
-      year,
-      department_id: departmentId ?? null,
-      team: teamName,
-      nhiem_vu: nhiemVu,
-      he_thong: val(row, col("he_thong")) || undefined,
-      muc_tieu: val(row, col("muc_tieu")) || undefined,
-      dod: val(row, col("dod")) || undefined,
-      dieu_kien_dam_bao: val(row, col("dieu_kien")) || undefined,
-      phan_loai: val(row, col("phan_loai")) || undefined,
-      thoi_gian_bat_dau: parseDateToIso(val(row, col("bat_dau"))) || undefined,
-      thoi_gian_ket_thuc: parseDateToIso(val(row, col("ket_thuc"))) || undefined,
-      trang_thai: trangThai,
-      ghi_chu: val(row, col("ghi_chu")) || undefined,
-    });
+    await createRoadmapItem(
+      {
+        year,
+        department_id: departmentId ?? null,
+        team: teamName,
+        nhiem_vu: nhiemVu,
+        he_thong: val(row, col("he_thong")) || undefined,
+        muc_tieu: val(row, col("muc_tieu")) || undefined,
+        dod: val(row, col("dod")) || undefined,
+        dieu_kien_dam_bao: val(row, col("dieu_kien")) || undefined,
+        phan_loai: val(row, col("phan_loai")) || undefined,
+        thoi_gian_bat_dau: parseDateToIso(val(row, col("bat_dau"))) || undefined,
+        thoi_gian_ket_thuc: parseDateToIso(val(row, col("ket_thuc"))) || undefined,
+        trang_thai: trangThai,
+        ghi_chu: val(row, col("ghi_chu")) || undefined,
+      },
+      { all: true, departmentId: null },
+    );
     result.imported += 1;
   }
 

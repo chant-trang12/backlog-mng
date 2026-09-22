@@ -18,8 +18,23 @@ import { listTeams } from "../services/team.service.js";
 import { listTags } from "../services/tag.service.js";
 import { listPhanLoai } from "../services/phanloai.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import {
+  resolveListDepartmentId,
+  isDepartmentInScope,
+  ScopeForbiddenError,
+  SCOPE_EMPTY,
+  type DataScope,
+} from "../services/scope.util.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+// Fallback chỉ dùng khi req.dataScope chưa được gắn (VD gọi handler trực
+// tiếp ngoài chuỗi middleware bình thường, như 1 số test) — coi như không
+// giới hạn, KHÔNG dùng làm cơ chế bảo mật thật (attachScope luôn chạy trước
+// mọi route /api thật, xem app.ts).
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // 1.3 Nhập mới task cho một team trong tháng backlog `periodId`.
 export async function createTaskHandler(req: Request, res: Response) {
@@ -33,7 +48,7 @@ export async function createTaskHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'team' và 'nhiem_vu' là bắt buộc" });
   }
 
-  const task = await createTask(periodId, req.body ?? {});
+  const task = await createTask(periodId, req.body ?? {}, scopeOf(req));
   res.status(201).json(task);
 }
 
@@ -44,7 +59,9 @@ export async function listTasksHandler(req: Request, res: Response) {
   if (!period) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
 
   const team = typeof req.query.team === "string" ? req.query.team : undefined;
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listTasks({ period_id: periodId, team, department_id: departmentId }));
 }
 
@@ -52,7 +69,9 @@ export async function getTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const task = await getTask(id);
-  if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
+  if (!task || !isDepartmentInScope(scopeOf(req), task.department_id)) {
+    return res.status(404).json({ error: "Không tìm thấy task" });
+  }
   res.json(task);
 }
 
@@ -61,7 +80,7 @@ export async function getTaskHandler(req: Request, res: Response) {
 export async function updateTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const task = await updateTask(id, req.body ?? {});
+  const task = await updateTask(id, req.body ?? {}, scopeOf(req));
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }
@@ -69,7 +88,7 @@ export async function updateTaskHandler(req: Request, res: Response) {
 export async function deleteTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteTask(id);
+  const ok = await deleteTask(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy task" });
   res.status(204).send();
 }
@@ -80,7 +99,7 @@ export async function deleteSelectedTasksHandler(req: Request, res: Response) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const deleted = await deleteTasks(ids.map((id: unknown) => Number(id)));
+  const deleted = await deleteTasks(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ deleted });
 }
 
@@ -94,7 +113,7 @@ export async function moveTasksToNextMonthHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
 
-  const result = await moveTasksToNextMonth(periodId, ids.map((id: unknown) => Number(id)));
+  const result = await moveTasksToNextMonth(periodId, ids.map((id: unknown) => Number(id)), scopeOf(req));
   if (!result) return res.status(404).json({ error: "Không tìm thấy tháng backlog" });
   res.json(result);
 }
@@ -105,7 +124,7 @@ export async function markTasksNoScoreHandler(req: Request, res: Response) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const updated = await markTasksNoScore(ids.map((id: unknown) => Number(id)));
+  const updated = await markTasksNoScore(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ updated });
 }
 
@@ -115,7 +134,7 @@ export async function unmarkTasksNoScoreHandler(req: Request, res: Response) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const updated = await unmarkTasksNoScore(ids.map((id: unknown) => Number(id)));
+  const updated = await unmarkTasksNoScore(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ updated });
 }
 
@@ -126,7 +145,7 @@ export async function markTasksTonHandler(req: Request, res: Response) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const updated = await markTasksTon(ids.map((id: unknown) => Number(id)));
+  const updated = await markTasksTon(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ updated });
 }
 
@@ -135,9 +154,14 @@ export async function exportBacklogHandler(req: Request, res: Response) {
   const periodId = parsePositiveInt(req.params.periodId);
   if (!Number.isFinite(periodId)) return res.status(400).json({ error: "periodId không hợp lệ" });
   const team = typeof req.query.team === "string" ? req.query.team : undefined;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) {
+    return res.status(403).json({ error: "Bạn không có quyền xem dữ liệu của phòng ban này." });
+  }
 
   try {
-    const buffer = await exportBacklogToExcel({ period_id: periodId, team });
+    const buffer = await exportBacklogToExcel({ period_id: periodId, team, department_id: departmentId });
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -190,9 +214,10 @@ export async function importTasksHandler(req: Request, res: Response) {
   const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
 
   try {
-    const result = await importTasksFromWorkbook(periodId, buffer, departmentId);
+    const result = await importTasksFromWorkbook(periodId, buffer, departmentId, scopeOf(req));
     res.status(201).json(result);
   } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });
   }
 }

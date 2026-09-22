@@ -46,6 +46,7 @@ const COLUMN_WIDTHS = [6, 12, 10, 26, 30, 12, 12, 14, 40];
 export async function exportBacklogToExcel(filter: {
   period_id: number;
   team?: string;
+  department_id?: number | null;
 }): Promise<ExcelJS.Buffer> {
   const period = await getPeriod(filter.period_id);
   if (!period) throw new Error("Không tìm thấy tháng backlog");

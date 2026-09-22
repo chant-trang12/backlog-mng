@@ -8,6 +8,7 @@ import {
   parseFirstSheet,
   pickColumn,
 } from "./workbook.util.js";
+import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 
 export const TASK_IMPORT_HEADERS = [
   "Team",
@@ -78,8 +79,13 @@ export function buildTaskImportTemplate(opts?: {
 export async function importTasksFromWorkbook(
   periodId: number,
   buffer: Buffer,
-  departmentId?: number | null,
+  departmentId: number | null | undefined,
+  scope: DataScope,
 ): Promise<ImportTasksResult> {
+  // Quy tắc 5.1 phương án A — phòng ban đích của cả file import phải nằm
+  // trong phạm vi người import; kiểm tra 1 lần ở đây, mọi task tạo bên dưới
+  // dùng scope KHÔNG giới hạn vì đã xác nhận hợp lệ.
+  assertDepartmentInScope(scope, departmentId ?? null);
   let parsed: Awaited<ReturnType<typeof parseFirstSheet>>;
   try {
     parsed = await parseFirstSheet(buffer);
@@ -131,18 +137,22 @@ export async function importTasksFromWorkbook(
     const rawPct = val(row, col("phan_tram")).replace("%", "").replace(",", ".");
     const pct = Number(rawPct);
 
-    await createTask(periodId, {
-      department_id: departmentId ?? undefined,
-      team: teamByName.get(teamName.toLowerCase()) ?? teamName,
-      nhiem_vu: nhiemVu,
-      tag: val(row, col("tag")) || undefined,
-      tinh_chat: val(row, col("tinh_chat")) || undefined,
-      dod: val(row, col("dod")) || undefined,
-      deadline: parseDateToIso(val(row, col("deadline"))) || undefined,
-      phan_tram_hoan_thanh: Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : undefined,
-      trang_thai: trangThai,
-      tien_do: val(row, col("tien_do")) || undefined,
-    });
+    await createTask(
+      periodId,
+      {
+        department_id: departmentId ?? undefined,
+        team: teamByName.get(teamName.toLowerCase()) ?? teamName,
+        nhiem_vu: nhiemVu,
+        tag: val(row, col("tag")) || undefined,
+        tinh_chat: val(row, col("tinh_chat")) || undefined,
+        dod: val(row, col("dod")) || undefined,
+        deadline: parseDateToIso(val(row, col("deadline"))) || undefined,
+        phan_tram_hoan_thanh: Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : undefined,
+        trang_thai: trangThai,
+        tien_do: val(row, col("tien_do")) || undefined,
+      },
+      { all: true, departmentId: null },
+    );
     result.imported += 1;
   }
 

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { isSsoEnabled } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
+import { computeScope } from "../services/scope.util.js";
 
 /**
  * Middleware to require authentication when SSO is enabled.
@@ -49,6 +50,18 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     error: "Unauthorized",
     loginUrl: "/auth/login",
   });
+}
+
+/**
+ * Tính phạm vi xem/ghi theo phòng ban (Quy tắc 9.2) và gắn vào req.dataScope
+ * — MỘT LẦN duy nhất ngay sau requireAuth, để mọi controller/service phía
+ * sau chỉ việc đọc ra (xem scope.util.ts). computeScope() tự xử lý trường
+ * hợp SSO tắt (req.appUser undefined) bằng cách trả về scope KHÔNG giới hạn
+ * — đồng bộ với hành vi hiện có của requireAuth/requireWrite ở dev/test.
+ */
+export async function attachScope(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  req.dataScope = await computeScope(req.appUser);
+  next();
 }
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
