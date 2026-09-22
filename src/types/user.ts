@@ -28,4 +28,6 @@ export interface AppUser {
 export interface UpdateAppUserInput {
   role?: AppRole;
   active?: boolean;
+  // Phòng ban chủ quản (Quy tắc 9.2) — null để gỡ gán.
+  department_id?: number | null;
 }

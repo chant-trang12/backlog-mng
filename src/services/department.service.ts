@@ -2,7 +2,11 @@ import { db } from "../db/database.js";
 import type { Department } from "../types/backlog.js";
 
 function toDepartment(row: any): Department {
-  return { ...row, dung_tieu_chi_chung: Boolean(row.dung_tieu_chi_chung) } as Department;
+  return {
+    ...row,
+    dung_tieu_chi_chung: Boolean(row.dung_tieu_chi_chung),
+    is_full_access: Boolean(row.is_full_access),
+  } as Department;
 }
 
 // Danh sách phòng — dùng chung cho mọi tháng backlog. Team (và nhân sự / task
@@ -38,6 +42,7 @@ export async function updateDepartment(
     code?: string;
     dung_tieu_chi_chung?: boolean;
     cach_tinh_kpi?: "theo_team" | "theo_task";
+    is_full_access?: boolean;
   },
 ): Promise<Department | undefined> {
   const existing = await getDepartment(id);
@@ -51,6 +56,8 @@ export async function updateDepartment(
       dung_tieu_chi_chung:
         input.dung_tieu_chi_chung !== undefined ? (input.dung_tieu_chi_chung ? 1 : 0) : existing.dung_tieu_chi_chung ? 1 : 0,
       cach_tinh_kpi: input.cach_tinh_kpi ?? existing.cach_tinh_kpi,
+      is_full_access:
+        input.is_full_access !== undefined ? (input.is_full_access ? 1 : 0) : existing.is_full_access ? 1 : 0,
     })
     .returning("*");
   return toDepartment(updated);
