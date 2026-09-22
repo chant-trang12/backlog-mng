@@ -887,7 +887,15 @@ function renderUsersConfig(users) {
       const prevValue = select.dataset.prevValue ?? select.value;
       try {
         await api(`/api/users/${select.dataset.id}`, { method: "PUT", body: JSON.stringify({ role: select.value }) });
-        showToast("Đã đổi quyền.", "success");
+        // Nâng quyền editor/viewer mà tài khoản chưa có phòng ban -> đăng
+        // nhập được nhưng không thấy gì (Quy tắc 9.2) — cảnh báo ngay để
+        // Admin nhớ gán phòng ban tiếp theo, không phải lỗi.
+        const target = users.find((u) => u.id === Number(select.dataset.id));
+        if (select.value !== "admin" && target && target.department_id == null) {
+          showToast("Đã đổi quyền — nhớ gán Phòng ban cho tài khoản này, nếu không sẽ không thấy dữ liệu nào.");
+        } else {
+          showToast("Đã đổi quyền.", "success");
+        }
         await loadUsersConfig();
       } catch (err) {
         showToast(err.message);

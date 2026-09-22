@@ -29,6 +29,8 @@ describe("Authentication & SSO Integration", () => {
         user: null,
         role: null,
         userId: null,
+        departmentId: null,
+        scope: { all: true, departmentId: null },
       });
     });
 

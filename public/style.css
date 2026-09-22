@@ -83,6 +83,10 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .dept-trigger:hover { background: var(--card-bg); border-color: var(--primary); }
+/* Quy tắc 9.2 — tài khoản bị giới hạn theo phòng ban: khoá switcher, không
+   cho mở panel chọn phòng khác (xem renderDeptSwitcher() ở app.js). */
+.dept-trigger-locked { cursor: not-allowed; opacity: 0.75; }
+.dept-trigger-locked:hover { background: var(--bg); border-color: var(--border); }
 .dept-trigger[aria-expanded="true"] { border-color: var(--primary); background: var(--card-bg); }
 
 .dept-mono {

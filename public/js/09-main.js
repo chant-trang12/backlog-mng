@@ -33,6 +33,7 @@ async function checkAuth() {
     if (!res.ok) return;
     const data = await res.json();
     state.currentUserId = data.userId ?? null; // id cục bộ (bảng users) — dùng để tự nhận "chính mình" ở Quản lý User
+    if (data.scope) state.userScope = data.scope;
 
     // Mục "Quản lý User" chỉ Admin thấy được. Tắt SSO (dev/test, không có
     // khái niệm role) thì hiện sẵn cho tiện làm việc — giống các phần khác
@@ -62,8 +63,11 @@ async function checkAuth() {
   }
 }
 
-(function init() {
-  checkAuth();
+(async function init() {
+  // Phải đợi checkAuth() xong (biết state.userScope) TRƯỚC khi loadDepartments()
+  // — loadDepartments() cần userScope để khoá đúng phòng ban ngay từ lần vẽ
+  // đầu tiên, tránh nháy hiện switcher mở rồi mới khoá lại.
+  await checkAuth();
   const now = today();
   el.newYear.value = now.getFullYear();
   el.newMonth.value = now.getMonth() + 1;
