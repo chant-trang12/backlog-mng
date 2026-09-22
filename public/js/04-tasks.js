@@ -212,14 +212,15 @@ function taskHasNatureTon(t) {
     .includes("Nhiệm vụ tồn");
 }
 
-// Luôn liệt kê đủ 4 thao tác cho menu ổn định, dễ đoán; chỉ khóa (disabled)
-// kèm tooltip khi thao tác không áp dụng cho lựa chọn hiện tại.
+// Luôn liệt kê đủ các thao tác trong menu (ổn định, dễ đoán); chỉ khóa
+// (disabled) kèm tooltip khi thao tác không áp dụng cho lựa chọn hiện tại.
 function updateBulkMenuItems() {
   const sel = selectedTasks();
   const anyMoved = sel.some((t) => t.da_chuyen_thang);
   const allNoScore = sel.length > 0 && sel.every((t) => t.khong_tinh_diem);
   const anyNoScore = sel.some((t) => t.khong_tinh_diem);
   const allTon = sel.length > 0 && sel.every(taskHasNatureTon);
+  const anyTon = sel.some(taskHasNatureTon);
 
   const setItem = (action, { disabled = false, title = "" }) => {
     const item = el.bulkActionsMenu.querySelector(`[data-bulk-action="${action}"]`);
@@ -237,6 +238,10 @@ function updateBulkMenuItems() {
   setItem("ton", {
     disabled: allTon,
     title: allTon ? 'Mọi task đã chọn đều đã có "Nhiệm vụ tồn".' : "",
+  });
+  setItem("unmark-ton", {
+    disabled: !anyTon,
+    title: !anyTon ? 'Không task nào đang "Nhiệm vụ tồn".' : "",
   });
   setItem("no-score", {
     disabled: allNoScore,
@@ -280,6 +285,7 @@ el.bulkActionsMenu.addEventListener("click", async (e) => {
   const action = item.dataset.bulkAction;
   if (action === "move") await doMoveTasksToNextMonth();
   else if (action === "ton") await doMarkTasksTon();
+  else if (action === "unmark-ton") await doUnmarkTasksTon();
   else if (action === "no-score") await doMarkTasksNoScore();
   else if (action === "unmark-no-score") await doUnmarkTasksNoScore();
   else if (action === "delete") await doDeleteTasks();
@@ -390,6 +396,30 @@ async function doMarkTasksTon() {
     state.selectedTaskIds.clear();
     await loadTasks();
     showToast(`Đã đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+async function doUnmarkTasksTon() {
+  const ids = [...state.selectedTaskIds];
+  if (ids.length === 0) return;
+  if (
+    !await confirmDialog(
+      `Bỏ đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task đã chọn? Task sẽ bỏ Tính chất "Nhiệm vụ tồn" và bỏ Không tính điểm.`,
+      { danger: false },
+    )
+  ) {
+    return;
+  }
+  try {
+    await api("/api/tasks/unmark-ton", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedTaskIds.clear();
+    await loadTasks();
+    showToast(`Đã bỏ đánh dấu "Nhiệm vụ tồn" cho ${ids.length} task.`, "success");
   } catch (err) {
     showToast(err.message);
   }

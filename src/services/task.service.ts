@@ -163,6 +163,21 @@ function addTinhChatTon(tinhChat: string | null): string {
   return addTinhChatTag(tinhChat, TINH_CHAT_TON);
 }
 
+// Bỏ 1 giá trị khỏi cột Tính chất (ngược lại addTinhChatTag) — giữ nguyên
+// thứ tự/các giá trị còn lại, trả về null nếu không còn giá trị nào (thay
+// vì chuỗi rỗng, khớp kiểu tasks.tinh_chat là text nullable).
+function removeTinhChatTag(tinhChat: string | null | undefined, tag: string): string | null {
+  const items = (tinhChat ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v && v !== tag);
+  return items.length > 0 ? items.join(", ") : null;
+}
+
+function removeTinhChatTon(tinhChat: string | null): string | null {
+  return removeTinhChatTag(tinhChat, TINH_CHAT_TON);
+}
+
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {
   if (!deadline || deadline.length < 7) return true;
   const year = Number(deadline.slice(0, 4));
@@ -283,6 +298,29 @@ export async function markTasksTon(taskIds: number[]): Promise<Task[]> {
       .update({
         tinh_chat: addTinhChatTon(task.tinh_chat),
         khong_tinh_diem: KHONG_TINH_DIEM,
+        updated_at: db.fn.now(),
+      })
+      .returning("*");
+    updated.push(row as Task);
+  }
+  return updated;
+}
+
+// Bỏ đánh dấu "Nhiệm vụ tồn" cho các task đã chọn — ngược lại markTasksTon:
+// bỏ "Nhiệm vụ tồn" khỏi cột Tính chất và bỏ luôn Không tính điểm (đúng 2
+// việc mà markTasksTon đã làm, không đụng gì khác — task Hủy tự set lại
+// Không tính điểm ở lần cập nhật trạng thái sau, xem updateTask()).
+export async function unmarkTasksTon(taskIds: number[]): Promise<Task[]> {
+  if (taskIds.length === 0) return [];
+  const updated: Task[] = [];
+  for (const id of taskIds) {
+    const task = await getTask(id);
+    if (!task) continue;
+    const [row] = await db("tasks")
+      .where({ id })
+      .update({
+        tinh_chat: removeTinhChatTon(task.tinh_chat),
+        khong_tinh_diem: null,
         updated_at: db.fn.now(),
       })
       .returning("*");

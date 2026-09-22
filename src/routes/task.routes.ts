@@ -11,6 +11,7 @@ import {
   markTasksNoScoreHandler,
   markTasksTonHandler,
   unmarkTasksNoScoreHandler,
+  unmarkTasksTonHandler,
   moveTasksToNextMonthHandler,
   updateTaskHandler,
 } from "../controllers/task.controller.js";
@@ -38,6 +39,7 @@ router.post("/tasks/delete-selected", deleteSelectedTasksHandler);
 router.post("/tasks/mark-no-score", markTasksNoScoreHandler);
 router.post("/tasks/unmark-no-score", unmarkTasksNoScoreHandler);
 router.post("/tasks/mark-ton", markTasksTonHandler);
+router.post("/tasks/unmark-ton", unmarkTasksTonHandler);
 router.post("/periods/:periodId/tasks", createTaskHandler);
 router.get("/periods/:periodId/tasks", listTasksHandler);
 
