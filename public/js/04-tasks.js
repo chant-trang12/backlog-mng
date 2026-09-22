@@ -85,7 +85,7 @@ function renderTasks() {
         ${renderGradingHistory(t, "content")}
       </td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-btn">Sửa</button>
         <button class="small btn-delete delete-btn">Xóa</button>
         <button class="small btn-grade grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
@@ -740,7 +740,7 @@ function renderTaskMembers() {
       <td>${tm.member_name}</td>
       <td>${tm.member_chuc_vu ?? ""}</td>
       <td>
-        <select class="tm-phanloai-select ${memberParticipationColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${categoryOptions}</select>
+        <select class="tm-phanloai-select inline-cell-input ${memberParticipationColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${categoryOptions}</select>
       </td>
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>

@@ -73,7 +73,7 @@ function renderIncidents() {
       <td>${(i.su_co ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${i.tinh_chat ?? ""}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-incident-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -182,7 +182,7 @@ function renderComplianceRecords() {
       <td>${c.vi_pham}</td>
       <td>${(c.noi_dung ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-compliance-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-compliance-btn">Sửa</button>
         <button class="small btn-delete delete-compliance-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -319,7 +319,7 @@ function renderTrainingRecords() {
       <td>${t.nguoi_xac_nhan ?? ""}</td>
       <td>${(t.noi_dung ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-training-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-training-btn">Sửa</button>
         <button class="small btn-delete delete-training-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -468,7 +468,7 @@ function renderSupportRecords() {
       <td>${formatDateDisplay(s.ngay_ho_tro)}</td>
       <td>${s.nguoi_xac_nhan ?? ""}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-support-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-support-btn">Sửa</button>
         <button class="small btn-delete delete-support-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -613,7 +613,7 @@ function renderEvaluationRecords() {
       <td>${d.member_name}</td>
       <td>${d.so_thu_tu ?? ""}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-danhgia-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-danhgia-btn">Sửa</button>
         <button class="small btn-delete delete-danhgia-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -1127,7 +1127,7 @@ function renderTickets() {
       <td>${t.dung_han}</td>
       <td>${formatPercent(t.ty_le)}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-ticket-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-ticket-btn">Sửa</button>
         <button class="small btn-delete delete-ticket-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -1231,7 +1231,7 @@ function renderCreationRates() {
       <td>${r.total}</td>
       <td>${formatPercent(r.grand_total)}</td>
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-creation-rate-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-creation-rate-btn">Sửa</button>
         <button class="small btn-delete delete-creation-rate-btn">Xóa</button>
       </div></td>
     </tr>`,

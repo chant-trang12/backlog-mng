@@ -49,7 +49,7 @@ function renderCriteria() {
       <td>${scopeBadge}</td>
       ${mainCells}
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-tieuchi-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-tieuchi-btn">Sửa</button>
         <button class="small btn-delete delete-tieuchi-btn">Xóa</button>
       </div></td>
     </tr>`;

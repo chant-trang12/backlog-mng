@@ -145,7 +145,7 @@ function renderRoadmap() {
       <td>${nl2br(it.ghi_chu)}</td>
       <td>
         <div class="actions-cell">
-          <button class="small btn-edit rm-edit-btn" data-id="${it.id}">Sửa</button>
+          <button class="small btn-edit write-action rm-edit-btn" data-id="${it.id}">Sửa</button>
           <button class="small btn-delete rm-del-btn" data-id="${it.id}">Xóa</button>
         </div>
       </td>
@@ -306,7 +306,7 @@ function renderRoadmapDetail() {
                   <td style="text-align:center"><span class="status-badge ${STATUS_CLASS[d.trang_thai] || "status-default"}">${d.trang_thai}</span></td>
                   <td>${nl2br(d.ghi_chu)}</td>
                   <td><div class="actions-cell">
-                    <button class="small btn-edit rd-edit-btn" data-id="${d.id}">Sửa</button>
+                    <button class="small btn-edit write-action rd-edit-btn" data-id="${d.id}">Sửa</button>
                     <button class="small btn-delete rd-del-btn" data-id="${d.id}">Xóa</button>
                   </div></td>
                 </tr>`,
