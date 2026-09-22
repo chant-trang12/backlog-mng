@@ -29,6 +29,7 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
       dao_tao: input.dao_tao?.trim() || null,
       ho_tro: input.ho_tro?.trim() || null,
       danh_gia: input.danh_gia?.trim() || null,
+      ghi_chu: input.ghi_chu?.trim() || null,
     })
     .returning("*");
 
@@ -95,6 +96,7 @@ export async function listMembers(
       "members.chuc_vu",
       "members.noi_quy",
       "members.ha_ki",
+      "members.ghi_chu",
       "members.created_at",
       "teams.name as team_name",
       "cr.total_vi_pham",
@@ -118,6 +120,7 @@ export async function listMembers(
     ho_tro: r.sr_count != null && Number(r.sr_count) > 0 ? `+${r.sr_count}` : null,
     danh_gia: r.danh_gia ?? null,
     ha_ki: !!r.ha_ki,
+    ghi_chu: r.ghi_chu ?? null,
     created_at: r.created_at,
   }));
 }
@@ -136,6 +139,7 @@ export async function updateMember(id: number, input: UpdateMemberInput): Promis
     ho_tro: input.ho_tro !== undefined ? input.ho_tro.trim() || null : existing.ho_tro,
     danh_gia: input.danh_gia !== undefined ? input.danh_gia.trim() || null : existing.danh_gia,
     ha_ki: input.ha_ki !== undefined ? input.ha_ki : existing.ha_ki,
+    ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
   };
 
   const [updated] = await db("members")
@@ -200,6 +204,7 @@ export async function cloneMembersFromPeriod(fromPeriodId: number, toPeriodId: n
         dao_tao: m.dao_tao,
         ho_tro: m.ho_tro,
         danh_gia: m.danh_gia,
+        ghi_chu: m.ghi_chu,
       });
     }
   }

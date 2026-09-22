@@ -51,6 +51,9 @@ export interface Member {
   // viên team". Toggle được (bấm lại để bỏ hạ). Theo period_id (mỗi tháng
   // backlog có bảng members riêng nên field này tự động cũng theo tháng).
   ha_ki: boolean;
+  // Ghi chú tự do — nhập/sửa ở dialog Thêm/Sửa nhân sự (dạng textarea),
+  // không dùng trong bất kỳ công thức KPI/Nội quy nào.
+  ghi_chu: string | null;
   created_at: string;
 }
 
@@ -68,6 +71,7 @@ export interface CreateMemberInput {
   dao_tao?: string;
   ho_tro?: string;
   danh_gia?: string;
+  ghi_chu?: string;
 }
 
 export interface UpdateMemberInput {
@@ -80,6 +84,7 @@ export interface UpdateMemberInput {
   ho_tro?: string;
   danh_gia?: string;
   ha_ki?: boolean;
+  ghi_chu?: string;
 }
 
 export type TaskStatus = "Chưa thực hiện" | "Đang thực hiện" | "Hoàn thành" | "Hủy";

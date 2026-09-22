@@ -37,3 +37,15 @@ export async function migrateMembersHaKi(): Promise<void> {
     });
   }
 }
+
+// members.ghi_chu — cột "Ghi chú" tự do (textarea) ở tab Nhân sự, nhập/sửa
+// trong dialog Thêm/Sửa nhân sự cùng Chức vụ/Team. Không có ý nghĩa tính
+// toán gì (không dùng ở bất kỳ công thức KPI/Nội quy nào) — chỉ để lưu ghi
+// chú tự do cho từng nhân sự trong tháng đang xem.
+export async function migrateMembersGhiChu(): Promise<void> {
+  if (!(await db.schema.hasColumn("members", "ghi_chu"))) {
+    await db.schema.alterTable("members", (table) => {
+      table.text("ghi_chu");
+    });
+  }
+}
