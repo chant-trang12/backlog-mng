@@ -26,6 +26,21 @@ export async function migrateUsersTable(): Promise<void> {
   }
 }
 
+// users.department_id — Phòng ban chủ quản của tài khoản (Quy tắc 9.2, trục
+// phân quyền ngang). NULL = chưa gán -> editor/viewer không thấy dữ liệu
+// nghiệp vụ nào (xử lý ở tầng tính phạm vi khi lọc được triển khai, chưa
+// làm ở bước này). Gán tay bởi Admin ở màn hình Quản lý User, không suy ra
+// từ claim SSO. Xóa phòng ban không được làm mất tài khoản -> chỉ gỡ liên
+// kết (ON DELETE SET NULL), Admin gán lại sau.
+// PHẢI chạy sau migrateDepartments() (cần bảng departments tồn tại sẵn).
+export async function migrateUsersDepartment(): Promise<void> {
+  if (!(await db.schema.hasColumn("users", "department_id"))) {
+    await db.schema.alterTable("users", (table) => {
+      table.integer("department_id").references("id").inTable("departments").onDelete("SET NULL");
+    });
+  }
+}
+
 // members.ha_ki — nút "Hạ KI" ở tab Nhân sự, hạ KI của nhân sự đó xuống 1
 // bậc khi hiển thị ở Home > Ranking > "Ranking thành viên team" (thang
 // A+ > A > B > C > D > E, xem homeLowerKiOneLevel ở app.js). Mặc định

@@ -18,6 +18,8 @@ export interface AppUser {
   email: string | null;
   role: AppRole;
   active: boolean;
+  // Phòng ban chủ quản (Quy tắc 9.2) — NULL = chưa gán, gán tay bởi Admin.
+  department_id: number | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;

@@ -54,15 +54,25 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
- * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api. Không có tác dụng
- * khi SSO tắt (req.appUser không được gắn — xem requireAuth) hoặc role khác
- * viewer. Mount ngay sau requireAuth, TRƯỚC mọi router nghiệp vụ.
+ * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api. Role "editor" được
+ * ghi (POST/PUT/PATCH) nhưng không được xóa (Quy tắc 9.1) — quyền xóa chỉ
+ * dành cho admin. Không có tác dụng khi SSO tắt (req.appUser không được
+ * gắn — xem requireAuth). Mount ngay sau requireAuth, TRƯỚC mọi router
+ * nghiệp vụ.
  */
 export function requireWrite(req: Request, res: Response, next: NextFunction): void {
-  if (!req.appUser || req.appUser.role !== "viewer" || !WRITE_METHODS.has(req.method)) {
+  if (!req.appUser || !WRITE_METHODS.has(req.method)) {
     return next();
   }
-  res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });
+  if (req.appUser.role === "viewer") {
+    res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });
+    return;
+  }
+  if (req.appUser.role === "editor" && req.method === "DELETE") {
+    res.status(403).json({ error: "Tài khoản editor không có quyền xóa dữ liệu — liên hệ Admin." });
+    return;
+  }
+  next();
 }
 
 /**

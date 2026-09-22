@@ -50,6 +50,17 @@ export async function migrateDepartments(): Promise<void> {
     });
   }
 
+  // departments.is_full_access — Phòng ban đặc biệt "xem full" (Quy tắc
+  // 9.2): nhân sự thuộc phòng này xem được dữ liệu nghiệp vụ của MỌI phòng
+  // ban khi phân quyền theo chiều ngang được áp dụng (VD Ban Giám đốc,
+  // PMO, Kế toán). Mặc định false — hành vi cũ không đổi cho tới khi Admin
+  // chủ động đánh dấu.
+  if (!(await db.schema.hasColumn("departments", "is_full_access"))) {
+    await db.schema.alterTable("departments", (table) => {
+      table.boolean("is_full_access").notNullable().defaultTo(false);
+    });
+  }
+
   const firstDept = await db("departments").orderBy("thu_tu", "asc").first();
   const firstDeptId = Number((firstDept as any)?.id ?? 1);
 
