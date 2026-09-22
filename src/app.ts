@@ -47,11 +47,51 @@ async function checkSsoAtStartup(): Promise<void> {
   }
 }
 
+// Chặn khởi động nếu chạy production mà SSO đang tắt — SSO tắt nghĩa là
+// requireAuth/requireWrite/requireAdmin đều no-op (xem auth.middleware.ts),
+// tức toàn bộ /api không có xác thực. Chỉ chấp nhận ở dev/test.
+function assertSsoEnabledInProduction(): void {
+  if (process.env.NODE_ENV === "production" && !isSsoEnabled()) {
+    throw new Error(
+      "Refusing to start: NODE_ENV=production but SSO_ENABLED is not 'true'. " +
+        "Without SSO, all /api routes run without authentication. " +
+        "Set SSO_ENABLED=true and configure OIDC_ISSUER/OIDC_CLIENT_ID, " +
+        "or unset NODE_ENV=production for local/dev use.",
+    );
+  }
+}
+
 export function createApp() {
+  assertSsoEnabledInProduction();
+
   const app = express();
 
-  // Security headers
-  app.use(helmet({ contentSecurityPolicy: false }));
+  // Security headers. CSP: frontend (public/) is same-origin vanilla JS/CSS
+  // with no external CDNs and no inline <script>, so script-src can stay
+  // locked to 'self'. Inline style="" attributes are used extensively across
+  // public/index.html, so style-src needs 'unsafe-inline'; img-src allows
+  // data: for the inline SVG icons in style.css.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:"],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          frameAncestors: ["'self'"],
+          // Only force http->https upgrades when we're actually served over
+          // TLS (COOKIE_SECURE=true); otherwise plain-HTTP dev/docker
+          // deployments would have their same-origin fetch()/asset requests
+          // upgraded to https and fail.
+          upgradeInsecureRequests: process.env.COOKIE_SECURE === "true" ? [] : null,
+        },
+      },
+    }),
+  );
 
   // HTTP request logging (skip in test env to keep test output clean)
   if (process.env.NODE_ENV !== "test") {

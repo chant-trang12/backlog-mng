@@ -201,12 +201,6 @@ export async function handleOidcCallback(
     throw new Error("ID token missing required subject claim (sub)");
   }
 
-  // ⚠️ DEBUG TẠM — in toàn bộ claims ra log lần đăng nhập đầu để xem IdP thực
-  // tế trả về roles dạng gì (mảng tên chuỗi? RoleId số? field khác tên?) rồi
-  // mới chốt logic map sang admin/editor/viewer. XÓA dòng log này sau khi đã
-  // xác định được cấu trúc claims thật.
-  console.log("[SSO][DEBUG] Toàn bộ claims từ ID token:", JSON.stringify(claims, null, 2));
-
   // Extract roles (supports standard Realm/Resource roles in Keycloak, Entra ID, etc.)
   const roles: string[] = [];
   if (Array.isArray(claims.roles)) {
