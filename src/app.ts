@@ -129,7 +129,14 @@ export function createApp() {
   app.use("/api", requireAuth);
   app.use("/api", attachScope);
   app.use("/api", requireWrite);
-  app.use("/api", requireAdmin, userRoutes);
+  // BUG đã fix: mount cũ là app.use("/api", requireAdmin, userRoutes) — vì
+  // userRoutes tự định nghĩa full path "/users" (không phải "/"), Express
+  // chạy requireAdmin cho MỌI request khớp tiền tố "/api" (kể cả
+  // /api/periods, /api/departments...) TRƯỚC KHI userRoutes kịp quyết định
+  // path đó có thuộc nó không — non-admin bị 403 trên toàn bộ /api, không
+  // chỉ /api/users. Scope requireAdmin đúng vào tiền tố "/api/users".
+  app.use("/api/users", requireAdmin);
+  app.use("/api", userRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
