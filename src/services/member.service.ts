@@ -14,6 +14,15 @@ function toMember(row: any): Member {
 // hưởng tháng đó.
 export async function createMember(input: CreateMemberInput, scope: DataScope): Promise<Member> {
   const name = input.name.trim();
+
+  // Kiểm tra phạm vi TRƯỚC nhánh idempotent bên dưới — nếu không, gọi tạo
+  // trùng (period_id, team_id, name) với 1 bản ghi đã có ở phòng ban khác sẽ
+  // trả thẳng bản ghi đó về mà không qua kiểm tra, vô tình để lộ dữ liệu
+  // ngoài phạm vi qua đường "idempotent return".
+  const team = await db("teams").where({ id: input.team_id }).first();
+  const departmentId = (team as any)?.department_id ?? null;
+  assertDepartmentInScope(scope, departmentId);
+
   const existing = await db("members")
     .where({ period_id: input.period_id, team_id: input.team_id, name })
     .first();
@@ -22,10 +31,6 @@ export async function createMember(input: CreateMemberInput, scope: DataScope): 
   // department_id "đóng băng" theo team hiện tại của nhân sự tại thời điểm
   // tạo — không suy lại mỗi lần đọc (xem cảnh báo "phòng ban bắc cầu" ở ER
   // doc). Đổi team sau này KHÔNG cập nhật lại giá trị đã lưu (xem updateMember).
-  const team = await db("teams").where({ id: input.team_id }).first();
-  const departmentId = (team as any)?.department_id ?? null;
-  assertDepartmentInScope(scope, departmentId);
-
   const [created] = await db("members")
     .insert({
       period_id: input.period_id,
