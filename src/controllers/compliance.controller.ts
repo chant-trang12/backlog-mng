@@ -8,6 +8,11 @@ import {
 import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Thêm mới bản ghi Tuân thủ — Tháng theo dõi lấy từ period_id do client gửi
 // (gán theo Bộ lọc "Tháng" đang chọn ở trang Team & Nhân sự, không cho người
@@ -29,12 +34,15 @@ export async function createComplianceRecordHandler(req: Request, res: Response)
     return res.status(400).json({ error: "Trường 'vi_pham' phải là số" });
   }
 
-  const record = await createComplianceRecord({
-    period_id: periodId,
-    member_id: memberId,
-    vi_pham: viPham,
-    noi_dung,
-  });
+  const record = await createComplianceRecord(
+    {
+      period_id: periodId,
+      member_id: memberId,
+      vi_pham: viPham,
+      noi_dung,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(record);
 }
 
@@ -45,7 +53,9 @@ export async function listComplianceRecordsHandler(req: Request, res: Response) 
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listComplianceRecords(periodId));
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listComplianceRecords(periodId, departmentId));
 }
 
 export async function updateComplianceRecordHandler(req: Request, res: Response) {
@@ -62,11 +72,15 @@ export async function updateComplianceRecordHandler(req: Request, res: Response)
     return res.status(400).json({ error: "Trường 'vi_pham' phải là số" });
   }
 
-  const record = await updateComplianceRecord(id, {
-    member_id: member_id !== undefined ? Number(member_id) : undefined,
-    vi_pham: vi_pham !== undefined ? Number(vi_pham) : undefined,
-    noi_dung,
-  });
+  const record = await updateComplianceRecord(
+    id,
+    {
+      member_id: member_id !== undefined ? Number(member_id) : undefined,
+      vi_pham: vi_pham !== undefined ? Number(vi_pham) : undefined,
+      noi_dung,
+    },
+    scopeOf(req),
+  );
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }
@@ -74,7 +88,7 @@ export async function updateComplianceRecordHandler(req: Request, res: Response)
 export async function deleteComplianceRecordHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteComplianceRecord(id);
+  const ok = await deleteComplianceRecord(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

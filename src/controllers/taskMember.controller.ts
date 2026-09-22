@@ -8,6 +8,17 @@ import {
   updateTaskMember,
 } from "../services/taskMember.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import {
+  isDepartmentInScope,
+  resolveListDepartmentId,
+  ScopeForbiddenError,
+  SCOPE_EMPTY,
+  type DataScope,
+} from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // undefined -> không gửi field (giữ nguyên), null/"" -> xóa giá trị (về tự
 // tính theo %), số hợp lệ -> set giá trị đó. Ném lỗi nếu gửi giá trị không
@@ -25,7 +36,9 @@ export async function listTaskMembersHandler(req: Request, res: Response) {
   const taskId = parsePositiveInt(req.params.taskId);
   if (!Number.isFinite(taskId)) return res.status(400).json({ error: "taskId không hợp lệ" });
   const task = await getTask(taskId);
-  if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
+  if (!task || !isDepartmentInScope(scopeOf(req), task.department_id)) {
+    return res.status(404).json({ error: "Không tìm thấy task" });
+  }
   res.json(await listTaskMembers(taskId));
 }
 
@@ -44,15 +57,20 @@ export async function createTaskMemberHandler(req: Request, res: Response) {
   }
   try {
     const { ghi_chu, phan_loai } = req.body ?? {};
-    const row = await createTaskMember(taskId, {
-      member_id: memberId,
-      ghi_chu,
-      phan_loai,
-      ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
-      diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
-    });
+    const row = await createTaskMember(
+      taskId,
+      {
+        member_id: memberId,
+        ghi_chu,
+        phan_loai,
+        ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
+        diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
+      },
+      scopeOf(req),
+    );
     res.status(201).json(row);
   } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     res.status(400).json({ error: err instanceof Error ? err.message : "Dữ liệu không hợp lệ" });
   }
 }
@@ -62,15 +80,20 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   try {
     const { ghi_chu, phan_loai } = req.body ?? {};
-    const row = await updateTaskMember(id, {
-      ghi_chu,
-      phan_loai,
-      ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
-      diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
-    });
+    const row = await updateTaskMember(
+      id,
+      {
+        ghi_chu,
+        phan_loai,
+        ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
+        diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
+      },
+      scopeOf(req),
+    );
     if (!row) return res.status(404).json({ error: "Không tìm thấy dòng gán nhân sự" });
     res.json(row);
   } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     res.status(400).json({ error: err instanceof Error ? err.message : "Dữ liệu không hợp lệ" });
   }
 }
@@ -78,7 +101,7 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
 export async function deleteTaskMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteTaskMember(id);
+  const ok = await deleteTaskMember(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy dòng gán nhân sự" });
   res.status(204).send();
 }
@@ -91,6 +114,8 @@ export async function listKpiTheoTaskHandler(req: Request, res: Response) {
   if (!Number.isInteger(periodId) || periodId <= 0) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listKpiTheoTask(periodId, departmentId));
 }

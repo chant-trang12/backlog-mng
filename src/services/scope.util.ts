@@ -1,5 +1,6 @@
 import type { AppUser } from "../types/user.js";
 import { getDepartment } from "./department.service.js";
+import { db } from "../db/database.js";
 
 // Quy tắc 9.2 — phạm vi xem/ghi dữ liệu theo phòng ban, tính 1 lần ngay sau
 // requireAuth (xem attachScope ở auth.middleware.ts) rồi dùng lại ở mọi
@@ -59,6 +60,24 @@ export function isDepartmentInScope(scope: DataScope, departmentId: number | nul
   if (scope.all) return true;
   if (scope.departmentId == null) return false;
   return departmentId === scope.departmentId;
+}
+
+// Tra department_id "đóng băng" tại thời điểm tạo bản ghi — dùng ở các
+// service tạo bản ghi theo team_id/member_id nhưng KHÔNG có sẵn department_id
+// trực tiếp trong input (CSKH, Chấm điểm...).
+export async function departmentIdFromTeamId(teamId: number): Promise<number | null> {
+  const team = await db("teams").where({ id: teamId }).first();
+  return (team as any)?.department_id ?? null;
+}
+
+export async function departmentIdFromMemberId(memberId: number): Promise<number | null> {
+  const member = await db("members").where({ id: memberId }).first();
+  return (member as any)?.department_id ?? null;
+}
+
+export async function departmentIdFromTaskId(taskId: number): Promise<number | null> {
+  const task = await db("tasks").where({ id: taskId }).first();
+  return (task as any)?.department_id ?? null;
 }
 
 export class ScopeForbiddenError extends Error {

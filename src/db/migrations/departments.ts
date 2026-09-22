@@ -90,6 +90,57 @@ export async function migrateDepartments(): Promise<void> {
     }
   }
 
+  // members.department_id — Quy tắc 9.2, nguồn "trực tiếp" (không suy bắc
+  // cầu qua team_id mỗi lần đọc — xem cảnh báo ở ER doc mục 5.1a) cho các
+  // bảng theo member_id bên dưới. Backfill: suy từ team_id hiện tại; đổi
+  // team sau này KHÔNG tự cập nhật lại các bản ghi liên quan đã tạo trước
+  // đó (đúng chủ ý — xem member.service.ts#updateMember).
+  if (!(await db.schema.hasColumn("members", "department_id"))) {
+    await db.schema.alterTable("members", (table) => {
+      table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION").index();
+    });
+    const staleMembers = await db("members").whereNull("department_id").select("id", "team_id");
+    for (const m of staleMembers) {
+      const team = await db("teams").where({ id: (m as any).team_id }).first();
+      await db("members")
+        .where({ id: (m as any).id })
+        .update({ department_id: Number((team as any)?.department_id ?? firstDeptId) });
+    }
+  }
+
+  // incidents / tickets / creation_rates (CSKH) — có sẵn team_id, backfill
+  // giống teams.department_id ở trên.
+  for (const table of ["incidents", "tickets", "creation_rates"]) {
+    if (await db.schema.hasColumn(table, "department_id")) continue;
+    await db.schema.alterTable(table, (t) => {
+      t.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION").index();
+    });
+    const staleRows = await db(table).whereNull("department_id").select("id", "team_id");
+    for (const row of staleRows) {
+      const team = await db("teams").where({ id: (row as any).team_id }).first();
+      await db(table)
+        .where({ id: (row as any).id })
+        .update({ department_id: Number((team as any)?.department_id ?? firstDeptId) });
+    }
+  }
+
+  // compliance_records / training_records / support_records / danh_gia_records
+  // — không có team_id trực tiếp, chỉ có member_id -> suy qua members.department_id
+  // (đã backfill ở trên trong CÙNG lần chạy migration này).
+  for (const table of ["compliance_records", "training_records", "support_records", "danh_gia_records"]) {
+    if (await db.schema.hasColumn(table, "department_id")) continue;
+    await db.schema.alterTable(table, (t) => {
+      t.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION").index();
+    });
+    const staleRows = await db(table).whereNull("department_id").select("id", "member_id");
+    for (const row of staleRows) {
+      const member = await db("members").where({ id: (row as any).member_id }).first();
+      await db(table)
+        .where({ id: (row as any).id })
+        .update({ department_id: Number((member as any)?.department_id ?? firstDeptId) });
+    }
+  }
+
   // tieu_chi_configs.department_id — NULL = tiêu chí DÙNG CHUNG cho mọi
   // phòng (giữ nguyên hành vi cũ: toàn bộ tiêu chí có sẵn đều để NULL khi
   // thêm cột này, không phòng nào bị mất tiêu chí đang dùng); có giá trị =

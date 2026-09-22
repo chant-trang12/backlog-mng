@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateMemberInput, Member, MemberWithTeam, UpdateMemberInput } from "../types/backlog.js";
+import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
 
 // sqlite trả boolean dạng 0/1 thô qua knex — ép về đúng kiểu boolean khai
 // trong type Member (ha_ki).
@@ -11,17 +12,25 @@ function toMember(row: any): Member {
 // task thay vì gõ tự do. Idempotent theo (period_id, team_id, name) — mỗi
 // tháng backlog có danh sách nhân sự riêng, xóa/sửa ở tháng nào chỉ ảnh
 // hưởng tháng đó.
-export async function createMember(input: CreateMemberInput): Promise<Member> {
+export async function createMember(input: CreateMemberInput, scope: DataScope): Promise<Member> {
   const name = input.name.trim();
   const existing = await db("members")
     .where({ period_id: input.period_id, team_id: input.team_id, name })
     .first();
   if (existing) return toMember(existing);
 
+  // department_id "đóng băng" theo team hiện tại của nhân sự tại thời điểm
+  // tạo — không suy lại mỗi lần đọc (xem cảnh báo "phòng ban bắc cầu" ở ER
+  // doc). Đổi team sau này KHÔNG cập nhật lại giá trị đã lưu (xem updateMember).
+  const team = await db("teams").where({ id: input.team_id }).first();
+  const departmentId = (team as any)?.department_id ?? null;
+  assertDepartmentInScope(scope, departmentId);
+
   const [created] = await db("members")
     .insert({
       period_id: input.period_id,
       team_id: input.team_id,
+      department_id: departmentId,
       name,
       chuc_vu: input.chuc_vu?.trim() || null,
       tuan_thu: input.tuan_thu?.trim() || null,
@@ -125,9 +134,10 @@ export async function listMembers(
   }));
 }
 
-export async function updateMember(id: number, input: UpdateMemberInput): Promise<Member | undefined> {
+export async function updateMember(id: number, input: UpdateMemberInput, scope: DataScope): Promise<Member | undefined> {
   const existing = await getMember(id);
   if (!existing) return undefined;
+  assertDepartmentInScope(scope, (existing as any).department_id ?? null);
 
   const merged = {
     team_id: input.team_id ?? existing.team_id,
@@ -150,7 +160,10 @@ export async function updateMember(id: number, input: UpdateMemberInput): Promis
   return toMember(updated);
 }
 
-export async function deleteMember(id: number): Promise<boolean> {
+export async function deleteMember(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getMember(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, (existing as any).department_id ?? null);
   return await db.transaction(async (trx) => {
     await trx("compliance_records").where({ member_id: id }).delete();
     await trx("training_records").where({ member_id: id }).delete();
@@ -163,8 +176,13 @@ export async function deleteMember(id: number): Promise<boolean> {
 }
 
 // Xóa nhiều nhân sự theo danh sách id đã chọn (checkbox trên bảng Nhân sự).
-export async function deleteMembers(ids: number[]): Promise<number> {
+export async function deleteMembers(ids: number[], scope: DataScope): Promise<number> {
   if (ids.length === 0) return 0;
+  if (!scope.all) {
+    const rows = await db("members").whereIn("id", ids).select("id", "department_id");
+    ids = rows.filter((r: any) => isDepartmentInScope(scope, r.department_id)).map((r: any) => Number(r.id));
+    if (ids.length === 0) return 0;
+  }
   return await db.transaction(async (trx) => {
     await trx("compliance_records").whereIn("member_id", ids).delete();
     await trx("training_records").whereIn("member_id", ids).delete();

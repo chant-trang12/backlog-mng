@@ -9,6 +9,11 @@ import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { getTeam } from "../services/team.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // POST /api/danh-gia-records/bulk { period_id, team_id, entries: [{member_id, so_thu_tu}] }
 // — "+ Thêm Đánh giá": nhập Số thứ tự cho nhiều nhân sự của 1 team cùng
@@ -43,7 +48,7 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
     parsedEntries.push({ member_id: memberId, so_thu_tu: soThuTu });
   }
 
-  await upsertDanhGiaRecords(periodId, parsedEntries);
+  await upsertDanhGiaRecords(periodId, parsedEntries, scopeOf(req));
   res.status(201).json(await listDanhGiaRecords(periodId));
 }
 
@@ -54,7 +59,9 @@ export async function listDanhGiaRecordsHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listDanhGiaRecords(periodId));
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listDanhGiaRecords(periodId, departmentId));
 }
 
 export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
@@ -65,7 +72,7 @@ export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
   if (!Number.isFinite(soThuTu)) {
     return res.status(400).json({ error: "Trường 'so_thu_tu' phải là số" });
   }
-  const record = await updateDanhGiaRecord(id, soThuTu);
+  const record = await updateDanhGiaRecord(id, soThuTu, scopeOf(req));
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }
@@ -73,7 +80,7 @@ export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
 export async function deleteDanhGiaRecordHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteDanhGiaRecord(id);
+  const ok = await deleteDanhGiaRecord(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

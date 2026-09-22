@@ -5,6 +5,7 @@ import type {
   TaskMemberWithName,
   UpdateTaskMemberInput,
 } from "../types/backlog.js";
+import { assertDepartmentInScope, departmentIdFromTaskId, type DataScope } from "./scope.util.js";
 
 const SELECT_COLUMNS = [
   "task_members.id",
@@ -85,7 +86,10 @@ async function assertContributionWithinLimit(
 export async function createTaskMember(
   taskId: number,
   input: CreateTaskMemberInput,
+  scope: DataScope,
 ): Promise<TaskMemberWithName> {
+  const departmentId = await departmentIdFromTaskId(taskId);
+  assertDepartmentInScope(scope, departmentId);
   if (input.ty_le_dong_gop != null) {
     await assertContributionWithinLimit(taskId, null, input.ty_le_dong_gop);
   }
@@ -107,6 +111,7 @@ export async function createTaskMember(
     .insert({
       task_id: taskId,
       member_id: input.member_id,
+      department_id: departmentId,
       ty_le_dong_gop: input.ty_le_dong_gop ?? null,
       diem_ca_nhan: input.diem_ca_nhan ?? null,
       phan_loai: normalizeNullableText(input.phan_loai, null),
@@ -119,9 +124,12 @@ export async function createTaskMember(
 export async function updateTaskMember(
   id: number,
   input: UpdateTaskMemberInput,
+  scope: DataScope,
 ): Promise<TaskMemberWithName | undefined> {
   const existing = await getTaskMember(id);
   if (!existing) return undefined;
+  const existingRow = await db("task_members").where({ id }).select("department_id").first();
+  assertDepartmentInScope(scope, (existingRow as any)?.department_id ?? null);
 
   if (input.ty_le_dong_gop !== undefined && input.ty_le_dong_gop !== null) {
     await assertContributionWithinLimit(existing.task_id, id, input.ty_le_dong_gop);
@@ -139,7 +147,10 @@ export async function updateTaskMember(
   return getTaskMember(id);
 }
 
-export async function deleteTaskMember(id: number): Promise<boolean> {
+export async function deleteTaskMember(id: number, scope: DataScope): Promise<boolean> {
+  const existingRow = await db("task_members").where({ id }).select("department_id").first();
+  if (!existingRow) return false;
+  assertDepartmentInScope(scope, (existingRow as any).department_id ?? null);
   const count = await db("task_members").where({ id }).delete();
   return count > 0;
 }

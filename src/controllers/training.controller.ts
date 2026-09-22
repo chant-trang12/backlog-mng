@@ -8,6 +8,11 @@ import {
 import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 const LOAI_OPTIONS = ["Đào tạo", "Chứng chỉ QT"];
 
@@ -34,14 +39,17 @@ export async function createTrainingRecordHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const record = await createTrainingRecord({
-    period_id: periodId,
-    member_id: memberId,
-    loai,
-    ngay_thuc_hien,
-    nguoi_xac_nhan,
-    noi_dung,
-  });
+  const record = await createTrainingRecord(
+    {
+      period_id: periodId,
+      member_id: memberId,
+      loai,
+      ngay_thuc_hien,
+      nguoi_xac_nhan,
+      noi_dung,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(record);
 }
 
@@ -52,7 +60,9 @@ export async function listTrainingRecordsHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listTrainingRecords(periodId));
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listTrainingRecords(periodId, departmentId));
 }
 
 export async function updateTrainingRecordHandler(req: Request, res: Response) {
@@ -67,13 +77,17 @@ export async function updateTrainingRecordHandler(req: Request, res: Response) {
     return res.status(400).json({ error: `Trường 'loai' phải là 1 trong: ${LOAI_OPTIONS.join(", ")}` });
   }
 
-  const record = await updateTrainingRecord(Number(req.params.id), {
-    member_id: member_id !== undefined ? Number(member_id) : undefined,
-    loai,
-    ngay_thuc_hien,
-    nguoi_xac_nhan,
-    noi_dung,
-  });
+  const record = await updateTrainingRecord(
+    Number(req.params.id),
+    {
+      member_id: member_id !== undefined ? Number(member_id) : undefined,
+      loai,
+      ngay_thuc_hien,
+      nguoi_xac_nhan,
+      noi_dung,
+    },
+    scopeOf(req),
+  );
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }
@@ -81,7 +95,7 @@ export async function updateTrainingRecordHandler(req: Request, res: Response) {
 export async function deleteTrainingRecordHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteTrainingRecord(id);
+  const ok = await deleteTrainingRecord(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

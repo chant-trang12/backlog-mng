@@ -2,6 +2,7 @@ import type ExcelJS from "exceljs";
 import { createMember } from "./member.service.js";
 import { createTeam, listTeams } from "./team.service.js";
 import { buildTemplateWorkbook, parseFirstSheet, pickColumn } from "./workbook.util.js";
+import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 
 // 3 cột của file mẫu nhập nhân sự — chỉ "Họ và Tên" là bắt buộc.
 export const MEMBER_IMPORT_HEADERS = ["Họ và Tên", "Chức vụ", "Team"] as const;
@@ -41,8 +42,10 @@ export function buildMemberImportTemplate(opts?: { teams?: string[] }): Promise<
 export async function importMembersFromWorkbook(
   periodId: number,
   buffer: Buffer,
-  departmentId?: number | null,
+  departmentId: number | null | undefined,
+  scope: DataScope,
 ): Promise<ImportMembersResult> {
+  assertDepartmentInScope(scope, departmentId ?? null);
   let parsed: Awaited<ReturnType<typeof parseFirstSheet>>;
   try {
     parsed = await parseFirstSheet(buffer);
@@ -85,18 +88,21 @@ export async function importMembersFromWorkbook(
 
     let teamId = teamByName.get(teamName.toLowerCase());
     if (!teamId) {
-      const team = await createTeam(teamName, periodId, departmentId ?? null);
+      const team = await createTeam(teamName, periodId, departmentId ?? null, { all: true, departmentId: null });
       teamId = team.id;
       teamByName.set(teamName.toLowerCase(), teamId);
       teamsCreated.push(team.name);
     }
 
-    await createMember({
-      period_id: periodId,
-      team_id: teamId,
-      name,
-      chuc_vu: chucVu || undefined,
-    });
+    await createMember(
+      {
+        period_id: periodId,
+        team_id: teamId,
+        name,
+        chuc_vu: chucVu || undefined,
+      },
+      { all: true, departmentId: null },
+    );
     result.imported += 1;
   }
 

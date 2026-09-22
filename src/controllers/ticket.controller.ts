@@ -3,6 +3,11 @@ import { createTicket, deleteTicket, listTickets, updateTicket } from "../servic
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 export async function createTicketHandler(req: Request, res: Response) {
   const { tong_ticket, ticket_vuot, dung_han, team_id, period_id } = req.body ?? {};
@@ -17,18 +22,23 @@ export async function createTicketHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const ticket = await createTicket({
-    period_id: periodId,
-    team_id: teamId,
-    tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
-    ticket_vuot: ticket_vuot !== undefined ? Number(ticket_vuot) : undefined,
-    dung_han: dung_han !== undefined ? Number(dung_han) : undefined,
-  });
+  const ticket = await createTicket(
+    {
+      period_id: periodId,
+      team_id: teamId,
+      tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
+      ticket_vuot: ticket_vuot !== undefined ? Number(ticket_vuot) : undefined,
+      dung_han: dung_han !== undefined ? Number(dung_han) : undefined,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(ticket);
 }
 
-export async function listTicketsHandler(_req: Request, res: Response) {
-  res.json(await listTickets());
+export async function listTicketsHandler(req: Request, res: Response) {
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listTickets(departmentId));
 }
 
 export async function updateTicketHandler(req: Request, res: Response) {
@@ -46,13 +56,17 @@ export async function updateTicketHandler(req: Request, res: Response) {
     }
   }
 
-  const ticket = await updateTicket(parsePositiveInt(req.params.id), {
-    team_id: team_id !== undefined ? Number(team_id) : undefined,
-    period_id: period_id !== undefined ? Number(period_id) : undefined,
-    tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
-    ticket_vuot: ticket_vuot !== undefined ? Number(ticket_vuot) : undefined,
-    dung_han: dung_han !== undefined ? Number(dung_han) : undefined,
-  });
+  const ticket = await updateTicket(
+    parsePositiveInt(req.params.id),
+    {
+      team_id: team_id !== undefined ? Number(team_id) : undefined,
+      period_id: period_id !== undefined ? Number(period_id) : undefined,
+      tong_ticket: tong_ticket !== undefined ? Number(tong_ticket) : undefined,
+      ticket_vuot: ticket_vuot !== undefined ? Number(ticket_vuot) : undefined,
+      dung_han: dung_han !== undefined ? Number(dung_han) : undefined,
+    },
+    scopeOf(req),
+  );
   if (!ticket) return res.status(404).json({ error: "Không tìm thấy ticket" });
   res.json(ticket);
 }
@@ -60,7 +74,7 @@ export async function updateTicketHandler(req: Request, res: Response) {
 export async function deleteTicketHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteTicket(id);
+  const ok = await deleteTicket(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy ticket" });
   res.status(204).send();
 }

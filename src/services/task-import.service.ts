@@ -127,7 +127,7 @@ export async function importTasksFromWorkbook(
     }
 
     if (!teamByName.has(teamName.toLowerCase())) {
-      const team = await createTeam(teamName, periodId, departmentId ?? null);
+      const team = await createTeam(teamName, periodId, departmentId ?? null, { all: true, departmentId: null });
       teamByName.set(teamName.toLowerCase(), team.name);
       teamsCreated.push(team.name);
     }

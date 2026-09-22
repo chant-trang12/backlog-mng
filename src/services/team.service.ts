@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { Team } from "../types/backlog.js";
+import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 
 // Khai báo team theo từng tháng backlog (period_id) — làm trước khi nhập
 // task, để task chọn team từ danh sách đã khai báo thay vì gõ tự do (tránh
@@ -9,8 +10,10 @@ import type { Team } from "../types/backlog.js";
 export async function createTeam(
   name: string,
   periodId: number,
-  departmentId?: number | null,
+  departmentId: number | null | undefined,
+  scope: DataScope,
 ): Promise<Team> {
+  assertDepartmentInScope(scope, departmentId ?? null);
   const trimmed = name.trim();
   const existing = await db("teams").where({ period_id: periodId, name: trimmed }).first();
   if (existing) return existing as Team;
@@ -33,7 +36,10 @@ export async function listTeams(periodId: number, departmentId?: number | null):
   return rows as Team[];
 }
 
-export async function deleteTeam(id: number): Promise<boolean> {
+export async function deleteTeam(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getTeam(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, existing.department_id ?? null);
   return await db.transaction(async (trx) => {
     await trx("members").where({ team_id: id }).delete();
     await trx("incidents").where({ team_id: id }).delete();
