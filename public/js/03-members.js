@@ -395,7 +395,11 @@ el.memberForm.addEventListener("submit", async (e) => {
     chuc_vu: document.getElementById("m-chuc-vu").value.trim() || undefined,
     team_id: Number(document.getElementById("m-team").value),
     period_id: state.currentPeriodId,
-    ghi_chu: document.getElementById("m-ghi-chu").value.trim() || undefined,
+    // KHÔNG dùng "|| undefined" như chuc_vu ở trên — Ghi chú cần lưu lại
+    // được giá trị rỗng/toàn khoảng trắng khi người dùng chủ động xóa nội
+    // dung cũ (undefined nghĩa là "giữ nguyên giá trị cũ" ở updateMember(),
+    // xem member.service.ts, nên phải luôn gửi field này, kể cả rỗng).
+    ghi_chu: document.getElementById("m-ghi-chu").value.trim(),
   };
 
   try {
