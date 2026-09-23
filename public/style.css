@@ -1864,14 +1864,20 @@ img, svg, canvas, video { max-width: 100%; }
    — SSO tắt thì không có attribute này, mọi thứ hiện như cũ (dev/test).
    .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem).
    .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
-   (Quy tắc 9.1: editor không được xóa). Đây chỉ là gợi ý hiển thị, tránh
-   để người dùng bấm vào thứ chắc chắn bị server từ chối — chặn thật luôn
-   nằm ở server (requireWrite/scope.util.ts), không phụ thuộc CSS này. */
+   (Quy tắc 9.1: editor không được xóa).
+   .admin-only-action: vài thao tác cụ thể chỉ admin được làm dù editor vẫn
+   ghi được dữ liệu bình thường ở nơi khác (VD "+ Tạo tháng mới" ở Backlog)
+   — ẩn với CẢ viewer lẫn editor, chỉ admin thấy. Đây chỉ là gợi ý hiển
+   thị, tránh để người dùng bấm vào thứ chắc chắn bị server từ chối — chặn
+   thật (nếu có) luôn nằm ở server (requireWrite/requireAdmin/
+   scope.util.ts), không phụ thuộc CSS này. */
 body[data-role="viewer"] .write-action,
 body[data-role="viewer"] .delete-action,
 body[data-role="viewer"] .btn-delete,
+body[data-role="viewer"] .admin-only-action,
 body[data-role="editor"] .delete-action,
-body[data-role="editor"] .btn-delete {
+body[data-role="editor"] .btn-delete,
+body[data-role="editor"] .admin-only-action {
   display: none !important;
 }
 body[data-role="viewer"] .inline-cell-input {
