@@ -105,6 +105,9 @@ export interface Task {
   nvtt: string | null;
   phan_tram_hoan_thanh: number;
   trang_thai: TaskStatus;
+  // Cột "Đầu mối phối hợp" ở bảng Backlog (sau cột Trạng thái) — text tự do
+  // (tên người/phòng ban phối hợp), nhập/sửa cùng Nhiệm vụ/DoD/Deadline.
+  dau_moi_phoi_hop: string | null;
   tien_do: string | null;
   cpo_danh_gia: number | null;
   cpo_comment: string | null;
@@ -128,6 +131,7 @@ export interface CreateTaskInput {
   ngay_thuc_hien?: string;
   deadline?: string;
   nvtt?: string;
+  dau_moi_phoi_hop?: string;
   phan_tram_hoan_thanh?: number;
   trang_thai?: TaskStatus;
   tien_do?: string;

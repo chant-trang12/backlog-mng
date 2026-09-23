@@ -838,8 +838,8 @@ th {
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 
 /* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
-#task-table td:nth-child(13),
-#task-table td:nth-child(14) {
+#task-table td:nth-child(14), /* % Đánh giá */
+#task-table td:nth-child(15) { /* Nội dung đánh giá */
   position: relative;
   padding-top: 20px;
 }
@@ -879,8 +879,9 @@ th {
 #task-table td:nth-child(8), /* Deadline */
 #task-table td:nth-child(9), /* % Hoàn thành */
 #task-table td:nth-child(10), /* Trạng thái */
-#task-table td:nth-child(12), /* Tính chất */
-#task-table td:nth-child(13) { /* % Đánh giá */
+#task-table td:nth-child(11), /* Đầu mối phối hợp */
+#task-table td:nth-child(13), /* Tính chất */
+#task-table td:nth-child(14) { /* % Đánh giá */
   text-align: center;
   vertical-align: middle;
 }

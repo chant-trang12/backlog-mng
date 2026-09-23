@@ -352,6 +352,7 @@
                     <th style="min-width:110px">Deadline</th>
                     <th style="min-width:110px">% Hoàn thành</th>
                     <th style="min-width:110px">Trạng thái</th>
+                    <th style="min-width:160px">Đầu mối phối hợp</th>
                     <th style="min-width:320px">Tiến độ</th>
                     <th style="min-width:110px">Tính chất</th>
                     <th style="min-width:100px">% Đánh giá</th>
@@ -1554,9 +1555,15 @@
         <label for="f-dod">DoD</label>
         <textarea id="f-dod"></textarea>
       </div>
-      <div>
-        <label for="f-deadline">Deadline</label>
-        <input id="f-deadline" type="date" style="max-width:220px" />
+      <div class="field-row">
+        <div>
+          <label for="f-deadline">Deadline</label>
+          <input id="f-deadline" type="date" style="max-width:220px" />
+        </div>
+        <div>
+          <label for="f-dau-moi-phoi-hop">Đầu mối phối hợp</label>
+          <input id="f-dau-moi-phoi-hop" style="width:100%" />
+        </div>
       </div>
       <div class="actions">
         <button type="button" id="cancel-btn">Hủy</button>

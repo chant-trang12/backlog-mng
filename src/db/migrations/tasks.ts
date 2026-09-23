@@ -23,6 +23,18 @@ export async function migrateTaskGradingExtras(): Promise<void> {
   }
 }
 
+// tasks.dau_moi_phoi_hop — cột "Đầu mối phối hợp" ở bảng dữ liệu Backlog
+// (đặt sau cột Trạng thái), nhập/sửa cùng lúc với Nhiệm vụ/DoD/Deadline ở
+// dialog Thêm/Sửa task. Chỉ là text tự do (tên người/phòng ban phối hợp),
+// không dùng trong công thức tính điểm nào.
+export async function migrateTaskDauMoiPhoiHop(): Promise<void> {
+  if (!(await db.schema.hasColumn("tasks", "dau_moi_phoi_hop"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.string("dau_moi_phoi_hop", 255);
+    });
+  }
+}
+
 // 29-30. task_members — nhân sự tham gia 1 task ở Backlog (VD 1 task dự án
 // phần mềm có nhiều người cùng làm). "Vai trò" KHÔNG có danh mục riêng —
 // lấy thẳng theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự

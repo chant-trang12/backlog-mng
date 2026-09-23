@@ -30,7 +30,7 @@ function renderTasks() {
   // Phòng ban tính KPI theo task (không chia team) — ẩn cột Team (tiêu đề
   // đã ẩn ở applyDeptModeSidebarNav, ở đây ẩn từng ô + trừ colspan tương ứng).
   const hideTeamColumn = homeCachTinhKpiTheoTask();
-  const colCount = hideTeamColumn ? 14 : 15;
+  const colCount = hideTeamColumn ? 15 : 16;
   if (state.tasksAll.length === 0) {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
     updateTaskSelectionUI();
@@ -63,6 +63,7 @@ function renderTasks() {
         <span class="progress-bar"><span style="width:${Math.min(100, Math.max(0, t.phan_tram_hoan_thanh))}%"></span></span>${t.phan_tram_hoan_thanh}%
       </td>
       <td><span class="status-badge ${statusClass}">${t.trang_thai}</span></td>
+      <td>${t.dau_moi_phoi_hop ?? ""}</td>
       <td>${(t.tien_do ?? "").replace(/\n/g, "<br/>")}</td>
       <td>
         <div class="badge-group">
@@ -477,6 +478,7 @@ function openTaskDialog(task) {
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
   document.getElementById("f-dod").value = task?.dod ?? "";
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
+  document.getElementById("f-dau-moi-phoi-hop").value = task?.dau_moi_phoi_hop ?? "";
   el.taskDialog.showModal();
 }
 
@@ -510,6 +512,7 @@ el.taskForm.addEventListener("submit", async (e) => {
     nhiem_vu: document.getElementById("f-nhiem-vu").value.trim(),
     dod: document.getElementById("f-dod").value.trim() || undefined,
     deadline: document.getElementById("f-deadline").value || undefined,
+    dau_moi_phoi_hop: document.getElementById("f-dau-moi-phoi-hop").value.trim() || undefined,
   };
 
   try {

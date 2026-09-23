@@ -13,7 +13,11 @@ import { migrateDepartments } from "./migrations/departments.js";
 import { migrateCoreTables, migrateCskhTables, migrateTeamRecordTables } from "./migrations/core.js";
 import { migrateRoadmapTables } from "./migrations/roadmap.js";
 import { migrateScoringTables } from "./migrations/scoring.js";
-import { migrateTaskGradingExtras, migrateTaskMembersTables } from "./migrations/tasks.js";
+import {
+  migrateTaskDauMoiPhoiHop,
+  migrateTaskGradingExtras,
+  migrateTaskMembersTables,
+} from "./migrations/tasks.js";
 import { migrateMembersGhiChu, migrateMembersHaKi, migrateUsersTable } from "./migrations/users.js";
 
 let initPromise: Promise<void> | null = null;
@@ -37,6 +41,8 @@ export async function initDatabase(): Promise<void> {
     await migrateDepartments();
     // tasks.cpo_graded_at / prev_* / grading_history.
     await migrateTaskGradingExtras();
+    // tasks.dau_moi_phoi_hop (cột "Đầu mối phối hợp" ở Backlog).
+    await migrateTaskDauMoiPhoiHop();
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();
