@@ -9,6 +9,11 @@ import { getMember } from "../services/member.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { getTeam } from "../services/team.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Thêm mới bản ghi Hỗ trợ — Tháng theo dõi lấy từ period_id do client gửi
 // (gán theo Bộ lọc "Tháng" đang chọn ở trang Team & Nhân sự, không cho người
@@ -32,14 +37,17 @@ export async function createSupportRecordHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const record = await createSupportRecord({
-    period_id: periodId,
-    member_id: memberId,
-    team_nhan_ho_tro_id: teamNhanHoTroId,
-    noi_dung,
-    ngay_ho_tro,
-    nguoi_xac_nhan,
-  });
+  const record = await createSupportRecord(
+    {
+      period_id: periodId,
+      member_id: memberId,
+      team_nhan_ho_tro_id: teamNhanHoTroId,
+      noi_dung,
+      ngay_ho_tro,
+      nguoi_xac_nhan,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(record);
 }
 
@@ -50,7 +58,9 @@ export async function listSupportRecordsHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listSupportRecords(periodId));
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listSupportRecords(periodId, departmentId));
 }
 
 export async function updateSupportRecordHandler(req: Request, res: Response) {
@@ -68,13 +78,17 @@ export async function updateSupportRecordHandler(req: Request, res: Response) {
     }
   }
 
-  const record = await updateSupportRecord(Number(req.params.id), {
-    member_id: member_id !== undefined ? Number(member_id) : undefined,
-    team_nhan_ho_tro_id: team_nhan_ho_tro_id !== undefined ? Number(team_nhan_ho_tro_id) : undefined,
-    noi_dung,
-    ngay_ho_tro,
-    nguoi_xac_nhan,
-  });
+  const record = await updateSupportRecord(
+    Number(req.params.id),
+    {
+      member_id: member_id !== undefined ? Number(member_id) : undefined,
+      team_nhan_ho_tro_id: team_nhan_ho_tro_id !== undefined ? Number(team_nhan_ho_tro_id) : undefined,
+      noi_dung,
+      ngay_ho_tro,
+      nguoi_xac_nhan,
+    },
+    scopeOf(req),
+  );
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }
@@ -82,7 +96,7 @@ export async function updateSupportRecordHandler(req: Request, res: Response) {
 export async function deleteSupportRecordHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteSupportRecord(id);
+  const ok = await deleteSupportRecord(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }

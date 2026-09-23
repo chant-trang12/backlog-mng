@@ -33,12 +33,27 @@ async function checkAuth() {
     if (!res.ok) return;
     const data = await res.json();
     state.currentUserId = data.userId ?? null; // id cục bộ (bảng users) — dùng để tự nhận "chính mình" ở Quản lý User
+    if (data.scope) state.userScope = data.scope;
 
-    // Mục "Quản lý User" chỉ Admin thấy được. Tắt SSO (dev/test, không có
-    // khái niệm role) thì hiện sẵn cho tiện làm việc — giống các phần khác
-    // của app vốn không phân quyền gì khi SSO tắt.
+    // Gắn role lên <body> để CSS tự ẩn nút Thêm/Sửa/Xóa mà role hiện tại
+    // chắc chắn không có quyền (xem style.css — cuối file). Chỉ gắn khi SSO
+    // bật; SSO tắt (dev/test) thì không có data-role, CSS không match gì,
+    // mọi thứ hiện như cũ (không phân quyền UI khi không có SSO).
+    if (data.ssoEnabled && data.role) {
+      document.body.dataset.role = data.role;
+    } else {
+      delete document.body.dataset.role;
+    }
+
+    // Mục "Quản lý User" và "Cấu hình" chỉ Admin thấy được (xem tài liệu
+    // nghiệp vụ Phân quyền — cả editor lẫn viewer đều không vào được 2 màn
+    // này). Tắt SSO (dev/test, không có khái niệm role) thì hiện sẵn cho
+    // tiện làm việc — giống các phần khác của app vốn không phân quyền gì
+    // khi SSO tắt.
     const usersPill = document.getElementById("config-users-pill");
     if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
+    const configNav = document.querySelector('.nav-item[data-page="config"]');
+    if (configNav) configNav.hidden = data.ssoEnabled && data.role !== "admin";
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {
@@ -62,8 +77,11 @@ async function checkAuth() {
   }
 }
 
-(function init() {
-  checkAuth();
+(async function init() {
+  // Phải đợi checkAuth() xong (biết state.userScope) TRƯỚC khi loadDepartments()
+  // — loadDepartments() cần userScope để khoá đúng phòng ban ngay từ lần vẽ
+  // đầu tiên, tránh nháy hiện switcher mở rồi mới khoá lại.
+  await checkAuth();
   const now = today();
   el.newYear.value = now.getFullYear();
   el.newMonth.value = now.getMonth() + 1;

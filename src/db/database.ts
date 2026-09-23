@@ -18,7 +18,12 @@ import {
   migrateTaskGradingExtras,
   migrateTaskMembersTables,
 } from "./migrations/tasks.js";
-import { migrateMembersGhiChu, migrateMembersHaKi, migrateUsersTable } from "./migrations/users.js";
+import {
+  migrateMembersGhiChu,
+  migrateMembersHaKi,
+  migrateUsersDepartment,
+  migrateUsersTable,
+} from "./migrations/users.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -53,6 +58,9 @@ export async function initDatabase(): Promise<void> {
     await seedCatalogData();
     // Quản lý User + Phân quyền.
     await migrateUsersTable();
+    // users.department_id (Quy tắc 9.2) — cần bảng departments (migrateDepartments,
+    // bước 23 ở trên) đã tồn tại sẵn.
+    await migrateUsersDepartment();
     // members.ha_ki (nút "Hạ KI").
     await migrateMembersHaKi();
     // members.ghi_chu (Ghi chú tự do ở tab Nhân sự).

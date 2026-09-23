@@ -5,12 +5,19 @@ import type {
   TrainingRecordWithDetails,
   UpdateTrainingRecordInput,
 } from "../types/cskh.js";
+import { assertDepartmentInScope, departmentIdFromMemberId, type DataScope } from "./scope.util.js";
 
-export async function createTrainingRecord(input: CreateTrainingRecordInput): Promise<TrainingRecord> {
+export async function createTrainingRecord(
+  input: CreateTrainingRecordInput,
+  scope: DataScope,
+): Promise<TrainingRecord> {
+  const departmentId = await departmentIdFromMemberId(input.member_id);
+  assertDepartmentInScope(scope, departmentId);
   const [created] = await db("training_records")
     .insert({
       period_id: input.period_id,
       member_id: input.member_id,
+      department_id: departmentId,
       loai: input.loai?.trim() || null,
       ngay_thuc_hien: input.ngay_thuc_hien?.trim() || null,
       nguoi_xac_nhan: input.nguoi_xac_nhan?.trim() || null,
@@ -29,8 +36,11 @@ export async function getTrainingRecord(id: number): Promise<TrainingRecord | un
 // / team / nhãn tháng — hiển thị dạng bảng Tháng theo dõi / Team / Nhân sự /
 // Loại / Ngày thực hiện / Người xác nhận / Nội dung. Lọc theo tháng đang chọn
 // ở Bộ lọc, giống bảng Nhân sự.
-export async function listTrainingRecords(periodId: number): Promise<TrainingRecordWithDetails[]> {
-  const rows = await db("training_records")
+export async function listTrainingRecords(
+  periodId: number,
+  departmentId?: number | null,
+): Promise<TrainingRecordWithDetails[]> {
+  const query = db("training_records")
     .join("members", "members.id", "training_records.member_id")
     .join("teams", "teams.id", "members.team_id")
     .join("periods", "periods.id", "training_records.period_id")
@@ -41,9 +51,9 @@ export async function listTrainingRecords(periodId: number): Promise<TrainingRec
       "members.team_id as team_id",
       "teams.name as team_name",
       "periods.label as period_label",
-    )
-    .orderBy("teams.name", "asc")
-    .orderBy("training_records.id", "desc");
+    );
+  if (departmentId != null) query.where("training_records.department_id", departmentId);
+  const rows = await query.orderBy("teams.name", "asc").orderBy("training_records.id", "desc");
 
   return rows as TrainingRecordWithDetails[];
 }
@@ -51,9 +61,11 @@ export async function listTrainingRecords(periodId: number): Promise<TrainingRec
 export async function updateTrainingRecord(
   id: number,
   input: UpdateTrainingRecordInput,
+  scope: DataScope,
 ): Promise<TrainingRecord | undefined> {
   const existing = await getTrainingRecord(id);
   if (!existing) return undefined;
+  assertDepartmentInScope(scope, (existing as any).department_id ?? null);
 
   const merged = {
     member_id: input.member_id ?? existing.member_id,
@@ -76,7 +88,10 @@ export async function updateTrainingRecord(
   return updated as TrainingRecord;
 }
 
-export async function deleteTrainingRecord(id: number): Promise<boolean> {
+export async function deleteTrainingRecord(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getTrainingRecord(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, (existing as any).department_id ?? null);
   const count = await db("training_records").where({ id }).delete();
   return count > 0;
 }

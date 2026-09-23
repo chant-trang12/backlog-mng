@@ -1,5 +1,13 @@
 const state = {
   currentUserId: null, // id cục bộ (bảng users) của người đang đăng nhập — xem checkAuth()
+  // Phạm vi phòng ban (Quy tắc 9.2) của người đang đăng nhập — lấy từ
+  // /auth/me (xem checkAuth()). all=true: không giới hạn (admin, hoặc
+  // phòng đang gán được đánh dấu "Xem full"). all=false: chỉ được
+  // xem/thao tác trong đúng 1 phòng (departmentId), hoặc departmentId=null
+  // nghĩa là tài khoản chưa được Admin gán phòng ban nào — không thấy gì.
+  // Chỉ dùng để ĐIỀU KHIỂN HIỂN THỊ (khoá bộ chuyển phòng ban); chặn thật
+  // luôn nằm ở server (attachScope/scope.util.ts) dù FE có bị bypass.
+  userScope: { all: true, departmentId: null },
   departments: [],
   currentDepartmentId: null,
   periods: [],

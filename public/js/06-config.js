@@ -49,7 +49,7 @@ function renderCriteria() {
       <td>${scopeBadge}</td>
       ${mainCells}
       <td><div class="actions-cell">
-        <button class="small btn-edit edit-tieuchi-btn">Sửa</button>
+        <button class="small btn-edit write-action edit-tieuchi-btn">Sửa</button>
         <button class="small btn-delete delete-tieuchi-btn">Xóa</button>
       </div></td>
     </tr>`;
@@ -675,6 +675,7 @@ function renderDepartmentConfig(allTeams) {
           <option value="theo_task"${d.cach_tinh_kpi === "theo_task" ? " selected" : ""}>Theo Task</option>
         </select>
       </td>
+      <td style="text-align:center"><input type="checkbox" class="dept-full-access-input" data-id="${d.id}" ${d.is_full_access ? "checked" : ""} title="Nhân sự thuộc phòng này xem được dữ liệu nghiệp vụ của MỌI phòng ban (VD Ban Giám đốc, PMO, Kế toán)" /></td>
       <td style="text-align:center"><button type="button" class="small btn-delete delete-dept-btn" data-id="${d.id}" title="Xóa phòng">×</button></td>
     </tr>`,
     )
@@ -742,6 +743,22 @@ function renderDepartmentConfig(allTeams) {
       } catch (err) {
         showToast(err.message);
         select.value = prevValue;
+      }
+    });
+  });
+  el.departmentConfigTbody.querySelectorAll(".dept-full-access-input").forEach((checkbox) => {
+    checkbox.addEventListener("change", async () => {
+      const nextValue = checkbox.checked;
+      try {
+        await api(`/api/departments/${checkbox.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ is_full_access: nextValue }),
+        });
+        await loadDepartmentConfig();
+        await refreshAfterDeptChange();
+      } catch (err) {
+        showToast(err.message);
+        checkbox.checked = !nextValue;
       }
     });
   });
@@ -842,12 +859,18 @@ function renderUsersConfig(users) {
       const roleOptions = Object.entries(USER_ROLE_LABELS)
         .map(([value, label]) => `<option value="${value}"${u.role === value ? " selected" : ""}>${label}</option>`)
         .join("");
+      const deptOptions =
+        `<option value=""${u.department_id == null ? " selected" : ""}>— Chưa gán —</option>` +
+        (state.departments || [])
+          .map((d) => `<option value="${d.id}"${u.department_id === d.id ? " selected" : ""}>${d.name}</option>`)
+          .join("");
       return `
     <tr data-id="${u.id}">
       <td>${u.name}${isSelf ? ' <span class="muted">(bạn)</span>' : ""}</td>
       <td>${u.username}</td>
       <td>${u.email ?? ""}</td>
       <td><select class="inline-cell-input user-role-select" data-id="${u.id}" ${isSelf ? "disabled" : ""}>${roleOptions}</select></td>
+      <td><select class="inline-cell-input user-department-select" data-id="${u.id}">${deptOptions}</select></td>
       <td style="text-align:center">
         <span class="status-badge ${u.active ? "status-hoan-thanh" : "status-huy"}">${u.active ? "Đang hoạt động" : "Đã khóa"}</span>
       </td>
@@ -864,7 +887,33 @@ function renderUsersConfig(users) {
       const prevValue = select.dataset.prevValue ?? select.value;
       try {
         await api(`/api/users/${select.dataset.id}`, { method: "PUT", body: JSON.stringify({ role: select.value }) });
-        showToast("Đã đổi quyền.", "success");
+        // Nâng quyền editor/viewer mà tài khoản chưa có phòng ban -> đăng
+        // nhập được nhưng không thấy gì (Quy tắc 9.2) — cảnh báo ngay để
+        // Admin nhớ gán phòng ban tiếp theo, không phải lỗi.
+        const target = users.find((u) => u.id === Number(select.dataset.id));
+        if (select.value !== "admin" && target && target.department_id == null) {
+          showToast("Đã đổi quyền — nhớ gán Phòng ban cho tài khoản này, nếu không sẽ không thấy dữ liệu nào.");
+        } else {
+          showToast("Đã đổi quyền.", "success");
+        }
+        await loadUsersConfig();
+      } catch (err) {
+        showToast(err.message);
+        select.value = prevValue;
+      }
+    });
+  });
+
+  tbody.querySelectorAll(".user-department-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const prevValue = select.dataset.prevValue ?? select.value;
+      const departmentId = select.value ? Number(select.value) : null;
+      try {
+        await api(`/api/users/${select.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ department_id: departmentId }),
+        });
+        showToast("Đã gán phòng ban.", "success");
         await loadUsersConfig();
       } catch (err) {
         showToast(err.message);

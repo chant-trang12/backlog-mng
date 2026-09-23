@@ -9,6 +9,7 @@ import type {
 } from "../types/backlog.js";
 import { getPeriodByYearMonth } from "./period.service.js";
 import { addTinhChatTag, createTask, TINH_CHAT_NV_NAM } from "./task.service.js";
+import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
 
 const FIELDS = [
   "team",
@@ -49,7 +50,8 @@ export async function getRoadmapItem(id: number): Promise<RoadmapItem | undefine
   return row as RoadmapItem | undefined;
 }
 
-export async function createRoadmapItem(input: CreateRoadmapItemInput): Promise<RoadmapItem> {
+export async function createRoadmapItem(input: CreateRoadmapItemInput, scope: DataScope): Promise<RoadmapItem> {
+  assertDepartmentInScope(scope, input.department_id ?? null);
   const [created] = await db("roadmap_items")
     .insert({
       department_id: input.department_id ?? null,
@@ -65,9 +67,11 @@ export async function createRoadmapItem(input: CreateRoadmapItemInput): Promise<
 export async function updateRoadmapItem(
   id: number,
   input: UpdateRoadmapItemInput,
+  scope: DataScope,
 ): Promise<RoadmapItem | undefined> {
   const existing = await getRoadmapItem(id);
   if (!existing) return undefined;
+  assertDepartmentInScope(scope, existing.department_id);
   const [updated] = await db("roadmap_items")
     .where({ id })
     .update({
@@ -94,14 +98,21 @@ async function syncRoadmapItemToBacklog(item: RoadmapItem): Promise<RoadmapItem>
   const period = await getPeriodByYearMonth(Number(m[1]), Number(m[2]));
   if (!period) return item;
 
-  const task = await createTask(period.id, {
-    department_id: item.department_id ?? undefined,
-    team: item.team,
-    nhiem_vu: item.nhiem_vu,
-    dod: item.dod ?? undefined,
-    tinh_chat: addTinhChatTag(item.phan_loai ?? null, TINH_CHAT_NV_NAM),
-    deadline: item.thoi_gian_ket_thuc ?? undefined,
-  });
+  // Task tự sinh ra từ Roadmap kế thừa department_id của chính dòng roadmap
+  // (đã được kiểm tra phạm vi lúc tạo/sửa roadmap item) — không áp lại quy
+  // tắc 9.2 ở đây, tự động hoá hệ thống không bị chặn theo phạm vi của ai.
+  const task = await createTask(
+    period.id,
+    {
+      department_id: item.department_id ?? undefined,
+      team: item.team,
+      nhiem_vu: item.nhiem_vu,
+      dod: item.dod ?? undefined,
+      tinh_chat: addTinhChatTag(item.phan_loai ?? null, TINH_CHAT_NV_NAM),
+      deadline: item.thoi_gian_ket_thuc ?? undefined,
+    },
+    { all: true, departmentId: null },
+  );
   const [updated] = await db("roadmap_items")
     .where({ id: item.id })
     .update({ synced_task_id: task.id })
@@ -121,16 +132,25 @@ export async function syncRoadmapItemsForPeriod(year: number, month: number): Pr
   }
 }
 
-export async function deleteRoadmapItem(id: number): Promise<boolean> {
+export async function deleteRoadmapItem(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getRoadmapItem(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, existing.department_id);
   const count = await db("roadmap_items").where({ id }).delete();
   return count > 0;
 }
 
 // Xóa nhiều dòng roadmap theo checkbox đã chọn trên bảng (chi tiết công
 // việc theo tháng của từng dòng cũng bị xóa theo, CASCADE).
-export async function deleteRoadmapItems(ids: number[]): Promise<number> {
+export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promise<number> {
   if (ids.length === 0) return 0;
-  const count = await db("roadmap_items").whereIn("id", ids).delete();
+  let scopedIds = ids;
+  if (!scope.all) {
+    const rows = await db("roadmap_items").whereIn("id", ids).select("id", "department_id");
+    scopedIds = rows.filter((r: any) => isDepartmentInScope(scope, r.department_id)).map((r: any) => Number(r.id));
+  }
+  if (scopedIds.length === 0) return 0;
+  const count = await db("roadmap_items").whereIn("id", scopedIds).delete();
   return Number(count);
 }
 

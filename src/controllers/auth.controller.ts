@@ -7,6 +7,7 @@ import {
   isSsoEnabled,
 } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
+import { computeScope } from "../services/scope.util.js";
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -93,12 +94,20 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   // server, đây chỉ là gợi ý hiển thị. userId = id cục bộ (bảng users, khác
   // user.id là sso_sub) — FE dùng để tự nhận ra "chính mình" trong bảng
   // Quản lý User (không cho tự đổi role/khóa chính mình, khớp guard ở service).
+  // scope: phạm vi phòng ban (Quy tắc 9.2) — FE dùng để khoá/ẩn bộ lọc phòng
+  // ban khi tài khoản bị giới hạn (all=false), và hiển thị thông báo "chưa
+  // gán phòng ban" khi departmentId=null. Chỉ mang tính GỢI Ý HIỂN THỊ —
+  // chặn thật vẫn nằm ở attachScope/scope.util.ts phía server.
   let role: string | null = null;
   let userId: number | null = null;
+  let departmentId: number | null = null;
+  let scope: { all: boolean; departmentId: number | null } = { all: true, departmentId: null };
   if (user) {
     const appUser = await getUserBySsoSub(user.id);
     role = appUser?.role ?? null;
     userId = appUser?.id ?? null;
+    departmentId = appUser?.department_id ?? null;
+    scope = await computeScope(appUser);
   }
 
   res.json({
@@ -107,6 +116,8 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     user,
     role,
     userId,
+    departmentId,
+    scope,
   });
 }
 

@@ -8,6 +8,11 @@ import {
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 export async function createIncidentHandler(req: Request, res: Response) {
   const { su_co, tinh_chat, team_id, period_id } = req.body ?? {};
@@ -25,12 +30,17 @@ export async function createIncidentHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const incident = await createIncident({ period_id: periodId, team_id: teamId, su_co, tinh_chat });
+  const incident = await createIncident(
+    { period_id: periodId, team_id: teamId, su_co, tinh_chat },
+    scopeOf(req),
+  );
   res.status(201).json(incident);
 }
 
-export async function listIncidentsHandler(_req: Request, res: Response) {
-  res.json(await listIncidents());
+export async function listIncidentsHandler(req: Request, res: Response) {
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listIncidents(departmentId));
 }
 
 export async function updateIncidentHandler(req: Request, res: Response) {
@@ -48,12 +58,16 @@ export async function updateIncidentHandler(req: Request, res: Response) {
     }
   }
 
-  const incident = await updateIncident(Number(req.params.id), {
-    su_co,
-    tinh_chat,
-    team_id: team_id !== undefined ? Number(team_id) : undefined,
-    period_id: period_id !== undefined ? Number(period_id) : undefined,
-  });
+  const incident = await updateIncident(
+    Number(req.params.id),
+    {
+      su_co,
+      tinh_chat,
+      team_id: team_id !== undefined ? Number(team_id) : undefined,
+      period_id: period_id !== undefined ? Number(period_id) : undefined,
+    },
+    scopeOf(req),
+  );
   if (!incident) return res.status(404).json({ error: "Không tìm thấy sự cố" });
   res.json(incident);
 }
@@ -61,7 +75,7 @@ export async function updateIncidentHandler(req: Request, res: Response) {
 export async function deleteIncidentHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteIncident(id);
+  const ok = await deleteIncident(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy sự cố" });
   res.status(204).send();
 }

@@ -25,6 +25,10 @@ export interface Department {
   // "theo_task" = KPI tính trực tiếp theo từng nhân sự, cộng dồn Điểm cá
   // nhân từ các task họ tham gia (task_members), không chia theo team.
   cach_tinh_kpi: "theo_team" | "theo_task";
+  // Phòng ban "xem full" (Quy tắc 9.2) — nhân sự thuộc phòng này xem được
+  // dữ liệu nghiệp vụ của mọi phòng ban, không bị giới hạn theo phòng chủ
+  // quản. VD Ban Giám đốc, PMO, Kế toán.
+  is_full_access: boolean;
   created_at: string;
 }
 

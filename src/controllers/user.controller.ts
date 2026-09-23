@@ -13,18 +13,21 @@ export async function updateUserHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
 
-  const { role, active } = req.body ?? {};
+  const { role, active, department_id } = req.body ?? {};
   if (role !== undefined && !isValidRole(role)) {
     return res.status(400).json({ error: "Trường 'role' phải là admin/editor/viewer" });
   }
   if (active !== undefined && typeof active !== "boolean") {
     return res.status(400).json({ error: "Trường 'active' phải là boolean" });
   }
+  if (department_id !== undefined && department_id !== null && !Number.isFinite(department_id)) {
+    return res.status(400).json({ error: "Trường 'department_id' phải là số hoặc null" });
+  }
 
   const actingUserId = req.appUser?.id;
   if (!actingUserId) return res.status(401).json({ error: "Không xác định được người dùng hiện tại" });
 
-  const result = await updateUser(id, actingUserId, { role, active });
+  const result = await updateUser(id, actingUserId, { role, active, department_id });
   if (result === undefined) return res.status(404).json({ error: "Không tìm thấy user" });
   if ("error" in result) return res.status(400).json({ error: result.error });
   res.json(result);

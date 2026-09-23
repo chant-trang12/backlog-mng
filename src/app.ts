@@ -23,7 +23,7 @@ import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
-import { requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
+import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
@@ -122,12 +122,21 @@ export function createApp() {
   app.use(authRoutes);
 
   // Protected API routes — requireAuth gắn req.appUser (role/active, bảng
-  // users); requireWrite chặn role "viewer" khỏi mọi request ghi (POST/PUT/
-  // PATCH/DELETE) trên TOÀN BỘ /api bên dưới; Quản lý User riêng chỉ
-  // "admin" mới vào được (requireAdmin).
+  // users); attachScope gắn req.dataScope (phạm vi theo phòng ban, Quy tắc
+  // 9.2 — xem scope.util.ts); requireWrite chặn role "viewer" khỏi mọi
+  // request ghi (POST/PUT/PATCH/DELETE) trên TOÀN BỘ /api bên dưới; Quản lý
+  // User riêng chỉ "admin" mới vào được (requireAdmin).
   app.use("/api", requireAuth);
+  app.use("/api", attachScope);
   app.use("/api", requireWrite);
-  app.use("/api", requireAdmin, userRoutes);
+  // BUG đã fix: mount cũ là app.use("/api", requireAdmin, userRoutes) — vì
+  // userRoutes tự định nghĩa full path "/users" (không phải "/"), Express
+  // chạy requireAdmin cho MỌI request khớp tiền tố "/api" (kể cả
+  // /api/periods, /api/departments...) TRƯỚC KHI userRoutes kịp quyết định
+  // path đó có thuộc nó không — non-admin bị 403 trên toàn bộ /api, không
+  // chỉ /api/users. Scope requireAdmin đúng vào tiền tố "/api/users".
+  app.use("/api/users", requireAdmin);
+  app.use("/api", userRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);

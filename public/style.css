@@ -83,6 +83,10 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .dept-trigger:hover { background: var(--card-bg); border-color: var(--primary); }
+/* Quy tắc 9.2 — tài khoản bị giới hạn theo phòng ban: khoá switcher, không
+   cho mở panel chọn phòng khác (xem renderDeptSwitcher() ở app.js). */
+.dept-trigger-locked { cursor: not-allowed; opacity: 0.75; }
+.dept-trigger-locked:hover { background: var(--bg); border-color: var(--border); }
 .dept-trigger[aria-expanded="true"] { border-color: var(--primary); background: var(--card-bg); }
 
 .dept-mono {
@@ -1853,6 +1857,26 @@ img, svg, canvas, video { max-width: 100%; }
 /* ---- Màn hình thấp (điện thoại xoay ngang): dialog cuộn toàn bộ ---- */
 @media (max-height: 560px) {
   dialog { max-height: 96vh; max-height: 96dvh; overflow-y: auto; }
+}
+
+/* ---- Ẩn nút theo quyền (Rule 9.1 + role) ----
+   document.body[data-role] được gắn ở checkAuth() (app.js), chỉ khi SSO bật
+   — SSO tắt thì không có attribute này, mọi thứ hiện như cũ (dev/test).
+   .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem).
+   .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
+   (Quy tắc 9.1: editor không được xóa). Đây chỉ là gợi ý hiển thị, tránh
+   để người dùng bấm vào thứ chắc chắn bị server từ chối — chặn thật luôn
+   nằm ở server (requireWrite/scope.util.ts), không phụ thuộc CSS này. */
+body[data-role="viewer"] .write-action,
+body[data-role="viewer"] .delete-action,
+body[data-role="viewer"] .btn-delete,
+body[data-role="editor"] .delete-action,
+body[data-role="editor"] .btn-delete {
+  display: none !important;
+}
+body[data-role="viewer"] .inline-cell-input {
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 /* ---- Tôn trọng thiết lập giảm chuyển động ---- */

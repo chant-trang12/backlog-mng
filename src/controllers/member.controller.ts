@@ -13,8 +13,18 @@ import {
   importMembersFromWorkbook,
 } from "../services/member-import.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import {
+  resolveListDepartmentId,
+  ScopeForbiddenError,
+  SCOPE_EMPTY,
+  type DataScope,
+} from "../services/scope.util.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
+
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Khai báo nhân sự mới — dạng bảng CRUD: Họ và Tên, Chức vụ, Team. Gắn theo
 // period_id (tháng backlog) — xóa/sửa ở tháng nào chỉ ảnh hưởng tháng đó.
@@ -34,18 +44,21 @@ export async function createMemberHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'period_id' không hợp lệ" });
   }
 
-  const member = await createMember({
-    name,
-    chuc_vu,
-    team_id: teamId,
-    period_id: periodId,
-    tuan_thu,
-    noi_quy,
-    dao_tao,
-    ho_tro,
-    danh_gia,
-    ghi_chu,
-  });
+  const member = await createMember(
+    {
+      name,
+      chuc_vu,
+      team_id: teamId,
+      period_id: periodId,
+      tuan_thu,
+      noi_quy,
+      dao_tao,
+      ho_tro,
+      danh_gia,
+      ghi_chu,
+    },
+    scopeOf(req),
+  );
   res.status(201).json(member);
 }
 
@@ -56,7 +69,9 @@ export async function listMembersHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listMembers(periodId, departmentId));
 }
 
@@ -75,18 +90,22 @@ export async function updateMemberHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'ha_ki' phải là boolean" });
   }
 
-  const member = await updateMember(id, {
-    name,
-    chuc_vu,
-    team_id: team_id !== undefined ? Number(team_id) : undefined,
-    tuan_thu,
-    noi_quy,
-    dao_tao,
-    ho_tro,
-    danh_gia,
-    ha_ki,
-    ghi_chu,
-  });
+  const member = await updateMember(
+    id,
+    {
+      name,
+      chuc_vu,
+      team_id: team_id !== undefined ? Number(team_id) : undefined,
+      tuan_thu,
+      noi_quy,
+      dao_tao,
+      ho_tro,
+      danh_gia,
+      ha_ki,
+      ghi_chu,
+    },
+    scopeOf(req),
+  );
   if (!member) return res.status(404).json({ error: "Không tìm thấy nhân sự" });
   res.json(member);
 }
@@ -94,7 +113,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
 export async function deleteMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteMember(id);
+  const ok = await deleteMember(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy nhân sự" });
   res.status(204).send();
 }
@@ -136,9 +155,10 @@ export async function importMembersHandler(req: Request, res: Response) {
   const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
 
   try {
-    const result = await importMembersFromWorkbook(periodId, buffer, departmentId);
+    const result = await importMembersFromWorkbook(periodId, buffer, departmentId, scopeOf(req));
     res.status(201).json(result);
   } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     const message =
       err instanceof Error ? err.message : "File không đúng định dạng Excel (.xlsx)";
     res.status(400).json({ error: message });
@@ -151,6 +171,6 @@ export async function deleteSelectedMembersHandler(req: Request, res: Response) 
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const deleted = await deleteMembers(ids.map((id: unknown) => Number(id)));
+  const deleted = await deleteMembers(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ deleted });
 }

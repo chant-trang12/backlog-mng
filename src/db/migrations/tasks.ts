@@ -93,4 +93,23 @@ export async function migrateTaskMembersTables(): Promise<void> {
       table.string("phan_loai", 255);
     });
   }
+
+  // task_members.department_id — Quy tắc 9.2, suy trực tiếp từ department_id
+  // của chính task (đáng tin cậy hơn suy qua team/member vì task luôn có
+  // đúng 1 department_id cố định — xem departments.ts). Cần chạy sau
+  // migrateDepartments() (tasks.department_id đã tồn tại).
+  if (!(await db.schema.hasColumn("task_members", "department_id"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION").index();
+    });
+    const staleRows = await db("task_members").whereNull("department_id").select("id", "task_id");
+    for (const row of staleRows) {
+      const task = await db("tasks").where({ id: (row as any).task_id }).first();
+      if (task) {
+        await db("task_members")
+          .where({ id: (row as any).id })
+          .update({ department_id: (task as any).department_id ?? null });
+      }
+    }
+  }
 }

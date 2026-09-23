@@ -82,11 +82,18 @@ export async function updateUser(
   if (id === actingUserId && (input.role !== undefined || input.active !== undefined)) {
     return { error: "Không thể tự đổi quyền/khóa chính tài khoản đang đăng nhập — nhờ admin khác thực hiện." };
   }
+  if (input.department_id !== undefined && input.department_id !== null) {
+    const department = await db("departments").where({ id: input.department_id }).first();
+    if (!department) {
+      return { error: "Phòng ban không tồn tại." };
+    }
+  }
   await db("users")
     .where({ id })
     .update({
       role: input.role ?? existing.role,
       active: input.active !== undefined ? input.active : existing.active,
+      department_id: input.department_id !== undefined ? input.department_id : existing.department_id,
       updated_at: db.fn.now(),
     });
   return getUser(id);

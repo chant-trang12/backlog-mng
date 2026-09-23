@@ -26,6 +26,17 @@ function deptMonogram(dept) {
 
 async function loadDepartments() {
   state.departments = await api("/api/departments");
+
+  // Tài khoản bị giới hạn theo phòng ban (Quy tắc 9.2, state.userScope từ
+  // checkAuth()) -> LUÔN ép về đúng phòng được gán, bỏ qua lựa chọn đã lưu
+  // ở localStorage — khoá switcher ở renderDeptSwitcher() bên dưới. Server
+  // vẫn tự chặn nếu FE bị bypass, đây chỉ là khớp hiển thị với thực tế.
+  if (!state.userScope.all) {
+    state.currentDepartmentId = state.userScope.departmentId ?? null;
+    renderDeptSwitcher();
+    return;
+  }
+
   let saved = null;
   try {
     saved = Number(localStorage.getItem(DEPT_LS_KEY));
@@ -58,6 +69,31 @@ function hideDeptTip() {
 
 function renderDeptSwitcher() {
   const current = state.departments.find((d) => d.id === state.currentDepartmentId);
+
+  // Tài khoản bị giới hạn theo phòng ban -> khoá hẳn switcher (không cho mở
+  // panel chọn phòng khác — server cũng sẽ từ chối nếu cố tình gọi API với
+  // department_id khác). Chưa được Admin gán phòng ban nào -> departmentId
+  // null, hiển thị rõ để người dùng biết cần liên hệ Admin thay vì tưởng lỗi.
+  if (!state.userScope.all) {
+    el.deptTrigger.classList.add("dept-trigger-locked");
+    el.deptTrigger.setAttribute("aria-disabled", "true");
+    if (current) {
+      el.deptTriggerMono.textContent = deptMonogram(current);
+      el.deptTriggerMono.style.background = deptColor(current);
+      el.deptTriggerName.textContent = current.name;
+      el.deptTrigger.title = `${deptFullLabel(current)} — Tài khoản chỉ xem được phòng ban này.`;
+    } else {
+      el.deptTriggerMono.textContent = "--";
+      el.deptTriggerName.textContent = "Chưa gán phòng ban";
+      el.deptTrigger.title = "Tài khoản chưa được gán Phòng ban. Liên hệ Admin để được cấp quyền xem dữ liệu.";
+    }
+    el.deptPanel.innerHTML = "";
+    closeDeptPanel();
+    return;
+  }
+  el.deptTrigger.classList.remove("dept-trigger-locked");
+  el.deptTrigger.removeAttribute("aria-disabled");
+
   if (current) {
     el.deptTriggerMono.textContent = deptMonogram(current);
     el.deptTriggerMono.style.background = deptColor(current);
@@ -157,6 +193,7 @@ function closeDeptPanel() {
 
 el.deptTrigger.addEventListener("click", (e) => {
   e.stopPropagation();
+  if (!state.userScope.all) return; // khoá — không mở panel chọn phòng khác
   if (el.deptPanel.hidden) openDeptPanel();
   else closeDeptPanel();
 });

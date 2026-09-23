@@ -1,6 +1,17 @@
 import { db } from "../db/database.js";
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../types/backlog.js";
 import { createPeriod, getPeriod } from "./period.service.js";
+import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
+
+// Quy tắc 5.1 phương án A — lọc 1 danh sách id task về đúng những id nằm
+// trong phạm vi của người gọi (bản ghi ngoài phạm vi bị BỎ QUA lặng lẽ, vì
+// người dùng vốn không thấy nó trong danh sách để mà chọn — không phải lỗi
+// người dùng cần biết, chỉ có ý nghĩa khi ai đó gọi thẳng API).
+async function filterTaskIdsInScope(ids: number[], scope: DataScope): Promise<number[]> {
+  if (scope.all || ids.length === 0) return ids;
+  const rows = await db("tasks").whereIn("id", ids).select("id", "department_id");
+  return rows.filter((r: any) => isDepartmentInScope(scope, r.department_id)).map((r: any) => Number(r.id));
+}
 
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
@@ -21,7 +32,8 @@ async function nextStt(periodId: number): Promise<number> {
 
 // 1.3 Nhập mới task cho một team trong một tháng (period) — STT tự tăng theo
 // thứ tự nhập trong từng period, dùng làm cột STT khi xuất Excel.
-export async function createTask(periodId: number, input: CreateTaskInput): Promise<Task> {
+export async function createTask(periodId: number, input: CreateTaskInput, scope: DataScope): Promise<Task> {
+  assertDepartmentInScope(scope, input.department_id ?? null);
   const stt = await nextStt(periodId);
   const trangThai = input.trang_thai ?? "Chưa thực hiện";
   // Trạng thái Hủy mặc định đánh dấu Không tính điểm ở cột Tính chất.
@@ -89,9 +101,10 @@ export async function getTask(id: number): Promise<Task | undefined> {
 
 // 1.4 Cập nhật task — dùng chung cho sửa nội dung lẫn cập nhật tiến độ định kỳ
 // (chỉ gửi các trường thay đổi, các trường còn lại giữ nguyên).
-export async function updateTask(id: number, input: UpdateTaskInput): Promise<Task | undefined> {
+export async function updateTask(id: number, input: UpdateTaskInput, scope: DataScope): Promise<Task | undefined> {
   const existing = await getTask(id);
   if (!existing) return undefined;
+  assertDepartmentInScope(scope, existing.department_id);
 
   const merged = { ...existing, ...input };
   // Trạng thái Hủy mặc định đánh dấu Không tính điểm ở cột Tính chất; các
@@ -136,15 +149,19 @@ function localTimestamp(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-export async function deleteTask(id: number): Promise<boolean> {
+export async function deleteTask(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getTask(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, existing.department_id);
   const count = await db("tasks").where({ id }).delete();
   return count > 0;
 }
 
 // Xóa nhiều task theo danh sách id đã chọn (checkbox trên bảng Danh sách nhiệm vụ).
-export async function deleteTasks(ids: number[]): Promise<number> {
-  if (ids.length === 0) return 0;
-  const count = await db("tasks").whereIn("id", ids).delete();
+export async function deleteTasks(ids: number[], scope: DataScope): Promise<number> {
+  const scopedIds = await filterTaskIdsInScope(ids, scope);
+  if (scopedIds.length === 0) return 0;
+  const count = await db("tasks").whereIn("id", scopedIds).delete();
   return Number(count);
 }
 
@@ -191,9 +208,11 @@ function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, tar
 export async function moveTasksToNextMonth(
   fromPeriodId: number,
   taskIds: number[],
+  scope: DataScope,
 ): Promise<{ targetPeriod: Awaited<ReturnType<typeof createPeriod>>; moved: Task[]; skippedAlreadyMoved: Task[] } | undefined> {
   const fromPeriod = await getPeriod(fromPeriodId);
   if (!fromPeriod) return undefined;
+  taskIds = await filterTaskIdsInScope(taskIds, scope);
 
   let nextYear = fromPeriod.year;
   let nextMonth = fromPeriod.month + 1;
@@ -267,7 +286,8 @@ export async function moveTasksToNextMonth(
   return { targetPeriod, moved, skippedAlreadyMoved };
 }
 
-export async function markTasksNoScore(taskIds: number[]): Promise<Task[]> {
+export async function markTasksNoScore(taskIds: number[], scope: DataScope): Promise<Task[]> {
+  taskIds = await filterTaskIdsInScope(taskIds, scope);
   if (taskIds.length === 0) return [];
   const updated = await db("tasks")
     .whereIn("id", taskIds)
@@ -279,7 +299,8 @@ export async function markTasksNoScore(taskIds: number[]): Promise<Task[]> {
 // Bỏ đánh dấu "Không tính điểm" cho các task đã chọn — xóa giá trị ở cột
 // Tính chất, không đụng tới "Nhiệm vụ tồn" hay trạng thái. Lưu ý: nếu task
 // đang ở trạng thái Hủy, lần cập nhật task sau đó sẽ tự gắn lại.
-export async function unmarkTasksNoScore(taskIds: number[]): Promise<Task[]> {
+export async function unmarkTasksNoScore(taskIds: number[], scope: DataScope): Promise<Task[]> {
+  taskIds = await filterTaskIdsInScope(taskIds, scope);
   if (taskIds.length === 0) return [];
   const updated = await db("tasks")
     .whereIn("id", taskIds)
@@ -290,7 +311,8 @@ export async function unmarkTasksNoScore(taskIds: number[]): Promise<Task[]> {
 
 // Đánh dấu "Nhiệm vụ tồn" cho các task đã chọn (không chuyển tháng): thêm
 // "Nhiệm vụ tồn" vào cột Tính chất và đồng thời đánh dấu Không tính điểm.
-export async function markTasksTon(taskIds: number[]): Promise<Task[]> {
+export async function markTasksTon(taskIds: number[], scope: DataScope): Promise<Task[]> {
+  taskIds = await filterTaskIdsInScope(taskIds, scope);
   if (taskIds.length === 0) return [];
   const updated: Task[] = [];
   for (const id of taskIds) {

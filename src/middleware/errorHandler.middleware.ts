@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { ScopeForbiddenError } from "../services/scope.util.js";
 
 // Dịch lỗi ràng buộc DB thô (SQLite/MSSQL) thành thông báo tiếng Việt gọn —
 // áp dụng chung cho MỌI bảng thay vì phải bắt lỗi thủ công ở từng service.
@@ -26,7 +27,9 @@ export function errorHandler(
   const rawMessage = e instanceof Error ? e.message : "Internal server error";
   const friendly = friendlyDbError(rawMessage);
   const message = friendly?.message ?? rawMessage;
-  const statusCode = friendly?.status ?? (res.statusCode && res.statusCode >= 400 ? res.statusCode : 500);
+  const statusCode =
+    friendly?.status ??
+    (err instanceof ScopeForbiddenError ? 403 : res.statusCode && res.statusCode >= 400 ? res.statusCode : 500);
 
   const payload: Record<string, unknown> = { error: message };
 
