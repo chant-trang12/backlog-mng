@@ -31,42 +31,47 @@ import {
   listPhanLoaiNhanSuHandler,
   updatePhanLoaiNhanSuHandler,
 } from "../controllers/phanloainhansu.controller.js";
+import { requireAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
+// Xem (GET) mở cho mọi role — các danh mục này được nạp ở init() và dùng
+// làm dropdown/nhãn hiển thị ở Backlog, Team, Home cho mọi người dùng. Chỉ
+// thao tác quản lý (tạo/sửa/xoá danh mục — nghiệp vụ màn hình Cấu hình) mới
+// giới hạn admin.
 router.get("/tags", listTagsHandler);
-router.post("/tags", createTagHandler);
-router.put("/tags/:id", updateTagHandler);
-router.delete("/tags/:id", deleteTagHandler);
+router.post("/tags", requireAdmin, createTagHandler);
+router.put("/tags/:id", requireAdmin, updateTagHandler);
+router.delete("/tags/:id", requireAdmin, deleteTagHandler);
 
 router.get("/phan-loai", listPhanLoaiHandler);
-router.post("/phan-loai", createPhanLoaiHandler);
-router.put("/phan-loai/:id", updatePhanLoaiHandler);
-router.delete("/phan-loai/:id", deletePhanLoaiHandler);
+router.post("/phan-loai", requireAdmin, createPhanLoaiHandler);
+router.put("/phan-loai/:id", requireAdmin, updatePhanLoaiHandler);
+router.delete("/phan-loai/:id", requireAdmin, deletePhanLoaiHandler);
 
 router.get("/nhom", listNhomHandler);
-router.post("/nhom", createNhomHandler);
-router.put("/nhom/:id", updateNhomHandler);
-router.delete("/nhom/:id", deleteNhomHandler);
+router.post("/nhom", requireAdmin, createNhomHandler);
+router.put("/nhom/:id", requireAdmin, updateNhomHandler);
+router.delete("/nhom/:id", requireAdmin, deleteNhomHandler);
 
 router.get("/chuc-vu", listChucVuHandler);
-router.post("/chuc-vu", createChucVuHandler);
-router.put("/chuc-vu/:id", updateChucVuHandler);
-router.delete("/chuc-vu/:id", deleteChucVuHandler);
+router.post("/chuc-vu", requireAdmin, createChucVuHandler);
+router.put("/chuc-vu/:id", requireAdmin, updateChucVuHandler);
+router.delete("/chuc-vu/:id", requireAdmin, deleteChucVuHandler);
 
 router.get("/he-thong", listHeThongHandler);
-router.post("/he-thong", createHeThongHandler);
-router.put("/he-thong/:id", updateHeThongHandler);
-router.delete("/he-thong/:id", deleteHeThongHandler);
+router.post("/he-thong", requireAdmin, createHeThongHandler);
+router.put("/he-thong/:id", requireAdmin, updateHeThongHandler);
+router.delete("/he-thong/:id", requireAdmin, deleteHeThongHandler);
 
 router.get("/muc-tieu", listMucTieuHandler);
-router.post("/muc-tieu", createMucTieuHandler);
-router.put("/muc-tieu/:id", updateMucTieuHandler);
-router.delete("/muc-tieu/:id", deleteMucTieuHandler);
+router.post("/muc-tieu", requireAdmin, createMucTieuHandler);
+router.put("/muc-tieu/:id", requireAdmin, updateMucTieuHandler);
+router.delete("/muc-tieu/:id", requireAdmin, deleteMucTieuHandler);
 
 router.get("/phan-loai-nhan-su", listPhanLoaiNhanSuHandler);
-router.post("/phan-loai-nhan-su", createPhanLoaiNhanSuHandler);
-router.put("/phan-loai-nhan-su/:id", updatePhanLoaiNhanSuHandler);
-router.delete("/phan-loai-nhan-su/:id", deletePhanLoaiNhanSuHandler);
+router.post("/phan-loai-nhan-su", requireAdmin, createPhanLoaiNhanSuHandler);
+router.put("/phan-loai-nhan-su/:id", requireAdmin, updatePhanLoaiNhanSuHandler);
+router.delete("/phan-loai-nhan-su/:id", requireAdmin, deletePhanLoaiNhanSuHandler);
 
 export default router;

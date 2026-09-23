@@ -97,5 +97,5 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
   if (!isSsoEnabled() || req.appUser?.role === "admin") {
     return next();
   }
-  res.status(403).json({ error: "Chỉ Admin mới có quyền truy cập mục Quản lý User." });
+  res.status(403).json({ error: "Chỉ Admin mới có quyền truy cập mục này." });
 }
