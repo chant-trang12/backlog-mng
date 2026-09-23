@@ -178,8 +178,8 @@ function renderMemberTable() {
       <td>${m.danh_gia ?? ""}</td>
       <td>${avgDiem ?? "-"}</td>
       <td>${(m.ghi_chu ?? "").replace(/\n/g, "<br/>")}</td>
-      <td><div class="actions-cell">
-        <button class="small ${m.ha_ki ? "btn-edit" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}" title="Hạ 1 KI của nhân sự này (xem ở Home &gt; Ranking &gt; Ranking thành viên team)">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
+      <td><div class="actions-cell" title="">
+        <button class="small ${m.ha_ki ? "btn-edit" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
         <button class="small btn-edit write-action edit-member-btn">Sửa</button>
         <button class="small btn-delete delete-member-btn">Xóa</button>
       </div></td>
