@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import { requireWrite } from "../src/middleware/auth.middleware.js";
+import { requireAdmin, requireWrite } from "../src/middleware/auth.middleware.js";
 
 describe("Authentication & SSO Integration", () => {
   const originalSso = process.env.SSO_ENABLED;
@@ -194,6 +194,65 @@ describe("Authentication & SSO Integration", () => {
     it("passes through when req.appUser is not set (SSO disabled)", () => {
       const { nextCalled } = callRequireWrite(undefined, "DELETE");
       expect(nextCalled).toBe(true);
+    });
+  });
+
+  describe("requireAdmin — chỉ admin mới vào được (/api/users/*, và các route quản lý Cấu hình)", () => {
+    function callRequireAdmin(role: "admin" | "editor" | "viewer" | undefined) {
+      const req: any = { appUser: role ? { role } : undefined };
+      let statusCode: number | undefined;
+      let body: any;
+      let nextCalled = false;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return res;
+        },
+        json: (payload: any) => {
+          body = payload;
+          return res;
+        },
+      };
+      requireAdmin(req, res, () => {
+        nextCalled = true;
+      });
+      return { statusCode, body, nextCalled };
+    }
+
+    it("allows admin", () => {
+      process.env.SSO_ENABLED = "true";
+      const { nextCalled } = callRequireAdmin("admin");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks editor with 403", () => {
+      process.env.SSO_ENABLED = "true";
+      const { statusCode, body, nextCalled } = callRequireAdmin("editor");
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/chỉ admin/i);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("blocks viewer with 403", () => {
+      process.env.SSO_ENABLED = "true";
+      const { statusCode, nextCalled } = callRequireAdmin("viewer");
+      expect(statusCode).toBe(403);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("blocks when req.appUser is not set, while SSO is enabled", () => {
+      process.env.SSO_ENABLED = "true";
+      const { statusCode, nextCalled } = callRequireAdmin(undefined);
+      expect(statusCode).toBe(403);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("passes through every role when SSO is disabled", () => {
+      process.env.SSO_ENABLED = "false";
+      for (const role of ["admin", "editor", "viewer", undefined] as const) {
+        const { nextCalled } = callRequireAdmin(role);
+        expect(nextCalled).toBe(true);
+      }
     });
   });
 });
