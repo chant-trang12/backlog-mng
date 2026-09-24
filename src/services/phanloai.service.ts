@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreatePhanLoaiInput, PhanLoaiOption, UpdatePhanLoaiInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listPhanLoai(): Promise<PhanLoaiOption[]> {
   const rows = await db("phan_loai_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -29,7 +29,8 @@ export async function createPhanLoai(input: CreatePhanLoaiInput): Promise<PhanLo
 export async function updatePhanLoai(id: number, input: UpdatePhanLoaiInput): Promise<PhanLoaiOption | undefined> {
   const existing = await getPhanLoai(id);
   if (!existing) return undefined;
-  const tenPhanLoai = input.ten_phan_loai?.trim() ?? existing.ten_phan_loai;
+  const tenPhanLoai =
+    input.ten_phan_loai !== undefined ? normalizeVietnameseText(input.ten_phan_loai.trim()) : existing.ten_phan_loai;
   const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
   const [updated] = await db("phan_loai_options")
     .where({ id })

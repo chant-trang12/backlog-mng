@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateHeThongInput, HeThongOption, UpdateHeThongInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listHeThong(): Promise<HeThongOption[]> {
   const rows = await db("he_thong_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -30,7 +30,8 @@ export async function updateHeThong(
   const [updated] = await db("he_thong_options")
     .where({ id })
     .update({
-      ten_he_thong: input.ten_he_thong?.trim() ?? existing.ten_he_thong,
+      ten_he_thong:
+        input.ten_he_thong !== undefined ? normalizeVietnameseText(input.ten_he_thong.trim()) : existing.ten_he_thong,
       thu_tu: input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu,
     })
     .returning("*");

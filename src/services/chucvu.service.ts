@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { ChucVuOption, CreateChucVuInput, UpdateChucVuInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listChucVu(): Promise<ChucVuOption[]> {
   const rows = await db("chuc_vu_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -29,7 +29,8 @@ export async function createChucVu(input: CreateChucVuInput): Promise<ChucVuOpti
 export async function updateChucVu(id: number, input: UpdateChucVuInput): Promise<ChucVuOption | undefined> {
   const existing = await getChucVu(id);
   if (!existing) return undefined;
-  const tenChucVu = input.ten_chuc_vu?.trim() ?? existing.ten_chuc_vu;
+  const tenChucVu =
+    input.ten_chuc_vu !== undefined ? normalizeVietnameseText(input.ten_chuc_vu.trim()) : existing.ten_chuc_vu;
   const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
   const [updated] = await db("chuc_vu_options")
     .where({ id })

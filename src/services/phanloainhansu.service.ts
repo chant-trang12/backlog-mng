@@ -4,7 +4,7 @@ import type {
   PhanLoaiNhanSuOption,
   UpdatePhanLoaiNhanSuInput,
 } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listPhanLoaiNhanSu(): Promise<PhanLoaiNhanSuOption[]> {
   const rows = await db("phan_loai_nhan_su_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -39,7 +39,8 @@ export async function updatePhanLoaiNhanSu(
   const [updated] = await db("phan_loai_nhan_su_options")
     .where({ id })
     .update({
-      ten_phan_loai: input.ten_phan_loai?.trim() ?? existing.ten_phan_loai,
+      ten_phan_loai:
+        input.ten_phan_loai !== undefined ? normalizeVietnameseText(input.ten_phan_loai.trim()) : existing.ten_phan_loai,
       thu_tu: input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu,
     })
     .returning("*");

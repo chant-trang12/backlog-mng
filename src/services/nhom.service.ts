@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateNhomInput, NhomOption, UpdateNhomInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listNhom(): Promise<NhomOption[]> {
   const rows = await db("nhom_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -29,7 +29,7 @@ export async function createNhom(input: CreateNhomInput): Promise<NhomOption> {
 export async function updateNhom(id: number, input: UpdateNhomInput): Promise<NhomOption | undefined> {
   const existing = await getNhom(id);
   if (!existing) return undefined;
-  const tenNhom = input.ten_nhom?.trim() ?? existing.ten_nhom;
+  const tenNhom = input.ten_nhom !== undefined ? normalizeVietnameseText(input.ten_nhom.trim()) : existing.ten_nhom;
   const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
   const [updated] = await db("nhom_options")
     .where({ id })
