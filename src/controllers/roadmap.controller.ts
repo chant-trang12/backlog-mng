@@ -18,6 +18,7 @@ import { listTeams } from "../services/team.service.js";
 import { listHeThong } from "../services/hethong.service.js";
 import { listMucTieu } from "../services/muctieu.service.js";
 import { listPhanLoai } from "../services/phanloai.service.js";
+import { exportRoadmapToExcel } from "../services/export.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 import { resolveListDepartmentId, ScopeForbiddenError, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
 
@@ -38,6 +39,25 @@ export async function listRoadmapItemsHandler(req: Request, res: Response) {
   const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
   if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listRoadmapItems({ year, department_id: departmentId }));
+}
+
+// GET /api/roadmap-items/export?year=YYYY&department_id=X — xuất toàn bộ
+// roadmap của năm/phòng đang xem ra file .xlsx.
+export async function exportRoadmapHandler(req: Request, res: Response) {
+  const year = Number(req.query.year);
+  if (!Number.isInteger(year)) {
+    return res.status(400).json({ error: "Query 'year' không hợp lệ" });
+  }
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
+  if (departmentId === SCOPE_EMPTY) {
+    return res.status(403).json({ error: "Bạn không có quyền xem dữ liệu của phòng ban này." });
+  }
+
+  const buffer = await exportRoadmapToExcel({ year, department_id: departmentId });
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="roadmap-${year}.xlsx"`);
+  res.send(Buffer.from(buffer));
 }
 
 export async function createRoadmapItemHandler(req: Request, res: Response) {

@@ -457,6 +457,11 @@ el.addRoadmapBtn.addEventListener("click", () => {
   openRoadmapDialog(null);
 });
 el.roadmapCancelBtn.addEventListener("click", () => el.roadmapDialog.close());
+
+el.exportRoadmapBtn.addEventListener("click", () => {
+  window.location.href = `/api/roadmap-items/export?year=${state.roadmapYear}${deptParam()}`;
+});
+
 el.roadmapYearPrev.addEventListener("click", () => stepRoadmapYear(-1));
 el.roadmapYearNext.addEventListener("click", () => stepRoadmapYear(1));
 

@@ -257,6 +257,7 @@ const el = {
   roadmapYearPrev: document.getElementById("roadmap-year-prev"),
   roadmapYearNext: document.getElementById("roadmap-year-next"),
   addRoadmapBtn: document.getElementById("add-roadmap-btn"),
+  exportRoadmapBtn: document.getElementById("export-roadmap-btn"),
   downloadRoadmapTemplateBtn: document.getElementById("download-roadmap-template-btn"),
   importRoadmapBtn: document.getElementById("import-roadmap-btn"),
   roadmapFileInput: document.getElementById("roadmap-file-input"),
