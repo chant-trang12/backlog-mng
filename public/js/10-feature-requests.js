@@ -1,4 +1,4 @@
-// [DEMO 3002 - v3] "Yêu cầu tính năng" — luồng Duyệt/Từ chối:
+// "Yêu cầu tính năng" — luồng Duyệt/Từ chối:
 // - Tạo xong: bên đề xuất (A) thấy "Đã gửi yêu cầu", bên đích (B) thấy
 //   "Chờ duyệt" kèm 2 nút Duyệt/Từ chối.
 // - B bấm Duyệt: A thấy "Đã tiếp nhận yêu cầu"; B thấy "Đã duyệt" kèm 2 nút
@@ -7,7 +7,6 @@
 // - B bấm Từ chối: CẢ 2 bên đều thấy "Từ chối yêu cầu".
 // Trạng thái lưu 1 giá trị duy nhất (Chờ duyệt/Đã duyệt/Từ chối) — nhãn
 // hiển thị khác nhau theo phòng đang xem, xem frStatusLabel() bên dưới.
-// File này CHƯA merge vào nhánh chính, chỉ để demo xem trước.
 
 const FR_STATUS_BADGE_CLASS = {
   "Chờ duyệt": "status-dang-thuc-hien",
@@ -36,6 +35,41 @@ async function loadFeatureRequests() {
   populateFrTargetDeptFilter();
   frPagination.reset();
   renderFeatureRequestTable();
+  updateFeatureRequestNavBadge(countPendingFeatureRequestsForTarget(state.featureRequests));
+}
+
+// Số yêu cầu đang "Chờ duyệt" mà PHÒNG ĐANG XEM là bên đích (phòng cần xử
+// lý) — dùng cho chấm đỏ ở menu trái. Không đếm yêu cầu do chính phòng này
+// gửi đi (bên đề xuất không cần Duyệt/Từ chối, không phải việc cần làm).
+function countPendingFeatureRequestsForTarget(rows) {
+  return (rows || []).filter(
+    (r) => r.target_department_id === state.currentDepartmentId && r.trang_thai === "Chờ duyệt",
+  ).length;
+}
+
+function updateFeatureRequestNavBadge(count) {
+  const badge = document.getElementById("fr-nav-badge");
+  if (!badge) return;
+  badge.hidden = !(count > 0);
+  badge.textContent = count > 99 ? "99+" : String(count);
+}
+
+// Cập nhật chấm đỏ ở menu trái KỂ CẢ KHI trang "Yêu cầu tính năng" chưa mở
+// (loadFeatureRequests() ở trên chỉ được gọi khi trang đã/đang mở) — gọi
+// riêng ở lúc khởi động app + mỗi lần đổi phòng ban, xem 09-main.js và
+// 02-departments-periods-teams.js.
+async function refreshFeatureRequestNavBadge() {
+  if (state.currentDepartmentId == null) {
+    updateFeatureRequestNavBadge(0);
+    return;
+  }
+  try {
+    const rows = await api(`/api/feature-requests${deptParam("?")}`);
+    updateFeatureRequestNavBadge(countPendingFeatureRequestsForTarget(rows));
+  } catch {
+    // Lỗi mạng tạm thời — bỏ qua, giữ nguyên chấm đỏ cũ, không làm gián
+    // đoạn phần còn lại của app.
+  }
 }
 
 function populateFrHeThongFilter() {

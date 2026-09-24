@@ -229,8 +229,12 @@ async function selectDepartment(id) {
     await loadCriteria(); // tiêu chí "thấy được" khác nhau theo từng phòng
     // Yêu cầu tính năng scope theo phòng — đổi phòng phải nạp lại đúng danh
     // sách phòng đó (nếu trang đang mở), tránh vẫn hiện danh sách của phòng cũ.
+    // Trang chưa mở thì chỉ cần cập nhật lại chấm đỏ ở menu trái theo phòng
+    // mới (loadFeatureRequests() ở nhánh trên đã tự cập nhật chấm đỏ rồi).
     if (!pages["feature-requests"]?.hidden) {
       await loadFeatureRequests().catch((err) => showToast(err.message));
+    } else {
+      await refreshFeatureRequestNavBadge().catch(() => {});
     }
     syncHomeFromCurrentIfNeeded();
   } catch (err) {

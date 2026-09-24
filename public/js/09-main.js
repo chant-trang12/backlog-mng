@@ -115,6 +115,7 @@ async function checkAuth() {
         loadObjective(),
         loadMemberParticipation(),
         loadRoadmap(),
+        refreshFeatureRequestNavBadge(),
       ]),
     )
     .catch((err) => showToast(err.message));
