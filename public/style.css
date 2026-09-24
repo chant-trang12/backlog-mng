@@ -857,12 +857,14 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
-/* Bảng Yêu cầu tính năng — label cột căn giữa; nội dung cột STT/Ưu tiên/
-   Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí 1/9/10/11/12) căn giữa
-   theo chiều ngang lẫn dọc, các cột còn lại (Tiêu đề, Mô tả...) giữ căn
-   trái mặc định vì là văn bản dài. */
+/* Bảng Yêu cầu tính năng — label cột căn giữa; nội dung cột STT/Hệ thống/
+   Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí 1/2/9/10/11/12)
+   căn giữa theo chiều ngang lẫn dọc (Hệ thống + Ưu tiên + Trạng thái đều
+   hiển thị dạng badge, căn giữa cho gọn), các cột còn lại (Tiêu đề, Mô
+   tả...) giữ căn trái mặc định vì là văn bản dài. */
 #fr-table th { text-align: center; }
 #fr-table td:nth-child(1),
+#fr-table td:nth-child(2),
 #fr-table td:nth-child(9),
 #fr-table td:nth-child(10),
 #fr-table td:nth-child(11),
