@@ -66,18 +66,30 @@ export async function attachScope(req: Request, _res: Response, next: NextFuncti
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+// Ngoại lệ cho viewer: TẠO MỚI Yêu cầu tính năng không phải "ghi dữ liệu
+// nghiệp vụ" theo nghĩa thông thường — mọi phòng ban (mọi quyền, kể cả
+// viewer) đều được đề xuất. Duyệt/Từ chối/Đưa vào Backlog/Roadmap vẫn cần
+// quyền ghi (editor/admin trở lên) NHƯ BÌNH THƯỜNG — không nằm trong danh
+// sách này — cộng thêm điều kiện phải thuộc đúng phòng ban đích
+// (requireTargetScope ở featureRequest.controller.ts, không liên quan role).
+// req.path đã bị Express cắt bỏ tiền tố "/api" (mount ở app.use("/api", ...)).
+const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests"]);
+
 /**
- * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api. Role "editor" được
- * ghi (POST/PUT/PATCH) nhưng không được xóa (Quy tắc 9.1) — quyền xóa chỉ
- * dành cho admin. Không có tác dụng khi SSO tắt (req.appUser không được
- * gắn — xem requireAuth). Mount ngay sau requireAuth, TRƯỚC mọi router
- * nghiệp vụ.
+ * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api, trừ đúng danh sách
+ * VIEWER_ALLOWED_WRITES ở trên. Role "editor" được ghi (POST/PUT/PATCH)
+ * nhưng không được xóa (Quy tắc 9.1) — quyền xóa chỉ dành cho admin. Không
+ * có tác dụng khi SSO tắt (req.appUser không được gắn — xem requireAuth).
+ * Mount ngay sau requireAuth, TRƯỚC mọi router nghiệp vụ.
  */
 export function requireWrite(req: Request, res: Response, next: NextFunction): void {
   if (!req.appUser || !WRITE_METHODS.has(req.method)) {
     return next();
   }
   if (req.appUser.role === "viewer") {
+    if (VIEWER_ALLOWED_WRITES.has(`${req.method} ${req.path}`)) {
+      return next();
+    }
     res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });
     return;
   }

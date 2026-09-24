@@ -156,9 +156,14 @@ function renderFeatureRequestTable() {
       const side = frViewerSide(r);
       const statusLabel = frStatusLabel(r);
       let actions = "";
+      // Duyệt/Từ chối/Đưa vào Backlog/Roadmap: CHỈ phòng đích được thao tác
+      // (chặn thật ở server — requireTargetScope), và chỉ user có quyền
+      // ghi (editor/admin — write-action ẩn với viewer, xem style.css) mới
+      // thấy nút. Viewer thuộc phòng đích vẫn thấy trạng thái "Chờ duyệt"
+      // bình thường, chỉ không thấy 2 nút này.
       if (side === "target" && r.trang_thai === "Chờ duyệt") {
-        actions += `<button class="small btn-edit approve-fr-btn">Duyệt</button>`;
-        actions += `<button class="small btn-delete reject-fr-btn">Từ chối</button>`;
+        actions += `<button class="small btn-edit write-action approve-fr-btn">Duyệt</button>`;
+        actions += `<button class="small btn-reject write-action reject-fr-btn">Từ chối</button>`;
       }
       if (side === "target" && r.trang_thai === "Đã duyệt") {
         // Chỉ hiện NÚT khi còn thao tác thật sự cần làm — đã đưa vào rồi
@@ -167,10 +172,10 @@ function renderFeatureRequestTable() {
         // (xem linkedBadges bên dưới) — tách bạch rõ "nút để bấm" và
         // "trạng thái để đọc".
         if (!r.linked_task_id) {
-          actions += `<button class="small btn-exclude to-backlog-fr-btn">Đưa vào Backlog</button>`; // vàng (giống nút Backlog sẵn có)
+          actions += `<button class="small btn-exclude write-action to-backlog-fr-btn">Đưa vào Backlog</button>`; // vàng (giống nút Backlog sẵn có)
         }
         if (!r.linked_roadmap_item_id) {
-          actions += `<button class="small btn-progress to-roadmap-fr-btn">Đưa vào Roadmap</button>`; // xanh dương — tách biệt màu với nút Backlog
+          actions += `<button class="small btn-progress write-action to-roadmap-fr-btn">Đưa vào Roadmap</button>`; // xanh dương — tách biệt màu với nút Backlog
         }
       }
       // 2 màu khác nhau (tím/xanh dương) để phân biệt Backlog/Roadmap với
@@ -183,9 +188,11 @@ function renderFeatureRequestTable() {
           ? `<span class="status-badge fr-linked-badge-roadmap" title="Đã đưa vào Roadmap năm">✓ Roadmap</span>`
           : "");
       // Sửa/Xóa: chỉ bên đề xuất, chỉ khi còn "Chờ duyệt" (đã Duyệt/Từ chối
-      // thì khoá nội dung, tránh sửa sau khi bên kia đã hành động).
+      // thì khoá nội dung, tránh sửa sau khi bên kia đã hành động). Khác
+      // với "Tạo mới" (mọi quyền kể cả viewer), Sửa vẫn là PUT nên cần
+      // quyền ghi — write-action ẩn với viewer.
       if (side === "proposer" && r.trang_thai === "Chờ duyệt") {
-        actions += `<button class="small btn-edit edit-fr-btn">Sửa</button>`;
+        actions += `<button class="small btn-edit write-action edit-fr-btn">Sửa</button>`;
         actions += `<button class="small btn-delete delete-fr-btn">Xóa</button>`;
       }
 

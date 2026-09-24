@@ -479,6 +479,13 @@ button.btn-edit { background: #ffeab0; border-color: #f6d989; color: #7a4e12; }
 button.btn-edit:hover { background: #f6d989; }
 button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
 button.btn-delete:hover { background: var(--delete-light-hover); }
+/* Cùng tông màu với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu" (Quy
+   tắc 9.1 chỉ admin được xóa) — dùng cho nút "Từ chối" yêu cầu tính năng,
+   vốn chỉ là đổi trạng thái (editor thuộc phòng đích vẫn được làm), tách
+   riêng để không bị ẩn nhầm với editor bởi CSS chọn theo .btn-delete bên
+   dưới (xem VIEWER_ALLOWED_WRITES / requireTargetScope). */
+button.btn-reject { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+button.btn-reject:hover { background: var(--delete-light-hover); }
 button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
 button.btn-grade:hover { background: #c3d7b3; }
 button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
@@ -1924,7 +1931,12 @@ img, svg, canvas, video { max-width: 100%; }
 /* ---- Ẩn nút theo quyền (Rule 9.1 + role) ----
    document.body[data-role] được gắn ở checkAuth() (app.js), chỉ khi SSO bật
    — SSO tắt thì không có attribute này, mọi thứ hiện như cũ (dev/test).
-   .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem).
+   .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem). NGOẠI
+   LỆ: nút "+ Thêm yêu cầu" (Yêu cầu tính năng) KHÔNG mang class này — mọi
+   phòng ban/mọi quyền, kể cả viewer, đều được đề xuất; các nút Duyệt/Từ
+   chối/Đưa vào Backlog/Roadmap/Sửa trong CÙNG trang thì vẫn mang
+   write-action như bình thường (xem VIEWER_ALLOWED_WRITES ở
+   auth.middleware.ts — server chỉ nới đúng 1 route POST /feature-requests).
    .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
    (Quy tắc 9.1: editor không được xóa).
    .admin-only-action: vài thao tác cụ thể chỉ admin được làm dù editor vẫn

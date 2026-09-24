@@ -136,8 +136,8 @@ describe("Authentication & SSO Integration", () => {
   });
 
   describe("requireWrite — Quy tắc 9.1: editor không được xóa", () => {
-    function callRequireWrite(role: "admin" | "editor" | "viewer" | undefined, method: string) {
-      const req: any = { appUser: role ? { role } : undefined, method };
+    function callRequireWrite(role: "admin" | "editor" | "viewer" | undefined, method: string, path?: string) {
+      const req: any = { appUser: role ? { role } : undefined, method, path };
       let statusCode: number | undefined;
       let body: any;
       let nextCalled = false;
@@ -179,6 +179,25 @@ describe("Authentication & SSO Integration", () => {
     it("still blocks viewer from any write method, including DELETE", () => {
       for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
         const { statusCode, nextCalled } = callRequireWrite("viewer", method);
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("allows viewer to POST /feature-requests (đề xuất — mọi phòng ban đều được, không phải quyền ghi thông thường)", () => {
+      const { nextCalled } = callRequireWrite("viewer", "POST", "/feature-requests");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("still blocks viewer from PUT/DELETE /feature-requests/:id and POST .../approve|reject (chỉ ngoại lệ đúng route tạo mới)", () => {
+      for (const [method, path] of [
+        ["PUT", "/feature-requests/1"],
+        ["DELETE", "/feature-requests/1"],
+        ["POST", "/feature-requests/1/approve"],
+        ["POST", "/feature-requests/1/reject"],
+        ["POST", "/feature-requests/1/to-backlog"],
+      ] as const) {
+        const { statusCode, nextCalled } = callRequireWrite("viewer", method, path);
         expect(statusCode).toBe(403);
         expect(nextCalled).toBe(false);
       }
