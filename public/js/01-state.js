@@ -43,7 +43,6 @@ const state = {
   objectiveOptions: [],
   memberParticipationOptions: [],
   featureRequests: [],
-  loaiYeuCauOptions: [],
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"

@@ -104,7 +104,6 @@ async function checkAuth() {
         loadTickets(),
         loadCreationRates(),
         loadCriteria(),
-        loadLoaiYeuCau(),
         loadRanking(),
         loadTags(),
         loadCategory(),

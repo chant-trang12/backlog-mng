@@ -22,10 +22,6 @@ const FR_PRIORITY_CLASS = {
   "Khẩn cấp": "status-huy",
 };
 
-async function loadLoaiYeuCau() {
-  state.loaiYeuCauOptions = await api("/api/loai-yeu-cau");
-}
-
 async function loadFeatureRequests() {
   // deptParam() -> chỉ trả yêu cầu mà phòng đang xem là bên đề xuất hoặc
   // bên đích (xem listFeatureRequestsHandler) — không dùng prefix mặc định
@@ -295,10 +291,16 @@ function openFeatureRequestDialog(item) {
     [...heThongNames, ...extra].map((h) => `<option value="${h}">${h}</option>`).join("");
   heThongSelect.value = item?.he_thong ?? "";
 
+  // Danh mục Loại yêu cầu lấy từ Cấu hình > Mục tiêu (state.objectiveOptions
+  // — cùng danh mục Roadmap năm đang dùng cho cột "Mục tiêu", xem
+  // loadObjective() ở 06-config.js) — cùng cách xử lý "giá trị cũ đã bị
+  // xóa khỏi danh mục" như Hệ thống ở trên.
   const loaiSelect = document.getElementById("fr-loai-yeu-cau");
+  const loaiNames = state.objectiveOptions.map((m) => m.ten_muc_tieu);
+  const loaiExtra = item?.loai_yeu_cau && !loaiNames.includes(item.loai_yeu_cau) ? [item.loai_yeu_cau] : [];
   loaiSelect.innerHTML =
     `<option value="">-- Không chọn --</option>` +
-    state.loaiYeuCauOptions.map((l) => `<option value="${l.ten_loai}">${l.ten_loai}</option>`).join("");
+    [...loaiNames, ...loaiExtra].map((l) => `<option value="${l}">${l}</option>`).join("");
   loaiSelect.value = item?.loai_yeu_cau ?? "";
 
   const targetDeptSelect = document.getElementById("fr-target-department");
