@@ -23,6 +23,7 @@ import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import featureRequestRoutes from "./routes/featureRequest.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
@@ -153,6 +154,7 @@ export function createApp() {
   app.use("/api", rankingRoutes);
   app.use("/api", catalogRoutes);
   app.use("/api", roadmapRoutes);
+  app.use("/api", featureRequestRoutes);
 
   app.use(notFound);
   // Global error handler — must be last, after notFound

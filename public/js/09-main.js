@@ -7,6 +7,7 @@ const pages = {
   cskh: document.getElementById("page-cskh"),
   roadmap: document.getElementById("page-roadmap"),
   config: document.getElementById("page-config"),
+  "feature-requests": document.getElementById("page-feature-requests"),
 };
 
 document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -22,6 +23,14 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // popup "Nhân sự tham gia" bên trang Backlog (2 trang khác nhau, không
     // tự đồng bộ state cho nhau).
     if (btn.dataset.page === "team") loadMembers().catch((err) => showToast(err.message));
+    // Tải lại Backlog mỗi lần vào trang — tránh hiển thị dữ liệu cũ
+    // (state.tasksAll cache từ lần xem trước) nếu vừa "Đưa vào Backlog" 1
+    // task mới từ trang Yêu cầu tính năng (2 trang khác nhau, không tự
+    // đồng bộ state cho nhau — giống lý do loadMembers() ở trang "team").
+    if (btn.dataset.page === "backlog") loadTasks().catch((err) => showToast(err.message));
+    // Yêu cầu tính năng — hộp thư dùng chung, tải lại mỗi lần vào trang để
+    // thấy ngay yêu cầu mới từ phòng ban khác.
+    if (btn.dataset.page === "feature-requests") loadFeatureRequests().catch((err) => showToast(err.message));
   });
 });
 
@@ -95,6 +104,7 @@ async function checkAuth() {
         loadTickets(),
         loadCreationRates(),
         loadCriteria(),
+        loadLoaiYeuCau(),
         loadRanking(),
         loadTags(),
         loadCategory(),

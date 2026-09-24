@@ -42,6 +42,8 @@ const state = {
   systemOptions: [],
   objectiveOptions: [],
   memberParticipationOptions: [],
+  featureRequests: [],
+  loaiYeuCauOptions: [],
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
@@ -492,6 +494,7 @@ const evaluationPagination = createPagination("danhgia", () => renderEvaluationR
 const attendancePagination = createPagination("attendance", () => renderAttendanceTable());
 const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
 const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable());
+const frPagination = createPagination("fr", () => renderFeatureRequestTable());
 
 function today() {
   return new Date();

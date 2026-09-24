@@ -24,6 +24,7 @@ import {
   migrateUsersDepartment,
   migrateUsersTable,
 } from "./migrations/users.js";
+import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -65,6 +66,9 @@ export async function initDatabase(): Promise<void> {
     await migrateMembersHaKi();
     // members.ghi_chu (Ghi chú tự do ở tab Nhân sự).
     await migrateMembersGhiChu();
+    // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
+    // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
+    await migrateFeatureRequestTables();
   })();
 
   return initPromise;

@@ -291,13 +291,13 @@ main {
   width: 100%;
 }
 
-#page-backlog, #page-team, #page-cskh, #team-tab-nhansu {
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden] {
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden] {
   display: none;
 }
 
@@ -824,6 +824,20 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
+/* Bảng Yêu cầu tính năng — label cột căn giữa; nội dung cột STT/Ưu tiên/
+   Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí 1/9/10/11/12) căn giữa
+   theo chiều ngang lẫn dọc, các cột còn lại (Tiêu đề, Mô tả...) giữ căn
+   trái mặc định vì là văn bản dài. */
+#fr-table th { text-align: center; }
+#fr-table td:nth-child(1),
+#fr-table td:nth-child(9),
+#fr-table td:nth-child(10),
+#fr-table td:nth-child(11),
+#fr-table td:nth-child(12) {
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */
 .cell-prev-badge {
@@ -1115,6 +1129,13 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   font-size: 0.78rem;
   white-space: nowrap;
 }
+
+/* Badge "✓ Backlog"/"✓ Roadmap" (Yêu cầu tính năng) — 2 màu khác nhau
+   (tím/xanh dương), cả 2 đều tách biệt hẳn với 3 màu trạng thái chính
+   (vàng "Chờ duyệt", xanh lá "Đã duyệt", đỏ "Từ chối") và màu Ưu tiên
+   trong cùng bảng, để không bị đọc nhầm là trạng thái khác. */
+.fr-linked-badge-backlog { background: #e6dcf5; color: #5c3494; }
+.fr-linked-badge-roadmap { background: #d6ebf5; color: #1f5f80; }
 
 /* Tên nhân sự + badge "Hạ KI" (bảng Nhân sự + Home > Ranking > Ranking
    thành viên team) — dùng flex-wrap + gap thay vì margin thường, để badge
@@ -1818,7 +1839,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ---- Điện thoại (≤600px) ---- */
 @media (max-width: 600px) {
-  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu { gap: 14px; }
+  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests { gap: 14px; }
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
   .row { gap: 10px; }

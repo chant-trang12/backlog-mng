@@ -227,6 +227,11 @@ async function selectDepartment(id) {
     await loadMembers();
     await loadRoadmap();
     await loadCriteria(); // tiêu chí "thấy được" khác nhau theo từng phòng
+    // Yêu cầu tính năng scope theo phòng — đổi phòng phải nạp lại đúng danh
+    // sách phòng đó (nếu trang đang mở), tránh vẫn hiện danh sách của phòng cũ.
+    if (!pages["feature-requests"]?.hidden) {
+      await loadFeatureRequests().catch((err) => showToast(err.message));
+    }
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
