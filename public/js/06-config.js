@@ -649,22 +649,36 @@ async function loadDepartmentConfig() {
     api(`/api/teams?period_id=${state.currentPeriodId ?? state.periods[0]?.id ?? 0}`).catch(() => []),
   ]);
   state.departments = departments;
+  state.departmentConfigTeamCounts = teamCounts || [];
   renderDeptSwitcher();
-  renderDepartmentConfig(teamCounts || []);
+  renderDepartmentConfig();
 }
 
-function renderDepartmentConfig(allTeams) {
+// Lọc theo từ khoá (tên phòng, mã phòng) — không đổi state.departments (danh
+// sách gốc vẫn cần đủ để đổ vào bộ chuyển phòng ban, dropdown phòng ban ở
+// nơi khác...), chỉ lọc ở đầu ra hiển thị bảng.
+function filteredDepartmentConfig() {
+  const term = (document.getElementById("dept-filter-search")?.value ?? "").trim().toLowerCase();
+  if (!term) return state.departments;
+  return state.departments.filter((d) => `${d.name} ${d.code ?? ""}`.toLowerCase().includes(term));
+}
+
+function renderDepartmentConfig() {
   const countByDept = new Map();
-  (allTeams || []).forEach((t) => {
+  (state.departmentConfigTeamCounts || []).forEach((t) => {
     countByDept.set(t.department_id, (countByDept.get(t.department_id) ?? 0) + 1);
   });
 
-  el.departmentConfigEmpty.hidden = state.departments.length > 0;
-  el.departmentConfigTbody.innerHTML = state.departments
+  const rows = filteredDepartmentConfig();
+  el.departmentConfigEmpty.hidden = rows.length > 0;
+  const pageItems = departmentConfigPagination.slice(rows);
+  const pageStart = (departmentConfigPagination.page - 1) * departmentConfigPagination.pageSize;
+
+  el.departmentConfigTbody.innerHTML = pageItems
     .map(
       (d, i) => `
     <tr data-id="${d.id}">
-      <td style="text-align:center">${i + 1}</td>
+      <td style="text-align:center">${pageStart + i + 1}</td>
       <td><input class="inline-cell-input dept-name-input" data-id="${d.id}" value="${d.name}" title="${d.name}" style="width:100%;text-align:left" /></td>
       <td><input class="inline-cell-input dept-code-input" data-id="${d.id}" value="${d.code ?? ""}" title="${d.code ?? ""}" style="width:100%" /></td>
       <td style="text-align:center">${countByDept.get(d.id) ?? 0}</td>
@@ -799,6 +813,11 @@ async function refreshAfterDeptChange() {
   }
 }
 
+document.getElementById("dept-filter-search")?.addEventListener("input", () => {
+  departmentConfigPagination.reset();
+  renderDepartmentConfig();
+});
+
 el.addDepartmentBtn.addEventListener("click", () => {
   document.getElementById("department-form").reset();
   document.getElementById("department-dialog").showModal();
@@ -840,17 +859,44 @@ function formatUserLastLogin(value) {
 async function loadUsersConfig() {
   const tbody = document.getElementById("users-config-tbody");
   if (!tbody) return;
-  const users = await api("/api/users");
-  renderUsersConfig(users);
+  state.usersConfigAll = await api("/api/users");
+  populateUserFilterDepartment();
+  renderUsersConfig();
 }
 
-function renderUsersConfig(users) {
+function populateUserFilterDepartment() {
+  const select = document.getElementById("user-filter-department");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML =
+    `<option value="">Tất cả</option>` +
+    (state.departments || []).map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
+  select.value = current;
+}
+
+// Lọc theo từ khoá (họ tên/username/email), Quyền, Phòng ban — trên cache
+// state.usersConfigAll (đã tải nguyên vẹn ở loadUsersConfig()).
+function filteredUsersConfig() {
+  const term = (document.getElementById("user-filter-search")?.value ?? "").trim().toLowerCase();
+  const role = document.getElementById("user-filter-role")?.value ?? "";
+  const departmentId = document.getElementById("user-filter-department")?.value ?? "";
+  return (state.usersConfigAll || []).filter((u) => {
+    if (role && u.role !== role) return false;
+    if (departmentId && String(u.department_id ?? "") !== departmentId) return false;
+    if (term && !`${u.name} ${u.username} ${u.email ?? ""}`.toLowerCase().includes(term)) return false;
+    return true;
+  });
+}
+
+function renderUsersConfig() {
   const tbody = document.getElementById("users-config-tbody");
   const empty = document.getElementById("users-config-empty");
   if (!tbody) return;
-  empty.hidden = users.length > 0;
+  const rows = filteredUsersConfig();
+  empty.hidden = rows.length > 0;
+  const pageItems = usersConfigPagination.slice(rows);
 
-  tbody.innerHTML = users
+  tbody.innerHTML = pageItems
     .map((u) => {
       // Không tự đổi role/khóa chính tài khoản đang đăng nhập — khớp guard
       // chặn ở server (user.service.ts#updateUser/deleteUser), disable luôn
@@ -890,7 +936,7 @@ function renderUsersConfig(users) {
         // Nâng quyền editor/viewer mà tài khoản chưa có phòng ban -> đăng
         // nhập được nhưng không thấy gì (Quy tắc 9.2) — cảnh báo ngay để
         // Admin nhớ gán phòng ban tiếp theo, không phải lỗi.
-        const target = users.find((u) => u.id === Number(select.dataset.id));
+        const target = (state.usersConfigAll || []).find((u) => u.id === Number(select.dataset.id));
         if (select.value !== "admin" && target && target.department_id == null) {
           showToast("Đã đổi quyền — nhớ gán Phòng ban cho tài khoản này, nếu không sẽ không thấy dữ liệu nào.");
         } else {
@@ -937,6 +983,19 @@ function renderUsersConfig(users) {
     });
   });
 }
+
+["user-filter-search"].forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    usersConfigPagination.reset();
+    renderUsersConfig();
+  });
+});
+["user-filter-role", "user-filter-department"].forEach((id) => {
+  document.getElementById(id)?.addEventListener("change", () => {
+    usersConfigPagination.reset();
+    renderUsersConfig();
+  });
+});
 
 // ---- Cấu hình > Hệ thống / Mục tiêu (danh mục đơn, dùng ở Roadmap năm) ----
 

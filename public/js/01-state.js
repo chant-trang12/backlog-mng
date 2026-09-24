@@ -44,6 +44,8 @@ const state = {
   memberParticipationOptions: [],
   featureRequests: [],
   loaiYeuCauOptions: [],
+  usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
+  departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
@@ -495,6 +497,8 @@ const attendancePagination = createPagination("attendance", () => renderAttendan
 const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
 const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable());
 const frPagination = createPagination("fr", () => renderFeatureRequestTable());
+const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
+const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
 
 function today() {
   return new Date();

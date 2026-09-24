@@ -291,13 +291,13 @@ main {
   width: 100%;
 }
 
-#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests {
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden] {
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden] {
   display: none;
 }
 
@@ -664,6 +664,8 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 
 .tab-panel-group #team-tab-nhansu > .card,
+.tab-panel-group #config-tab-users > .card:first-child,
+.tab-panel-group #config-tab-phongban > .card:first-child,
 .tab-panel-group > .card {
   border-top-left-radius: 0;
   margin-top: 0;
@@ -1839,7 +1841,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ---- Điện thoại (≤600px) ---- */
 @media (max-width: 600px) {
-  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests { gap: 14px; }
+  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban { gap: 14px; }
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
   .row { gap: 10px; }

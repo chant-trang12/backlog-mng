@@ -1126,7 +1126,33 @@
             <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
           </div>
 
-          <section class="card" id="config-tab-users" hidden>
+          <div id="config-tab-users" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="user-filter-search">Tìm kiếm</label>
+                <input type="text" id="user-filter-search" placeholder="Họ tên, username, email..." style="min-width:240px" />
+              </div>
+              <div>
+                <label for="user-filter-role">Quyền</label>
+                <select id="user-filter-role">
+                  <option value="">Tất cả</option>
+                  <option value="admin">Admin</option>
+                  <option value="editor">Biên tập</option>
+                  <option value="viewer">Chỉ xem</option>
+                </select>
+              </div>
+              <div>
+                <label for="user-filter-department">Phòng ban</label>
+                <select id="user-filter-department">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
             <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
             <div class="table-wrap">
               <table id="users-config-table">
@@ -1135,9 +1161,36 @@
               </table>
               <p class="muted" id="users-config-empty" hidden style="padding:16px;text-align:center">Chưa có user nào đăng nhập.</p>
             </div>
+            <div class="pagination-bar" id="users-config-pagination">
+              <div class="row">
+                <label for="users-config-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="users-config-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="users-config-page-prev" class="small">‹ Trước</button>
+                <span id="users-config-page-info" class="muted"></span>
+                <button type="button" id="users-config-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          </div>
+
+          <div id="config-tab-phongban" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="dept-filter-search">Tìm kiếm</label>
+                <input type="text" id="dept-filter-search" placeholder="Tên phòng, mã phòng..." style="min-width:240px" />
+              </div>
+            </div>
           </section>
 
-          <section class="card" id="config-tab-phongban" hidden>
+          <section class="card">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Phòng ban</h2>
               <button id="add-department-btn" class="primary">+ Thêm phòng</button>
@@ -1150,7 +1203,23 @@
               </table>
               <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>
             </div>
+            <div class="pagination-bar" id="department-config-pagination">
+              <div class="row">
+                <label for="department-config-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="department-config-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="department-config-page-prev" class="small">‹ Trước</button>
+                <span id="department-config-page-info" class="muted"></span>
+                <button type="button" id="department-config-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
           </section>
+          </div>
 
           <section class="card" id="config-tab-tieuchi">
             <div class="row" style="justify-content:space-between">
