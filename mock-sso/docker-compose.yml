@@ -1,0 +1,82 @@
+name: backlog-mng-mock-sso
+
+services:
+  # Mock OIDC Provider (Duende IdentityServer dưới nền) — đóng vai IdP thật
+  # (Keycloak/Entra ID/Okta) cho việc test SSO cục bộ. Chạy plain HTTP nội bộ;
+  # bắt buộc phải đứng sau Caddy (service mock-idp-tls) vì mock IdP set cookie
+  # SameSite=None, browser chỉ chấp nhận cookie đó qua HTTPS thật.
+  mock-idp:
+    image: ghcr.io/soluto/oidc-server-mock:latest
+    platform: linux/amd64 # bắt buộc trên Apple Silicon, image chỉ build cho amd64
+    container_name: mock-idp
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true" # để IdP tự báo issuer là https:// (đứng sau Caddy) thay vì http://
+      SERVER_OPTIONS_INLINE: |
+        {
+          "AccessTokenJwtType": "JWT",
+          "Discovery": { "ShowKeySet": true }
+        }
+      USERS_CONFIGURATION_INLINE: |
+        [
+          {
+            "SubjectId": "1",
+            "Username": "hieunv",
+            "Password": "123456",
+            "Claims": [
+              { "Type": "name", "Value": "Hieu Nguyen", "ValueType": "string" },
+              { "Type": "email", "Value": "nguyenhieu17011@gmail.com", "ValueType": "string" }
+            ]
+          },
+          {
+            "SubjectId": "2",
+            "Username": "viewer1",
+            "Password": "123456",
+            "Claims": [
+              { "Type": "name", "Value": "Viewer One", "ValueType": "string" },
+              { "Type": "email", "Value": "viewer1@example.com", "ValueType": "string" }
+            ]
+          },
+          {
+            "SubjectId": "3",
+            "Username": "editor1",
+            "Password": "123456",
+            "Claims": [
+              { "Type": "name", "Value": "Editor One", "ValueType": "string" },
+              { "Type": "email", "Value": "editor1@example.com", "ValueType": "string" }
+            ]
+          }
+        ]
+      # RedirectUris trỏ về app chạy ở host (không phải container khác trong
+      # compose này) — đổi lại nếu app chạy ở port khác localhost:3001.
+      CLIENTS_CONFIGURATION_INLINE: |
+        [
+          {
+            "ClientId": "backlog-manager",
+            "ClientSecrets": ["mock-secret"],
+            "AllowedGrantTypes": ["authorization_code"],
+            "AllowedScopes": ["openid", "profile", "email"],
+            "RedirectUris": ["http://localhost:3001/auth/callback"],
+            "PostLogoutRedirectUris": ["http://localhost:3001/"],
+            "RequirePkce": true,
+            "RequireConsent": false
+          }
+        ]
+
+  # Caddy làm TLS reverse proxy trước mock-idp. Bắt buộc phải có site block
+  # với hostname cụ thể ("localhost:8443", không phải ":8443") để Caddy biết
+  # cấp chứng chỉ nội bộ (tls internal) cho tên nào — thiếu hostname thì
+  # Caddy nhận ClientHello không có SNI (localhost/127.0.0.1 dạng IP) và
+  # không tìm được cert để trả về, TLS handshake sẽ fail.
+  mock-idp-tls:
+    image: caddy:2-alpine
+    container_name: mock-idp-tls
+    depends_on:
+      - mock-idp
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
