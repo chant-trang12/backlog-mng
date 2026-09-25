@@ -8,6 +8,7 @@ const pages = {
   roadmap: document.getElementById("page-roadmap"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
+  "action-logs": document.getElementById("page-action-logs"),
 };
 
 document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -31,6 +32,14 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // Yêu cầu tính năng — hộp thư dùng chung, tải lại mỗi lần vào trang để
     // thấy ngay yêu cầu mới từ phòng ban khác.
     if (btn.dataset.page === "feature-requests") loadFeatureRequests().catch((err) => showToast(err.message));
+    // Nhật ký hoạt động — tải danh mục lọc (module/user) + dữ liệu mỗi lần
+    // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
+    // Admin dùng, tránh gọi API thừa cho editor/viewer).
+    if (btn.dataset.page === "action-logs") {
+      Promise.all([loadActionLogModules(), loadActionLogUsers(), loadActionLogs()]).catch((err) =>
+        showToast(err.message),
+      );
+    }
   });
 });
 
@@ -54,15 +63,19 @@ async function checkAuth() {
       delete document.body.dataset.role;
     }
 
-    // Mục "Quản lý User" và "Cấu hình" chỉ Admin thấy được (xem tài liệu
-    // nghiệp vụ Phân quyền — cả editor lẫn viewer đều không vào được 2 màn
-    // này). Tắt SSO (dev/test, không có khái niệm role) thì hiện sẵn cho
-    // tiện làm việc — giống các phần khác của app vốn không phân quyền gì
-    // khi SSO tắt.
+    // Mục "Quản lý User", "Cấu hình" và "Nhật ký hoạt động" chỉ Admin thấy
+    // được (xem tài liệu nghiệp vụ Phân quyền — cả editor lẫn viewer đều
+    // không vào được các màn này; Nhật ký hoạt động còn lộ hành động của
+    // MỌI phòng ban khác, không riêng phòng của người xem, nên siết chặt
+    // như Cấu hình). Tắt SSO (dev/test, không có khái niệm role) thì hiện
+    // sẵn cho tiện làm việc — giống các phần khác của app vốn không phân
+    // quyền gì khi SSO tắt.
     const usersPill = document.getElementById("config-users-pill");
     if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
     const configNav = document.querySelector('.nav-item[data-page="config"]');
     if (configNav) configNav.hidden = data.ssoEnabled && data.role !== "admin";
+    const actionLogNav = document.querySelector('.nav-item[data-page="action-logs"]');
+    if (actionLogNav) actionLogNav.hidden = data.ssoEnabled && data.role !== "admin";
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {

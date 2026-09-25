@@ -25,6 +25,7 @@ import {
   migrateUsersTable,
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
+import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -69,6 +70,9 @@ export async function initDatabase(): Promise<void> {
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();
+    // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
+    // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
+    await migrateActionLogsTable();
   })();
 
   return initPromise;

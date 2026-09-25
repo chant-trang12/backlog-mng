@@ -315,13 +315,13 @@ main {
   width: 100%;
 }
 
-#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban {
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden] {
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden], #page-action-logs[hidden] {
   display: none;
 }
 
@@ -872,6 +872,24 @@ th {
 #fr-table td:nth-child(12) {
   text-align: center;
 }
+
+/* Bảng Nhật ký hoạt động — cột Thời gian/Hành động căn giữa (badge/ngày
+   giờ ngắn), Người thực hiện/Phòng ban/Module/Mô tả giữ căn trái. */
+#al-table th { text-align: center; }
+#al-table td { vertical-align: middle; }
+#al-table td:nth-child(1),
+#al-table td:nth-child(5) {
+  text-align: center;
+}
+/* Badge Hành động (Nhật ký hoạt động) — 6 màu tách biệt hẳn với mọi màu
+   status-* khác đang dùng trong app, để không bị đọc nhầm là trạng thái
+   nghiệp vụ. */
+.al-badge-login { background: #dce8d2; color: #3e5a30; }      /* xanh lá — giống btn-grade */
+.al-badge-logout { background: var(--border); color: var(--muted); } /* xám trung tính */
+.al-badge-create { background: #d6ebf5; color: #1f5f80; }     /* xanh dương */
+.al-badge-update { background: #ffeab0; color: #7a4e12; }     /* vàng hổ phách */
+.al-badge-delete { background: var(--delete-light); color: var(--delete); } /* đỏ */
+.al-badge-transfer { background: #e6dcf5; color: #5c3494; }   /* tím */
 
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */
@@ -1874,7 +1892,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ---- Điện thoại (≤600px) ---- */
 @media (max-width: 600px) {
-  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban { gap: 14px; }
+  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs { gap: 14px; }
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
   .row { gap: 10px; }

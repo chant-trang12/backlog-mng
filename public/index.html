@@ -32,6 +32,7 @@
         <button class="nav-item" data-page="roadmap">🗺️ Roadmap năm</button>
         <button class="nav-item" data-page="feature-requests">💡 Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
         <button class="nav-item" data-page="config">⚙️ Cấu hình</button>
+        <button class="nav-item" data-page="action-logs">🧾 Nhật ký hoạt động</button>
       </nav>
       <div class="sidebar-user" id="sidebar-user" style="display: none;">
         <div class="user-avatar" id="user-avatar">👤</div>
@@ -1409,6 +1410,91 @@
           </div>
           </div>
         </div>
+
+        <!-- ---- Trang Nhật ký hoạt động (chỉ Admin) ---- -->
+        <div id="page-action-logs" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="al-filter-search">Tìm kiếm</label>
+                <input type="text" id="al-filter-search" placeholder="Người thực hiện, mô tả..." style="min-width:220px" />
+              </div>
+              <div>
+                <label for="al-filter-action">Loại hành động</label>
+                <select id="al-filter-action">
+                  <option value="">Tất cả</option>
+                  <option value="dang_nhap">Đăng nhập</option>
+                  <option value="dang_xuat">Đăng xuất</option>
+                  <option value="tao_moi">Tạo mới</option>
+                  <option value="cap_nhat">Cập nhật</option>
+                  <option value="xoa">Xóa</option>
+                  <option value="chuyen_du_lieu">Chuyển dữ liệu</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-module">Module</label>
+                <select id="al-filter-module">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-user">Người thực hiện</label>
+                <select id="al-filter-user">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-from">Từ ngày</label>
+                <input type="date" id="al-filter-from" />
+              </div>
+              <div>
+                <label for="al-filter-to">Đến ngày</label>
+                <input type="date" id="al-filter-to" />
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h2 style="margin:0">Nhật ký hoạt động</h2>
+                <p class="muted" style="margin:6px 0 0">Đăng nhập/đăng xuất + mọi hành động thêm/sửa/xóa/chuyển dữ liệu trên toàn hệ thống. Mặc định chỉ hiện 90 ngày gần nhất — lọc theo ngày để xem xa hơn.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="al-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:140px">Thời gian</th>
+                    <th style="min-width:140px">Người thực hiện</th>
+                    <th style="min-width:130px">Phòng ban</th>
+                    <th style="min-width:140px">Module</th>
+                    <th style="min-width:120px">Hành động</th>
+                    <th style="min-width:320px">Mô tả</th>
+                  </tr>
+                </thead>
+                <tbody id="al-tbody"></tbody>
+              </table>
+              <p class="muted" id="al-empty" hidden style="padding:16px;text-align:center">Chưa có nhật ký hoạt động nào khớp bộ lọc.</p>
+            </div>
+            <div class="pagination-bar" id="al-pagination">
+              <div class="row">
+                <label for="al-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="al-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="al-page-prev" class="small">‹ Trước</button>
+                <span id="al-page-info" class="muted"></span>
+                <button type="button" id="al-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   </div>
@@ -2103,6 +2189,7 @@
   <script src="js/07-roadmap.js"></script>
   <script src="js/08-home.js"></script>
   <script src="js/10-feature-requests.js"></script>
+  <script src="js/11-action-logs.js"></script>
   <script src="js/09-main.js"></script>
 </body>
 </html>

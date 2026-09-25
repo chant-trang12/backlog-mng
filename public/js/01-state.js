@@ -45,6 +45,8 @@ const state = {
   featureRequests: [],
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
+  actionLogs: [], // Nhật ký hoạt động đã tải theo bộ lọc hiện tại (server đã lọc sẵn, FE chỉ phân trang)
+  actionLogUsers: [], // toàn bộ user (GET /api/users) — đổ vào dropdown lọc "Người thực hiện"
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
@@ -499,6 +501,7 @@ const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable(
 const frPagination = createPagination("fr", () => renderFeatureRequestTable());
 const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
 const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
+const actionLogPagination = createPagination("al", () => renderActionLogTable());
 
 function today() {
   return new Date();

@@ -24,7 +24,9 @@ import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import featureRequestRoutes from "./routes/featureRequest.routes.js";
+import actionLogRoutes from "./routes/actionLog.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
+import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
@@ -130,6 +132,11 @@ export function createApp() {
   app.use("/api", requireAuth);
   app.use("/api", attachScope);
   app.use("/api", requireWrite);
+  // Nhật ký hoạt động — đăng ký NGAY sau requireWrite (req.appUser đã có,
+  // nếu SSO bật) và TRƯỚC mọi router nghiệp vụ, để res.on("finish") của nó
+  // được gắn trước khi bất kỳ handler nào phía sau kịp gửi response. Middleware
+  // này tự bỏ qua GET nên không ảnh hưởng gì router action-logs bên dưới.
+  app.use("/api", actionLogMiddleware);
   // BUG đã fix: mount cũ là app.use("/api", requireAdmin, userRoutes) — vì
   // userRoutes tự định nghĩa full path "/users" (không phải "/"), Express
   // chạy requireAdmin cho MỌI request khớp tiền tố "/api" (kể cả
@@ -137,7 +144,12 @@ export function createApp() {
   // path đó có thuộc nó không — non-admin bị 403 trên toàn bộ /api, không
   // chỉ /api/users. Scope requireAdmin đúng vào tiền tố "/api/users".
   app.use("/api/users", requireAdmin);
+  // Nhật ký hoạt động — chỉ Admin xem được, cùng lý do/cách chặn như
+  // /api/users ở trên (scope requireAdmin đúng vào tiền tố route, không
+  // đè lên toàn bộ /api).
+  app.use("/api/action-logs", requireAdmin);
   app.use("/api", userRoutes);
+  app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
