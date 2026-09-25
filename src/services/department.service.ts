@@ -70,6 +70,11 @@ export async function deleteDepartment(id: number): Promise<{ ok: boolean; reaso
   if (Number((teamCountRes as any)?.c ?? 0) > 0) {
     return { ok: false, reason: "Phòng vẫn còn team — xóa/chuyển hết team của phòng trước." };
   }
+  // Gỡ liên kết thủ công trước khi xóa (FK feature_requests -> departments
+  // dùng NO ACTION để tương thích MSSQL — không tự SET NULL qua DB, xem
+  // migrations/featureRequests.ts).
+  await db("feature_requests").where({ department_id: id }).update({ department_id: null });
+  await db("feature_requests").where({ target_department_id: id }).update({ target_department_id: null });
   const count = await db("departments").where({ id }).delete();
   return { ok: count > 0 };
 }

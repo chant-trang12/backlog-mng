@@ -163,6 +163,9 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
   const existing = await getTask(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, existing.department_id);
+  // Gỡ liên kết thủ công (FK feature_requests.linked_task_id dùng NO ACTION
+  // để tương thích MSSQL — xem migrations/featureRequests.ts).
+  await db("feature_requests").where({ linked_task_id: id }).update({ linked_task_id: null });
   const count = await db("tasks").where({ id }).delete();
   return count > 0;
 }
@@ -171,6 +174,7 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
 export async function deleteTasks(ids: number[], scope: DataScope): Promise<number> {
   const scopedIds = await filterTaskIdsInScope(ids, scope);
   if (scopedIds.length === 0) return 0;
+  await db("feature_requests").whereIn("linked_task_id", scopedIds).update({ linked_task_id: null });
   const count = await db("tasks").whereIn("id", scopedIds).delete();
   return Number(count);
 }

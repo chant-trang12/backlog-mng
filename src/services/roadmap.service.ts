@@ -136,6 +136,9 @@ export async function deleteRoadmapItem(id: number, scope: DataScope): Promise<b
   const existing = await getRoadmapItem(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, existing.department_id);
+  // Gỡ liên kết thủ công (FK feature_requests.linked_roadmap_item_id dùng
+  // NO ACTION để tương thích MSSQL — xem migrations/featureRequests.ts).
+  await db("feature_requests").where({ linked_roadmap_item_id: id }).update({ linked_roadmap_item_id: null });
   const count = await db("roadmap_items").where({ id }).delete();
   return count > 0;
 }
@@ -150,6 +153,9 @@ export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promi
     scopedIds = rows.filter((r: any) => isDepartmentInScope(scope, r.department_id)).map((r: any) => Number(r.id));
   }
   if (scopedIds.length === 0) return 0;
+  await db("feature_requests")
+    .whereIn("linked_roadmap_item_id", scopedIds)
+    .update({ linked_roadmap_item_id: null });
   const count = await db("roadmap_items").whereIn("id", scopedIds).delete();
   return Number(count);
 }

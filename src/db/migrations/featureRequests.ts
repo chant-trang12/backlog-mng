@@ -47,7 +47,14 @@ export async function migrateFeatureRequestTables(): Promise<void> {
       table.string("thoi_gian_mong_muon", 50);
       // Phòng ban đề xuất (nguồn) — CHỈ để gắn nhãn "ai gửi", không dùng
       // lọc quyền xem.
-      table.integer("department_id").references("id").inTable("departments").onDelete("SET NULL");
+      // Lưu ý MSSQL: dùng NO ACTION (không phải SET NULL) — 2 FK trong bảng
+      // này cùng trỏ vào departments, nếu cả 2 đều SET NULL thì SQL Server
+      // báo lỗi 1785 "may cause cycles or multiple cascade paths" (chỉ cho
+      // phép TỐI ĐA 1 đường cascade tới cùng 1 bảng đích). SQLite/MSSQL đều
+      // chấp nhận NO ACTION; việc tự gỡ liên kết khi xóa phòng ban được xử
+      // lý thủ công ở deleteDepartment() (department.service.ts) để hành vi
+      // giống nhau trên cả 2 loại DB thay vì trông chờ vào DB tự cascade.
+      table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
       // Phòng ban đích — phòng cần TIẾP NHẬN/xử lý yêu cầu này (thường là
       // phòng sở hữu "Hệ thống" ở trên). Bắt buộc chọn khi tạo (validate ở
       // controller) — khác department_id ở trên (đề xuất), field này mới là
@@ -56,7 +63,7 @@ export async function migrateFeatureRequestTables(): Promise<void> {
         .integer("target_department_id")
         .references("id")
         .inTable("departments")
-        .onDelete("SET NULL");
+        .onDelete("NO ACTION");
       table.string("nguoi_de_xuat", 255);
       table.string("do_uu_tien", 50).notNullable().defaultTo("Trung bình");
       // "Chờ duyệt" | "Đã duyệt" | "Từ chối" — 1 giá trị DUY NHẤT dùng
@@ -70,8 +77,10 @@ export async function migrateFeatureRequestTables(): Promise<void> {
       // Đưa vào Backlog/Roadmap năm — chỉ phòng đích làm, chỉ khi đã Duyệt,
       // và chỉ 1 lần (giữ đúng pattern synced_task_id đã có ở
       // roadmap_items — xem roadmap.service.ts#syncRoadmapItemToBacklog).
-      table.integer("linked_task_id").references("id").inTable("tasks").onDelete("SET NULL");
-      table.integer("linked_roadmap_item_id").references("id").inTable("roadmap_items").onDelete("SET NULL");
+      // NO ACTION cùng lý do MSSQL nêu trên — gỡ liên kết thủ công ở
+      // deleteTask()/deleteRoadmapItem() khi xóa task/dòng roadmap tương ứng.
+      table.integer("linked_task_id").references("id").inTable("tasks").onDelete("NO ACTION");
+      table.integer("linked_roadmap_item_id").references("id").inTable("roadmap_items").onDelete("NO ACTION");
       table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
       table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
     });
@@ -86,13 +95,13 @@ export async function migrateFeatureRequestTables(): Promise<void> {
         .integer("target_department_id")
         .references("id")
         .inTable("departments")
-        .onDelete("SET NULL");
+        .onDelete("NO ACTION");
     });
   }
   if (!(await db.schema.hasColumn("feature_requests", "linked_task_id"))) {
     await db.schema.alterTable("feature_requests", (table) => {
-      table.integer("linked_task_id").references("id").inTable("tasks").onDelete("SET NULL");
-      table.integer("linked_roadmap_item_id").references("id").inTable("roadmap_items").onDelete("SET NULL");
+      table.integer("linked_task_id").references("id").inTable("tasks").onDelete("NO ACTION");
+      table.integer("linked_roadmap_item_id").references("id").inTable("roadmap_items").onDelete("NO ACTION");
     });
   }
   if (!(await db.schema.hasColumn("feature_requests", "ket_qua_mong_muon"))) {
