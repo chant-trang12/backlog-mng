@@ -116,6 +116,14 @@ const FIELD_VERB_OVERRIDES: Record<string, (value: unknown) => { action: ActionL
     verb: v ? "Bật dùng tiêu chí chung" : "Tắt dùng tiêu chí chung",
   }),
   "departments:cach_tinh_kpi": (v) => ({ action: "cap_nhat", verb: `Đổi cách tính KPI thành "${v}"` }),
+  // Cả 3 dialog "Sửa"/"Chấm điểm"/"Cập nhật tiến độ" ở Backlog đều PUT
+  // /tasks/:id — chỉ khác nhau ở field nào có mặt trong body (dialog Sửa
+  // luôn có "nhiem_vu", không trùng field với 2 dialog dưới). Không khai
+  // báo override cho dialog Sửa — verb mặc định "Cập nhật" vẫn đúng, chỉ
+  // cần TÁCH BIỆT rõ 2 dialog còn lại khỏi "Cập nhật" chung chung.
+  "tasks:cpo_danh_gia": () => ({ action: "cap_nhat", verb: "Chấm điểm" }),
+  "tasks:cpo_comment": () => ({ action: "cap_nhat", verb: "Chấm điểm" }),
+  "tasks:phan_tram_hoan_thanh": () => ({ action: "cap_nhat", verb: "Cập nhật tiến độ" }),
 };
 
 const isNumericSegment = (s: string | undefined): boolean => !!s && /^\d+$/.test(s);
