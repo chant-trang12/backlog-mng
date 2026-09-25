@@ -53,7 +53,14 @@ export async function listActionLogs(filter: ListActionLogsFilter): Promise<Acti
   if (filter.date_from) {
     query.where("created_at", ">=", filter.date_from);
   } else if (!filter.date_to) {
-    query.whereRaw("created_at >= datetime('now', ?)", [`-${DEFAULT_WINDOW_DAYS} days`]);
+    // Tính mốc ở JS thay vì datetime('now', ...) — hàm đó chỉ có ở SQLite,
+    // SQL Server báo lỗi "'datetime' is not a recognized built-in function".
+    // Chuỗi "YYYY-MM-DD HH:MM:SS" so sánh đúng trên cả 2 DB.
+    const cutoff = new Date(Date.now() - DEFAULT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+    query.where("created_at", ">=", cutoff);
   }
   if (filter.date_to) query.where("created_at", "<=", filter.date_to);
 
