@@ -507,6 +507,22 @@ function today() {
   return new Date();
 }
 
+// Cột thời điểm hệ thống (created_at, last_login_at...) về tới FE ở 2 dạng
+// tuỳ DB: SQLite trả chuỗi "YYYY-MM-DD HH:MM:SS" (giờ UTC, CURRENT_TIMESTAMP),
+// SQL Server trả ISO "YYYY-MM-DDTHH:MM:SS.sssZ" (Date đã serialize JSON).
+// Đưa cả 2 về { date: "dd/mm/yyyy", time: "HH:MM" } theo giờ máy người xem.
+function formatDbDateTime(value) {
+  if (!value) return null;
+  const s = String(value);
+  const d = new Date(s.includes("T") ? s : `${s.replace(" ", "T")}Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  const pad = (n) => String(n).padStart(2, "0");
+  return {
+    date: `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 const toastContainer = document.getElementById("toast-container");
 
 function showToast(message, type = "error") {

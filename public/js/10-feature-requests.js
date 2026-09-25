@@ -114,10 +114,7 @@ function filteredFeatureRequests() {
 }
 
 function frFormatDate(value) {
-  if (!value) return "";
-  const [datePart] = String(value).split(" ");
-  const [y, m, d] = (datePart ?? "").split("-");
-  return y && m && d ? `${d}/${m}/${y}` : "";
+  return formatDbDateTime(value)?.date ?? "";
 }
 
 // Phòng đang xem là bên nào của yêu cầu này? "target" | "proposer" | null

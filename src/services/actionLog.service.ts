@@ -1,4 +1,5 @@
 import { db } from "../db/database.js";
+import { isMssql } from "../db/connection.js";
 import type { ActionLog, ActionLogInput, ListActionLogsFilter } from "../types/actionLog.js";
 
 // Trần số dòng trả về / mặc định độ dài lịch sử — action_logs tích luỹ
@@ -7,6 +8,15 @@ import type { ActionLog, ActionLogInput, ListActionLogsFilter } from "../types/a
 // không lọc gì. Client lọc theo date_from/date_to để xem xa hơn.
 const MAX_ROWS = 2000;
 const DEFAULT_WINDOW_DAYS = 90;
+
+// Mốc thời gian để so với cột created_at. SQLite lưu created_at dạng chuỗi
+// "YYYY-MM-DD HH:MM:SS" nên phải so chuỗi CÙNG định dạng. SQL Server thì
+// "YYYY-MM-DD ..." phụ thuộc SET DATEFORMAT/ngôn ngữ của login (có thể bị
+// hiểu thành YYYY-DD-MM) — dùng "YYYYMMDD HH:MM:SS", định dạng duy nhất
+// không phụ thuộc cấu hình đó.
+function toDbDateTime(date: string, time: string): string {
+  return isMssql ? `${date.replace(/-/g, "")} ${time}` : `${date} ${time}`;
+}
 
 // Ghi 1 dòng nhật ký — KHÔNG BAO GIỜ throw ra ngoài (ghi log là tác dụng
 // phụ, không được làm hỏng request nghiệp vụ chính đang chạy). Gọi từ
@@ -49,20 +59,15 @@ export async function listActionLogs(filter: ListActionLogsFilter): Promise<Acti
   }
 
   // Không lọc ngày gì cả -> mặc định chỉ lấy DEFAULT_WINDOW_DAYS ngày gần
-  // nhất, tránh quét toàn bộ bảng khi mở trang lần đầu.
+  // nhất, tránh quét toàn bộ bảng khi mở trang lần đầu. Tính mốc ở JS thay
+  // vì datetime('now', ...) — hàm đó chỉ có ở SQLite.
   if (filter.date_from) {
-    query.where("created_at", ">=", filter.date_from);
+    query.where("created_at", ">=", toDbDateTime(filter.date_from, "00:00:00"));
   } else if (!filter.date_to) {
-    // Tính mốc ở JS thay vì datetime('now', ...) — hàm đó chỉ có ở SQLite,
-    // SQL Server báo lỗi "'datetime' is not a recognized built-in function".
-    // Chuỗi "YYYY-MM-DD HH:MM:SS" so sánh đúng trên cả 2 DB.
-    const cutoff = new Date(Date.now() - DEFAULT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
-    query.where("created_at", ">=", cutoff);
+    const cutoff = new Date(Date.now() - DEFAULT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    query.where("created_at", ">=", toDbDateTime(cutoff.slice(0, 10), cutoff.slice(11, 19)));
   }
-  if (filter.date_to) query.where("created_at", "<=", filter.date_to);
+  if (filter.date_to) query.where("created_at", "<=", toDbDateTime(filter.date_to, "23:59:59"));
 
   const rows = await query
     .orderBy("created_at", "desc")

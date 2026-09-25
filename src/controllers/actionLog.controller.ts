@@ -12,8 +12,11 @@ export async function listActionLogsHandler(req: Request, res: Response) {
       : undefined;
   const moduleFilter = typeof req.query.module === "string" && req.query.module ? req.query.module : undefined;
   const q = typeof req.query.q === "string" && req.query.q.trim() ? req.query.q.trim() : undefined;
-  const dateFrom = typeof req.query.date_from === "string" && req.query.date_from ? req.query.date_from : undefined;
-  const dateTo = typeof req.query.date_to === "string" && req.query.date_to ? `${req.query.date_to} 23:59:59` : undefined;
+  // Chỉ nhận đúng "YYYY-MM-DD" (input type=date) — chuỗi lạ gửi thẳng
+  // xuống SQL Server sẽ lỗi chuyển kiểu datetime (500) thay vì bỏ qua.
+  const isoDate = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
+  const dateFrom = isoDate(req.query.date_from);
+  const dateTo = isoDate(req.query.date_to);
 
   const rows = await listActionLogs({
     user_id: Number.isFinite(userId) ? userId : undefined,

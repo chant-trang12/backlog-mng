@@ -126,7 +126,9 @@ export async function syncRoadmapItemsForPeriod(year: number, month: number): Pr
   const prefix = `${year}-${String(month).padStart(2, "0")}`;
   const items = await db("roadmap_items")
     .whereNull("synced_task_id")
-    .whereRaw("substr(thoi_gian_bat_dau, 1, 7) = ?", [prefix]);
+    // LIKE 'YYYY-MM%' thay vì substr(...) — SQL Server không có hàm substr
+    // (chỉ SUBSTRING), LIKE chạy được trên cả SQLite lẫn MSSQL.
+    .where("thoi_gian_bat_dau", "like", `${prefix}%`);
   for (const item of items as RoadmapItem[]) {
     await syncRoadmapItemToBacklog(item);
   }

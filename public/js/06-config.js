@@ -849,11 +849,8 @@ document.getElementById("department-form").addEventListener("submit", async (e) 
 const USER_ROLE_LABELS = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };
 
 function formatUserLastLogin(value) {
-  if (!value) return "—";
-  const [datePart, timePart] = String(value).split(" ");
-  if (!datePart) return "—";
-  const [y, m, d] = datePart.split("-");
-  return timePart ? `${d}/${m}/${y} ${timePart.slice(0, 5)}` : `${d}/${m}/${y}`;
+  const f = formatDbDateTime(value);
+  return f ? `${f.date} ${f.time}` : "—";
 }
 
 async function loadUsersConfig() {

@@ -25,11 +25,8 @@ const AL_ACTION_LABELS = {
 };
 
 function alFormatDateTime(value) {
-  if (!value) return "";
-  const [datePart, timePart] = String(value).split(" ");
-  const [y, m, d] = (datePart ?? "").split("-");
-  if (!y || !m || !d) return value;
-  return timePart ? `${d}/${m}/${y} ${timePart.slice(0, 5)}` : `${d}/${m}/${y}`;
+  const f = formatDbDateTime(value);
+  return f ? `${f.date} ${f.time}` : (value ?? "");
 }
 
 // Query params gửi lên server theo đúng bộ lọc đang chọn trên form.

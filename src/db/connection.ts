@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "../../data");
 
-const isMssql = process.env.DB_CLIENT === "mssql";
+export const isMssql = process.env.DB_CLIENT === "mssql";
 
 // Fail fast on startup if MSSQL credentials are missing
 if (isMssql && !process.env.MSSQL_PASSWORD) {
@@ -30,6 +30,12 @@ if (isMssql) {
       options: {
         encrypt: process.env.MSSQL_ENCRYPT === "true",
         trustServerCertificate: process.env.MSSQL_TRUST_SERVER_CERTIFICATE !== "false",
+        // Cột created_at/updated_at mặc định GETDATE() = giờ ĐỊA PHƯƠNG của
+        // SQL Server. tedious mặc định (useUTC=true) lại hiểu giá trị đó là
+        // UTC -> giờ hiển thị lệch đúng bằng múi giờ (VD +7h ở VN). Tắt đi để
+        // đọc theo giờ địa phương của process Node (giả định Node và SQL
+        // Server cùng múi giờ); đặt MSSQL_USE_UTC=true nếu server chạy UTC.
+        useUTC: process.env.MSSQL_USE_UTC === "true",
       },
     },
     pool: {
