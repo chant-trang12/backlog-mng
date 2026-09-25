@@ -267,7 +267,9 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 
 .nav-item {
   position: relative;
+  display: block;
   text-align: left;
+  text-decoration: none;
   background: transparent;
   border: none;
   border-radius: 8px;

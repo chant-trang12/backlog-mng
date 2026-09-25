@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sổ tay Quản lý nhiệm vụ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper: #f6f5f0;
+    --surface: #ffffff;
+    --surface-2: #f0efe7;
+    --ink: #21241d;
+    --ink-soft: #55594b;
+    --ink-faint: #83866f;
+    --line: #e1ddce;
+    --line-strong: #cfc9b3;
+    --accent: #33517d;
+    --accent-ink: #1f3757;
+    --accent-soft: #e8edf6;
+    --accent-soft-line: #c9d5e8;
+    --role-all-bg: #dbe8d0;
+    --role-all-ink: #3c5c30;
+    --role-editor-bg: #ffe9ad;
+    --role-editor-ink: #79500f;
+    --role-admin-bg: #f4dbd4;
+    --role-admin-ink: #8a3a2a;
+    --code-bg: #ece8da;
+    --shadow: 0 1px 2px rgba(33,36,29,0.06), 0 8px 24px -12px rgba(33,36,29,0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15170f;
+      --surface: #1c1e16;
+      --surface-2: #23261b;
+      --ink: #ecebe1;
+      --ink-soft: #b3b5a2;
+      --ink-faint: #83866f;
+      --line: #34372a;
+      --line-strong: #454936;
+      --accent: #9db3d6;
+      --accent-ink: #cddaee;
+      --accent-soft: #232c3c;
+      --accent-soft-line: #33425c;
+      --role-all-bg: #263320;
+      --role-all-ink: #a3c98f;
+      --role-editor-bg: #3a2f14;
+      --role-editor-ink: #e3bb63;
+      --role-admin-bg: #3a221c;
+      --role-admin-ink: #e39383;
+      --code-bg: #262a1c;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15170f;
+    --surface: #1c1e16;
+    --surface-2: #23261b;
+    --ink: #ecebe1;
+    --ink-soft: #b3b5a2;
+    --ink-faint: #83866f;
+    --line: #34372a;
+    --line-strong: #454936;
+    --accent: #9db3d6;
+    --accent-ink: #cddaee;
+    --accent-soft: #232c3c;
+    --accent-soft-line: #33425c;
+    --role-all-bg: #263320;
+    --role-all-ink: #a3c98f;
+    --role-editor-bg: #3a2f14;
+    --role-editor-ink: #e3bb63;
+    --role-admin-bg: #3a221c;
+    --role-admin-ink: #e39383;
+    --code-bg: #262a1c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, .kbd {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  }
+
+  a { color: var(--accent); }
+
+  .shell {
+    display: flex;
+    align-items: flex-start;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  /* ---- Sidebar TOC ---- */
+  .toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 270px;
+    flex: 0 0 270px;
+    overflow-y: auto;
+    padding: 28px 18px 40px 28px;
+    border-right: 1px solid var(--line);
+  }
+  .toc-brand {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 4px;
+  }
+  .toc-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 22px;
+    text-wrap: balance;
+  }
+  .toc nav { display: flex; flex-direction: column; }
+  .toc-group { margin-bottom: 4px; }
+  .toc-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+  .toc-link:hover { background: var(--surface-2); color: var(--ink); }
+  .toc-link .ic { font-size: 1rem; width: 1.2em; text-align: center; flex: none; }
+  .toc-sub {
+    display: flex;
+    flex-direction: column;
+    margin: 2px 0 10px 33px;
+    border-left: 1px solid var(--line);
+    padding-left: 12px;
+    gap: 1px;
+  }
+  .toc-sub a {
+    color: var(--ink-faint);
+    text-decoration: none;
+    font-size: 0.82rem;
+    padding: 3px 0;
+  }
+  .toc-sub a:hover { color: var(--accent); }
+
+  /* ---- Main content ---- */
+  main {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 48px 56px 120px 48px;
+  }
+  .doc-header { margin-bottom: 40px; max-width: 720px; }
+  .doc-header .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  .doc-header h1 {
+    font-size: 2.15rem;
+    font-weight: 700;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .doc-header p { color: var(--ink-soft); font-size: 1.02rem; max-width: 62ch; }
+
+  .intro-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 26px 0 8px;
+  }
+  .intro-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .intro-card h3 { margin: 0 0 6px; font-size: 0.95rem; }
+  .intro-card p { margin: 0; font-size: 0.86rem; color: var(--ink-soft); }
+
+  section.doc-section {
+    max-width: 720px;
+    padding-top: 56px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 24px;
+  }
+  section.doc-section:first-of-type { border-top: none; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .section-head .ic { font-size: 1.5rem; }
+  .section-head h2 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .section-sub { color: var(--ink-soft); margin: 6px 0 28px; max-width: 62ch; }
+
+  h3.feature {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 34px 0 4px;
+    scroll-margin-top: 24px;
+  }
+  h3.feature:first-of-type { margin-top: 22px; }
+  .feature-lede { color: var(--ink-soft); margin: 0 0 14px; }
+
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.3em; }
+  li { margin-bottom: 5px; }
+  li::marker { color: var(--ink-faint); }
+
+  .ui {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    color: var(--ink);
+    padding: 0.1em 0.42em;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .role {
+    display: inline-flex;
+    align-items: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .role-all { background: var(--role-all-bg); color: var(--role-all-ink); }
+  .role-editor { background: var(--role-editor-bg); color: var(--role-editor-ink); }
+  .role-admin { background: var(--role-admin-bg); color: var(--role-admin-ink); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 22px;
+    font-size: 0.9rem;
+  }
+  caption {
+    caption-side: top;
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 0.76rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  tbody tr:last-child td { border-bottom: 1px solid var(--line-strong); }
+  td:first-child, th:first-child { padding-left: 0; }
+  .table-wrap { overflow-x: auto; }
+
+  .callout {
+    display: flex;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 13px 16px;
+    margin: 16px 0 22px;
+    font-size: 0.92rem;
+  }
+  .callout .ic { flex: none; line-height: 1.3; }
+  .callout strong { display: block; margin-bottom: 2px; font-size: 0.82rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--accent-ink); }
+  .callout.warn { border-left-color: var(--role-editor-ink); }
+  .callout.warn strong { color: var(--role-editor-ink); }
+
+  .steps { counter-reset: step; list-style: none; padding-left: 0; margin: 14px 0 22px; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 38px;
+    margin-bottom: 12px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: -1px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border: 1px solid var(--accent-soft-line);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fieldlist { margin: 10px 0 22px; padding: 0; list-style: none; }
+  .fieldlist li {
+    display: flex;
+    gap: 14px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .fieldlist li:last-child { border-bottom: none; }
+  .fieldlist .fname { flex: 0 0 180px; font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; color: var(--accent-ink); }
+  .fieldlist .fdesc { color: var(--ink-soft); font-size: 0.9rem; }
+
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 20px; }
+
+  footer.doc-footer {
+    max-width: 720px;
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 900px) {
+    .shell { display: block; }
+    .toc {
+      position: relative;
+      height: auto;
+      width: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 20px 20px 8px;
+    }
+    .toc nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .toc-sub { display: none; }
+    main { padding: 32px 20px 90px; }
+    .intro-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="toc">
+    <p class="toc-brand">Quản lý nhiệm vụ</p>
+    <p class="toc-title">Sổ tay sử dụng</p>
+    <nav>
+      <div class="toc-group">
+        <a class="toc-link" href="#mo-dau"><span class="ic">📘</span> Mở đầu</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#trang-chu"><span class="ic">🏠</span> Trang chủ</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#backlog"><span class="ic">📋</span> Nhiệm vụ (Backlog)</a>
+        <div class="toc-sub">
+          <a href="#backlog-thang">Tháng backlog</a>
+          <a href="#backlog-bang">Bảng nhiệm vụ</a>
+          <a href="#backlog-cham-diem">Chấm điểm &amp; tiến độ</a>
+          <a href="#backlog-nhansu">Nhân sự tham gia</a>
+          <a href="#backlog-hangloat">Thao tác hàng loạt</a>
+        </div>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#team"><span class="ic">👥</span> Team &amp; Nhân sự</a>
+        <div class="toc-sub">
+          <a href="#team-nhansu">Nhân sự</a>
+          <a href="#team-tuanthu">Tuân thủ</a>
+          <a href="#team-noiquy">Nội quy</a>
+          <a href="#team-daotao">Đào tạo</a>
+          <a href="#team-hotro">Hỗ trợ</a>
+          <a href="#team-danhgia">Đánh giá</a>
+          <a href="#team-chamcong">Chấm công</a>
+        </div>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#cskh"><span class="ic">🎧</span> CSKH</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#roadmap"><span class="ic">🗺️</span> Roadmap năm</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#feature-requests"><span class="ic">💡</span> Yêu cầu tính năng</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#config"><span class="ic">⚙️</span> Cấu hình</a>
+        <div class="toc-sub">
+          <a href="#config-tieuchi">Tiêu chí</a>
+          <a href="#config-ranking">Ranking team</a>
+          <a href="#config-danhmuc">Danh mục dùng chung</a>
+          <a href="#config-phongban">Phòng ban</a>
+          <a href="#config-user">Quản lý User</a>
+        </div>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#action-logs"><span class="ic">🧾</span> Nhật ký hoạt động</a>
+      </div>
+      <div class="toc-group">
+        <a class="toc-link" href="#phan-quyen"><span class="ic">🔑</span> Bảng phân quyền</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="doc-header">
+      <p class="eyebrow">Tài liệu nội bộ · Quản lý nhiệm vụ</p>
+      <h1>Sổ tay sử dụng Quản lý nhiệm vụ</h1>
+      <p>Hướng dẫn chi tiết từng tính năng trong hệ thống — theo đúng thứ tự menu bên trái của ứng dụng, để bạn tra cứu nhanh khi đang thao tác.</p>
+    </div>
+
+    <section class="doc-section" id="mo-dau">
+      <div class="section-head"><span class="ic">📘</span><h2>Mở đầu</h2></div>
+      <p class="section-sub">Vài khái niệm dùng xuyên suốt toàn bộ hệ thống — nắm phần này trước sẽ dễ hiểu các trang sau.</p>
+
+      <h3 class="feature">Bộ chuyển Phòng ban</h3>
+      <p>Góc trên bên trái (dưới tên hệ thống) là <span class="ui">Bộ chuyển Phòng ban</span>. Gần như mọi dữ liệu trong ứng dụng — Backlog, Team &amp; Nhân sự, CSKH, Roadmap, Tiêu chí… — đều thuộc về <strong>đúng 1 phòng ban</strong>. Đổi phòng ở đây sẽ đổi toàn bộ dữ liệu đang hiển thị trên mọi trang. Nếu tài khoản của bạn chỉ được cấp quyền xem 1 phòng, bộ chuyển này sẽ bị khoá.</p>
+
+      <h3 class="feature">Tháng backlog</h3>
+      <p>Phần lớn dữ liệu nghiệp vụ (Nhiệm vụ, CSKH, Tuân thủ, Đào tạo, Hỗ trợ, Đánh giá, Chấm công) được tổ chức <strong>theo tháng</strong>. Team và Nhân sự được khai báo lại cho mỗi tháng (tháng mới tự kế thừa danh sách từ tháng gần nhất, nhưng từ đó là 2 danh sách độc lập — sửa ở tháng này không ảnh hưởng tháng khác).</p>
+
+      <h3 class="feature">3 cấp phân quyền</h3>
+      <p>Khi hệ thống bật đăng nhập, mỗi tài khoản mang đúng 1 trong 3 vai trò sau. Xem chi tiết đầy đủ ở mục <a href="#phan-quyen">Bảng phân quyền</a> cuối tài liệu.</p>
+      <div class="badge-row">
+        <span class="role role-all">CHỈ XEM</span>
+        <span class="role role-editor">BIÊN TẬP</span>
+        <span class="role role-admin">ADMIN</span>
+      </div>
+      <p>Ký hiệu <span class="role role-all">MỌI QUYỀN</span> / <span class="role role-editor">TỪ BIÊN TẬP</span> / <span class="role role-admin">CHỈ ADMIN</span> xuất hiện cạnh mỗi tính năng bên dưới cho biết ai được thao tác.</p>
+    </section>
+
+    <section class="doc-section" id="trang-chu">
+      <div class="section-head"><span class="ic">🏠</span><h2>Trang chủ</h2></div>
+      <p class="section-sub">Bảng điều khiển tổng quan — xem nhanh tình hình Backlog và Ranking mà không cần vào từng trang.</p>
+
+      <h3 class="feature">Tìm kiếm &amp; thẻ tổng quan</h3>
+      <p>Bộ lọc <span class="ui">Tháng</span> / <span class="ui">Team</span> ở góc trên trái áp dụng cho toàn bộ trang Trang chủ. Thẻ <span class="ui">Nhiệm vụ trong Backlog</span> đếm nhanh số nhiệm vụ theo trạng thái; biểu đồ cột bên phải vẽ Ranking Team của tháng đang chọn.</p>
+
+      <h3 class="feature">4 tab con</h3>
+      <table>
+        <thead><tr><th style="width:180px">Tab</th><th>Nội dung</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ui">Ranking</span></td><td>Bảng xếp hạng team theo điểm. Bấm vào 1 team để bung ra 2 bảng: điểm chi tiết theo từng tiêu chí, và ranking từng thành viên trong team đó (kèm hạng KI).</td></tr>
+          <tr><td><span class="ui">Tổng hợp</span></td><td>Bảng tổng điểm mỗi team, tách theo 3 nhóm: điểm theo chỉ tiêu (Sprint Goal, Sự cố, Tỷ lệ xử lý ticket, Tỷ lệ khởi tạo), điểm trừ (tuân thủ quy trình, tuân thủ nội quy), điểm cộng (hỗ trợ/phối hợp, đào tạo).</td></tr>
+          <tr><td><span class="ui">Tỉ lệ hoàn thành nhiệm vụ</span></td><td>% hoàn thành = tổng tỉ lệ đã đánh giá / tổng đầu việc, tổng hợp theo Team và theo Tag — không tính nhiệm vụ đã <span class="ui">Hủy</span> hoặc đánh dấu <span class="ui">Không tính điểm</span>.</td></tr>
+          <tr><td><span class="ui">KPI theo Task</span></td><td>Chỉ hiện với phòng ban cấu hình tính KPI trực tiếp theo nhân sự (xem <a href="#config-phongban">Phòng ban</a>). Cộng dồn điểm mỗi nhân sự từ các task họ tham gia thay vì chia theo team.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="doc-section" id="backlog">
+      <div class="section-head"><span class="ic">📋</span><h2>Nhiệm vụ (Backlog)</h2></div>
+      <p class="section-sub">Trang trung tâm — quản lý danh sách công việc của team theo từng tháng: tạo, chấm điểm, theo dõi tiến độ.</p>
+
+      <h3 class="feature" id="backlog-thang">Tháng backlog</h3>
+      <p>Chọn tháng đang làm việc ở <span class="ui">Chọn tháng</span>. Admin tạo tháng mới bằng nút <span class="role role-admin">CHỈ ADMIN</span> <span class="ui">+ Tạo tháng mới</span> (nhập Năm/Tháng) — tháng mới tự kế thừa Team, Nhân sự và Tiêu chí từ tháng gần nhất. Nút <span class="ui">Xóa tháng này</span> <span class="role role-admin">CHỈ ADMIN</span> xóa toàn bộ dữ liệu của tháng đó (không thể hoàn tác).</p>
+
+      <h3 class="feature">Tìm kiếm &amp; cảnh báo</h3>
+      <p>Khung <span class="ui">Tìm kiếm</span> lọc theo Phân loại, Tính chất (Không tính điểm / Đã chuyển), Team, Trạng thái, Tag, và ô tìm từ khoá tự do. Khi có nhiệm vụ cần chú ý, 3 chip cảnh báo hiện phía trên bảng — bấm vào 1 chip để lọc nhanh:</p>
+      <ul>
+        <li><strong>task chưa được chấm điểm</strong> — đã <span class="ui">Hoàn thành</span> nhưng chưa có % Đánh giá.</li>
+        <li><strong>task đã quá deadline chưa hoàn thành</strong>.</li>
+        <li><strong>task sắp đến hạn deadline</strong> (trong 5 ngày tới).</li>
+      </ul>
+
+      <h3 class="feature" id="backlog-bang">Bảng nhiệm vụ</h3>
+      <p>Mỗi dòng là 1 nhiệm vụ, các cột chính:</p>
+      <ul>
+        <li><strong>Tag / Phân loại / Tính chất</strong> — 3 lớp gắn nhãn độc lập (Tính chất cho phép chọn nhiều giá trị cùng lúc, ví dụ vừa là "NVKH" vừa là "Nhiệm vụ tồn").</li>
+        <li><strong>% Hoàn thành, Trạng thái, Tiến độ</strong> — cập nhật định kỳ trong lúc làm, tách riêng khỏi nội dung task để không phải mở lại form đầy đủ mỗi lần.</li>
+        <li><strong>% Đánh giá / Nội dung đánh giá</strong> — kết quả chấm điểm cuối tháng, xem chi tiết bên dưới.</li>
+      </ul>
+      <p>Mỗi dòng có 5 nút thao tác:</p>
+      <table>
+        <thead><tr><th style="width:150px">Nút</th><th>Chức năng</th><th style="width:120px">Quyền</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ui">Sửa</span></td><td>Sửa nội dung: Team, Nhiệm vụ, DoD, Deadline, Đầu mối phối hợp, Tính chất, Tag.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+          <tr><td><span class="ui">Xóa</span></td><td>Xóa hẳn nhiệm vụ.</td><td><span class="role role-admin">Admin</span></td></tr>
+          <tr><td><span class="ui">Chấm điểm</span></td><td>Nhập % Đánh giá + Nội dung đánh giá.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+          <tr><td><span class="ui">Cập nhật tiến độ</span></td><td>Sửa % Hoàn thành, Trạng thái, Tiến độ.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+          <tr><td><span class="ui">👤 Nhân sự</span></td><td>Quản lý nhân sự tham gia + tỷ lệ đóng góp.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="feature" id="backlog-cham-diem">Chấm điểm &amp; lịch sử đánh giá</h3>
+      <p>Mở popup <span class="ui">Chấm điểm</span>, nhập % Đánh giá và Nội dung đánh giá. Hệ thống tự ghi lại thời điểm chấm và tên người chấm, hiện ngay dưới nội dung đánh giá dạng <span class="ui">🕒 25/09/2026 09:39 · Tên người chấm</span>.</p>
+      <p>Khi 1 nhiệm vụ được <a href="#backlog-hangloat">chuyển sang tháng sau</a> nhiều lần, mỗi lần chấm điểm trước đó được giữ lại — nút <span class="ui">Lịch sử N ▾</span> phía trên ô Nội dung đánh giá bung ra toàn bộ các lần chấm của những tháng trước, kèm tên người chấm mỗi lần.</p>
+
+      <h3 class="feature" id="backlog-nhansu">Nhân sự tham gia task</h3>
+      <p>Bấm <span class="ui">👤 Nhân sự</span> để mở popup quản lý người tham gia 1 nhiệm vụ:</p>
+      <ul>
+        <li>Thêm nhân sự, chọn <strong>Phân loại</strong> (Thực hiện chính / Hỗ trợ).</li>
+        <li>Nhập <strong>Tỷ lệ đóng góp (%)</strong> — tổng của tất cả nhân sự trong 1 task không được vượt 100%.</li>
+        <li><strong>Điểm cá nhân</strong> — mặc định tự tính = % Đánh giá của task × tỷ lệ đóng góp; có thể ghi đè tay khi cần chấm riêng cho 1 người. Đổi đơn vị hiển thị % ⟷ thang điểm 5 bằng bộ chọn phía trên bảng.</li>
+        <li><strong>Chia đều</strong> — tự động phân bổ % đóng góp cho tất cả nhân sự trong task (nhân sự "Hỗ trợ" mặc định 10%, phần còn lại chia đều cho "Thực hiện chính").</li>
+      </ul>
+      <p>Dữ liệu này chỉ có ý nghĩa với phòng ban tính KPI theo Task (xem tab <a href="#trang-chu">KPI theo Task</a> ở Trang chủ).</p>
+
+      <h3 class="feature" id="backlog-hangloat">Thao tác hàng loạt, Xuất/Nhập Excel</h3>
+      <p>Tick chọn nhiều dòng rồi bấm <span class="ui">Thao tác với N task đã chọn</span> <span class="role role-editor">Biên tập</span>:</p>
+      <ul>
+        <li><strong>Chuyển sang tháng sau</strong> — nhân bản các task sang tháng kế tiếp (tự tạo tháng đó nếu chưa có), reset % Đánh giá cho tháng mới nhưng giữ snapshot lần chấm gần nhất (badge <span class="ui">↩ X%</span>). Task nguồn được đánh dấu <span class="ui">Đã chuyển</span>, không chuyển được lần 2.</li>
+        <li><strong>Đánh dấu / Bỏ đánh dấu "Nhiệm vụ tồn"</strong>, <strong>Đánh dấu / Bỏ "Không tính điểm"</strong>.</li>
+        <li><strong>Xóa</strong> <span class="role role-admin">Admin</span>.</li>
+      </ul>
+      <p>Nút <span class="ui">⬇ Xuất Excel</span> tải toàn bộ backlog của tháng (hoặc theo team đang lọc) ra file .xlsx đã định dạng sẵn màu theo trạng thái. Nút <span class="ui">⬇ File mẫu</span> tải file Excel mẫu có sẵn dropdown Team/Tag/Phân loại/Trạng thái để nhập nhanh nhiều task cùng lúc qua <span class="ui">⬆ Nhập Excel</span>.</p>
+    </section>
+
+    <section class="doc-section" id="team">
+      <div class="section-head"><span class="ic">👥</span><h2>Team &amp; Nhân sự</h2></div>
+      <p class="section-sub">7 tab con quản lý con người và các chỉ tiêu gắn theo từng nhân sự trong tháng.</p>
+
+      <h3 class="feature" id="team-nhansu">Nhân sự</h3>
+      <p>Khai báo Team ở khung bên dưới bảng (mỗi team thuộc đúng 1 phòng ban). Thêm nhân sự tay hoặc <span class="ui">⬆ Nhập Excel</span> theo <span class="ui">⬇ File mẫu</span>. Mỗi nhân sự có Họ tên, Chức vụ, Team, Ghi chú tự do. Nút <span class="ui">Hạ KI</span> trên mỗi dòng đánh dấu hạ 1 bậc xếp hạng KI của người đó (A+ → A → B…) khi hiển thị ở Ranking thành viên team — badge đỏ nhỏ hiện cạnh tên. Cột <em>Tuân thủ / Nội quy / Đào tạo / Hỗ trợ / Đánh giá</em> tự tính từ 5 tab còn lại, không nhập tay.</p>
+
+      <h3 class="feature" id="team-tuanthu">Tuân thủ</h3>
+      <p>Ghi nhận vi phạm quy trình/kế hoạch chung của 1 nhân sự trong tháng: số lượt vi phạm + nội dung. Dùng để trừ điểm ở tiêu chí "Tuân thủ quy trình, kế hoạch chung".</p>
+
+      <h3 class="feature" id="team-noiquy">Nội quy</h3>
+      <p><strong>Không nhập tay</strong> — bảng này tự tổng hợp số lượt đi muộn từ dữ liệu <a href="#team-chamcong">Chấm công</a> của tháng đang chọn. Nút <span class="ui">Không tính đi muộn</span> loại trừ 1 nhân sự khỏi việc trừ điểm nội quy tháng đó (ví dụ đi muộn có lý do chính đáng).</p>
+
+      <h3 class="feature" id="team-daotao">Đào tạo</h3>
+      <p>Ghi nhận các buổi đào tạo nội bộ / chứng chỉ quốc tế: Loại, Ngày thực hiện, Người xác nhận, Nội dung — theo từng nhân sự.</p>
+
+      <h3 class="feature" id="team-hotro">Hỗ trợ</h3>
+      <p>Ghi nhận khi 1 nhân sự của team này hỗ trợ 1 team khác: chọn Team nhận hỗ trợ, Nội dung, Ngày hỗ trợ, Người xác nhận. Dùng để cộng điểm tiêu chí "Hỗ trợ, phối hợp".</p>
+
+      <h3 class="feature" id="team-danhgia">Đánh giá</h3>
+      <p>Nút <span class="ui">+ Thêm Đánh giá</span> mở form nhập <strong>Số thứ tự (Ranking)</strong> cho nhiều nhân sự của 1 team cùng lúc — dùng cho tiêu chí đánh giá xếp hạng nội bộ theo tháng, độc lập với % Đánh giá công việc ở Backlog.</p>
+
+      <h3 class="feature" id="team-chamcong">Chấm công</h3>
+      <p>Nhập file Excel chấm công gốc — bảng hiển thị đúng nguyên các cột có trong file (không cố định cột trước). <strong>Nhập lại sẽ thay thế toàn bộ</strong> dữ liệu chấm công của tháng đang chọn, không cộng dồn. Nút <span class="ui">Không tính đi muộn</span> ở đây cũng loại trừ nhân sự khỏi tính nội quy, đồng bộ 2 chiều với tab Nội quy.</p>
+    </section>
+
+    <section class="doc-section" id="cskh">
+      <div class="section-head"><span class="ic">🎧</span><h2>CSKH</h2></div>
+      <p class="section-sub">3 tab ghi nhận số liệu chăm sóc khách hàng theo team, theo tháng — nguồn dữ liệu cho các tiêu chí KPI liên quan CSKH ở Trang chủ.</p>
+      <table>
+        <thead><tr><th style="width:170px">Tab</th><th>Ghi nhận gì</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ui">Sự cố</span></td><td>Mô tả sự cố + mức độ ảnh hưởng (Tính chất) của 1 team trong tháng — trừ điểm theo số lượng sự cố nghiêm trọng.</td></tr>
+          <tr><td><span class="ui">Hỗ trợ ticket</span></td><td>Tổng ticket, ticket vượt hạn, số đúng hạn — hệ thống tự tính Tỷ lệ xử lý đúng hạn.</td></tr>
+          <tr><td><span class="ui">Tỉ lệ khởi tạo</span></td><td>Số lượng khởi tạo dịch vụ thành công / thất bại — tự tính tỷ lệ thành công.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="doc-section" id="roadmap">
+      <div class="section-head"><span class="ic">🗺️</span><h2>Roadmap năm</h2></div>
+      <p class="section-sub">Kế hoạch dài hạn theo năm — độc lập với Backlog theo tháng, nhưng có thể tự động chảy vào Backlog khi tới hạn.</p>
+
+      <h3 class="feature">Dòng roadmap</h3>
+      <p>Đổi năm xem bằng bộ chọn <span class="ui">‹ Năm ›</span> cạnh tiêu đề. Mỗi dòng gồm Team, Hệ thống, Mục tiêu (badge màu, lấy từ danh mục ở <a href="#config-danhmuc">Cấu hình</a>), Nhiệm vụ, DOD, Điều kiện đảm bảo, Phân loại, Thời gian bắt đầu/kết thúc (tự suy ra Quý kết thúc), Trạng thái, Ghi chú.</p>
+
+      <div class="callout">
+        <span class="ic">↪️</span>
+        <div><strong>Tự động vào Backlog</strong>Khi Thời gian bắt đầu của 1 dòng roadmap rơi vào đúng 1 tháng backlog đã tồn tại, hệ thống tự tạo 1 nhiệm vụ tương ứng bên Backlog (đánh dấu <span class="ui">✓ Đã vào Backlog</span> trên dòng roadmap đó) — không cần nhập tay lại.</div>
+      </div>
+
+      <h3 class="feature">Chi tiết công việc theo tháng</h3>
+      <p>Bấm vào 1 dòng roadmap để mở panel quản lý tiến độ theo từng tháng cụ thể trong năm đó — theo dõi sát hơn mức "1 dòng cho cả năm".</p>
+
+      <h3 class="feature">Xuất / Nhập Excel</h3>
+      <p><span class="ui">⬇ Xuất Excel</span> tải toàn bộ roadmap của năm + phòng đang xem. <span class="ui">⬇ File mẫu</span> / <span class="ui">⬆ Nhập Excel</span> nhập nhanh nhiều dòng cùng lúc, có sẵn dropdown Team/Hệ thống/Mục tiêu/Phân loại trong file mẫu.</p>
+    </section>
+
+    <section class="doc-section" id="feature-requests">
+      <div class="section-head"><span class="ic">💡</span><h2>Yêu cầu tính năng</h2></div>
+      <p class="section-sub">Hộp thư đề xuất giữa các phòng ban — phòng A đề xuất thêm/nâng cấp 1 hệ thống cho phòng B xử lý.</p>
+
+      <p>Đây là tính năng duy nhất mà <span class="role role-all">MỌI QUYỀN, kể cả Chỉ xem</span> đều được tạo mới — vì đề xuất là việc ai cũng có thể làm. Chỉ phòng ban <strong>đích</strong> (nơi nhận yêu cầu) mới thấy và xử lý được Duyệt/Từ chối; phòng khác không nhìn thấy yêu cầu này (kể cả biết đường dẫn trực tiếp).</p>
+
+      <h3 class="feature">Luồng xử lý</h3>
+      <ol class="steps">
+        <li>Bấm <span class="ui">+ Thêm yêu cầu</span>: chọn Hệ thống, Loại yêu cầu, <strong>Phòng ban đích</strong>, Tiêu đề, Mô tả chi tiết, Kết quả mong muốn, Thời gian mong muốn, Mức độ ưu tiên. Gửi xong, bên đề xuất thấy trạng thái <span class="ui">Đã gửi yêu cầu</span>.</li>
+        <li>Bên phòng đích thấy yêu cầu với trạng thái <span class="ui">Chờ duyệt</span>, có 2 nút <span class="ui">Duyệt</span> / <span class="ui">Từ chối</span> <span class="role role-editor">Biên tập trở lên, đúng phòng đích</span>.</li>
+        <li><strong>Duyệt</strong>: bên đề xuất thấy <span class="ui">Đã tiếp nhận yêu cầu</span>; bên đích có thêm 2 nút <span class="ui">Đưa vào Backlog</span> (chọn tháng — không cho chọn tháng đã qua) và <span class="ui">Đưa vào Roadmap năm</span> (chọn năm), mỗi nút chỉ dùng được 1 lần, sau khi bấm hiện badge <span class="ui">✓ Backlog</span> / <span class="ui">✓ Roadmap</span>.</li>
+        <li><strong>Từ chối</strong>: cả 2 bên đều thấy trạng thái <span class="ui">Từ chối yêu cầu</span> kèm lý do (nếu có nhập).</li>
+      </ol>
+
+      <h3 class="feature">Tìm kiếm</h3>
+      <p>Lọc theo từ khoá, Trạng thái, Hệ thống, Phòng ban đích.</p>
+    </section>
+
+    <section class="doc-section" id="config">
+      <div class="section-head"><span class="ic">⚙️</span><h2>Cấu hình</h2></div>
+      <p class="section-sub"><span class="role role-admin">CHỈ ADMIN</span> truy cập được toàn bộ trang này — nơi định nghĩa cách tính điểm, danh mục dùng chung và quản lý tài khoản.</p>
+
+      <h3 class="feature" id="config-tieuchi">Tiêu chí</h3>
+      <p>Cấu hình từng tiêu chí chấm điểm của phòng đang xem: Nhóm, Tên tiêu chí, Cách tính điểm, Phạm vi (dùng chung mọi phòng, hoặc riêng phòng này — bật/tắt ở <a href="#config-phongban">Phòng ban</a>). Nút <span class="ui">Sao chép từ phòng khác</span> nhân bản nhanh bộ tiêu chí đã có sẵn thay vì gõ lại từ đầu. Dòng <span class="ui">Tổng điểm</span> ở cuối bảng tự cộng theo công thức đã cấu hình.</p>
+
+      <h3 class="feature" id="config-ranking">Ranking team</h3>
+      <p>Cấu hình khung xếp hạng hiển thị ở Trang chủ: mỗi <strong>dòng</strong> là 1 vị trí xếp hạng (1, 2, 3…), mỗi <strong>cột</strong> là 1 kịch bản xếp hạng riêng — bấm thẳng vào tiêu đề cột để đổi tên.</p>
+
+      <h3 class="feature" id="config-danhmuc">Danh mục dùng chung</h3>
+      <p>7 danh mục badge dùng xuyên suốt hệ thống — sửa/xóa/đổi thứ tự ở đây sẽ phản ánh ngay tại mọi nơi đang dùng:</p>
+      <ul class="fieldlist">
+        <li><span class="fname">Tag</span><span class="fdesc">Gắn nhãn nhanh cho nhiệm vụ ở Backlog.</span></li>
+        <li><span class="fname">Phân loại</span><span class="fdesc">Phân loại nhiệm vụ ở Backlog.</span></li>
+        <li><span class="fname">Nhóm</span><span class="fdesc">Nhóm tiêu chí chấm điểm.</span></li>
+        <li><span class="fname">Chức vụ</span><span class="fdesc">Chức danh nhân sự ở tab Nhân sự.</span></li>
+        <li><span class="fname">Hệ thống</span><span class="fdesc">Hệ thống/sản phẩm liên quan — dùng ở Roadmap và Yêu cầu tính năng.</span></li>
+        <li><span class="fname">Mục tiêu</span><span class="fdesc">Mục tiêu chiến lược — dùng ở Roadmap và làm nguồn Loại yêu cầu ở Yêu cầu tính năng.</span></li>
+        <li><span class="fname">Phân loại nhân sự</span><span class="fdesc">Thực hiện chính / Hỗ trợ — dùng ở popup Nhân sự tham gia task.</span></li>
+      </ul>
+
+      <h3 class="feature" id="config-phongban">Phòng ban</h3>
+      <p>Quản lý danh sách phòng ban của toàn hệ thống. Mỗi phòng có các cờ cấu hình riêng:</p>
+      <ul>
+        <li><strong>Dùng tiêu chí chung</strong> — tắt để phòng này chỉ thấy tiêu chí riêng, không thấy tiêu chí dùng chung.</li>
+        <li><strong>Cách tính KPI</strong> — "Theo Team" (mặc định) hoặc "Theo Task" (cộng dồn trực tiếp theo nhân sự, xem <a href="#backlog-nhansu">Nhân sự tham gia task</a>).</li>
+        <li><strong>Xem full</strong> — tài khoản thuộc phòng này xem được dữ liệu của MỌI phòng ban khác (dùng cho Ban Giám đốc, PMO…).</li>
+      </ul>
+
+      <h3 class="feature" id="config-user">Quản lý User</h3>
+      <p>Danh sách toàn bộ tài khoản đã từng đăng nhập. Có khung tìm kiếm riêng (từ khoá, Quyền, Phòng ban) và bảng có phân trang. Với mỗi tài khoản, Admin đổi được <strong>Quyền</strong> (Admin/Biên tập/Chỉ xem), gán <strong>Phòng ban</strong>, và <strong>Khóa/Mở khóa</strong>. Không tự đổi quyền hay tự khóa chính tài khoản đang đăng nhập.</p>
+      <div class="callout warn">
+        <span class="ic">⚠️</span>
+        <div><strong>Ghi nhớ</strong>Nâng quyền cho 1 tài khoản mà chưa gán Phòng ban thì tài khoản đó đăng nhập được nhưng không thấy dữ liệu nghiệp vụ nào — luôn gán Phòng ban ngay sau khi đổi quyền.</div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="action-logs">
+      <div class="section-head"><span class="ic">🧾</span><h2>Nhật ký hoạt động</h2></div>
+      <p class="section-sub"><span class="role role-admin">CHỈ ADMIN</span> — nhật ký ghi lại toàn bộ hành động trên hệ thống.</p>
+      <p>Tự động ghi lại đăng nhập/đăng xuất và mọi lượt thêm/sửa/xóa/chuyển dữ liệu ở <strong>mọi module</strong>, dạng tóm tắt 1 dòng — ví dụ <span class="ui">Chấm điểm Nhiệm vụ "Ứng dụng AI…"</span>, <span class="ui">Hạ KI Nhân sự "Hoàng Văn Thiện"</span>. Mỗi dòng gồm Thời gian, Người thực hiện, Phòng ban, Module, Hành động (badge màu theo loại), Mô tả.</p>
+      <p>Khung tìm kiếm lọc theo từ khoá, Loại hành động, Module, Người thực hiện, khoảng ngày. Mặc định chỉ hiện <strong>90 ngày gần nhất</strong> — mở rộng bằng bộ lọc ngày để xem xa hơn.</p>
+    </section>
+
+    <section class="doc-section" id="phan-quyen">
+      <div class="section-head"><span class="ic">🔑</span><h2>Bảng phân quyền</h2></div>
+      <p class="section-sub">Áp dụng khi hệ thống bật đăng nhập (SSO). Chặn thật luôn nằm ở máy chủ — giao diện chỉ ẩn bớt nút để tránh bấm vào thứ chắc chắn bị từ chối.</p>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nhóm chức năng</th><th style="width:130px">Chỉ xem</th><th style="width:130px">Biên tập</th><th style="width:110px">Admin</th></tr></thead>
+        <tbody>
+          <tr><td>Xem mọi trang, mọi bảng dữ liệu</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Tạo mới <a href="#feature-requests">Yêu cầu tính năng</a></td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Thêm / Sửa dữ liệu nghiệp vụ (task, nhân sự, CSKH, roadmap…)</td><td>—</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Duyệt / Từ chối Yêu cầu tính năng (đúng phòng đích)</td><td>—</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Xóa dữ liệu nghiệp vụ</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Tạo / Xóa tháng backlog</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Trang <a href="#config">Cấu hình</a> (Tiêu chí, Ranking, Danh mục, Phòng ban, Quản lý User)</td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Trang <a href="#action-logs">Nhật ký hoạt động</a></td><td>—</td><td>—</td><td>✅</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p style="color:var(--ink-faint);font-size:0.85rem">Khi hệ thống đang tắt đăng nhập (môi trường thử nghiệm nội bộ), mọi phân biệt quyền ở trên không áp dụng — ai mở ứng dụng cũng thao tác được như Admin.</p>
+    </section>
+
+    <footer class="doc-footer">
+      Sổ tay này mô tả đúng các tính năng đang có trên hệ thống Quản lý nhiệm vụ tại thời điểm biên soạn — giao diện có thể được cập nhật thêm theo thời gian.
+    </footer>
+  </main>
+</div>
+</body>
+</html>

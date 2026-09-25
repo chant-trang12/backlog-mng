@@ -13,6 +13,10 @@ const pages = {
 
 document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
+    // Mục "HDSD" là link mở tài liệu ở tab mới (thẻ <a target="_blank">,
+    // không có data-page) — không thuộc bộ chuyển trang trong SPA này, bỏ
+    // qua để không lỡ ẩn hết mọi trang đang xem ở tab hiện tại.
+    if (!btn.dataset.page) return;
     document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     Object.entries(pages).forEach(([key, section]) => {
