@@ -66,18 +66,37 @@ export async function attachScope(req: Request, _res: Response, next: NextFuncti
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+// Ngoại lệ cho viewer: TẠO MỚI Yêu cầu tính năng không phải "ghi dữ liệu
+// nghiệp vụ" theo nghĩa thông thường — mọi phòng ban (mọi quyền, kể cả
+// viewer) đều được đề xuất. Duyệt/Từ chối/Đưa vào Backlog/Roadmap vẫn cần
+// quyền ghi (editor/admin trở lên) NHƯ BÌNH THƯỜNG — không nằm trong danh
+// sách này — cộng thêm điều kiện phải thuộc đúng phòng ban đích
+// (requireTargetScope ở featureRequest.controller.ts, không liên quan role).
+// req.path đã bị Express cắt bỏ tiền tố "/api" (mount ở app.use("/api", ...)).
+const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests"]);
+// File đính kèm là 1 phần của việc "đề xuất" (bổ sung tài liệu cho chính
+// yêu cầu vừa/đang tạo) — cùng tinh thần ngoại lệ ở trên, nhưng path có
+// :id động nên không đưa được vào Set literal, phải so bằng regex riêng.
+const VIEWER_ALLOWED_ATTACHMENT_PATH = /^\/feature-requests\/\d+\/attachment$/;
+
 /**
- * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api. Role "editor" được
- * ghi (POST/PUT/PATCH) nhưng không được xóa (Quy tắc 9.1) — quyền xóa chỉ
- * dành cho admin. Không có tác dụng khi SSO tắt (req.appUser không được
- * gắn — xem requireAuth). Mount ngay sau requireAuth, TRƯỚC mọi router
- * nghiệp vụ.
+ * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api, trừ đúng danh sách
+ * VIEWER_ALLOWED_WRITES ở trên. Role "editor" được ghi (POST/PUT/PATCH)
+ * nhưng không được xóa (Quy tắc 9.1) — quyền xóa chỉ dành cho admin. Không
+ * có tác dụng khi SSO tắt (req.appUser không được gắn — xem requireAuth).
+ * Mount ngay sau requireAuth, TRƯỚC mọi router nghiệp vụ.
  */
 export function requireWrite(req: Request, res: Response, next: NextFunction): void {
   if (!req.appUser || !WRITE_METHODS.has(req.method)) {
     return next();
   }
   if (req.appUser.role === "viewer") {
+    if (VIEWER_ALLOWED_WRITES.has(`${req.method} ${req.path}`)) {
+      return next();
+    }
+    if (req.method === "POST" && VIEWER_ALLOWED_ATTACHMENT_PATH.test(req.path)) {
+      return next();
+    }
     res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });
     return;
   }

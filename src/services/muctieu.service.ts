@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateMucTieuInput, MucTieuOption, UpdateMucTieuInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listMucTieu(): Promise<MucTieuOption[]> {
   const rows = await db("muc_tieu_options").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -30,7 +30,8 @@ export async function updateMucTieu(
   const [updated] = await db("muc_tieu_options")
     .where({ id })
     .update({
-      ten_muc_tieu: input.ten_muc_tieu?.trim() ?? existing.ten_muc_tieu,
+      ten_muc_tieu:
+        input.ten_muc_tieu !== undefined ? normalizeVietnameseText(input.ten_muc_tieu.trim()) : existing.ten_muc_tieu,
       thu_tu: input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu,
     })
     .returning("*");

@@ -266,7 +266,10 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 }
 
 .nav-item {
+  position: relative;
+  display: block;
   text-align: left;
+  text-decoration: none;
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -278,6 +281,29 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 
 .nav-item:hover { background: var(--bg); }
 .nav-item.active { background: var(--primary); color: #fff; }
+
+/* Chấm đỏ báo số yêu cầu tính năng "Chờ duyệt" gửi đến phòng đang xem —
+   xem countPendingFeatureRequestsForTarget()/updateFeatureRequestNavBadge()
+   ở 10-feature-requests.js. */
+.nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--delete);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.nav-item.active .nav-badge { box-shadow: 0 0 0 2px var(--primary); }
+/* Nhãn "💡 Yêu cầu tính năng" đã khá dài so với bề rộng sidebar — chừa
+   thêm chỗ bên phải để không bị chấm đỏ đè lên chữ. */
+.nav-item[data-page="feature-requests"] { padding-right: 32px; }
 
 .app-content { flex: 1; min-width: 0; }
 
@@ -291,13 +317,13 @@ main {
   width: 100%;
 }
 
-#page-backlog, #page-team, #page-cskh, #team-tab-nhansu {
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden] {
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden], #page-action-logs[hidden] {
   display: none;
 }
 
@@ -455,6 +481,13 @@ button.btn-edit { background: #ffeab0; border-color: #f6d989; color: #7a4e12; }
 button.btn-edit:hover { background: #f6d989; }
 button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
 button.btn-delete:hover { background: var(--delete-light-hover); }
+/* Cùng tông màu với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu" (Quy
+   tắc 9.1 chỉ admin được xóa) — dùng cho nút "Từ chối" yêu cầu tính năng,
+   vốn chỉ là đổi trạng thái (editor thuộc phòng đích vẫn được làm), tách
+   riêng để không bị ẩn nhầm với editor bởi CSS chọn theo .btn-delete bên
+   dưới (xem VIEWER_ALLOWED_WRITES / requireTargetScope). */
+button.btn-reject { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+button.btn-reject:hover { background: var(--delete-light-hover); }
 button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
 button.btn-grade:hover { background: #c3d7b3; }
 button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
@@ -664,6 +697,8 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
 }
 
 .tab-panel-group #team-tab-nhansu > .card,
+.tab-panel-group #config-tab-users > .card:first-child,
+.tab-panel-group #config-tab-phongban > .card:first-child,
 .tab-panel-group > .card {
   border-top-left-radius: 0;
   margin-top: 0;
@@ -824,6 +859,41 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
+/* Bảng Yêu cầu tính năng — label cột căn giữa; TẤT CẢ các cột căn giữa
+   theo chiều dọc (kể cả Tiêu đề/Mô tả nhiều dòng), riêng cột STT/Hệ
+   thống/Đính kèm/Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí
+   1/2/6/10/11/12/13, đều là số/badge/link ngắn) căn thêm cả chiều ngang —
+   các cột còn lại (Tiêu đề, Mô tả...) giữ căn trái vì là văn bản dài. */
+#fr-table th { text-align: center; }
+#fr-table td { vertical-align: middle; }
+#fr-table td:nth-child(1),
+#fr-table td:nth-child(2),
+#fr-table td:nth-child(6),
+#fr-table td:nth-child(10),
+#fr-table td:nth-child(11),
+#fr-table td:nth-child(12),
+#fr-table td:nth-child(13) {
+  text-align: center;
+}
+
+/* Bảng Nhật ký hoạt động — cột Thời gian/Hành động căn giữa (badge/ngày
+   giờ ngắn), Người thực hiện/Phòng ban/Module/Mô tả giữ căn trái. */
+#al-table th { text-align: center; }
+#al-table td { vertical-align: middle; }
+#al-table td:nth-child(1),
+#al-table td:nth-child(5) {
+  text-align: center;
+}
+/* Badge Hành động (Nhật ký hoạt động) — 6 màu tách biệt hẳn với mọi màu
+   status-* khác đang dùng trong app, để không bị đọc nhầm là trạng thái
+   nghiệp vụ. */
+.al-badge-login { background: #dce8d2; color: #3e5a30; }      /* xanh lá — giống btn-grade */
+.al-badge-logout { background: var(--border); color: var(--muted); } /* xám trung tính */
+.al-badge-create { background: #d6ebf5; color: #1f5f80; }     /* xanh dương */
+.al-badge-update { background: #ffeab0; color: #7a4e12; }     /* vàng hổ phách */
+.al-badge-delete { background: var(--delete-light); color: var(--delete); } /* đỏ */
+.al-badge-transfer { background: #e6dcf5; color: #5c3494; }   /* tím */
+
 /* Đánh giá tháng trước (task NV tồn kéo từ tháng cũ) — nhãn nhỏ, màu cam
    đất, ghim góc trên bên phải ô "% Đánh giá". */
 .cell-prev-badge {
@@ -840,6 +910,19 @@ th {
   white-space: nowrap;
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+/* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
+   nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
+.fr-attachment-chip {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+  vertical-align: bottom;
+}
+.fr-attachment-chip:hover { color: var(--primary); }
 
 /* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
 #task-table td:nth-child(14), /* % Đánh giá */
@@ -1115,6 +1198,13 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   font-size: 0.78rem;
   white-space: nowrap;
 }
+
+/* Badge "✓ Backlog"/"✓ Roadmap" (Yêu cầu tính năng) — 2 màu khác nhau
+   (tím/xanh dương), cả 2 đều tách biệt hẳn với 3 màu trạng thái chính
+   (vàng "Chờ duyệt", xanh lá "Đã duyệt", đỏ "Từ chối") và màu Ưu tiên
+   trong cùng bảng, để không bị đọc nhầm là trạng thái khác. */
+.fr-linked-badge-backlog { background: #e6dcf5; color: #5c3494; }
+.fr-linked-badge-roadmap { background: #d6ebf5; color: #1f5f80; }
 
 /* Tên nhân sự + badge "Hạ KI" (bảng Nhân sự + Home > Ranking > Ranking
    thành viên team) — dùng flex-wrap + gap thay vì margin thường, để badge
@@ -1818,7 +1908,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ---- Điện thoại (≤600px) ---- */
 @media (max-width: 600px) {
-  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu { gap: 14px; }
+  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs { gap: 14px; }
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
   .row { gap: 10px; }
@@ -1877,7 +1967,12 @@ img, svg, canvas, video { max-width: 100%; }
 /* ---- Ẩn nút theo quyền (Rule 9.1 + role) ----
    document.body[data-role] được gắn ở checkAuth() (app.js), chỉ khi SSO bật
    — SSO tắt thì không có attribute này, mọi thứ hiện như cũ (dev/test).
-   .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem).
+   .write-action: nút tạo/sửa/nhập Excel — ẩn với viewer (chỉ xem). NGOẠI
+   LỆ: nút "+ Thêm yêu cầu" (Yêu cầu tính năng) KHÔNG mang class này — mọi
+   phòng ban/mọi quyền, kể cả viewer, đều được đề xuất; các nút Duyệt/Từ
+   chối/Đưa vào Backlog/Roadmap/Sửa trong CÙNG trang thì vẫn mang
+   write-action như bình thường (xem VIEWER_ALLOWED_WRITES ở
+   auth.middleware.ts — server chỉ nới đúng 1 route POST /feature-requests).
    .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
    (Quy tắc 9.1: editor không được xóa).
    .admin-only-action: vài thao tác cụ thể chỉ admin được làm dù editor vẫn

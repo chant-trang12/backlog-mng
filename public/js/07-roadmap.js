@@ -83,9 +83,20 @@ el.roadmapSearch.addEventListener("input", () => {
 // danh mục này hay phát sinh nhiều giá trị hơn Team theo thời gian, chỉ 6
 // màu thì tạo quá 6 hệ thống là màu badge bị LẶP LẠI (bug đã gặp thực tế).
 const HT_COLOR_COUNT = 18;
+// 18 màu ht-color-N định nghĩa ở style.css xoay hue tuần tự 165°→275°, mỗi
+// màu chỉ cách màu liền kề ~6° — nếu gán thẳng theo thứ tự trong danh mục
+// (0,1,2,3...) thì 2 hệ thống liền kề nhau ra 2 màu GẦN NHƯ Y HỆT (bug đã
+// gặp thực tế: "Website" cạnh "Nội bộ" nhìn cùng 1 màu mint). Số hệ thống
+// thực tế thường chỉ vài giá trị, không tới 18 — nên thay vì đi tuần tự,
+// nhảy theo bước 7 (coprime với 18, đi hết đúng 1 vòng không lặp lại) để
+// vài hệ thống ĐẦU TIÊN (trường hợp phổ biến nhất) luôn rơi vào các màu
+// CÁCH XA NHAU nhất trong dải; chỉ khi đủ gần 18 hệ thống mới phải lấp đầy
+// các mức màu sát nhau còn lại.
+const HT_COLOR_ORDER = [0, 7, 14, 3, 10, 17, 6, 13, 2, 9, 16, 5, 12, 1, 8, 15, 4, 11];
 function systemColorClass(value) {
   const i = state.systemOptions.findIndex((h) => h.ten_he_thong === value);
-  return `ht-color-${(i === -1 ? 0 : i) % HT_COLOR_COUNT}`;
+  const slot = HT_COLOR_ORDER[(i === -1 ? 0 : i) % HT_COLOR_COUNT];
+  return `ht-color-${slot}`;
 }
 function objectiveColorClass(value) {
   const i = state.objectiveOptions.findIndex((m) => m.ten_muc_tieu === value);
@@ -446,6 +457,11 @@ el.addRoadmapBtn.addEventListener("click", () => {
   openRoadmapDialog(null);
 });
 el.roadmapCancelBtn.addEventListener("click", () => el.roadmapDialog.close());
+
+el.exportRoadmapBtn.addEventListener("click", () => {
+  window.location.href = `/api/roadmap-items/export?year=${state.roadmapYear}${deptParam()}`;
+});
+
 el.roadmapYearPrev.addEventListener("click", () => stepRoadmapYear(-1));
 el.roadmapYearNext.addEventListener("click", () => stepRoadmapYear(1));
 

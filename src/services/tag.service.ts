@@ -1,6 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateTagInput, TagOption, UpdateTagInput } from "../types/cskh.js";
-import { resolveUniqueName } from "../utils/uniqueName.js";
+import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listTags(): Promise<TagOption[]> {
   const rows = await db("tags").orderBy("thu_tu", "asc").orderBy("id", "asc");
@@ -29,7 +29,7 @@ export async function createTag(input: CreateTagInput): Promise<TagOption> {
 export async function updateTag(id: number, input: UpdateTagInput): Promise<TagOption | undefined> {
   const existing = await getTag(id);
   if (!existing) return undefined;
-  const tenTag = input.ten_tag?.trim() ?? existing.ten_tag;
+  const tenTag = input.ten_tag !== undefined ? normalizeVietnameseText(input.ten_tag.trim()) : existing.ten_tag;
   const thuTu = input.thu_tu !== undefined ? input.thu_tu : existing.thu_tu;
   const [updated] = await db("tags")
     .where({ id })

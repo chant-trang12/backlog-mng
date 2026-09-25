@@ -227,6 +227,15 @@ async function selectDepartment(id) {
     await loadMembers();
     await loadRoadmap();
     await loadCriteria(); // tiêu chí "thấy được" khác nhau theo từng phòng
+    // Yêu cầu tính năng scope theo phòng — đổi phòng phải nạp lại đúng danh
+    // sách phòng đó (nếu trang đang mở), tránh vẫn hiện danh sách của phòng cũ.
+    // Trang chưa mở thì chỉ cần cập nhật lại chấm đỏ ở menu trái theo phòng
+    // mới (loadFeatureRequests() ở nhánh trên đã tự cập nhật chấm đỏ rồi).
+    if (!pages["feature-requests"]?.hidden) {
+      await loadFeatureRequests().catch((err) => showToast(err.message));
+    } else {
+      await refreshFeatureRequestNavBadge().catch(() => {});
+    }
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
     showToast(err.message);
@@ -260,6 +269,7 @@ function gradingEntries(t) {
       cpo_danh_gia: t.cpo_danh_gia,
       cpo_comment: t.cpo_comment,
       graded_at: t.cpo_graded_at,
+      graded_by: t.cpo_graded_by,
     });
   }
   return { past, entries };
@@ -280,7 +290,7 @@ function renderGradingHistory(t, mode) {
         ? `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b></div>`
         : `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b>${
             e.cpo_comment ? " · " + String(e.cpo_comment).replace(/\n/g, " ") : ""
-          }${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}</span>` : ""}</div>`,
+          }${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}${e.graded_by ? " · " + e.graded_by : ""}</span>` : ""}</div>`,
     )
     .join("");
   const hid = `hist-${t.id}-${mode}`;

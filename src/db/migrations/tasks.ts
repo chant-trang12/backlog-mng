@@ -21,6 +21,17 @@ export async function migrateTaskGradingExtras(): Promise<void> {
       table.text("grading_history");
     });
   }
+  // cpo_graded_by / prev_cpo_graded_by — SNAPSHOT tên người vừa chấm điểm
+  // (không JOIN sang users — user có thể bị xóa/đổi tên sau, lịch sử vẫn
+  // phải giữ nguyên tên tại thời điểm chấm, giống user_name ở action_logs).
+  // NULL khi SSO tắt (không có khái niệm "người đăng nhập" — xem
+  // updateTaskHandler#task.controller.ts) hoặc task chưa từng được chấm.
+  if (!(await db.schema.hasColumn("tasks", "cpo_graded_by"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.string("cpo_graded_by", 255);
+      table.string("prev_cpo_graded_by", 255);
+    });
+  }
 }
 
 // tasks.dau_moi_phoi_hop — cột "Đầu mối phối hợp" ở bảng dữ liệu Backlog

@@ -8,6 +8,7 @@ import {
 } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
+import { recordActionLog } from "../services/actionLog.service.js";
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -62,11 +63,25 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     // tiên tự thành admin, những người sau mặc định viewer (xem
     // upsertUserFromSso). Không chặn login nếu bước này lỗi — chỉ log, để
     // requireAuth tự phòng vệ tạo lại ở request kế tiếp.
+    let appUser: Awaited<ReturnType<typeof upsertUserFromSso>> | undefined;
     try {
-      await upsertUserFromSso(user);
+      appUser = await upsertUserFromSso(user);
     } catch (err) {
       console.error("Lỗi đồng bộ user cục bộ sau đăng nhập SSO:", err);
     }
+    // Nhật ký hoạt động — route /auth/* nằm NGOÀI /api nên actionLogMiddleware
+    // (chỉ gắn ở "/api") không tự bắt được, phải ghi tay ở đây.
+    void recordActionLog({
+      user_id: appUser?.id ?? null,
+      user_name: appUser?.name ?? user.name ?? user.username ?? null,
+      department_id: appUser?.department_id ?? null,
+      action: "dang_nhap",
+      module: null,
+      description: "Đăng nhập vào hệ thống",
+      method: req.method,
+      path: req.path,
+      ip: req.ip ?? null,
+    });
 
     if (req.session) {
       req.session.user = user;
@@ -125,6 +140,25 @@ export async function logoutHandler(req: Request, res: Response, next: NextFunct
   try {
     const baseUrl = getRequestBaseUrl(req);
     const logoutUrl = await getLogoutUrl(baseUrl);
+
+    // Nhật ký hoạt động — lấy user TRƯỚC khi session.destroy() xoá mất
+    // req.session.user; route /auth/* nằm ngoài /api nên actionLogMiddleware
+    // không tự bắt được, phải ghi tay giống loginHandler ở trên.
+    const sessionUser = req.session?.user;
+    if (sessionUser) {
+      const appUser = await getUserBySsoSub(sessionUser.id).catch(() => undefined);
+      void recordActionLog({
+        user_id: appUser?.id ?? null,
+        user_name: appUser?.name ?? sessionUser.name ?? sessionUser.username ?? null,
+        department_id: appUser?.department_id ?? null,
+        action: "dang_xuat",
+        module: null,
+        description: "Đăng xuất khỏi hệ thống",
+        method: req.method,
+        path: req.path,
+        ip: req.ip ?? null,
+      });
+    }
 
     if (req.session) {
       req.session.destroy((err) => {

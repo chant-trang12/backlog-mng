@@ -6,6 +6,7 @@ import {
   deleteRoadmapItemHandler,
   deleteSelectedRoadmapItemsHandler,
   downloadRoadmapTemplateHandler,
+  exportRoadmapHandler,
   importRoadmapHandler,
   listRoadmapDetailsHandler,
   listRoadmapItemsHandler,
@@ -16,6 +17,7 @@ import {
 const router = Router();
 
 // Đặt trước "/roadmap-items/:id" để tránh xung đột path.
+router.get("/roadmap-items/export", exportRoadmapHandler);
 router.get("/roadmap-items/import-template", downloadRoadmapTemplateHandler);
 router.post(
   "/roadmap-items/import",

@@ -25,12 +25,15 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="home">🏠 Home</button>
-        <button class="nav-item" data-page="backlog">📋 Backlog</button>
+        <button class="nav-item active" data-page="home">🏠 Trang chủ</button>
+        <button class="nav-item" data-page="backlog">📋 Nhiệm vụ</button>
         <button class="nav-item" data-page="team">👥 Team &amp; Nhân sự</button>
         <button class="nav-item" data-page="cskh">🎧 CSKH</button>
         <button class="nav-item" data-page="roadmap">🗺️ Roadmap năm</button>
+        <button class="nav-item" data-page="feature-requests">💡 Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
         <button class="nav-item" data-page="config">⚙️ Cấu hình</button>
+        <button class="nav-item" data-page="action-logs">🧾 Nhật ký hoạt động</button>
+        <button class="nav-item" data-page="hdsd">📘 HDSD</button>
       </nav>
       <div class="sidebar-user" id="sidebar-user" style="display: none;">
         <div class="user-avatar" id="user-avatar">👤</div>
@@ -849,6 +852,7 @@
               </div>
               <div class="row">
                 <button id="delete-selected-roadmap-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-roadmap-count">0</span>)</button>
+                <button id="export-roadmap-btn" class="btn-export">⬇ Xuất Excel</button>
                 <button id="download-roadmap-template-btn" class="btn-edit">⬇ File mẫu</button>
                 <input type="file" id="roadmap-file-input" accept=".xlsx,.xls" hidden />
                 <button id="import-roadmap-btn" class="write-action btn-exclude">⬆ Nhập Excel</button>
@@ -914,6 +918,215 @@
           </section>
         </div>
 
+        <!-- ---- Trang Yêu cầu tính năng ---- -->
+        <div id="page-feature-requests" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="fr-filter-search">Tìm kiếm</label>
+                <input type="text" id="fr-filter-search" placeholder="Tiêu đề, hệ thống, người đề xuất..." style="min-width:240px" />
+              </div>
+              <div>
+                <label for="fr-filter-status">Trạng thái</label>
+                <select id="fr-filter-status">
+                  <option value="">Tất cả</option>
+                  <option value="Chờ duyệt">Chờ duyệt</option>
+                  <option value="Đã duyệt">Đã duyệt</option>
+                  <option value="Từ chối">Từ chối</option>
+                </select>
+              </div>
+              <div>
+                <label for="fr-filter-he-thong">Hệ thống</label>
+                <select id="fr-filter-he-thong">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="fr-filter-target-dept">Phòng ban đích</label>
+                <select id="fr-filter-target-dept">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h2 style="margin:0">Yêu cầu tính năng</h2>
+                <p class="muted" style="margin:6px 0 0">Hộp thư yêu cầu — đề xuất thêm/nâng cấp tính năng cho hệ thống.</p>
+              </div>
+              <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+            </div>
+            <div class="table-wrap">
+              <table id="fr-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:44px">STT</th>
+                    <th style="min-width:140px">Hệ thống</th>
+                    <th style="min-width:140px">Loại yêu cầu</th>
+                    <th style="min-width:220px">Tiêu đề</th>
+                    <th style="min-width:260px">Mô tả yêu cầu</th>
+                    <th style="min-width:140px">Đính kèm</th>
+                    <th style="min-width:130px">Từ phòng ban</th>
+                    <th style="min-width:130px">Đến phòng ban</th>
+                    <th style="min-width:110px">Người đề xuất</th>
+                    <th style="min-width:100px">Ưu tiên</th>
+                    <th style="min-width:200px">Trạng thái</th>
+                    <th style="min-width:130px">Thời gian mong muốn</th>
+                    <th style="min-width:110px">Ngày tạo</th>
+                    <th style="min-width:130px"></th>
+                  </tr>
+                </thead>
+                <tbody id="fr-tbody"></tbody>
+              </table>
+              <p class="muted" id="fr-empty" hidden style="padding:16px;text-align:center">Chưa có yêu cầu tính năng nào.</p>
+            </div>
+            <div class="pagination-bar" id="fr-pagination">
+              <div class="row">
+                <label for="fr-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="fr-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="fr-page-prev" class="small">‹ Trước</button>
+                <span id="fr-page-info" class="muted"></span>
+                <button type="button" id="fr-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <dialog id="feature-request-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="feature-request-form">
+            <h2 id="fr-dialog-title" style="margin:0">Thêm yêu cầu tính năng</h2>
+            <input type="hidden" id="fr-id" />
+            <div class="field-row">
+              <div>
+                <label for="fr-he-thong">Hệ thống *</label>
+                <select id="fr-he-thong" required title="Danh mục lấy ở Cấu hình &gt; Hệ thống"></select>
+              </div>
+              <div>
+                <label for="fr-loai-yeu-cau">Loại yêu cầu</label>
+                <select id="fr-loai-yeu-cau"></select>
+              </div>
+            </div>
+            <div>
+              <label for="fr-target-department">Phòng ban đích * <span class="muted" style="font-weight:400">(phòng cần tiếp nhận/xử lý yêu cầu này)</span></label>
+              <select id="fr-target-department" required></select>
+            </div>
+            <div>
+              <label for="fr-tieu-de">Tiêu đề *</label>
+              <input id="fr-tieu-de" required style="width:100%" />
+            </div>
+            <div>
+              <label for="fr-mo-ta">Mô tả chi tiết</label>
+              <textarea id="fr-mo-ta" placeholder="Mô tả nghiệp vụ, lý do cần..." style="min-height:120px"></textarea>
+            </div>
+            <div>
+              <label for="fr-ket-qua-mong-muon">Kết quả mong muốn</label>
+              <textarea id="fr-ket-qua-mong-muon" placeholder="Làm xong thì kết quả trông như thế nào..." style="min-height:120px"></textarea>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="fr-nguoi-de-xuat">Người đề xuất</label>
+                <input id="fr-nguoi-de-xuat" style="width:100%" />
+              </div>
+              <div>
+                <label for="fr-thoi-gian-mong-muon">Thời gian mong muốn thực hiện</label>
+                <input id="fr-thoi-gian-mong-muon" type="date" style="width:100%" />
+              </div>
+            </div>
+            <div>
+              <label for="fr-do-uu-tien">Mức độ ưu tiên</label>
+              <select id="fr-do-uu-tien">
+                <option>Thấp</option>
+                <option selected>Trung bình</option>
+                <option>Cao</option>
+                <option>Khẩn cấp</option>
+              </select>
+            </div>
+            <div>
+              <label for="fr-attachment-input">File đính kèm <span class="muted" style="font-weight:400">(tối đa 10MB — spec, mockup, ảnh chụp màn hình...)</span></label>
+              <div class="muted" id="fr-attachment-current" hidden style="margin-bottom:6px">
+                📎 <a href="#" id="fr-attachment-link" target="_blank" rel="noopener"></a>
+                <button type="button" id="fr-attachment-remove-btn" class="small btn-delete" style="margin-left:8px">Xóa file</button>
+              </div>
+              <input type="file" id="fr-attachment-input" style="width:100%" />
+            </div>
+            <div class="actions">
+              <button type="button" id="feature-request-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Từ chối yêu cầu — chỉ phòng đích thấy nút mở dialog này. -->
+        <dialog id="fr-reject-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="fr-reject-form">
+            <h2 style="margin:0">Từ chối yêu cầu tính năng</h2>
+            <input type="hidden" id="fr-reject-id" />
+            <div>
+              <label for="fr-reject-reason">Lý do từ chối</label>
+              <textarea id="fr-reject-reason" placeholder="Cho bên đề xuất biết lý do (không bắt buộc)..."></textarea>
+            </div>
+            <div class="actions">
+              <button type="button" id="fr-reject-cancel-btn">Hủy</button>
+              <button type="submit" class="danger">Từ chối</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Đưa yêu cầu đã Duyệt vào Backlog — chọn tháng (không cho chọn tháng đã qua) + team. -->
+        <dialog id="fr-backlog-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="fr-backlog-form">
+            <h2 style="margin:0">Đưa vào Backlog</h2>
+            <input type="hidden" id="fr-backlog-id" />
+            <div>
+              <label for="fr-backlog-period">Tháng backlog *</label>
+              <select id="fr-backlog-period" required></select>
+            </div>
+            <div>
+              <label for="fr-backlog-team">Team *</label>
+              <select id="fr-backlog-team" required></select>
+              <p class="muted" id="fr-backlog-no-team" hidden style="margin:6px 0 0">Tháng này chưa có team nào — hãy khai báo team trước ở Team &amp; Nhân sự.</p>
+            </div>
+            <div class="actions">
+              <button type="button" id="fr-backlog-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Đưa vào Backlog</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Đưa yêu cầu đã Duyệt vào Roadmap năm — chọn năm + team. -->
+        <dialog id="fr-roadmap-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="fr-roadmap-form">
+            <h2 style="margin:0">Đưa vào Roadmap năm</h2>
+            <input type="hidden" id="fr-roadmap-id" />
+            <div>
+              <label for="fr-roadmap-year">Năm *</label>
+              <input id="fr-roadmap-year" type="number" required style="max-width:140px" />
+            </div>
+            <div>
+              <label for="fr-roadmap-team">Team *</label>
+              <select id="fr-roadmap-team" required></select>
+            </div>
+            <div class="actions">
+              <button type="button" id="fr-roadmap-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Đưa vào Roadmap</button>
+            </div>
+          </form>
+        </dialog>
+
+
         <!-- ---- Trang Cấu hình ---- -->
         <div id="page-config" hidden>
           <div class="tab-panel-group">
@@ -925,7 +1138,33 @@
             <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
           </div>
 
-          <section class="card" id="config-tab-users" hidden>
+          <div id="config-tab-users" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="user-filter-search">Tìm kiếm</label>
+                <input type="text" id="user-filter-search" placeholder="Họ tên, username, email..." style="min-width:240px" />
+              </div>
+              <div>
+                <label for="user-filter-role">Quyền</label>
+                <select id="user-filter-role">
+                  <option value="">Tất cả</option>
+                  <option value="admin">Admin</option>
+                  <option value="editor">Biên tập</option>
+                  <option value="viewer">Chỉ xem</option>
+                </select>
+              </div>
+              <div>
+                <label for="user-filter-department">Phòng ban</label>
+                <select id="user-filter-department">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
             <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
             <div class="table-wrap">
               <table id="users-config-table">
@@ -934,9 +1173,36 @@
               </table>
               <p class="muted" id="users-config-empty" hidden style="padding:16px;text-align:center">Chưa có user nào đăng nhập.</p>
             </div>
+            <div class="pagination-bar" id="users-config-pagination">
+              <div class="row">
+                <label for="users-config-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="users-config-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="users-config-page-prev" class="small">‹ Trước</button>
+                <span id="users-config-page-info" class="muted"></span>
+                <button type="button" id="users-config-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+          </div>
+
+          <div id="config-tab-phongban" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="dept-filter-search">Tìm kiếm</label>
+                <input type="text" id="dept-filter-search" placeholder="Tên phòng, mã phòng..." style="min-width:240px" />
+              </div>
+            </div>
           </section>
 
-          <section class="card" id="config-tab-phongban" hidden>
+          <section class="card">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Phòng ban</h2>
               <button id="add-department-btn" class="primary">+ Thêm phòng</button>
@@ -949,7 +1215,23 @@
               </table>
               <p class="muted" id="department-config-empty" hidden style="padding:16px;text-align:center">Chưa có phòng nào — bấm "+ Thêm phòng".</p>
             </div>
+            <div class="pagination-bar" id="department-config-pagination">
+              <div class="row">
+                <label for="department-config-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="department-config-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="department-config-page-prev" class="small">‹ Trước</button>
+                <span id="department-config-page-info" class="muted"></span>
+                <button type="button" id="department-config-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
           </section>
+          </div>
 
           <section class="card" id="config-tab-tieuchi">
             <div class="row" style="justify-content:space-between">
@@ -1137,6 +1419,96 @@
             </section>
           </div>
           </div>
+        </div>
+
+        <!-- ---- Trang Nhật ký hoạt động (chỉ Admin) ---- -->
+        <div id="page-action-logs" hidden>
+          <section class="card">
+            <h2>Tìm kiếm</h2>
+            <div class="row">
+              <div>
+                <label for="al-filter-search">Tìm kiếm</label>
+                <input type="text" id="al-filter-search" placeholder="Người thực hiện, mô tả..." style="min-width:220px" />
+              </div>
+              <div>
+                <label for="al-filter-action">Loại hành động</label>
+                <select id="al-filter-action">
+                  <option value="">Tất cả</option>
+                  <option value="dang_nhap">Đăng nhập</option>
+                  <option value="dang_xuat">Đăng xuất</option>
+                  <option value="tao_moi">Tạo mới</option>
+                  <option value="cap_nhat">Cập nhật</option>
+                  <option value="xoa">Xóa</option>
+                  <option value="chuyen_du_lieu">Chuyển dữ liệu</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-module">Module</label>
+                <select id="al-filter-module">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-user">Người thực hiện</label>
+                <select id="al-filter-user">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="al-filter-from">Từ ngày</label>
+                <input type="date" id="al-filter-from" />
+              </div>
+              <div>
+                <label for="al-filter-to">Đến ngày</label>
+                <input type="date" id="al-filter-to" />
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h2 style="margin:0">Nhật ký hoạt động</h2>
+                <p class="muted" style="margin:6px 0 0">Đăng nhập/đăng xuất + mọi hành động thêm/sửa/xóa/chuyển dữ liệu trên toàn hệ thống. Mặc định chỉ hiện 90 ngày gần nhất — lọc theo ngày để xem xa hơn.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="al-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:140px">Thời gian</th>
+                    <th style="min-width:140px">Người thực hiện</th>
+                    <th style="min-width:130px">Phòng ban</th>
+                    <th style="min-width:140px">Module</th>
+                    <th style="min-width:120px">Hành động</th>
+                    <th style="min-width:320px">Mô tả</th>
+                  </tr>
+                </thead>
+                <tbody id="al-tbody"></tbody>
+              </table>
+              <p class="muted" id="al-empty" hidden style="padding:16px;text-align:center">Chưa có nhật ký hoạt động nào khớp bộ lọc.</p>
+            </div>
+            <div class="pagination-bar" id="al-pagination">
+              <div class="row">
+                <label for="al-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="al-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="al-page-prev" class="small">‹ Trước</button>
+                <span id="al-page-info" class="muted"></span>
+                <button type="button" id="al-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---- Trang HDSD (nhúng sổ tay hướng dẫn tĩnh trong app) ---- -->
+        <div id="page-hdsd" hidden>
+          <div id="hdsd-root"></div>
         </div>
       </main>
     </div>
@@ -1831,6 +2203,8 @@
   <script src="js/06-config.js"></script>
   <script src="js/07-roadmap.js"></script>
   <script src="js/08-home.js"></script>
+  <script src="js/10-feature-requests.js"></script>
+  <script src="js/11-action-logs.js"></script>
   <script src="js/09-main.js"></script>
 </body>
 </html>

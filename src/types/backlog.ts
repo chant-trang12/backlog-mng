@@ -116,10 +116,12 @@ export interface Task {
   cpo_danh_gia: number | null;
   cpo_comment: string | null;
   cpo_graded_at: string | null;
+  cpo_graded_by: string | null;
   prev_cpo_danh_gia: number | null;
   prev_cpo_comment: string | null;
   prev_cpo_graded_at: string | null;
-  grading_history: string | null; // JSON: { period_label, cpo_danh_gia, cpo_comment, graded_at }[]
+  prev_cpo_graded_by: string | null;
+  grading_history: string | null; // JSON: { period_label, cpo_danh_gia, cpo_comment, graded_at, graded_by }[]
   da_chuyen_thang: number;
   created_at: string;
   updated_at: string;

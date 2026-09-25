@@ -23,7 +23,10 @@ import rankingRoutes from "./routes/ranking.routes.js";
 import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import featureRequestRoutes from "./routes/featureRequest.routes.js";
+import actionLogRoutes from "./routes/actionLog.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
+import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
@@ -77,7 +80,11 @@ export function createApp() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          // fonts.googleapis.com: stylesheet <link> của trang HDSD nhúng
+          // (public/huong-dan-su-dung.html) — font-src bên dưới đã cho phép
+          // https: nói chung nên file .woff2 thật tải bình thường, chỉ
+          // riêng CSS khai báo @font-face là cần domain này trong style-src.
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           imgSrc: ["'self'", "data:"],
           connectSrc: ["'self'"],
           objectSrc: ["'none'"],
@@ -129,6 +136,11 @@ export function createApp() {
   app.use("/api", requireAuth);
   app.use("/api", attachScope);
   app.use("/api", requireWrite);
+  // Nhật ký hoạt động — đăng ký NGAY sau requireWrite (req.appUser đã có,
+  // nếu SSO bật) và TRƯỚC mọi router nghiệp vụ, để res.on("finish") của nó
+  // được gắn trước khi bất kỳ handler nào phía sau kịp gửi response. Middleware
+  // này tự bỏ qua GET nên không ảnh hưởng gì router action-logs bên dưới.
+  app.use("/api", actionLogMiddleware);
   // BUG đã fix: mount cũ là app.use("/api", requireAdmin, userRoutes) — vì
   // userRoutes tự định nghĩa full path "/users" (không phải "/"), Express
   // chạy requireAdmin cho MỌI request khớp tiền tố "/api" (kể cả
@@ -136,7 +148,12 @@ export function createApp() {
   // path đó có thuộc nó không — non-admin bị 403 trên toàn bộ /api, không
   // chỉ /api/users. Scope requireAdmin đúng vào tiền tố "/api/users".
   app.use("/api/users", requireAdmin);
+  // Nhật ký hoạt động — chỉ Admin xem được, cùng lý do/cách chặn như
+  // /api/users ở trên (scope requireAdmin đúng vào tiền tố route, không
+  // đè lên toàn bộ /api).
+  app.use("/api/action-logs", requireAdmin);
   app.use("/api", userRoutes);
+  app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
@@ -153,6 +170,7 @@ export function createApp() {
   app.use("/api", rankingRoutes);
   app.use("/api", catalogRoutes);
   app.use("/api", roadmapRoutes);
+  app.use("/api", featureRequestRoutes);
 
   app.use(notFound);
   // Global error handler — must be last, after notFound
