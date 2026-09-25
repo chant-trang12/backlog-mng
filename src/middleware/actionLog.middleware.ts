@@ -58,6 +58,17 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "ranking-config": { module: "Cấu hình", entity: "Ranking team" },
 };
 
+// Route lồng dạng "/<root>/:id/<subResource>" (VD /tasks/:id/members,
+// /roadmap-items/:id/details) — segments[0] ("tasks") KHÔNG PHẢI đối
+// tượng thật sự bị tác động, mà là subResource ("members" = nhân sự tham
+// gia task). Không override thì entity bị suy nhầm theo root (VD ra
+// "Thêm Nhiệm vụ" trong khi thực ra là thêm 1 dòng nhân sự tham gia task)
+// — khớp theo "root/subResource".
+const SUB_RESOURCE_LABELS: Record<string, { module: string; entity: string }> = {
+  "tasks/members": { module: "Backlog", entity: "Nhân sự tham gia task" },
+  "roadmap-items/details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
+};
+
 // Segment CUỐI (khi KHÔNG phải số, VD "approve"/"delete-selected") -> hành
 // động cụ thể hơn mặc định theo HTTP method.
 const VERB_LABELS: Record<string, { action: ActionLogType; verb: string }> = {
@@ -95,7 +106,7 @@ const DEFAULT_VERB: Record<string, { action: ActionLogType; verb: string }> = {
 const NAME_FIELDS = [
   "nhiem_vu", "tieu_de", "ten_muc_tieu", "ten_he_thong", "ten_phan_loai",
   "ten_nhom", "ten_chuc_vu", "ten_tag", "muc_tieu", "he_thong", "team",
-  "name", "ten", "label", "title", "username",
+  "name", "ten", "label", "title", "username", "su_co", "noi_dung",
 ];
 
 const USER_ROLE_LABEL: Record<string, string> = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };
@@ -185,15 +196,46 @@ async function resolveTeamSuffix(body: unknown): Promise<string> {
   return name ? ` — Team ${name}` : "";
 }
 
+// "Nhân sự tham gia task" (task_members) không có cột tên riêng — chỉ có
+// member_id trỏ sang members.name:
+// - Tạo mới (POST /tasks/:taskId/members): member_id nằm trong BODY.
+// - Sửa/Xóa (PUT|DELETE /task-members/:id): id (task_members.id) nằm trên
+//   URL, phải JOIN sang members mới ra tên.
+async function resolveTaskMemberName(root: string, lastSegment: string | undefined, idSegment: string | undefined, body: unknown): Promise<string> {
+  try {
+    if (root === "tasks" && lastSegment === "members") {
+      const memberId = body && typeof body === "object" ? (body as Record<string, unknown>).member_id : undefined;
+      if (memberId == null || !Number.isFinite(Number(memberId))) return "";
+      return await resolveEntityName("members", "name", String(memberId));
+    }
+    if (root === "task-members" && idSegment) {
+      const row = await db("task_members as tm")
+        .join("members as m", "m.id", "tm.member_id")
+        .where("tm.id", Number(idSegment))
+        .first("m.name as name");
+      const name = (row as { name?: string } | undefined)?.name;
+      return typeof name === "string" && name.trim() ? name.trim() : "";
+    }
+  } catch {
+    // im lặng bỏ qua — lỗi truy vấn không được làm hỏng request chính.
+  }
+  return "";
+}
+
 async function buildDescription(req: Request): Promise<{ module: string | null; action: ActionLogType; description: string }> {
   const segments = req.path.split("/").filter(Boolean);
   const root = segments[0] ?? "";
   const lastSegment = segments[segments.length - 1];
   const verbEntry = segments.length > 1 && !isNumericSegment(lastSegment) ? VERB_LABELS[lastSegment as string] : undefined;
 
-  const base = MODULE_LABELS[root];
+  // Route lồng "/<root>/:id/<subResource>" -> ưu tiên nhãn theo subResource
+  // (xem SUB_RESOURCE_LABELS), không dùng nhãn của root.
+  const subKey = segments.length === 3 && isNumericSegment(segments[1]) && !isNumericSegment(segments[2]) ? `${segments[0]}/${segments[2]}` : undefined;
+  const subBase = subKey ? SUB_RESOURCE_LABELS[subKey] : undefined;
+  const base = subBase ?? MODULE_LABELS[root];
   const moduleLabel = base?.module ?? null;
   const entityLabel = base?.entity ?? (root || "Dữ liệu");
+  const nameLookup = "table" in (base ?? {}) ? (base as { table?: string; nameColumn?: string }) : undefined;
 
   const body = req.body as unknown;
   const fieldOverride = !verbEntry ? pickFieldVerbOverride(root, body) : null;
@@ -208,13 +250,17 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
   // Body dạng {ids:[...]} (xóa/đánh dấu hàng loạt) -> hiện số lượng thay vì
   // tên; còn lại -> thử lấy tên gợi nhớ từ body, không có thì tra DB theo
   // id (bù cho các request chỉ gửi 1 field không phải tên, VD {ha_ki:true},
-  // hoặc DELETE không có body đáng kể).
+  // hoặc DELETE không có body đáng kể) — "Nhân sự tham gia task" tra riêng
+  // qua resolveTaskMemberName() vì không có table/nameColumn đơn giản.
   let detail = "";
   if (body && typeof body === "object" && !Buffer.isBuffer(body) && Array.isArray((body as Record<string, unknown>).ids)) {
     detail = ` (${((body as Record<string, unknown>).ids as unknown[]).length} mục)`;
   } else {
     const snippet = req.method !== "DELETE" ? pickNameSnippet(body) : "";
-    const resolved = snippet || (await resolveEntityName(base?.table, base?.nameColumn, idSegment));
+    const resolved =
+      snippet ||
+      (await resolveTaskMemberName(root, lastSegment, idSegment, body)) ||
+      (await resolveEntityName(nameLookup?.table, nameLookup?.nameColumn, idSegment));
     if (resolved) detail = ` "${resolved}"`;
   }
 
