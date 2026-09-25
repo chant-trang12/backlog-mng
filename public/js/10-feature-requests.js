@@ -197,7 +197,11 @@ function renderFeatureRequestTable() {
       <td>${pageStart + i + 1}</td>
       <td><span class="status-badge ${systemColorClass(r.he_thong)}">${r.he_thong}</span></td>
       <td>${r.loai_yeu_cau ?? ""}</td>
-      <td>${r.tieu_de}</td>
+      <td>${r.tieu_de}${
+        r.attachment_filename
+          ? `<div><a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}">📎 ${r.attachment_filename}</a></div>`
+          : ""
+      }</td>
       <td>${(r.mo_ta ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${r.department_name ?? `<span class="muted">—</span>`}</td>
       <td><strong>${r.target_department_name ?? `<span class="muted">—</span>`}</strong></td>
@@ -316,6 +320,20 @@ function openFeatureRequestDialog(item) {
   document.getElementById("fr-thoi-gian-mong-muon").value = item?.thoi_gian_mong_muon ?? "";
   document.getElementById("fr-do-uu-tien").value = item?.do_uu_tien ?? "Trung bình";
 
+  // File đính kèm — chỉ hiện khối "đã có file X, [Xóa file]" khi ĐANG SỬA
+  // 1 yêu cầu đã có sẵn file (tạo mới thì chưa có id nên chưa thể upload
+  // file, chọn file lúc này chỉ được UPLOAD SAU KHI Lưu tạo ra id — xem
+  // submit handler bên dưới).
+  const attachmentCurrent = document.getElementById("fr-attachment-current");
+  const attachmentLink = document.getElementById("fr-attachment-link");
+  if (item?.attachment_filename) {
+    attachmentLink.textContent = item.attachment_filename;
+    attachmentLink.href = `/api/feature-requests/${item.id}/attachment${deptParam("?")}`;
+    attachmentCurrent.hidden = false;
+  } else {
+    attachmentCurrent.hidden = true;
+  }
+
   document.getElementById("feature-request-dialog").showModal();
 }
 
@@ -325,6 +343,41 @@ document.getElementById("add-feature-request-btn")?.addEventListener("click", ()
 document.getElementById("feature-request-cancel-btn")?.addEventListener("click", () => {
   document.getElementById("feature-request-dialog").close();
 });
+
+document.getElementById("fr-attachment-remove-btn")?.addEventListener("click", async () => {
+  const id = document.getElementById("fr-id").value;
+  if (!id) return;
+  if (!(await confirmDialog("Xóa file đính kèm của yêu cầu này?"))) return;
+  try {
+    await api(`/api/feature-requests/${id}/attachment${deptParam("?")}`, { method: "DELETE" });
+    document.getElementById("fr-attachment-current").hidden = true;
+    await loadFeatureRequests();
+    showToast("Đã xóa file đính kèm.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Upload file đính kèm (nếu có chọn) sau khi đã có id (tạo mới xong mới có
+// id, sửa thì đã có sẵn) — dùng fetch() thẳng thay vì api() vì Content-Type
+// ở đây là kiểu file, không phải application/json (giống mọi chỗ upload
+// file khác trong hệ thống, xem 03-members.js#memberFileInput).
+async function uploadFeatureRequestAttachment(id, file) {
+  const buffer = await file.arrayBuffer();
+  // deptParam() luôn dùng prefix mặc định "&" — tự thêm "?" ở đầu query
+  // (không dùng deptParam("?") vì còn phải nối thêm "filename" sau đó,
+  // không đoán trước được deptParam() có trả rỗng hay không).
+  const url = `/api/feature-requests/${id}/attachment?filename=${encodeURIComponent(file.name)}${deptParam()}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: buffer,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Lỗi ${res.status} khi tải file đính kèm`);
+  }
+}
 
 document.getElementById("feature-request-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -351,14 +404,27 @@ document.getElementById("feature-request-form")?.addEventListener("submit", asyn
     payload.department_id = state.currentDepartmentId ?? undefined;
   }
 
+  const attachmentFile = document.getElementById("fr-attachment-input").files[0];
+
   try {
+    let savedId = id;
     if (id) {
       await api(`/api/feature-requests/${id}${deptParam("?")}`, { method: "PUT", body: JSON.stringify(payload) });
-      showToast("Đã cập nhật yêu cầu.", "success");
     } else {
-      await api("/api/feature-requests", { method: "POST", body: JSON.stringify(payload) });
-      showToast("Đã gửi yêu cầu tính năng.", "success");
+      const created = await api("/api/feature-requests", { method: "POST", body: JSON.stringify(payload) });
+      savedId = created.id;
     }
+    // File đính kèm cần ID có sẵn nên luôn upload SAU KHI tạo/sửa xong —
+    // nếu bước này lỗi, yêu cầu chính vẫn đã lưu thành công (chỉ báo lỗi
+    // riêng cho phần file, không rollback/không mất dữ liệu vừa nhập).
+    if (attachmentFile) {
+      try {
+        await uploadFeatureRequestAttachment(savedId, attachmentFile);
+      } catch (attachErr) {
+        showToast(`Đã lưu yêu cầu nhưng lỗi khi tải file đính kèm: ${attachErr.message}`);
+      }
+    }
+    showToast(id ? "Đã cập nhật yêu cầu." : "Đã gửi yêu cầu tính năng.", "success");
     document.getElementById("feature-request-dialog").close();
     await loadFeatureRequests();
   } catch (err) {

@@ -101,6 +101,23 @@ export async function migrateFeatureRequestTables(): Promise<void> {
       table.string("thoi_gian_mong_muon", 50);
     });
   }
+  // File đính kèm (1 file/yêu cầu) — tài liệu bổ sung cho đề xuất (spec,
+  // mockup, ảnh chụp màn hình...). Lưu THẲNG nội dung file trong DB
+  // (attachment_data, kiểu binary) thay vì ghi ra đĩa riêng — đơn giản hơn
+  // (không phải tự dọn file mồ côi khi xóa yêu cầu, tự động theo cùng
+  // vòng đời với dòng dữ liệu, sao lưu/phục hồi DB là có luôn file) và
+  // hợp với quy mô nội bộ (không kỳ vọng file rất lớn/rất nhiều). Cột
+  // filename/mime/size tách riêng để list API trả về mà KHÔNG cần kéo theo
+  // toàn bộ nội dung file nặng — xem stripAttachmentData() ở
+  // featureRequest.service.ts.
+  if (!(await db.schema.hasColumn("feature_requests", "attachment_filename"))) {
+    await db.schema.alterTable("feature_requests", (table) => {
+      table.string("attachment_filename", 255);
+      table.string("attachment_mime", 100);
+      table.integer("attachment_size");
+      table.binary("attachment_data");
+    });
+  }
   // Dữ liệu demo cũ có thể còn trang_thai theo bộ giá trị trước đó (Mới/
   // Đang xem xét/Đã duyệt/Từ chối/Đang triển khai/Hoàn thành) — quy về 3
   // giá trị mới cho khớp luồng Duyệt/Từ chối vừa chốt, tránh badge hiện

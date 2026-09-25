@@ -1050,6 +1050,14 @@
                 <option>Khẩn cấp</option>
               </select>
             </div>
+            <div>
+              <label for="fr-attachment-input">File đính kèm <span class="muted" style="font-weight:400">(tối đa 10MB — spec, mockup, ảnh chụp màn hình...)</span></label>
+              <div class="muted" id="fr-attachment-current" hidden style="margin-bottom:6px">
+                📎 <a href="#" id="fr-attachment-link" target="_blank" rel="noopener"></a>
+                <button type="button" id="fr-attachment-remove-btn" class="small btn-delete" style="margin-left:8px">Xóa file</button>
+              </div>
+              <input type="file" id="fr-attachment-input" style="width:100%" />
+            </div>
             <div class="actions">
               <button type="button" id="feature-request-cancel-btn">Hủy</button>
               <button type="submit" class="primary">Lưu</button>

@@ -18,8 +18,20 @@ export interface FeatureRequest {
   ghi_chu_xu_ly: string | null;
   linked_task_id: number | null;
   linked_roadmap_item_id: number | null;
+  // Metadata file đính kèm — KHÔNG gồm nội dung file (attachment_data),
+  // xem stripAttachmentData() ở featureRequest.service.ts. null = chưa có
+  // file nào đính kèm.
+  attachment_filename: string | null;
+  attachment_mime: string | null;
+  attachment_size: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface FeatureRequestAttachment {
+  filename: string;
+  mime: string;
+  data: Buffer;
 }
 
 export interface FeatureRequestWithDept extends FeatureRequest {

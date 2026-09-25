@@ -909,6 +909,20 @@ th {
   white-space: nowrap;
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+/* File đính kèm ở bảng Yêu cầu tính năng — link nhỏ dưới Tiêu đề, không
+   chiếm quá nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
+.fr-attachment-chip {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 4px;
+  vertical-align: bottom;
+}
+.fr-attachment-chip:hover { color: var(--primary); }
 
 /* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
 #task-table td:nth-child(14), /* % Đánh giá */

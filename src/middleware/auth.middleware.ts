@@ -74,6 +74,10 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // (requireTargetScope ở featureRequest.controller.ts, không liên quan role).
 // req.path đã bị Express cắt bỏ tiền tố "/api" (mount ở app.use("/api", ...)).
 const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests"]);
+// File đính kèm là 1 phần của việc "đề xuất" (bổ sung tài liệu cho chính
+// yêu cầu vừa/đang tạo) — cùng tinh thần ngoại lệ ở trên, nhưng path có
+// :id động nên không đưa được vào Set literal, phải so bằng regex riêng.
+const VIEWER_ALLOWED_ATTACHMENT_PATH = /^\/feature-requests\/\d+\/attachment$/;
 
 /**
  * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api, trừ đúng danh sách
@@ -88,6 +92,9 @@ export function requireWrite(req: Request, res: Response, next: NextFunction): v
   }
   if (req.appUser.role === "viewer") {
     if (VIEWER_ALLOWED_WRITES.has(`${req.method} ${req.path}`)) {
+      return next();
+    }
+    if (req.method === "POST" && VIEWER_ALLOWED_ATTACHMENT_PATH.test(req.path)) {
       return next();
     }
     res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });

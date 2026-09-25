@@ -203,6 +203,17 @@ describe("Authentication & SSO Integration", () => {
       }
     });
 
+    it("allows viewer to POST /feature-requests/:id/attachment (đính kèm file bổ sung cho chính đề xuất — cùng tinh thần ngoại lệ tạo mới)", () => {
+      const { nextCalled } = callRequireWrite("viewer", "POST", "/feature-requests/1/attachment");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("still blocks viewer from DELETE /feature-requests/:id/attachment (Quy tắc 9.1 — xóa vẫn cần editor trở lên)", () => {
+      const { statusCode, nextCalled } = callRequireWrite("viewer", "DELETE", "/feature-requests/1/attachment");
+      expect(statusCode).toBe(403);
+      expect(nextCalled).toBe(false);
+    });
+
     it("passes through GET for every role, including editor", () => {
       for (const role of ["admin", "editor", "viewer"] as const) {
         const { nextCalled } = callRequireWrite(role, "GET");

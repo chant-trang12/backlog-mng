@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import type {
   CreateFeatureRequestInput,
+  FeatureRequestAttachment,
   FeatureRequestWithDept,
   LinkToBacklogInput,
   LinkToRoadmapInput,
@@ -12,6 +13,17 @@ import { createRoadmapItem } from "./roadmap.service.js";
 import { getPeriod } from "./period.service.js";
 
 const UNRESTRICTED = { all: true, departmentId: null } as const;
+
+// attachment_data có thể nặng (tới ~10MB, xem giới hạn ở route) — mọi API
+// trả DANH SÁCH/CHI TIẾT yêu cầu (không phải API tải file riêng) chỉ cần
+// biết CÓ file hay không + tên/kiểu/dung lượng để hiển thị, không cần kéo
+// theo toàn bộ nội dung file mỗi lần. Xoá field đó khỏi row trước khi trả
+// về — attachment_data vẫn nằm nguyên trong DB, chỉ không lộ ra qua các
+// API này.
+function stripAttachmentData<T extends { attachment_data?: unknown }>(row: T): Omit<T, "attachment_data"> {
+  const { attachment_data, ...rest } = row;
+  return rest;
+}
 
 // [DEMO 3002 - v2] Theo yêu cầu mới: MỘT yêu cầu chỉ hiển thị cho đúng 2
 // phòng liên quan trực tiếp — phòng đề xuất (department_id) và phòng đích
@@ -28,7 +40,7 @@ export async function listFeatureRequests(departmentId: number | null): Promise<
     .where("fr.department_id", departmentId)
     .orWhere("fr.target_department_id", departmentId)
     .orderBy("fr.created_at", "desc");
-  return rows as FeatureRequestWithDept[];
+  return rows.map(stripAttachmentData) as FeatureRequestWithDept[];
 }
 
 export async function getFeatureRequest(id: number): Promise<FeatureRequestWithDept | undefined> {
@@ -38,7 +50,7 @@ export async function getFeatureRequest(id: number): Promise<FeatureRequestWithD
     .select("fr.*", "d.name as department_name", "td.name as target_department_name")
     .where("fr.id", id)
     .first();
-  return row as FeatureRequestWithDept | undefined;
+  return row ? (stripAttachmentData(row) as FeatureRequestWithDept) : undefined;
 }
 
 export async function createFeatureRequest(input: CreateFeatureRequestInput): Promise<FeatureRequestWithDept> {
@@ -95,6 +107,50 @@ export async function updateFeatureRequest(
 
 export async function deleteFeatureRequest(id: number): Promise<boolean> {
   const count = await db("feature_requests").where({ id }).delete();
+  return count > 0;
+}
+
+// ---- File đính kèm — 1 file/yêu cầu, ghi đè nếu đã có file cũ. ----
+
+export async function setFeatureRequestAttachment(
+  id: number,
+  attachment: FeatureRequestAttachment,
+): Promise<boolean> {
+  const count = await db("feature_requests")
+    .where({ id })
+    .update({
+      attachment_filename: attachment.filename,
+      attachment_mime: attachment.mime,
+      attachment_size: attachment.data.length,
+      attachment_data: attachment.data,
+      updated_at: db.fn.now(),
+    });
+  return count > 0;
+}
+
+export async function getFeatureRequestAttachment(id: number): Promise<FeatureRequestAttachment | undefined> {
+  const row = await db("feature_requests")
+    .where({ id })
+    .whereNotNull("attachment_data")
+    .first("attachment_filename", "attachment_mime", "attachment_data");
+  if (!row) return undefined;
+  return {
+    filename: row.attachment_filename,
+    mime: row.attachment_mime,
+    data: row.attachment_data,
+  };
+}
+
+export async function deleteFeatureRequestAttachment(id: number): Promise<boolean> {
+  const count = await db("feature_requests")
+    .where({ id })
+    .update({
+      attachment_filename: null,
+      attachment_mime: null,
+      attachment_size: null,
+      attachment_data: null,
+      updated_at: db.fn.now(),
+    });
   return count > 0;
 }
 
