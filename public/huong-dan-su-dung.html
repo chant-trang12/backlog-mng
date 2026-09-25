@@ -90,10 +90,11 @@
 
   a { color: var(--accent); }
 
+  /* Không tự giới hạn/căn giữa riêng — để khoảng cách 2 bên do main của app
+     (đã bọc ngoài #page-hdsd) quyết định, giống mọi trang khác trong app,
+     tránh cộng dồn 2 lớp lề (lề main + lề doc-page) làm dư khoảng trắng. */
   .doc-page {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 40px 40px 100px;
+    padding-bottom: 60px;
   }
 
   /* ---- Tab ngang — cùng kiểu "chrome-tabs" dùng chung trong toàn app
@@ -139,9 +140,9 @@
     border-top-left-radius: 0;
     border-radius: 0 12px 12px 12px;
     background: var(--surface);
-    padding: 40px 44px 56px;
+    padding: clamp(14px, 1.4vw + 8px, 24px);
   }
-  .doc-header { margin-bottom: 28px; max-width: 720px; }
+  .doc-header { margin-bottom: 24px; max-width: 720px; }
   .doc-header .eyebrow {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.75rem;
@@ -329,9 +330,7 @@
   }
 
   @media (max-width: 900px) {
-    .doc-page { padding: 24px 16px 60px; }
     .hdsd-tab { padding: 7px 11px; font-size: 0.8rem; }
-    main { padding: 28px 20px 44px; }
   }
 </style>
 </head>
