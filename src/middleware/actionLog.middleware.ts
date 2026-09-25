@@ -192,8 +192,10 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
   const defaultVerb = DEFAULT_VERB[req.method] ?? { action: "cap_nhat" as ActionLogType, verb: "Thao tác" };
   const { action, verb } = verbEntry ?? fieldOverride ?? defaultVerb;
 
+  // Chỉ dùng để TRA CỨU (resolveEntityName bên dưới) — id thô (#31) không
+  // có ý nghĩa gì với người xem log nên không đưa vào description nữa,
+  // chỉ hiện TÊN đã tra được (hoặc không hiện gì nếu tra không ra).
   const idSegment = segments.find((s) => isNumericSegment(s));
-  const idSuffix = idSegment ? ` #${idSegment}` : "";
 
   // Body dạng {ids:[...]} (xóa/đánh dấu hàng loạt) -> hiện số lượng thay vì
   // tên; còn lại -> thử lấy tên gợi nhớ từ body, không có thì tra DB theo
@@ -209,7 +211,7 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
   }
 
   const teamSuffix = await resolveTeamSuffix(body);
-  const description = `${verb} ${entityLabel}${idSuffix}${detail}${teamSuffix}`.trim();
+  const description = `${verb} ${entityLabel}${detail}${teamSuffix}`.trim();
   return { module: moduleLabel, action, description };
 }
 
@@ -238,7 +240,7 @@ export async function actionLogMiddleware(req: Request, res: Response, next: Nex
   res.on("finish", () => {
     // Chỉ ghi khi request THỰC SỰ thành công (2xx) — request bị chặn/lỗi
     // validate (400/403/404...) không tạo ra thay đổi dữ liệu thật, ghi vào
-    // sẽ gây nhiễu (VD "Xóa Nhiệm vụ #999" dù thực ra 404 không tìm thấy).
+    // sẽ gây nhiễu (VD ghi "Đã xóa" dù thực ra 404 không tìm thấy).
     if (res.statusCode < 200 || res.statusCode >= 300) return;
     void recordActionLog({
       user_id: appUser?.id ?? null,

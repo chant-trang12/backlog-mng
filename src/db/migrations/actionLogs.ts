@@ -2,7 +2,7 @@ import { db } from "../connection.js";
 
 // Nhật ký hoạt động (Action Log) — ghi lại đăng nhập/đăng xuất + mọi hành
 // động thêm/sửa/xóa/chuyển dữ liệu của tài khoản trên toàn hệ thống. Dòng
-// chỉ TÓM TẮT ("Sửa Nhiệm vụ #123 'Thiết kế lại trang chủ'"), KHÔNG lưu
+// chỉ TÓM TẮT ("Cập nhật Nhiệm vụ 'Thiết kế lại trang chủ'"), KHÔNG lưu
 // nội dung trước/sau (đã thống nhất phạm vi với người dùng) — xem
 // src/middleware/actionLog.middleware.ts (ghi tự động cho mọi request ghi
 // tới /api) và auth.controller.ts (đăng nhập/đăng xuất, nằm ngoài /api).
