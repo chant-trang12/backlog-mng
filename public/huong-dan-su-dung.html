@@ -142,7 +142,7 @@
     background: var(--surface);
     padding: clamp(14px, 1.4vw + 8px, 24px);
   }
-  .doc-header { margin-bottom: 24px; max-width: 720px; }
+  .doc-header { margin-bottom: 24px; }
   .doc-header .eyebrow {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.75rem;
@@ -158,7 +158,7 @@
     text-wrap: balance;
     letter-spacing: -0.01em;
   }
-  .doc-header p { color: var(--ink-soft); font-size: 1.02rem; max-width: 62ch; }
+  .doc-header p { color: var(--ink-soft); font-size: 1.02rem; }
 
   .intro-grid {
     display: grid;
@@ -179,19 +179,15 @@
      card rộng gần hết main của app, dư hẳn khoảng trắng 2 bên — nới lên
      dùng gần hết bề ngang khung, chỉ đoạn văn (nơi dòng dài mới khó đọc)
      mới tự giới hạn lại hẹp hơn ở rule ngay dưới. */
+  /* Chữa 2 lần trước vẫn còn dư trắng vì cap chiều rộng đọc (720px rồi
+     74ch) trong khi card chứa nó rộng hơn nhiều — dù canh giữa hay không,
+     phần trống vẫn lộ rõ thành 1 khối trắng lệch hẳn sang 1 bên. Bỏ hẳn
+     giới hạn riêng — đoạn văn/danh sách dùng ĐÚNG bề ngang thật của khung,
+     giống mọi đoạn văn khác trong app (app cũng không tự giới hạn <p>
+     theo ký tự/dòng ở bất kỳ trang nào khác).
+     */
   section.doc-section {
-    max-width: 100%;
     scroll-margin-top: 24px;
-  }
-  section.doc-section > p,
-  section.doc-section > ul,
-  section.doc-section > ol,
-  section.doc-section .callout,
-  section.doc-section .steps,
-  section.doc-section .fieldlist,
-  h3.feature,
-  .feature-lede {
-    max-width: 74ch;
   }
   .section-head {
     display: flex;
@@ -206,7 +202,7 @@
     margin: 0;
     text-wrap: balance;
   }
-  .section-sub { color: var(--ink-soft); margin: 6px 0 28px; max-width: 62ch; }
+  .section-sub { color: var(--ink-soft); margin: 6px 0 28px; }
 
   h3.feature {
     font-size: 1.1rem;
@@ -335,7 +331,6 @@
   .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 20px; }
 
   footer.doc-footer {
-    max-width: 720px;
     margin-top: 64px;
     padding-top: 24px;
     border-top: 1px solid var(--line);
