@@ -861,17 +861,18 @@ th {
 
 /* Bảng Yêu cầu tính năng — label cột căn giữa; TẤT CẢ các cột căn giữa
    theo chiều dọc (kể cả Tiêu đề/Mô tả nhiều dòng), riêng cột STT/Hệ
-   thống/Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí
-   1/2/9/10/11/12, đều là số/badge ngắn) căn thêm cả chiều ngang — các cột
-   còn lại (Tiêu đề, Mô tả...) giữ căn trái vì là văn bản dài. */
+   thống/Đính kèm/Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí
+   1/2/5/10/11/12/13, đều là số/badge/link ngắn) căn thêm cả chiều ngang —
+   các cột còn lại (Tiêu đề, Mô tả...) giữ căn trái vì là văn bản dài. */
 #fr-table th { text-align: center; }
 #fr-table td { vertical-align: middle; }
 #fr-table td:nth-child(1),
 #fr-table td:nth-child(2),
-#fr-table td:nth-child(9),
+#fr-table td:nth-child(5),
 #fr-table td:nth-child(10),
 #fr-table td:nth-child(11),
-#fr-table td:nth-child(12) {
+#fr-table td:nth-child(12),
+#fr-table td:nth-child(13) {
   text-align: center;
 }
 
@@ -909,17 +910,16 @@ th {
   white-space: nowrap;
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
-/* File đính kèm ở bảng Yêu cầu tính năng — link nhỏ dưới Tiêu đề, không
-   chiếm quá nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
+/* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
+   nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
 .fr-attachment-chip {
   display: inline-block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--muted);
-  margin-top: 4px;
   vertical-align: bottom;
 }
 .fr-attachment-chip:hover { color: var(--primary); }

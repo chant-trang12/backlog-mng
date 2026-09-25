@@ -197,10 +197,11 @@ function renderFeatureRequestTable() {
       <td>${pageStart + i + 1}</td>
       <td><span class="status-badge ${systemColorClass(r.he_thong)}">${r.he_thong}</span></td>
       <td>${r.loai_yeu_cau ?? ""}</td>
-      <td>${r.tieu_de}${
+      <td>${r.tieu_de}</td>
+      <td>${
         r.attachment_filename
-          ? `<div><a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}">📎 ${r.attachment_filename}</a></div>`
-          : ""
+          ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}">📎 ${r.attachment_filename}</a>`
+          : `<span class="muted">—</span>`
       }</td>
       <td>${(r.mo_ta ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${r.department_name ?? `<span class="muted">—</span>`}</td>
