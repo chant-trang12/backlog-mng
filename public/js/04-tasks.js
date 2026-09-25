@@ -82,7 +82,7 @@ function renderTasks() {
       </td>
       <td>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
-        ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
+        ${t.cpo_graded_at ? `<div class="cell-graded-at"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
         ${renderGradingHistory(t, "content")}
       </td>
       <td><div class="actions-cell">
@@ -90,7 +90,7 @@ function renderTasks() {
         <button class="small btn-delete delete-btn">Xóa</button>
         <button class="small btn-grade grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
-        <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này">👤 Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
+        <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
       </div></td>
     </tr>`;
     })
@@ -788,7 +788,7 @@ function renderTaskMembers() {
       try {
         await api(`/api/task-members/${btn.dataset.id}`, { method: "DELETE" });
         await loadTaskMembers();
-        await loadTasks(); // cập nhật lại số đếm ở nút "👤 Nhân sự (N)"
+        await loadTasks(); // cập nhật lại số đếm ở nút "Nhân sự (N)"
       } catch (err) {
         showToast(err.message);
       }

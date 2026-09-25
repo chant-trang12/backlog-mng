@@ -139,6 +139,16 @@
     color: #fff;
     font-weight: 600;
   }
+  .icon { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -0.2em; margin-right: 0.35em; }
+  .ic { display: inline-flex; color: var(--accent); }
+  .ic .icon { margin-right: 0; }
+  .hdsd-tab.active .ic { color: inherit; }
+  td > .icon:only-child { margin-right: 0; color: var(--role-all-ink); }
+  .icon { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -0.2em; margin-right: 0.35em; }
+  .ic { display: inline-flex; color: var(--accent); }
+  .ic .icon { margin-right: 0; }
+  .hdsd-tab.active .ic { color: inherit; }
+  td > .icon:only-child { margin-right: 0; color: var(--role-all-ink); }
   .hdsd-tab .ic { font-size: 0.95rem; }
 
   /* ---- Main content ---- */
@@ -198,7 +208,7 @@
   }
   .section-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
     margin-bottom: 4px;
   }
@@ -351,21 +361,21 @@
   </header>
 
   <nav class="hdsd-tabs" id="hdsd-tabs">
-    <button type="button" class="hdsd-tab active" data-panel="mo-dau"><span class="ic">📘</span> Mở đầu</button>
-    <button type="button" class="hdsd-tab" data-panel="trang-chu"><span class="ic">🏠</span> Trang chủ</button>
-    <button type="button" class="hdsd-tab" data-panel="backlog"><span class="ic">📋</span> Nhiệm vụ (Backlog)</button>
-    <button type="button" class="hdsd-tab" data-panel="team"><span class="ic">👥</span> Team &amp; Nhân sự</button>
-    <button type="button" class="hdsd-tab" data-panel="cskh"><span class="ic">🎧</span> CSKH</button>
-    <button type="button" class="hdsd-tab" data-panel="roadmap"><span class="ic">🗺️</span> Roadmap năm</button>
-    <button type="button" class="hdsd-tab" data-panel="feature-requests"><span class="ic">💡</span> Yêu cầu tính năng</button>
-    <button type="button" class="hdsd-tab" data-panel="config"><span class="ic">⚙️</span> Cấu hình</button>
-    <button type="button" class="hdsd-tab" data-panel="action-logs"><span class="ic">🧾</span> Nhật ký hoạt động</button>
-    <button type="button" class="hdsd-tab" data-panel="phan-quyen"><span class="ic">🔑</span> Phân quyền</button>
+    <button type="button" class="hdsd-tab active" data-panel="mo-dau"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg></span> Mở đầu</button>
+    <button type="button" class="hdsd-tab" data-panel="trang-chu"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg></span> Trang chủ</button>
+    <button type="button" class="hdsd-tab" data-panel="backlog"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg></span> Nhiệm vụ (Backlog)</button>
+    <button type="button" class="hdsd-tab" data-panel="team"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg></span> Team &amp; Nhân sự</button>
+    <button type="button" class="hdsd-tab" data-panel="cskh"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-headset"/></svg></span> CSKH</button>
+    <button type="button" class="hdsd-tab" data-panel="roadmap"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg></span> Roadmap năm</button>
+    <button type="button" class="hdsd-tab" data-panel="feature-requests"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg></span> Yêu cầu tính năng</button>
+    <button type="button" class="hdsd-tab" data-panel="config"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span> Cấu hình</button>
+    <button type="button" class="hdsd-tab" data-panel="action-logs"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg></span> Nhật ký hoạt động</button>
+    <button type="button" class="hdsd-tab" data-panel="phan-quyen"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-key"/></svg></span> Phân quyền</button>
   </nav>
 
   <main>
     <section class="doc-section" id="mo-dau">
-      <div class="section-head"><span class="ic">📘</span><h2>Mở đầu</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg></span><h2>Mở đầu</h2></div>
       <p class="section-sub">Vài khái niệm dùng xuyên suốt toàn bộ hệ thống — nắm phần này trước sẽ dễ hiểu các trang sau.</p>
 
       <h3 class="feature">Bộ chuyển Phòng ban</h3>
@@ -384,7 +394,7 @@
     </section>
 
     <section class="doc-section" id="trang-chu" hidden>
-      <div class="section-head"><span class="ic">🏠</span><h2>Trang chủ</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg></span><h2>Trang chủ</h2></div>
       <p class="section-sub">Bảng điều khiển tổng quan — xem nhanh tình hình Backlog và Ranking mà không cần vào từng trang.</p>
 
       <h3 class="feature">Tìm kiếm &amp; thẻ tổng quan</h3>
@@ -403,7 +413,7 @@
     </section>
 
     <section class="doc-section" id="backlog" hidden>
-      <div class="section-head"><span class="ic">📋</span><h2>Nhiệm vụ (Backlog)</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg></span><h2>Nhiệm vụ (Backlog)</h2></div>
       <p class="section-sub">Trang trung tâm — quản lý danh sách công việc của team theo từng tháng: tạo, chấm điểm, theo dõi tiến độ.</p>
 
       <h3 class="feature" id="backlog-thang">Tháng backlog</h3>
@@ -432,16 +442,16 @@
           <tr><td><span class="ui">Xóa</span></td><td>Xóa hẳn nhiệm vụ.</td><td><span class="role role-admin">Admin</span></td></tr>
           <tr><td><span class="ui">Chấm điểm</span></td><td>Nhập % Đánh giá + Nội dung đánh giá.</td><td><span class="role role-editor">Biên tập</span></td></tr>
           <tr><td><span class="ui">Cập nhật tiến độ</span></td><td>Sửa % Hoàn thành, Trạng thái, Tiến độ.</td><td><span class="role role-editor">Biên tập</span></td></tr>
-          <tr><td><span class="ui">👤 Nhân sự</span></td><td>Quản lý nhân sự tham gia + tỷ lệ đóng góp.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+          <tr><td><span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự</span></td><td>Quản lý nhân sự tham gia + tỷ lệ đóng góp.</td><td><span class="role role-editor">Biên tập</span></td></tr>
         </tbody>
       </table>
 
       <h3 class="feature" id="backlog-cham-diem">Chấm điểm &amp; lịch sử đánh giá</h3>
-      <p>Mở popup <span class="ui">Chấm điểm</span>, nhập % Đánh giá và Nội dung đánh giá. Hệ thống tự ghi lại thời điểm chấm và tên người chấm, hiện ngay dưới nội dung đánh giá dạng <span class="ui">🕒 25/09/2026 09:39 · Tên người chấm</span>.</p>
+      <p>Mở popup <span class="ui">Chấm điểm</span>, nhập % Đánh giá và Nội dung đánh giá. Hệ thống tự ghi lại thời điểm chấm và tên người chấm, hiện ngay dưới nội dung đánh giá dạng <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>25/09/2026 09:39 · Tên người chấm</span>.</p>
       <p>Khi 1 nhiệm vụ được <a href="#backlog-hangloat">chuyển sang tháng sau</a> nhiều lần, mỗi lần chấm điểm trước đó được giữ lại — nút <span class="ui">Lịch sử N ▾</span> phía trên ô Nội dung đánh giá bung ra toàn bộ các lần chấm của những tháng trước, kèm tên người chấm mỗi lần.</p>
 
       <h3 class="feature" id="backlog-nhansu">Nhân sự tham gia task</h3>
-      <p>Bấm <span class="ui">👤 Nhân sự</span> để mở popup quản lý người tham gia 1 nhiệm vụ:</p>
+      <p>Bấm <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự</span> để mở popup quản lý người tham gia 1 nhiệm vụ:</p>
       <ul>
         <li>Thêm nhân sự, chọn <strong>Phân loại</strong> (Thực hiện chính / Hỗ trợ).</li>
         <li>Nhập <strong>Tỷ lệ đóng góp (%)</strong> — tổng của tất cả nhân sự trong 1 task không được vượt 100%.</li>
@@ -457,15 +467,15 @@
         <li><strong>Đánh dấu / Bỏ đánh dấu "Nhiệm vụ tồn"</strong>, <strong>Đánh dấu / Bỏ "Không tính điểm"</strong>.</li>
         <li><strong>Xóa</strong> <span class="role role-admin">Admin</span>.</li>
       </ul>
-      <p>Nút <span class="ui">⬇ Xuất Excel</span> tải toàn bộ backlog của tháng (hoặc theo team đang lọc) ra file .xlsx đã định dạng sẵn màu theo trạng thái. Nút <span class="ui">⬇ File mẫu</span> tải file Excel mẫu có sẵn dropdown Team/Tag/Phân loại/Trạng thái để nhập nhanh nhiều task cùng lúc qua <span class="ui">⬆ Nhập Excel</span>.</p>
+      <p>Nút <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</span> tải toàn bộ backlog của tháng (hoặc theo team đang lọc) ra file .xlsx đã định dạng sẵn màu theo trạng thái. Nút <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</span> tải file Excel mẫu có sẵn dropdown Team/Tag/Phân loại/Trạng thái để nhập nhanh nhiều task cùng lúc qua <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</span>.</p>
     </section>
 
     <section class="doc-section" id="team" hidden>
-      <div class="section-head"><span class="ic">👥</span><h2>Team &amp; Nhân sự</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg></span><h2>Team &amp; Nhân sự</h2></div>
       <p class="section-sub">7 tab con quản lý con người và các chỉ tiêu gắn theo từng nhân sự trong tháng.</p>
 
       <h3 class="feature" id="team-nhansu">Nhân sự</h3>
-      <p>Khai báo Team ở khung bên dưới bảng (mỗi team thuộc đúng 1 phòng ban). Thêm nhân sự tay hoặc <span class="ui">⬆ Nhập Excel</span> theo <span class="ui">⬇ File mẫu</span>. Mỗi nhân sự có Họ tên, Chức vụ, Team, Ghi chú tự do. Nút <span class="ui">Hạ KI</span> trên mỗi dòng đánh dấu hạ 1 bậc xếp hạng KI của người đó (A+ → A → B…) khi hiển thị ở Ranking thành viên team — badge đỏ nhỏ hiện cạnh tên. Cột <em>Tuân thủ / Nội quy / Đào tạo / Hỗ trợ / Đánh giá</em> tự tính từ 5 tab còn lại, không nhập tay.</p>
+      <p>Khai báo Team ở khung bên dưới bảng (mỗi team thuộc đúng 1 phòng ban). Thêm nhân sự tay hoặc <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</span> theo <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</span>. Mỗi nhân sự có Họ tên, Chức vụ, Team, Ghi chú tự do. Nút <span class="ui">Hạ KI</span> trên mỗi dòng đánh dấu hạ 1 bậc xếp hạng KI của người đó (A+ → A → B…) khi hiển thị ở Ranking thành viên team — badge đỏ nhỏ hiện cạnh tên. Cột <em>Tuân thủ / Nội quy / Đào tạo / Hỗ trợ / Đánh giá</em> tự tính từ 5 tab còn lại, không nhập tay.</p>
 
       <h3 class="feature" id="team-tuanthu">Tuân thủ</h3>
       <p>Ghi nhận vi phạm quy trình/kế hoạch chung của 1 nhân sự trong tháng: số lượt vi phạm + nội dung. Dùng để trừ điểm ở tiêu chí "Tuân thủ quy trình, kế hoạch chung".</p>
@@ -487,7 +497,7 @@
     </section>
 
     <section class="doc-section" id="cskh" hidden>
-      <div class="section-head"><span class="ic">🎧</span><h2>CSKH</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-headset"/></svg></span><h2>CSKH</h2></div>
       <p class="section-sub">3 tab ghi nhận số liệu chăm sóc khách hàng theo team, theo tháng — nguồn dữ liệu cho các tiêu chí KPI liên quan CSKH ở Trang chủ.</p>
       <table>
         <thead><tr><th style="width:170px">Tab</th><th>Ghi nhận gì</th></tr></thead>
@@ -500,14 +510,14 @@
     </section>
 
     <section class="doc-section" id="roadmap" hidden>
-      <div class="section-head"><span class="ic">🗺️</span><h2>Roadmap năm</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg></span><h2>Roadmap năm</h2></div>
       <p class="section-sub">Kế hoạch dài hạn theo năm — độc lập với Backlog theo tháng, nhưng có thể tự động chảy vào Backlog khi tới hạn.</p>
 
       <h3 class="feature">Dòng roadmap</h3>
       <p>Đổi năm xem bằng bộ chọn <span class="ui">‹ Năm ›</span> cạnh tiêu đề. Mỗi dòng gồm Team, Hệ thống, Mục tiêu (badge màu, lấy từ danh mục ở <a href="#config-danhmuc">Cấu hình</a>), Nhiệm vụ, DOD, Điều kiện đảm bảo, Phân loại, Thời gian bắt đầu/kết thúc (tự suy ra Quý kết thúc), Trạng thái, Ghi chú.</p>
 
       <div class="callout">
-        <span class="ic">↪️</span>
+        <span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-corner-down-right"/></svg></span>
         <div><strong>Tự động vào Backlog</strong>Khi Thời gian bắt đầu của 1 dòng roadmap rơi vào đúng 1 tháng backlog đã tồn tại, hệ thống tự tạo 1 nhiệm vụ tương ứng bên Backlog (đánh dấu <span class="ui">✓ Đã vào Backlog</span> trên dòng roadmap đó) — không cần nhập tay lại.</div>
       </div>
 
@@ -515,11 +525,11 @@
       <p>Bấm vào 1 dòng roadmap để mở panel quản lý tiến độ theo từng tháng cụ thể trong năm đó — theo dõi sát hơn mức "1 dòng cho cả năm".</p>
 
       <h3 class="feature">Xuất / Nhập Excel</h3>
-      <p><span class="ui">⬇ Xuất Excel</span> tải toàn bộ roadmap của năm + phòng đang xem. <span class="ui">⬇ File mẫu</span> / <span class="ui">⬆ Nhập Excel</span> nhập nhanh nhiều dòng cùng lúc, có sẵn dropdown Team/Hệ thống/Mục tiêu/Phân loại trong file mẫu.</p>
+      <p><span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</span> tải toàn bộ roadmap của năm + phòng đang xem. <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</span> / <span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</span> nhập nhanh nhiều dòng cùng lúc, có sẵn dropdown Team/Hệ thống/Mục tiêu/Phân loại trong file mẫu.</p>
     </section>
 
     <section class="doc-section" id="feature-requests" hidden>
-      <div class="section-head"><span class="ic">💡</span><h2>Yêu cầu tính năng</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg></span><h2>Yêu cầu tính năng</h2></div>
       <p class="section-sub">Hộp thư đề xuất giữa các phòng ban — phòng A đề xuất thêm/nâng cấp 1 hệ thống cho phòng B xử lý.</p>
 
       <p>Đây là tính năng duy nhất mà <span class="role role-all">MỌI QUYỀN, kể cả Chỉ xem</span> đều được tạo mới — vì đề xuất là việc ai cũng có thể làm. Chỉ phòng ban <strong>đích</strong> (nơi nhận yêu cầu) mới thấy và xử lý được Duyệt/Từ chối; phòng khác không nhìn thấy yêu cầu này (kể cả biết đường dẫn trực tiếp).</p>
@@ -537,7 +547,7 @@
     </section>
 
     <section class="doc-section" id="config" hidden>
-      <div class="section-head"><span class="ic">⚙️</span><h2>Cấu hình</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span><h2>Cấu hình</h2></div>
       <p class="section-sub"><span class="role role-admin">CHỈ ADMIN</span> truy cập được toàn bộ trang này — nơi định nghĩa cách tính điểm, danh mục dùng chung và quản lý tài khoản.</p>
 
       <h3 class="feature" id="config-tieuchi">Tiêu chí</h3>
@@ -569,33 +579,33 @@
       <h3 class="feature" id="config-user">Quản lý User</h3>
       <p>Danh sách toàn bộ tài khoản đã từng đăng nhập. Có khung tìm kiếm riêng (từ khoá, Quyền, Phòng ban) và bảng có phân trang. Với mỗi tài khoản, Admin đổi được <strong>Quyền</strong> (Admin/Biên tập/Chỉ xem), gán <strong>Phòng ban</strong>, và <strong>Khóa/Mở khóa</strong>. Không tự đổi quyền hay tự khóa chính tài khoản đang đăng nhập.</p>
       <div class="callout warn">
-        <span class="ic">⚠️</span>
+        <span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-alert"/></svg></span>
         <div><strong>Ghi nhớ</strong>Nâng quyền cho 1 tài khoản mà chưa gán Phòng ban thì tài khoản đó đăng nhập được nhưng không thấy dữ liệu nghiệp vụ nào — luôn gán Phòng ban ngay sau khi đổi quyền.</div>
       </div>
     </section>
 
     <section class="doc-section" id="action-logs" hidden>
-      <div class="section-head"><span class="ic">🧾</span><h2>Nhật ký hoạt động</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg></span><h2>Nhật ký hoạt động</h2></div>
       <p class="section-sub"><span class="role role-admin">CHỈ ADMIN</span> — nhật ký ghi lại toàn bộ hành động trên hệ thống.</p>
       <p>Tự động ghi lại đăng nhập/đăng xuất và mọi lượt thêm/sửa/xóa/chuyển dữ liệu ở <strong>mọi module</strong>, dạng tóm tắt 1 dòng — ví dụ <span class="ui">Chấm điểm Nhiệm vụ "Ứng dụng AI…"</span>, <span class="ui">Hạ KI Nhân sự "Hoàng Văn Thiện"</span>. Mỗi dòng gồm Thời gian, Người thực hiện, Phòng ban, Module, Hành động (badge màu theo loại), Mô tả.</p>
       <p>Khung tìm kiếm lọc theo từ khoá, Loại hành động, Module, Người thực hiện, khoảng ngày. Mặc định chỉ hiện <strong>90 ngày gần nhất</strong> — mở rộng bằng bộ lọc ngày để xem xa hơn.</p>
     </section>
 
     <section class="doc-section" id="phan-quyen" hidden>
-      <div class="section-head"><span class="ic">🔑</span><h2>Bảng phân quyền</h2></div>
+      <div class="section-head"><span class="ic"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-key"/></svg></span><h2>Bảng phân quyền</h2></div>
       <p class="section-sub">Áp dụng khi hệ thống bật đăng nhập (SSO). Chặn thật luôn nằm ở máy chủ — giao diện chỉ ẩn bớt nút để tránh bấm vào thứ chắc chắn bị từ chối.</p>
       <div class="table-wrap">
       <table>
         <thead><tr><th>Nhóm chức năng</th><th style="width:130px">Chỉ xem</th><th style="width:130px">Biên tập</th><th style="width:110px">Admin</th></tr></thead>
         <tbody>
-          <tr><td>Xem mọi trang, mọi bảng dữ liệu</td><td>✅</td><td>✅</td><td>✅</td></tr>
-          <tr><td>Tạo mới <a href="#feature-requests">Yêu cầu tính năng</a></td><td>✅</td><td>✅</td><td>✅</td></tr>
-          <tr><td>Thêm / Sửa dữ liệu nghiệp vụ (task, nhân sự, CSKH, roadmap…)</td><td>—</td><td>✅</td><td>✅</td></tr>
-          <tr><td>Duyệt / Từ chối Yêu cầu tính năng (đúng phòng đích)</td><td>—</td><td>✅</td><td>✅</td></tr>
-          <tr><td>Xóa dữ liệu nghiệp vụ</td><td>—</td><td>—</td><td>✅</td></tr>
-          <tr><td>Tạo / Xóa tháng backlog</td><td>—</td><td>—</td><td>✅</td></tr>
-          <tr><td>Trang <a href="#config">Cấu hình</a> (Tiêu chí, Ranking, Danh mục, Phòng ban, Quản lý User)</td><td>—</td><td>—</td><td>✅</td></tr>
-          <tr><td>Trang <a href="#action-logs">Nhật ký hoạt động</a></td><td>—</td><td>—</td><td>✅</td></tr>
+          <tr><td>Xem mọi trang, mọi bảng dữ liệu</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Tạo mới <a href="#feature-requests">Yêu cầu tính năng</a></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Thêm / Sửa dữ liệu nghiệp vụ (task, nhân sự, CSKH, roadmap…)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Duyệt / Từ chối Yêu cầu tính năng (đúng phòng đích)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Xóa dữ liệu nghiệp vụ</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Tạo / Xóa tháng backlog</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Trang <a href="#config">Cấu hình</a> (Tiêu chí, Ranking, Danh mục, Phòng ban, Quản lý User)</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Trang <a href="#action-logs">Nhật ký hoạt động</a></td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
         </tbody>
       </table>
       </div>

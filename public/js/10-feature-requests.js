@@ -201,7 +201,7 @@ function renderFeatureRequestTable() {
       <td>${(r.mo_ta ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${
         r.attachment_filename
-          ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}">📎 ${r.attachment_filename}</a>`
+          ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-paperclip"/></svg>${r.attachment_filename}</a>`
           : `<span class="muted">—</span>`
       }</td>
       <td>${r.department_name ?? `<span class="muted">—</span>`}</td>

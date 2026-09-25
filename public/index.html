@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quản lý nhiệm vụ</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -25,23 +26,23 @@
         </div>
       </div>
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="home">🏠 Trang chủ</button>
-        <button class="nav-item" data-page="backlog">📋 Nhiệm vụ</button>
-        <button class="nav-item" data-page="team">👥 Team &amp; Nhân sự</button>
-        <button class="nav-item" data-page="cskh">🎧 CSKH</button>
-        <button class="nav-item" data-page="roadmap">🗺️ Roadmap năm</button>
-        <button class="nav-item" data-page="feature-requests">💡 Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
-        <button class="nav-item" data-page="config">⚙️ Cấu hình</button>
-        <button class="nav-item" data-page="action-logs">🧾 Nhật ký hoạt động</button>
-        <button class="nav-item" data-page="hdsd">📘 HDSD</button>
+        <button class="nav-item active" data-page="home"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg>Trang chủ</button>
+        <button class="nav-item" data-page="backlog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg>Nhiệm vụ</button>
+        <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Team &amp; Nhân sự</button>
+        <button class="nav-item" data-page="cskh"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-headset"/></svg>CSKH</button>
+        <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg>Roadmap năm</button>
+        <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
+        <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình</button>
+        <button class="nav-item" data-page="action-logs"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg>Nhật ký hoạt động</button>
+        <button class="nav-item" data-page="hdsd"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg>HDSD</button>
       </nav>
       <div class="sidebar-user" id="sidebar-user" style="display: none;">
-        <div class="user-avatar" id="user-avatar">👤</div>
+        <div class="user-avatar" id="user-avatar"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg></div>
         <div class="user-info">
           <div class="user-name" id="user-name">User</div>
           <div class="user-email" id="user-email">user@company.com</div>
         </div>
-        <a href="/auth/logout" class="btn-logout" title="Đăng xuất">Đăng xuất ➔</a>
+        <a href="/auth/logout" class="btn-logout" title="Đăng xuất"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-log-out"/></svg>Đăng xuất</a>
       </div>
     </aside>
 
@@ -330,10 +331,10 @@
                     <button type="button" class="bulk-menu-item bulk-menu-item-danger delete-action" role="menuitem" data-bulk-action="delete">Xóa</button>
                   </div>
                 </div>
-                <button id="export-btn" class="btn-export">⬇ Xuất Excel</button>
-                <button id="download-task-template-btn" class="btn-edit">⬇ File mẫu</button>
+                <button id="export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                <button id="download-task-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="task-file-input" accept=".xlsx,.xls" hidden />
-                <button id="import-tasks-btn" class="write-action btn-exclude">⬆ Nhập Excel</button>
+                <button id="import-tasks-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <button id="add-task-btn" class="write-action primary">+ Nhập task mới</button>
               </div>
             </div>
@@ -420,9 +421,9 @@
               <h2 style="margin:0">Nhân sự</h2>
               <div class="row">
                 <button id="delete-selected-members-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-member-count">0</span>)</button>
-                <button id="download-member-template-btn" class="btn-edit">⬇ File mẫu</button>
+                <button id="download-member-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="member-file-input" accept=".xlsx,.xls" hidden />
-                <button id="import-members-btn" class="write-action btn-exclude">⬆ Nhập Excel</button>
+                <button id="import-members-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <button id="add-member-btn" class="write-action primary">+ Thêm nhân sự</button>
               </div>
             </div>
@@ -852,10 +853,10 @@
               </div>
               <div class="row">
                 <button id="delete-selected-roadmap-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-roadmap-count">0</span>)</button>
-                <button id="export-roadmap-btn" class="btn-export">⬇ Xuất Excel</button>
-                <button id="download-roadmap-template-btn" class="btn-edit">⬇ File mẫu</button>
+                <button id="export-roadmap-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                <button id="download-roadmap-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="roadmap-file-input" accept=".xlsx,.xls" hidden />
-                <button id="import-roadmap-btn" class="write-action btn-exclude">⬆ Nhập Excel</button>
+                <button id="import-roadmap-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <button id="add-roadmap-btn" class="write-action primary">+ Thêm dòng roadmap</button>
               </div>
             </div>
@@ -912,7 +913,7 @@
                 <h2 style="margin:0" id="roadmap-detail-title">Chi tiết công việc</h2>
                 <p class="muted" id="roadmap-detail-sub" style="margin:6px 0 0"></p>
               </div>
-              <button type="button" id="roadmap-detail-close" class="small">✕ Đóng</button>
+              <button type="button" id="roadmap-detail-close" class="small"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg>Đóng</button>
             </div>
             <div id="roadmap-detail-months" style="margin-top:14px"></div>
           </section>
@@ -1054,7 +1055,7 @@
             <div>
               <label for="fr-attachment-input">File đính kèm <span class="muted" style="font-weight:400">(tối đa 10MB — spec, mockup, ảnh chụp màn hình...)</span></label>
               <div class="muted" id="fr-attachment-current" hidden style="margin-bottom:6px">
-                📎 <a href="#" id="fr-attachment-link" target="_blank" rel="noopener"></a>
+                <svg class="icon" aria-hidden="true"><use href="icons.svg#i-paperclip"/></svg><a href="#" id="fr-attachment-link" target="_blank" rel="noopener"></a>
                 <button type="button" id="fr-attachment-remove-btn" class="small btn-delete" style="margin-left:8px">Xóa file</button>
               </div>
               <input type="file" id="fr-attachment-input" style="width:100%" />

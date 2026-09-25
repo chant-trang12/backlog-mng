@@ -224,8 +224,17 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 }
 
 .sidebar-user .user-avatar {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 18%, var(--card-bg));
+  color: var(--primary-hover);
+  font-size: 1.05rem;
 }
+.sidebar-user .user-avatar .icon { margin: 0; }
 
 .sidebar-user .user-info {
   display: flex;
@@ -251,7 +260,8 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 }
 
 .sidebar-user .btn-logout {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   color: var(--delete);
   text-decoration: none;
   font-size: 0.8rem;
@@ -265,9 +275,40 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   text-decoration: underline;
 }
 
+/* Icon SVG dùng chung (sprite public/icons.svg) — cỡ theo font-size, màu theo
+   currentColor của phần tử cha. */
+.icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+  vertical-align: -0.2em;
+  margin-right: 0.4em;
+}
+.nav-item .icon,
+.dept-mono .icon,
+td > .icon:only-child { margin-right: 0; }
+.dept-mono .icon { width: 0.95em; height: 0.95em; }
+
+/* Icon SVG dùng chung (sprite public/icons.svg) — cỡ theo font-size, màu theo
+   currentColor của phần tử cha. */
+.icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+  vertical-align: -0.2em;
+  margin-right: 0.4em;
+}
+.nav-item .icon,
+.dept-mono .icon { margin-right: 0; }
+.dept-mono .icon { width: 0.95em; height: 0.95em; }
+
 .nav-item {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: left;
   text-decoration: none;
   background: transparent;

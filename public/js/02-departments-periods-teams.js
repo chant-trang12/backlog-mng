@@ -119,7 +119,7 @@ function renderDeptSwitcher() {
       .join("") +
     `<div class="dept-panel-sep"></div>` +
     `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1" title="Quản lý phòng ban">
-      <span class="dept-mono" style="background:var(--border);color:var(--muted)">⚙</span>
+      <span class="dept-mono" style="background:var(--border);color:var(--muted)"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span>
       <span class="dept-option-name">Quản lý phòng ban…</span>
     </button>`;
 
@@ -290,7 +290,7 @@ function renderGradingHistory(t, mode) {
         ? `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b></div>`
         : `<div><span class="gh-period">${e.period_label}</span> <b>${pct(e)}</b>${
             e.cpo_comment ? " · " + String(e.cpo_comment).replace(/\n/g, " ") : ""
-          }${e.graded_at ? ` <span class="muted">🕒 ${fmtGradedAt(e.graded_at)}${e.graded_by ? " · " + e.graded_by : ""}</span>` : ""}</div>`,
+          }${e.graded_at ? ` <span class="muted"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>${fmtGradedAt(e.graded_at)}${e.graded_by ? " · " + e.graded_by : ""}</span>` : ""}</div>`,
     )
     .join("");
   const hid = `hist-${t.id}-${mode}`;
@@ -298,7 +298,7 @@ function renderGradingHistory(t, mode) {
   // đánh giá: nút ở góc trên PHẢI.
   const btn =
     mode === "percent"
-      ? `<button type="button" class="grade-hist-toggle mini left" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">🕘 ${entries.length}</button>`
+      ? `<button type="button" class="grade-hist-toggle mini left" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-history"/></svg>${entries.length}</button>`
       : `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">Lịch sử ${entries.length} ▾</button>`;
   return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
 }
