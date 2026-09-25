@@ -81,7 +81,7 @@ export async function getTaskHandler(req: Request, res: Response) {
 export async function updateTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const task = await updateTask(id, req.body ?? {}, scopeOf(req));
+  const task = await updateTask(id, req.body ?? {}, scopeOf(req), req.appUser?.name ?? null);
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   res.json(task);
 }

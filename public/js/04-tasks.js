@@ -74,7 +74,7 @@ function renderTasks() {
       <td style="position:relative">
         ${
           t.prev_cpo_danh_gia !== null
-            ? `<span class="cell-prev-badge" title="Đánh giá gần nhất (tháng trước): ${t.prev_cpo_danh_gia}%${t.prev_cpo_graded_at ? " — " + fmtGradedAt(t.prev_cpo_graded_at) : ""}">↩ ${t.prev_cpo_danh_gia}%</span>`
+            ? `<span class="cell-prev-badge" title="Đánh giá gần nhất (tháng trước): ${t.prev_cpo_danh_gia}%${t.prev_cpo_graded_at ? " — " + fmtGradedAt(t.prev_cpo_graded_at) : ""}${t.prev_cpo_graded_by ? " · " + t.prev_cpo_graded_by : ""}">↩ ${t.prev_cpo_danh_gia}%</span>`
             : ""
         }
         ${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}
@@ -82,7 +82,7 @@ function renderTasks() {
       </td>
       <td>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
-        ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}</div>` : ""}
+        ${t.cpo_graded_at ? `<div class="cell-graded-at">🕒 ${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
         ${renderGradingHistory(t, "content")}
       </td>
       <td><div class="actions-cell">

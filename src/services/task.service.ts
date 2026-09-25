@@ -100,8 +100,16 @@ export async function getTask(id: number): Promise<Task | undefined> {
 }
 
 // 1.4 Cập nhật task — dùng chung cho sửa nội dung lẫn cập nhật tiến độ định kỳ
-// (chỉ gửi các trường thay đổi, các trường còn lại giữ nguyên).
-export async function updateTask(id: number, input: UpdateTaskInput, scope: DataScope): Promise<Task | undefined> {
+// (chỉ gửi các trường thay đổi, các trường còn lại giữ nguyên). graderName:
+// tên người đang đăng nhập (SNAPSHOT tại thời điểm chấm — không JOIN sang
+// users, xem migrations/tasks.ts) — null khi SSO tắt (không có khái niệm
+// "người đăng nhập") hoặc request này không phải 1 lần chấm điểm.
+export async function updateTask(
+  id: number,
+  input: UpdateTaskInput,
+  scope: DataScope,
+  graderName: string | null = null,
+): Promise<Task | undefined> {
   const existing = await getTask(id);
   if (!existing) return undefined;
   assertDepartmentInScope(scope, existing.department_id);
@@ -111,9 +119,10 @@ export async function updateTask(id: number, input: UpdateTaskInput, scope: Data
   // trạng thái khác giữ nguyên giá trị Không tính điểm đã có (nếu có).
   const khongTinhDiem = merged.trang_thai === "Hủy" ? KHONG_TINH_DIEM : existing.khong_tinh_diem;
 
-  // Có chấm điểm trong lần cập nhật này -> đóng dấu thời điểm.
+  // Có chấm điểm trong lần cập nhật này -> đóng dấu thời điểm + người chấm.
   const isGrading = input.cpo_danh_gia !== undefined || input.cpo_comment !== undefined;
   const cpoGradedAt = isGrading ? localTimestamp() : existing.cpo_graded_at;
+  const cpoGradedBy = isGrading ? graderName : existing.cpo_graded_by;
 
   const [updated] = await db("tasks")
     .where({ id })
@@ -133,6 +142,7 @@ export async function updateTask(id: number, input: UpdateTaskInput, scope: Data
       cpo_danh_gia: merged.cpo_danh_gia,
       cpo_comment: merged.cpo_comment,
       cpo_graded_at: cpoGradedAt,
+      cpo_graded_by: cpoGradedBy,
       khong_tinh_diem: khongTinhDiem,
       updated_at: db.fn.now(),
     })
@@ -245,6 +255,7 @@ export async function moveTasksToNextMonth(
         cpo_danh_gia: task.cpo_danh_gia,
         cpo_comment: task.cpo_comment,
         graded_at: task.cpo_graded_at,
+        graded_by: task.cpo_graded_by,
       });
     }
 
@@ -271,9 +282,11 @@ export async function moveTasksToNextMonth(
         cpo_danh_gia: null,
         cpo_comment: null,
         cpo_graded_at: null,
+        cpo_graded_by: null,
         prev_cpo_danh_gia: task.cpo_danh_gia ?? task.prev_cpo_danh_gia,
         prev_cpo_comment: task.cpo_comment ?? task.prev_cpo_comment,
         prev_cpo_graded_at: task.cpo_graded_at ?? task.prev_cpo_graded_at,
+        prev_cpo_graded_by: task.cpo_graded_by ?? task.prev_cpo_graded_by,
         grading_history: history.length ? JSON.stringify(history) : null,
         khong_tinh_diem: khongTinhDiem,
       })
