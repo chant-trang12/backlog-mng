@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { db } from "../db/database.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 import type { ActionLogType } from "../types/actionLog.js";
 
@@ -11,45 +12,49 @@ import type { ActionLogType } from "../types/actionLog.js";
 // dùng. Đăng nhập/đăng xuất KHÔNG đi qua middleware này (route /auth/* nằm
 // ngoài /api) — ghi trực tiếp ở auth.controller.ts.
 //
-// Không chặn/làm chậm response thật: buildDescription() chạy đồng bộ (rẻ,
-// chỉ xử lý chuỗi) NGAY khi request tới, còn recordActionLog() (có query
-// DB) chỉ gọi SAU khi response đã gửi xong (res.on("finish")) và tự nuốt
-// lỗi — action log không bao giờ được làm hỏng hay làm chậm request chính.
+// Không chặn/làm chậm response thật ở phần GHI (recordActionLog() chỉ gọi
+// SAU khi response đã gửi xong — res.on("finish") — và tự nuốt lỗi). Riêng
+// buildDescription() giờ có thể cần 1 lượt SELECT nhẹ (tra tên bản ghi theo
+// id khi body không có sẵn tên — VD PUT chỉ đổi 1 field như "Hạ KI") nên
+// chạy TRƯỚC next(), thêm ~1 query rẻ (theo PK, có index) vào mỗi request
+// ghi — chấp nhận được, đổi lại mô tả log mới đủ rõ "sửa CÁI GÌ".
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 // Segment đầu tiên của path (Express đã cắt "/api" — xem req.path, giống
 // requireWrite ở auth.middleware.ts) -> nhãn module + tên đối tượng tiếng
-// Việt để ghép câu mô tả. Không cần phủ tuyệt đối mọi route — segment lạ
-// thì fallback dùng thẳng segment làm tên đối tượng.
-const MODULE_LABELS: Record<string, { module: string; entity: string }> = {
-  tasks: { module: "Backlog", entity: "Nhiệm vụ" },
+// Việt để ghép câu mô tả. table/nameColumn (khi có) dùng để TRA TÊN bản ghi
+// theo id lúc body không mang sẵn tên (VD PUT chỉ gửi {ha_ki: true}) — xem
+// resolveEntityName(). Không cần phủ tuyệt đối mọi route — segment lạ thì
+// fallback dùng thẳng segment làm tên đối tượng, không tra tên gì cả.
+const MODULE_LABELS: Record<string, { module: string; entity: string; table?: string; nameColumn?: string }> = {
+  tasks: { module: "Backlog", entity: "Nhiệm vụ", table: "tasks", nameColumn: "nhiem_vu" },
   "task-members": { module: "Backlog", entity: "Nhân sự tham gia task" },
-  periods: { module: "Backlog", entity: "Tháng backlog" },
-  teams: { module: "Team & Nhân sự", entity: "Team" },
-  members: { module: "Team & Nhân sự", entity: "Nhân sự" },
+  periods: { module: "Backlog", entity: "Tháng backlog", table: "periods", nameColumn: "label" },
+  teams: { module: "Team & Nhân sự", entity: "Team", table: "teams", nameColumn: "name" },
+  members: { module: "Team & Nhân sự", entity: "Nhân sự", table: "members", nameColumn: "name" },
   "compliance-records": { module: "Team & Nhân sự", entity: "Tuân thủ" },
   "training-records": { module: "Team & Nhân sự", entity: "Đào tạo" },
   "attendance-records": { module: "Team & Nhân sự", entity: "Chấm công" },
   "noiquy-overrides": { module: "Team & Nhân sự", entity: "Miễn trừ nội quy" },
   "danh-gia-records": { module: "Team & Nhân sự", entity: "Đánh giá" },
-  incidents: { module: "CSKH", entity: "Sự cố" },
+  incidents: { module: "CSKH", entity: "Sự cố", table: "incidents", nameColumn: "su_co" },
   tickets: { module: "CSKH", entity: "Ticket hỗ trợ" },
   "creation-rates": { module: "CSKH", entity: "Tỷ lệ khởi tạo" },
   "support-records": { module: "CSKH", entity: "Hỗ trợ" },
-  "roadmap-items": { module: "Roadmap năm", entity: "Dòng roadmap" },
+  "roadmap-items": { module: "Roadmap năm", entity: "Dòng roadmap", table: "roadmap_items", nameColumn: "nhiem_vu" },
   "roadmap-details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
-  "feature-requests": { module: "Yêu cầu tính năng", entity: "Yêu cầu tính năng" },
-  departments: { module: "Cấu hình", entity: "Phòng ban" },
-  users: { module: "Cấu hình", entity: "User" },
-  tags: { module: "Cấu hình", entity: "Tag" },
-  "phan-loai": { module: "Cấu hình", entity: "Phân loại" },
-  nhom: { module: "Cấu hình", entity: "Nhóm" },
-  "chuc-vu": { module: "Cấu hình", entity: "Chức vụ" },
-  "he-thong": { module: "Cấu hình", entity: "Hệ thống" },
-  "muc-tieu": { module: "Cấu hình", entity: "Mục tiêu" },
-  "phan-loai-nhan-su": { module: "Cấu hình", entity: "Phân loại nhân sự" },
-  "tieu-chi": { module: "Cấu hình", entity: "Tiêu chí" },
+  "feature-requests": { module: "Yêu cầu tính năng", entity: "Yêu cầu tính năng", table: "feature_requests", nameColumn: "tieu_de" },
+  departments: { module: "Cấu hình", entity: "Phòng ban", table: "departments", nameColumn: "name" },
+  users: { module: "Cấu hình", entity: "User", table: "users", nameColumn: "name" },
+  tags: { module: "Cấu hình", entity: "Tag", table: "tags", nameColumn: "ten_tag" },
+  "phan-loai": { module: "Cấu hình", entity: "Phân loại", table: "phan_loai_options", nameColumn: "ten_phan_loai" },
+  nhom: { module: "Cấu hình", entity: "Nhóm", table: "nhom_options", nameColumn: "ten_nhom" },
+  "chuc-vu": { module: "Cấu hình", entity: "Chức vụ", table: "chuc_vu_options", nameColumn: "ten_chuc_vu" },
+  "he-thong": { module: "Cấu hình", entity: "Hệ thống", table: "he_thong_options", nameColumn: "ten_he_thong" },
+  "muc-tieu": { module: "Cấu hình", entity: "Mục tiêu", table: "muc_tieu_options", nameColumn: "ten_muc_tieu" },
+  "phan-loai-nhan-su": { module: "Cấu hình", entity: "Phân loại nhân sự", table: "phan_loai_nhan_su_options", nameColumn: "ten_phan_loai" },
+  "tieu-chi": { module: "Cấu hình", entity: "Tiêu chí", table: "tieu_chi_configs", nameColumn: "ten_tieu_chi" },
   "ranking-config": { module: "Cấu hình", entity: "Ranking team" },
 };
 
@@ -93,6 +98,26 @@ const NAME_FIELDS = [
   "name", "ten", "label", "title", "username",
 ];
 
+const USER_ROLE_LABEL: Record<string, string> = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };
+
+// Vài request chỉ đổi ĐÚNG 1 field cụ thể (nút bấm/checkbox nhỏ, không phải
+// form đầy đủ — VD "Hạ KI", khóa/mở tài khoản...) — method mặc định theo
+// HTTP verb ("Cập nhật") không mô tả đúng Ý NGHĨA nghiệp vụ của thao tác.
+// Khớp theo "root:tênField" — chỉ áp dụng khi field đó THỰC SỰ có mặt
+// trong body (không quan tâm body còn field nào khác).
+const FIELD_VERB_OVERRIDES: Record<string, (value: unknown) => { action: ActionLogType; verb: string }> = {
+  "members:ha_ki": (v) => ({ action: "cap_nhat", verb: v ? "Hạ KI" : "Bỏ hạ KI" }),
+  "users:active": (v) => ({ action: "cap_nhat", verb: v ? "Mở khóa tài khoản" : "Khóa tài khoản" }),
+  "users:role": (v) => ({ action: "cap_nhat", verb: `Đổi quyền thành "${USER_ROLE_LABEL[String(v)] ?? v}"` }),
+  "users:department_id": (v) => ({ action: "cap_nhat", verb: v == null ? "Gỡ gán phòng ban" : "Gán phòng ban" }),
+  "departments:is_full_access": (v) => ({ action: "cap_nhat", verb: v ? `Bật "Xem full"` : `Tắt "Xem full"` }),
+  "departments:dung_tieu_chi_chung": (v) => ({
+    action: "cap_nhat",
+    verb: v ? "Bật dùng tiêu chí chung" : "Tắt dùng tiêu chí chung",
+  }),
+  "departments:cach_tinh_kpi": (v) => ({ action: "cap_nhat", verb: `Đổi cách tính KPI thành "${v}"` }),
+};
+
 const isNumericSegment = (s: string | undefined): boolean => !!s && /^\d+$/.test(s);
 
 function pickNameSnippet(body: unknown): string {
@@ -108,7 +133,38 @@ function pickNameSnippet(body: unknown): string {
   return "";
 }
 
-function buildDescription(req: Request): { module: string | null; action: ActionLogType; description: string } {
+// Body chỉ đổi 1 field "toggle" đã biết (VD {ha_ki: true}) -> verb cụ thể
+// hơn "Cập nhật" — xem FIELD_VERB_OVERRIDES.
+function pickFieldVerbOverride(root: string, body: unknown): { action: ActionLogType; verb: string } | null {
+  if (!body || typeof body !== "object" || Buffer.isBuffer(body) || Array.isArray(body)) return null;
+  const obj = body as Record<string, unknown>;
+  for (const field of Object.keys(obj)) {
+    const fn = FIELD_VERB_OVERRIDES[`${root}:${field}`];
+    if (fn) return fn(obj[field]);
+  }
+  return null;
+}
+
+// Body không có tên (VD toggle 1 field, hoặc DELETE không có body) -> tra
+// thẳng DB theo id để biết "bản ghi nào" — chỉ áp dụng khi module này có
+// khai báo table/nameColumn ở MODULE_LABELS. Lỗi (bảng/cột đổi tên, id
+// không tồn tại...) thì bỏ qua lặng lẽ, không được làm hỏng request chính.
+async function resolveEntityName(table: string | undefined, nameColumn: string | undefined, id: string | undefined): Promise<string> {
+  if (!table || !nameColumn || !id) return "";
+  try {
+    const row = await db(table).where({ id: Number(id) }).first(nameColumn);
+    const val = row?.[nameColumn];
+    if (typeof val === "string" && val.trim()) {
+      const trimmed = val.trim();
+      return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+    }
+  } catch {
+    // im lặng bỏ qua — bảng/cột không khớp (schema đổi) hoặc lỗi truy vấn.
+  }
+  return "";
+}
+
+async function buildDescription(req: Request): Promise<{ module: string | null; action: ActionLogType; description: string }> {
   const segments = req.path.split("/").filter(Boolean);
   const root = segments[0] ?? "";
   const lastSegment = segments[segments.length - 1];
@@ -118,29 +174,32 @@ function buildDescription(req: Request): { module: string | null; action: Action
   const moduleLabel = base?.module ?? null;
   const entityLabel = base?.entity ?? (root || "Dữ liệu");
 
+  const body = req.body as unknown;
+  const fieldOverride = !verbEntry ? pickFieldVerbOverride(root, body) : null;
   const defaultVerb = DEFAULT_VERB[req.method] ?? { action: "cap_nhat" as ActionLogType, verb: "Thao tác" };
-  const { action, verb } = verbEntry ?? defaultVerb;
+  const { action, verb } = verbEntry ?? fieldOverride ?? defaultVerb;
 
   const idSegment = segments.find((s) => isNumericSegment(s));
   const idSuffix = idSegment ? ` #${idSegment}` : "";
 
   // Body dạng {ids:[...]} (xóa/đánh dấu hàng loạt) -> hiện số lượng thay vì
-  // tên; DELETE đơn lẻ không có body đáng kể -> chỉ hiện #id; còn lại (tạo
-  // mới/cập nhật 1 dòng) -> thử lấy tên gợi nhớ từ body.
-  const body = req.body as unknown;
+  // tên; còn lại -> thử lấy tên gợi nhớ từ body, không có thì tra DB theo
+  // id (bù cho các request chỉ gửi 1 field không phải tên, VD {ha_ki:true},
+  // hoặc DELETE không có body đáng kể).
   let detail = "";
   if (body && typeof body === "object" && !Buffer.isBuffer(body) && Array.isArray((body as Record<string, unknown>).ids)) {
     detail = ` (${((body as Record<string, unknown>).ids as unknown[]).length} mục)`;
-  } else if (req.method !== "DELETE") {
-    const snippet = pickNameSnippet(body);
-    if (snippet) detail = ` "${snippet}"`;
+  } else {
+    const snippet = req.method !== "DELETE" ? pickNameSnippet(body) : "";
+    const resolved = snippet || (await resolveEntityName(base?.table, base?.nameColumn, idSegment));
+    if (resolved) detail = ` "${resolved}"`;
   }
 
   const description = `${verb} ${entityLabel}${idSuffix}${detail}`.trim();
   return { module: moduleLabel, action, description };
 }
 
-export function actionLogMiddleware(req: Request, res: Response, next: NextFunction): void {
+export async function actionLogMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!WRITE_METHODS.has(req.method)) return next();
 
   // Snapshot NGAY tại đây (trước khi controller phía sau xử lý/redirect) —
@@ -148,9 +207,19 @@ export function actionLogMiddleware(req: Request, res: Response, next: NextFunct
   // nhưng chụp sớm cho chắc, tránh phụ thuộc side-effect của handler sau.
   const method = req.method;
   const path = req.path;
-  const { module: moduleLabel, action, description } = buildDescription(req);
   const appUser = req.appUser;
   const ip = req.ip ?? null;
+
+  let moduleLabel: string | null = null;
+  let action: ActionLogType = "cap_nhat";
+  let description = "";
+  try {
+    ({ module: moduleLabel, action, description } = await buildDescription(req));
+  } catch {
+    // Không dựng được mô tả (lỗi tra DB...) -> vẫn tiếp tục request chính
+    // bình thường, chỉ đơn giản không ghi được log ý nghĩa cho lần này.
+    return next();
+  }
 
   res.on("finish", () => {
     // Chỉ ghi khi request THỰC SỰ thành công (2xx) — request bị chặn/lỗi
