@@ -196,30 +196,52 @@ async function resolveTeamSuffix(body: unknown): Promise<string> {
   return name ? ` — Team ${name}` : "";
 }
 
-// "Nhân sự tham gia task" (task_members) không có cột tên riêng — chỉ có
-// member_id trỏ sang members.name:
-// - Tạo mới (POST /tasks/:taskId/members): member_id nằm trong BODY.
+function truncate(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+}
+
+// "Nhân sự tham gia task" (task_members) không có cột tên riêng, và bản
+// thân tên nhân sự KHÔNG đủ để biết "gán vào task nào" (chỉ nói ai được
+// gán, không nói vào đâu) — cần cả 2: tên nhân sự (member_id) + tên task
+// (task_id):
+// - Tạo mới (POST /tasks/:taskId/members): member_id nằm trong BODY,
+//   taskId nằm trên URL (segments[1]).
 // - Sửa/Xóa (PUT|DELETE /task-members/:id): id (task_members.id) nằm trên
-//   URL, phải JOIN sang members mới ra tên.
-async function resolveTaskMemberName(root: string, lastSegment: string | undefined, idSegment: string | undefined, body: unknown): Promise<string> {
+//   URL, phải JOIN sang cả members lẫn tasks mới ra đủ 2 tên.
+async function resolveTaskMemberNames(
+  root: string,
+  lastSegment: string | undefined,
+  segments: string[],
+  idSegment: string | undefined,
+  body: unknown,
+): Promise<{ memberName: string; taskName: string }> {
   try {
     if (root === "tasks" && lastSegment === "members") {
       const memberId = body && typeof body === "object" ? (body as Record<string, unknown>).member_id : undefined;
-      if (memberId == null || !Number.isFinite(Number(memberId))) return "";
-      return await resolveEntityName("members", "name", String(memberId));
+      const taskId = segments[1];
+      const [memberName, taskName] = await Promise.all([
+        memberId != null && Number.isFinite(Number(memberId)) ? resolveEntityName("members", "name", String(memberId)) : Promise.resolve(""),
+        resolveEntityName("tasks", "nhiem_vu", taskId),
+      ]);
+      return { memberName, taskName };
     }
     if (root === "task-members" && idSegment) {
       const row = await db("task_members as tm")
         .join("members as m", "m.id", "tm.member_id")
+        .join("tasks as t", "t.id", "tm.task_id")
         .where("tm.id", Number(idSegment))
-        .first("m.name as name");
-      const name = (row as { name?: string } | undefined)?.name;
-      return typeof name === "string" && name.trim() ? name.trim() : "";
+        .first("m.name as memberName", "t.nhiem_vu as taskName");
+      const r = row as { memberName?: string; taskName?: string } | undefined;
+      return {
+        memberName: typeof r?.memberName === "string" && r.memberName.trim() ? truncate(r.memberName) : "",
+        taskName: typeof r?.taskName === "string" && r.taskName.trim() ? truncate(r.taskName) : "",
+      };
     }
   } catch {
     // im lặng bỏ qua — lỗi truy vấn không được làm hỏng request chính.
   }
-  return "";
+  return { memberName: "", taskName: "" };
 }
 
 async function buildDescription(req: Request): Promise<{ module: string | null; action: ActionLogType; description: string }> {
@@ -247,20 +269,25 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
   // chỉ hiện TÊN đã tra được (hoặc không hiện gì nếu tra không ra).
   const idSegment = segments.find((s) => isNumericSegment(s));
 
+  const isTaskMemberRoute = (root === "tasks" && lastSegment === "members") || root === "task-members";
+
   // Body dạng {ids:[...]} (xóa/đánh dấu hàng loạt) -> hiện số lượng thay vì
   // tên; còn lại -> thử lấy tên gợi nhớ từ body, không có thì tra DB theo
   // id (bù cho các request chỉ gửi 1 field không phải tên, VD {ha_ki:true},
   // hoặc DELETE không có body đáng kể) — "Nhân sự tham gia task" tra riêng
-  // qua resolveTaskMemberName() vì không có table/nameColumn đơn giản.
+  // qua resolveTaskMemberNames() (cần CẢ tên nhân sự lẫn tên task, không
+  // chỉ 1 tên là đủ — chỉ nói "gán ai" mà không nói "vào task nào" thì vẫn
+  // không rõ ràng).
   let detail = "";
   if (body && typeof body === "object" && !Buffer.isBuffer(body) && Array.isArray((body as Record<string, unknown>).ids)) {
     detail = ` (${((body as Record<string, unknown>).ids as unknown[]).length} mục)`;
+  } else if (isTaskMemberRoute) {
+    const { memberName, taskName } = await resolveTaskMemberNames(root, lastSegment, segments, idSegment, body);
+    if (memberName) detail += ` "${memberName}"`;
+    if (taskName) detail += ` — Nhiệm vụ "${taskName}"`;
   } else {
     const snippet = req.method !== "DELETE" ? pickNameSnippet(body) : "";
-    const resolved =
-      snippet ||
-      (await resolveTaskMemberName(root, lastSegment, idSegment, body)) ||
-      (await resolveEntityName(nameLookup?.table, nameLookup?.nameColumn, idSegment));
+    const resolved = snippet || (await resolveEntityName(nameLookup?.table, nameLookup?.nameColumn, idSegment));
     if (resolved) detail = ` "${resolved}"`;
   }
 
