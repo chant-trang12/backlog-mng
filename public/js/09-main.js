@@ -9,14 +9,11 @@ const pages = {
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),
+  hdsd: document.getElementById("page-hdsd"),
 };
 
 document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
-    // Mục "HDSD" là link mở tài liệu ở tab mới (thẻ <a target="_blank">,
-    // không có data-page) — không thuộc bộ chuyển trang trong SPA này, bỏ
-    // qua để không lỡ ẩn hết mọi trang đang xem ở tab hiện tại.
-    if (!btn.dataset.page) return;
     document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     Object.entries(pages).forEach(([key, section]) => {
@@ -43,6 +40,13 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
       Promise.all([loadActionLogModules(), loadActionLogUsers(), loadActionLogs()]).catch((err) =>
         showToast(err.message),
       );
+    }
+    // HDSD — nạp file sổ tay vào iframe ở LẦN ĐẦU bấm vào trang này (không
+    // tải sẵn lúc khởi động app, đỡ tốn 1 lượt tải font ngoài + toàn bộ
+    // trang cho những ai không bao giờ mở mục này).
+    if (btn.dataset.page === "hdsd") {
+      const frame = document.getElementById("hdsd-frame");
+      if (frame && !frame.src) frame.src = "huong-dan-su-dung.html";
     }
   });
 });
