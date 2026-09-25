@@ -175,10 +175,23 @@
   .intro-card h3 { margin: 0 0 6px; font-size: 0.95rem; }
   .intro-card p { margin: 0; font-size: 0.86rem; color: var(--ink-soft); }
 
+  /* 720px (~65-90 ký tự/dòng) tối ưu cho ĐỌC nhưng lại quá hẹp so với
+     card rộng gần hết main của app, dư hẳn khoảng trắng 2 bên — nới lên
+     dùng gần hết bề ngang khung, chỉ đoạn văn (nơi dòng dài mới khó đọc)
+     mới tự giới hạn lại hẹp hơn ở rule ngay dưới. */
   section.doc-section {
-    max-width: 720px;
-    margin: 0 auto;
+    max-width: 100%;
     scroll-margin-top: 24px;
+  }
+  section.doc-section > p,
+  section.doc-section > ul,
+  section.doc-section > ol,
+  section.doc-section .callout,
+  section.doc-section .steps,
+  section.doc-section .fieldlist,
+  h3.feature,
+  .feature-lede {
+    max-width: 74ch;
   }
   .section-head {
     display: flex;
