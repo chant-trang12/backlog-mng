@@ -164,6 +164,19 @@ async function resolveEntityName(table: string | undefined, nameColumn: string |
   return "";
 }
 
+// Nhiều module (Đánh giá/Sự cố/Ticket/Tỷ lệ khởi tạo/Nhân sự...) gửi
+// team_id trong body — bản thân entity đó không có tên riêng biệt gì (VD
+// "Lưu hàng loạt Đánh giá" cho 1 team KHÔNG nói team nào), nên LUÔN cố
+// thêm " — Team <tên>" khi body có team_id, không phụ thuộc đã có
+// detail (tên) hay chưa.
+async function resolveTeamSuffix(body: unknown): Promise<string> {
+  if (!body || typeof body !== "object" || Buffer.isBuffer(body) || Array.isArray(body)) return "";
+  const teamId = (body as Record<string, unknown>).team_id;
+  if (teamId == null || !Number.isFinite(Number(teamId))) return "";
+  const name = await resolveEntityName("teams", "name", String(teamId));
+  return name ? ` — Team ${name}` : "";
+}
+
 async function buildDescription(req: Request): Promise<{ module: string | null; action: ActionLogType; description: string }> {
   const segments = req.path.split("/").filter(Boolean);
   const root = segments[0] ?? "";
@@ -195,7 +208,8 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
     if (resolved) detail = ` "${resolved}"`;
   }
 
-  const description = `${verb} ${entityLabel}${idSuffix}${detail}`.trim();
+  const teamSuffix = await resolveTeamSuffix(body);
+  const description = `${verb} ${entityLabel}${idSuffix}${detail}${teamSuffix}`.trim();
   return { module: moduleLabel, action, description };
 }
 
