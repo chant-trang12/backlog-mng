@@ -80,7 +80,11 @@ export function createApp() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          // fonts.googleapis.com: stylesheet <link> của trang HDSD nhúng
+          // (public/huong-dan-su-dung.html) — font-src bên dưới đã cho phép
+          // https: nói chung nên file .woff2 thật tải bình thường, chỉ
+          // riêng CSS khai báo @font-face là cần domain này trong style-src.
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           imgSrc: ["'self'", "data:"],
           connectSrc: ["'self'"],
           objectSrc: ["'none'"],

@@ -41,15 +41,52 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
         showToast(err.message),
       );
     }
-    // HDSD — nạp file sổ tay vào iframe ở LẦN ĐẦU bấm vào trang này (không
-    // tải sẵn lúc khởi động app, đỡ tốn 1 lượt tải font ngoài + toàn bộ
-    // trang cho những ai không bao giờ mở mục này).
+    // HDSD — nạp NỘI DUNG (không phải iframe — bị chặn bởi
+    // Content-Security-Policy frame-src của chính app) trực tiếp vào trang
+    // hiện tại ở LẦN ĐẦU bấm vào mục này. Xem loadHdsdContent() bên dưới.
     if (btn.dataset.page === "hdsd") {
-      const frame = document.getElementById("hdsd-frame");
-      if (frame && !frame.src) frame.src = "huong-dan-su-dung.html";
+      loadHdsdContent().catch((err) => showToast(err.message));
     }
   });
 });
+
+// public/huong-dan-su-dung.html có <style>/<link> RIÊNG (font, biến màu,
+// tên class) — nếu chèn thẳng vào <head> của trang chính, các selector
+// tổng quát trong đó (body, a, p, table, th, td...) sẽ ĐÈ LÊN style của
+// TOÀN BỘ app, không chỉ trang HDSD. Cô lập bằng Shadow DOM (attachShadow)
+// — CSS/DOM bên trong hoàn toàn tách biệt 2 chiều với trang chính.
+let hdsdLoaded = false;
+async function loadHdsdContent() {
+  if (hdsdLoaded) return;
+  const root = document.getElementById("hdsd-root");
+  if (!root) return;
+  const res = await fetch("huong-dan-su-dung.html");
+  if (!res.ok) throw new Error("Không tải được nội dung hướng dẫn.");
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const linkTag = doc.querySelector('link[rel="stylesheet"]')?.outerHTML ?? "";
+  // ":root" trong 1 stylesheet gắn ở shadow tree KHÔNG khớp gì cả (":root"
+  // luôn chỉ <html> của document gốc, nằm ngoài shadow tree) — biến CSS
+  // (--paper, --ink, --accent...) sẽ không bao giờ được định nghĩa, toàn bộ
+  // màu sắc vỡ hết. Đổi thành ":host" (đúng cách khai báo biến CSS dùng
+  // trong đúng shadow tree này).
+  const styleTag = (doc.querySelector("style")?.textContent ?? "").replace(/:root/g, ":host");
+  const shadow = root.shadowRoot ?? root.attachShadow({ mode: "open" });
+  shadow.innerHTML = `${linkTag}<style>${styleTag}</style>${doc.body.innerHTML}`;
+  // Mục lục bên trong dùng <a href="#id"> nhảy neo — trình duyệt không tự
+  // cuộn qua ranh giới shadow DOM ở mọi phiên bản, nên tự bắt sự kiện và
+  // cuộn tay cho chắc.
+  shadow.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const target = shadow.getElementById(a.getAttribute("href").slice(1));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+  hdsdLoaded = true;
+}
 
 // ---- Init & Auth ----
 
