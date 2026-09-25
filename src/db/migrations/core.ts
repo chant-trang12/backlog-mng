@@ -76,6 +76,21 @@ export async function migrateCoreTables(): Promise<void> {
       table.index(["team"]);
     });
   }
+
+  // tasks.da_chuyen_thang — cờ đánh dấu "Chuyển sang tháng sau" (bulk action
+  // ở Backlog: nhân bản task sang period kế tiếp, đánh dấu bản gốc để không
+  // bị chuyển trùng lần 2 — xem moveTasksToNextMonth() ở task.service.ts).
+  // BUG đã gặp thực tế: cột này chỉ khai báo trong createTable ở trên, nên
+  // deployment nào đã có sẵn bảng "tasks" TRƯỚC KHI cột này được thêm vào
+  // code thì hasTasks=true -> bỏ qua createTable -> KHÔNG BAO GIỜ có cột
+  // này -> "Chuyển sang tháng sau" lỗi "no such column: da_chuyen_thang".
+  // Thêm riêng 1 bước hasColumn/alterTable ở đây (idempotent, giống mọi
+  // cột phát sinh sau khác) để tự vá cho các DB cũ.
+  if (!(await db.schema.hasColumn("tasks", "da_chuyen_thang"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.integer("da_chuyen_thang").notNullable().defaultTo(0);
+    });
+  }
 }
 
 // 5-7. CSKH: Sự cố / Hỗ trợ ticket / Tỉ lệ khởi tạo — CRUD theo team.
