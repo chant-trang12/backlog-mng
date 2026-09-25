@@ -73,17 +73,33 @@ async function loadHdsdContent() {
   const styleTag = (doc.querySelector("style")?.textContent ?? "").replace(/:root/g, ":host");
   const shadow = root.shadowRoot ?? root.attachShadow({ mode: "open" });
   shadow.innerHTML = `${linkTag}<style>${styleTag}</style>${doc.body.innerHTML}`;
-  // Mục lục bên trong dùng <a href="#id"> nhảy neo — trình duyệt không tự
-  // cuộn qua ranh giới shadow DOM ở mọi phiên bản, nên tự bắt sự kiện và
-  // cuộn tay cho chắc.
+  // Dải tab ngang ở đầu trang (kiểu chrome-tabs chung của app) — bấm 1 tab
+  // thì hiện đúng section đó, ẩn các section còn lại.
+  function showHdsdPanel(id) {
+    shadow.querySelectorAll(".doc-section").forEach((sec) => {
+      sec.hidden = sec.id !== id;
+    });
+    shadow.querySelectorAll(".hdsd-tab").forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.panel === id);
+    });
+  }
   shadow.addEventListener("click", (e) => {
+    const tab = e.target.closest(".hdsd-tab");
+    if (tab) {
+      showHdsdPanel(tab.dataset.panel);
+      return;
+    }
+    // Link tham chiếu chéo trong nội dung (VD "xem Phòng ban") trỏ tới 1
+    // section khác đang ẩn (không phải tab đang mở) — phải BẬT đúng tab đó
+    // trước rồi mới cuộn tới, không thì cuộn tới 1 phần tử đang hidden.
     const a = e.target.closest('a[href^="#"]');
     if (!a) return;
+    e.preventDefault();
     const target = shadow.getElementById(a.getAttribute("href").slice(1));
-    if (target) {
-      e.preventDefault();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!target) return;
+    const panel = target.classList.contains("doc-section") ? target : target.closest(".doc-section");
+    if (panel) showHdsdPanel(panel.id);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
   });
   hdsdLoaded = true;
 }
