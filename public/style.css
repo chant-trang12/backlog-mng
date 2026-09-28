@@ -1018,26 +1018,71 @@ th {
 #fr-table tbody tr.fr-row-clickable { cursor: pointer; }
 #fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
 
-/* Dialog xem chi tiết 1 yêu cầu tính năng — lưới nhãn/giá trị 2 cột cho
-   các trường ngắn, văn bản dài (Mô tả/Kết quả mong muốn) xuống hàng riêng
-   full-width bên dưới. */
+/* Dialog xem chi tiết 1 yêu cầu tính năng — 3 khối rõ ràng: đầu trang (hệ
+   thống/tiêu đề/trạng thái, có viền dưới tách khỏi phần thân), khối "thông
+   số" dạng thẻ (lưới nhãn/giá trị 2 cột, nền + viền để tách khỏi nền dialog
+   trắng — đúng lỗi bản cũ bị chê "nhìn xấu": không có gì phân tách các
+   dòng thông tin với nhau), và khối văn bản dài (Mô tả/Kết quả mong muốn)
+   dạng "quote box" nền nhạt, viền trái nổi bật. Nút thao tác tách hẳn bằng
+   viền trên. */
+.fr-detail-dialog { max-width: 720px; }
+.fr-detail-head {
+  padding-bottom: 14px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.fr-detail-head #fr-detail-he-thong { align-self: flex-start; }
+.fr-detail-head h2 {
+  margin: 0;
+  padding-right: 26px; /* chừa chỗ nút X */
+  font-size: 1.3rem;
+  line-height: 1.3;
+}
+
 .fr-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px 20px;
-  margin: 4px 0;
+  gap: 14px 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
 }
+.fr-detail-field { min-width: 0; }
 .fr-detail-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--muted);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
-.fr-detail-text {
+
+.fr-detail-block { margin-top: 2px; }
+.fr-detail-quote {
   white-space: pre-wrap;
-  margin: 0;
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  line-height: 1.5;
+}
+.fr-detail-quote-warn { border-left-color: var(--delete); color: var(--delete); background: var(--delete-light); }
+
+/* #id để thắng specificity cua "dialog .actions" (căn phải mặc định mọi
+   dialog khác) — khối này cần căn trái vì là 1 dãy nút thao tác, không
+   phải cặp Hủy/Lưu. */
+#fr-detail-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
 }
 
 /* Bảng Nhật ký hoạt động — cột Thời gian/Hành động căn giữa (badge/ngày
@@ -1077,16 +1122,19 @@ th {
 /* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
    nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
 .fr-attachment-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.85rem;
   color: var(--muted);
+  text-decoration: none;
   vertical-align: bottom;
 }
-.fr-attachment-chip:hover { color: var(--primary); }
+.fr-attachment-chip:hover { color: var(--primary); text-decoration: underline; }
 
 /* Nút Lịch sử đánh giá/tiến độ — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
 #task-table td:nth-child(12), /* Tiến độ */
@@ -2087,6 +2135,7 @@ img, svg, canvas, video { max-width: 100%; }
   dialog .field-row { flex-direction: column; gap: 12px; }
   dialog .actions { flex-wrap: wrap; }
   dialog .actions button { flex: 1 1 auto; }
+  .fr-detail-grid { grid-template-columns: 1fr; }
 
   .table-wrap { -webkit-overflow-scrolling: touch; }
   table { font-size: 0.8rem; }
