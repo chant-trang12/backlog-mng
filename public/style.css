@@ -1074,11 +1074,11 @@ th {
 }
 .fr-detail-quote-warn { border-left-color: var(--delete); color: var(--delete); background: var(--delete-light); }
 
-/* #id để thắng specificity cua "dialog .actions" (căn phải mặc định mọi
-   dialog khác) — khối này cần căn trái vì là 1 dãy nút thao tác, không
-   phải cặp Hủy/Lưu. */
+/* #id để thắng specificity của "dialog .actions" (căn phải mặc định mọi
+   dialog khác) — khối này căn giữa vì là 1 dãy nút thao tác chính (Duyệt/
+   Từ chối/Đưa vào Backlog...), không phải cặp Hủy/Lưu căn phải thông thường. */
 #fr-detail-actions {
-  justify-content: flex-start;
+  justify-content: center;
   flex-wrap: wrap;
   padding-top: 14px;
   margin-top: 4px;
