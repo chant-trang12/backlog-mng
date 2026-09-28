@@ -884,6 +884,15 @@ th {
 
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
 
+/* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
+   thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
+   hết mới thấy. .table-scroll-top là 1 thanh giả cùng chiều rộng, đồng bộ
+   2 chiều với #task-table-wrap thật bên dưới (xem syncTaskScrollTop() ở
+   04-tasks.js) — #task-table-scroll-top-spacer được set width bằng JS
+   đúng bằng scrollWidth thật của bảng để thanh cuộn giả có cùng tỉ lệ. */
+.table-scroll-top { overflow-x: auto; overflow-y: hidden; height: 16px; margin-top: 14px; }
+.table-scroll-top > div { height: 1px; }
+
 /* Cố định cột checkbox (chọn nhiều dòng) khi cuộn ngang — áp dụng cho mọi
    bảng có cột chọn: Nội quy, Roadmap năm, Chấm công (bảng Backlog cố định
    riêng tới hết cột "Nhiệm vụ", xem khối #task-table bên dưới; bảng Nhân sự

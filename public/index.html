@@ -342,7 +342,13 @@
               <label for="task-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="task-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <!-- Thanh cuộn ngang PHÍA TRÊN bảng — bảng Nhiệm vụ có nhiều cột,
+                 trước đây chỉ có thanh cuộn ở cuối bảng (phải cuộn dọc hết
+                 bảng mới thấy) nên thêm 1 thanh giả ở đây, đồng bộ 2 chiều
+                 với .table-wrap thật bên dưới qua setupTaskScrollTopSync() ở
+                 04-tasks.js. -->
+            <div class="table-scroll-top" id="task-table-scroll-top"><div id="task-table-scroll-top-spacer"></div></div>
+            <div class="table-wrap" id="task-table-wrap">
               <table id="task-table">
                 <thead>
                   <tr>

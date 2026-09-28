@@ -990,3 +990,47 @@ el.exportBtn.addEventListener("click", () => {
   window.location.href = `/api/periods/${state.currentPeriodId}/tasks/export${query}`;
 });
 
+// ---- Thanh cuộn ngang phía trên bảng Nhiệm vụ ----
+// Bảng Nhiệm vụ có tới 15-16 cột, thanh cuộn ngang mặc định của trình
+// duyệt chỉ nằm ở CUỐI bảng (#task-table-wrap) — phải cuộn dọc hết bảng
+// mới thấy được để kéo qua lại. Thêm 1 thanh giả (#task-table-scroll-top)
+// PHÍA TRÊN, đồng bộ 2 chiều với thanh thật bên dưới; bề rộng thanh giả
+// (spacer) khớp đúng scrollWidth thật của bảng qua ResizeObserver — tự cập
+// nhật mỗi khi bảng đổi kích thước (đổi trang, ẩn/hiện cột Team theo
+// cach_tinh_kpi, resize cửa sổ...), không cần sửa gì trong renderTasks().
+function setupTaskScrollTopSync() {
+  const top = document.getElementById("task-table-scroll-top");
+  const spacer = document.getElementById("task-table-scroll-top-spacer");
+  const wrap = document.getElementById("task-table-wrap");
+  const table = document.getElementById("task-table");
+  if (!top || !spacer || !wrap || !table) return;
+
+  function syncWidth() {
+    spacer.style.width = `${table.scrollWidth}px`;
+    // Bảng không cần cuộn ngang (màn hình đủ rộng) thì ẩn hẳn thanh giả,
+    // đỡ chiếm chỗ vô ích.
+    top.hidden = table.scrollWidth <= wrap.clientWidth;
+  }
+
+  // Cờ chặn vòng lặp vô hạn (2 bên cùng lắng nghe "scroll" của nhau, set
+  // scrollLeft của bên kia lại kích hoạt sự kiện "scroll" của chính nó).
+  let syncing = false;
+  top.addEventListener("scroll", () => {
+    if (syncing) return;
+    syncing = true;
+    wrap.scrollLeft = top.scrollLeft;
+    syncing = false;
+  });
+  wrap.addEventListener("scroll", () => {
+    if (syncing) return;
+    syncing = true;
+    top.scrollLeft = wrap.scrollLeft;
+    syncing = false;
+  });
+
+  syncWidth();
+  new ResizeObserver(syncWidth).observe(table);
+  window.addEventListener("resize", syncWidth);
+}
+setupTaskScrollTopSync();
+
