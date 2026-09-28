@@ -4,6 +4,7 @@ import {
   createFeatureRequest,
   deleteFeatureRequest,
   deleteFeatureRequestAttachment,
+  deleteFeatureRequests,
   getFeatureRequest,
   getFeatureRequestAttachment,
   linkFeatureRequestToBacklog,
@@ -57,6 +58,22 @@ export async function updateFeatureRequestHandler(req: Request, res: Response) {
   const updated = await updateFeatureRequest(id, req.body ?? {});
   if (!updated) return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   res.json(updated);
+}
+
+// Xóa nhiều yêu cầu đã chọn (checkbox trên bảng) — CHỈ admin gọi tới được
+// (chặn ở app.ts qua requireAdmin, scope đúng tiền tố route này, không đè
+// lên toàn bộ /api/feature-requests — cùng cách làm với /api/users và
+// /api/action-logs). Vẫn lọc theo isInScope() y như xóa từng cái (đề phòng
+// admin đứng ở phòng A nhưng cố xóa id của phòng B/C không liên quan).
+export async function deleteSelectedFeatureRequestsHandler(req: Request, res: Response) {
+  const { ids } = req.body ?? {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
+  }
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const numericIds = ids.map((id: unknown) => Number(id)).filter((id: number) => Number.isFinite(id));
+  const deleted = await deleteFeatureRequests(numericIds, departmentId);
+  res.json({ deleted });
 }
 
 export async function deleteFeatureRequestHandler(req: Request, res: Response) {

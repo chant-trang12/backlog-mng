@@ -152,6 +152,11 @@ export function createApp() {
   // /api/users ở trên (scope requireAdmin đúng vào tiền tố route, không
   // đè lên toàn bộ /api).
   app.use("/api/action-logs", requireAdmin);
+  // Xóa nhiều Yêu cầu tính năng (checkbox trên bảng) — chỉ Admin, cùng cách
+  // scope requireAdmin đúng tiền tố route như /api/users, /api/action-logs
+  // ở trên (không đè lên toàn bộ /api/feature-requests — route xem/tạo/sửa/
+  // Duyệt/Từ chối/xóa từng cái vẫn theo luật cũ, editor vẫn dùng được).
+  app.use("/api/feature-requests/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);

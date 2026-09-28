@@ -958,13 +958,22 @@
                 <h2 style="margin:0">Yêu cầu tính năng</h2>
                 <p class="muted" style="margin:6px 0 0">Hộp thư yêu cầu — đề xuất thêm/nâng cấp tính năng cho hệ thống.</p>
               </div>
-              <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+              <div class="row">
+                <!-- Chọn nhiều để xóa — CHỈ admin (Quy tắc 9.1: editor/viewer
+                     không được xóa). class="delete-action" đã ẩn sẵn với cả
+                     viewer lẫn editor qua CSS (xem cuối style.css), khớp
+                     đúng luật chặn thật ở server (requireAdmin, scope theo
+                     tiền tố "/api/feature-requests/delete-selected" — app.ts). -->
+                <button id="delete-selected-fr-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-fr-count">0</span>)</button>
+                <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+              </div>
             </div>
             <p class="muted" style="margin:0 0 8px">Bấm vào 1 dòng để xem đầy đủ chi tiết.</p>
             <div class="table-wrap">
               <table id="fr-table">
                 <thead>
                   <tr>
+                    <th style="width:36px"><input type="checkbox" id="fr-select-all" /></th>
                     <th style="min-width:44px">STT</th>
                     <th style="min-width:140px">Hệ thống</th>
                     <th style="min-width:260px">Tiêu đề</th>

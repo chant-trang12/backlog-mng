@@ -27,6 +27,10 @@ async function loadFeatureRequests() {
   // bên đích (xem listFeatureRequestsHandler) — không dùng prefix mặc định
   // "&" vì đây là query đầu tiên của URL.
   state.featureRequests = await api(`/api/feature-requests${deptParam("?")}`);
+  const frIds = new Set(state.featureRequests.map((r) => r.id));
+  state.selectedFeatureRequestIds.forEach((id) => {
+    if (!frIds.has(id)) state.selectedFeatureRequestIds.delete(id);
+  });
   populateFrHeThongFilter();
   populateFrTargetDeptFilter();
   frPagination.reset();
@@ -247,6 +251,25 @@ function wireFrActionButtons(root) {
   });
 }
 
+// Chọn nhiều để xóa hàng loạt — CHỈ admin (nút "Xóa đã chọn" mang class
+// "delete-action", tự ẩn với viewer/editor qua CSS role, khớp luật chặn
+// thật ở server — requireAdmin gắn riêng cho path "delete-selected", xem
+// app.ts). Checkbox từng dòng/chọn tất cả vẫn hiện với mọi quyền (giống
+// bảng Nhân sự) — chỉ nút Xóa mới ẩn, không phải cả cột.
+function updateFrSelectionUI() {
+  const visible = filteredFeatureRequests();
+  const visibleSelectedCount = visible.filter((r) => state.selectedFeatureRequestIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-fr-btn");
+  const countEl = document.getElementById("selected-fr-count");
+  const selectAll = document.getElementById("fr-select-all");
+  if (btn) btn.hidden = state.selectedFeatureRequestIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedFeatureRequestIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
 function renderFeatureRequestTable() {
   const tbody = document.getElementById("fr-tbody");
   const empty = document.getElementById("fr-empty");
@@ -268,6 +291,7 @@ function renderFeatureRequestTable() {
 
       return `
     <tr data-id="${r.id}" class="fr-row-clickable" title="Bấm để xem chi tiết yêu cầu">
+      <td><input type="checkbox" class="fr-row-checkbox" ${state.selectedFeatureRequestIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
       <td><span class="status-badge ${systemColorClass(r.he_thong)}">${r.he_thong}</span></td>
       <td>
@@ -288,17 +312,58 @@ function renderFeatureRequestTable() {
     })
     .join("");
 
+  tbody.querySelectorAll(".fr-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) {
+        state.selectedFeatureRequestIds.add(id);
+      } else {
+        state.selectedFeatureRequestIds.delete(id);
+      }
+      updateFrSelectionUI();
+    });
+  });
+
   tbody.querySelectorAll("tr.fr-row-clickable").forEach((tr) => {
     tr.addEventListener("click", (e) => {
-      // Bấm vào nút/link thao tác (Sửa/Xóa/Duyệt/Từ chối/Đưa vào...) thì để
-      // đúng handler của nút đó chạy, không mở dialog chi tiết đè lên.
-      if (e.target.closest("button, a, .actions-cell")) return;
+      // Bấm vào ô checkbox hoặc nút/link thao tác (Sửa/Xóa/Duyệt/Từ
+      // chối/Đưa vào...) thì để đúng handler của nó chạy, không mở dialog
+      // chi tiết đè lên.
+      if (e.target.closest("input, button, a, .actions-cell")) return;
       const id = Number(tr.dataset.id);
       openFrDetailDialog(state.featureRequests.find((r) => r.id === id));
     });
   });
   wireFrActionButtons(tbody);
+  updateFrSelectionUI();
 }
+
+document.getElementById("fr-select-all")?.addEventListener("change", (e) => {
+  const visible = filteredFeatureRequests();
+  if (e.target.checked) {
+    visible.forEach((r) => state.selectedFeatureRequestIds.add(r.id));
+  } else {
+    visible.forEach((r) => state.selectedFeatureRequestIds.delete(r.id));
+  }
+  renderFeatureRequestTable();
+});
+
+document.getElementById("delete-selected-fr-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedFeatureRequestIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} yêu cầu tính năng đã chọn?`))) return;
+  try {
+    const res = await api(`/api/feature-requests/delete-selected${deptParam("?")}`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedFeatureRequestIds.clear();
+    await loadFeatureRequests();
+    showToast(`Đã xóa ${res?.deleted ?? 0} yêu cầu.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 // ---- Xem chi tiết ----
 

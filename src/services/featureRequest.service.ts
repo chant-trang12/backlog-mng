@@ -105,6 +105,23 @@ export async function updateFeatureRequest(
   return getFeatureRequest(id);
 }
 
+// Xóa nhiều yêu cầu theo checkbox đã chọn trên bảng (chỉ admin — chặn ở
+// route qua requireAdmin, xem app.ts). Cùng luật phạm vi với xóa từng cái
+// (isInScope() ở featureRequest.controller.ts) — chỉ xóa những id mà phòng
+// đang thao tác là bên đề xuất HOẶC bên đích, lọc bằng 1 query duy nhất
+// (giống deleteRoadmapItems() ở roadmap.service.ts) thay vì gọi getFeatureRequest
+// từng cái.
+export async function deleteFeatureRequests(ids: number[], departmentId: number | null): Promise<number> {
+  if (ids.length === 0 || departmentId == null) return 0;
+  const rows = await db("feature_requests").whereIn("id", ids).select("id", "department_id", "target_department_id");
+  const scopedIds = rows
+    .filter((r: any) => r.department_id === departmentId || r.target_department_id === departmentId)
+    .map((r: any) => Number(r.id));
+  if (scopedIds.length === 0) return 0;
+  const count = await db("feature_requests").whereIn("id", scopedIds).delete();
+  return Number(count);
+}
+
 export async function deleteFeatureRequest(id: number): Promise<boolean> {
   const count = await db("feature_requests").where({ id }).delete();
   return count > 0;

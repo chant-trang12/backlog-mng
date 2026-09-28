@@ -43,6 +43,7 @@ const state = {
   objectiveOptions: [],
   memberParticipationOptions: [],
   featureRequests: [],
+  selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
   actionLogs: [], // Nhật ký hoạt động đã tải theo bộ lọc hiện tại (server đã lọc sẵn, FE chỉ phân trang)

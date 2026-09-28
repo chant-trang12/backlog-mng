@@ -1000,19 +1000,20 @@ th {
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
 /* Bảng Yêu cầu tính năng — đã rút gọn chỉ còn cột cần thiết để lướt danh
-   sách (STT/Hệ thống/Tiêu đề/Phòng ban/Ưu tiên/Trạng thái/Ngày tạo/Thao
-   tác), đầy đủ thông tin xem ở dialog chi tiết (bấm vào dòng — xem
-   openFrDetailDialog() ở 10-feature-requests.js). Cột STT/Hệ thống/Ưu
-   tiên/Ngày tạo (vị trí 1/2/5/7, số/badge/ngày ngắn) căn thêm chiều ngang;
-   Tiêu đề/Phòng ban/Trạng thái giữ căn trái. Cả dòng bấm được (trỏ mở
-   dialog chi tiết) trừ khi bấm đúng nút/link thao tác — xem
-   .fr-row-clickable bên dưới. */
+   sách (checkbox/STT/Hệ thống/Tiêu đề/Phòng ban/Ưu tiên/Trạng thái/Ngày
+   tạo/Thao tác), đầy đủ thông tin xem ở dialog chi tiết (bấm vào dòng —
+   xem openFrDetailDialog() ở 10-feature-requests.js). Cột checkbox/STT/Hệ
+   thống/Ưu tiên/Ngày tạo (vị trí 1/2/3/6/8, ô/số/badge/ngày ngắn) căn thêm
+   chiều ngang; Tiêu đề/Phòng ban/Trạng thái giữ căn trái. Cả dòng bấm được
+   (trỏ mở dialog chi tiết) trừ khi bấm đúng checkbox/nút/link thao tác —
+   xem .fr-row-clickable bên dưới. */
 #fr-table th { text-align: center; }
 #fr-table td { vertical-align: middle; }
 #fr-table td:nth-child(1),
 #fr-table td:nth-child(2),
-#fr-table td:nth-child(5),
-#fr-table td:nth-child(7) {
+#fr-table td:nth-child(3),
+#fr-table td:nth-child(6),
+#fr-table td:nth-child(8) {
   text-align: center;
 }
 #fr-table tbody tr.fr-row-clickable { cursor: pointer; }
