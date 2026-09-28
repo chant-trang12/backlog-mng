@@ -999,21 +999,45 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
-/* Bảng Yêu cầu tính năng — label cột căn giữa; TẤT CẢ các cột căn giữa
-   theo chiều dọc (kể cả Tiêu đề/Mô tả nhiều dòng), riêng cột STT/Hệ
-   thống/Đính kèm/Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí
-   1/2/6/10/11/12/13, đều là số/badge/link ngắn) căn thêm cả chiều ngang —
-   các cột còn lại (Tiêu đề, Mô tả...) giữ căn trái vì là văn bản dài. */
+/* Bảng Yêu cầu tính năng — đã rút gọn chỉ còn cột cần thiết để lướt danh
+   sách (STT/Hệ thống/Tiêu đề/Phòng ban/Ưu tiên/Trạng thái/Ngày tạo/Thao
+   tác), đầy đủ thông tin xem ở dialog chi tiết (bấm vào dòng — xem
+   openFrDetailDialog() ở 10-feature-requests.js). Cột STT/Hệ thống/Ưu
+   tiên/Ngày tạo (vị trí 1/2/5/7, số/badge/ngày ngắn) căn thêm chiều ngang;
+   Tiêu đề/Phòng ban/Trạng thái giữ căn trái. Cả dòng bấm được (trỏ mở
+   dialog chi tiết) trừ khi bấm đúng nút/link thao tác — xem
+   .fr-row-clickable bên dưới. */
 #fr-table th { text-align: center; }
 #fr-table td { vertical-align: middle; }
 #fr-table td:nth-child(1),
 #fr-table td:nth-child(2),
-#fr-table td:nth-child(6),
-#fr-table td:nth-child(10),
-#fr-table td:nth-child(11),
-#fr-table td:nth-child(12),
-#fr-table td:nth-child(13) {
+#fr-table td:nth-child(5),
+#fr-table td:nth-child(7) {
   text-align: center;
+}
+#fr-table tbody tr.fr-row-clickable { cursor: pointer; }
+#fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
+
+/* Dialog xem chi tiết 1 yêu cầu tính năng — lưới nhãn/giá trị 2 cột cho
+   các trường ngắn, văn bản dài (Mô tả/Kết quả mong muốn) xuống hàng riêng
+   full-width bên dưới. */
+.fr-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 20px;
+  margin: 4px 0;
+}
+.fr-detail-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.fr-detail-text {
+  white-space: pre-wrap;
+  margin: 0;
 }
 
 /* Bảng Nhật ký hoạt động — cột Thời gian/Hành động căn giữa (badge/ngày

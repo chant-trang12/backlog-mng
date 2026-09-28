@@ -960,22 +960,17 @@
               </div>
               <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
             </div>
+            <p class="muted" style="margin:0 0 8px">Bấm vào 1 dòng để xem đầy đủ chi tiết.</p>
             <div class="table-wrap">
               <table id="fr-table">
                 <thead>
                   <tr>
                     <th style="min-width:44px">STT</th>
                     <th style="min-width:140px">Hệ thống</th>
-                    <th style="min-width:140px">Loại yêu cầu</th>
-                    <th style="min-width:220px">Tiêu đề</th>
-                    <th style="min-width:260px">Mô tả yêu cầu</th>
-                    <th style="min-width:140px">Đính kèm</th>
-                    <th style="min-width:130px">Từ phòng ban</th>
-                    <th style="min-width:130px">Đến phòng ban</th>
-                    <th style="min-width:110px">Người đề xuất</th>
+                    <th style="min-width:260px">Tiêu đề</th>
+                    <th style="min-width:200px">Phòng ban</th>
                     <th style="min-width:100px">Ưu tiên</th>
-                    <th style="min-width:200px">Trạng thái</th>
-                    <th style="min-width:130px">Thời gian mong muốn</th>
+                    <th style="min-width:180px">Trạng thái</th>
                     <th style="min-width:110px">Ngày tạo</th>
                     <th style="min-width:130px"></th>
                   </tr>
@@ -1065,6 +1060,71 @@
               <button type="submit" class="primary">Lưu</button>
             </div>
           </form>
+        </dialog>
+
+        <!-- Xem chi tiết 1 yêu cầu (mở khi bấm vào 1 dòng ở bảng danh sách —
+             bảng chỉ hiện thông tin rút gọn, đầy đủ thông tin xem ở đây).
+             Chỉ đọc — Sửa/Xóa/Duyệt/Từ chối/Đưa vào Backlog/Roadmap vẫn
+             dùng đúng nút + luồng đã có (frActionsHtml() dùng chung cho cả
+             ô Thao tác ở bảng và khối Thao tác dưới đây). -->
+        <dialog id="fr-detail-dialog" style="max-width:720px">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <div class="dialog-body">
+            <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+              <div>
+                <span class="status-badge" id="fr-detail-he-thong"></span>
+                <h2 id="fr-detail-title" style="margin:8px 0 0"></h2>
+              </div>
+              <div class="row" id="fr-detail-status-badges" style="gap:5px;flex-wrap:wrap"></div>
+            </div>
+            <div class="fr-detail-grid">
+              <div>
+                <div class="fr-detail-label">Loại yêu cầu</div>
+                <div id="fr-detail-loai"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Ưu tiên</div>
+                <div id="fr-detail-uu-tien"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Từ phòng ban</div>
+                <div id="fr-detail-from-dept"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Đến phòng ban</div>
+                <div id="fr-detail-to-dept"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Người đề xuất</div>
+                <div id="fr-detail-nguoi-de-xuat"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Thời gian mong muốn</div>
+                <div id="fr-detail-thoi-gian"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Ngày tạo</div>
+                <div id="fr-detail-ngay-tao"></div>
+              </div>
+              <div>
+                <div class="fr-detail-label">Đính kèm</div>
+                <div id="fr-detail-attachment"></div>
+              </div>
+            </div>
+            <div>
+              <div class="fr-detail-label">Mô tả yêu cầu</div>
+              <p id="fr-detail-mo-ta" class="fr-detail-text muted"></p>
+            </div>
+            <div>
+              <div class="fr-detail-label">Kết quả mong muốn</div>
+              <p id="fr-detail-ket-qua" class="fr-detail-text muted"></p>
+            </div>
+            <div id="fr-detail-ghi-chu-wrap" hidden>
+              <div class="fr-detail-label">Lý do từ chối / Ghi chú xử lý</div>
+              <p id="fr-detail-ghi-chu" class="fr-detail-text muted"></p>
+            </div>
+            <div class="actions" id="fr-detail-actions" style="justify-content:flex-start;flex-wrap:wrap"></div>
+          </div>
         </dialog>
 
         <!-- Từ chối yêu cầu — chỉ phòng đích thấy nút mở dialog này. -->
