@@ -2006,22 +2006,20 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
-      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật).
-           Dòng 2: đơn vị nhập điểm cá nhân + nút Chia đều tỷ lệ (nổi bật,
-           góc phải, cùng dòng với đơn vị). Tổng đã phân bổ chuyển xuống
-           riêng 1 dòng, ngay trên bảng danh sách (xem task-member-total-row). -->
+      <!-- % Đánh giá + đơn vị điểm cá nhân chỉ hiện khi task đã chấm điểm
+           (2 thứ này phụ thuộc điểm task). Tỷ lệ đóng góp giữa các nhân sự
+           thì KHÔNG phụ thuộc điểm task — cho chia/sửa được ngay cả khi task
+           chưa chấm điểm, nên nút "Chia đều tỷ lệ" và tổng đã phân bổ
+           (task-member-total-row) luôn hiện. -->
       <div class="row" id="task-member-score-row" hidden style="align-items:center;gap:8px">
         <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
       </div>
-      <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div class="row" style="align-items:center;gap:8px">
-          <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
-          <select id="tm-score-unit" style="max-width:140px">
-            <option value="percent">% (theo task)</option>
-            <option value="scale5" id="tm-score-unit-scale5">Thang điểm 5</option>
-          </select>
-        </div>
-        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
+      <div class="row" id="task-member-unit-row" hidden style="align-items:center;gap:8px">
+        <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
+        <select id="tm-score-unit" style="max-width:140px">
+          <option value="percent">% (theo task)</option>
+          <option value="scale5" id="tm-score-unit-scale5">Thang điểm 5</option>
+        </select>
       </div>
 
       <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
@@ -2045,8 +2043,9 @@
         </div>
       </div>
 
-      <div class="row" id="task-member-total-row" hidden style="justify-content:flex-end">
+      <div class="row" id="task-member-total-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <span id="task-member-total-badge" class="status-badge status-default"></span>
+        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
 
       <div class="table-wrap">

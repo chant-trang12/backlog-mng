@@ -636,11 +636,15 @@ function fillTaskMemberCategorySelect() {
 
 function renderTaskMemberThead() {
   const graded = state.taskMemberTaskScore != null;
+  // Tỷ lệ đóng góp KHÔNG phụ thuộc điểm task — luôn hiện được, kể cả task
+  // chưa chấm điểm. Điểm cá nhân thì cần % Đánh giá của task để quy đổi nên
+  // vẫn chỉ hiện khi đã chấm điểm.
   el.taskMemberThead.innerHTML = `<tr>
     <th style="width:190px">Nhân sự</th>
     <th style="width:190px">Vai trò</th>
     <th style="width:150px">Phân loại</th>
-    ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}
+    <th style="width:120px">Tỷ lệ đóng góp (%)</th>
+    ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
     <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
   </tr>`;
@@ -722,14 +726,18 @@ function renderTaskMembers() {
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberUnitRow.hidden = !graded;
-  el.taskMemberTotalRow.hidden = !graded;
+  // Tổng tỷ lệ đóng góp đã phân bổ không phụ thuộc điểm task — luôn hiện.
+  el.taskMemberTotalRow.hidden = false;
   const unit = state.taskMemberScoreUnit;
 
   el.taskMemberTbody.innerHTML = state.taskMembers
     .map((tm) => {
+      const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
+      // Tỷ lệ đóng góp giữa các nhân sự cho task — không cần task đã chấm
+      // điểm mới chia được, nên luôn hiện cột này.
+      const contribCell = `<td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>`;
       let scoreCell = "";
       if (graded) {
-        const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
         // Công thức tự tính (áp dụng mọi phòng ban, không phân biệt
         // theo_team/theo_task nữa — khớp đúng công thức đã dùng ở "Điểm cá
         // nhân (Tính theo task)"/tong_diem, xem taskMember.service.ts):
@@ -751,7 +759,6 @@ function renderTaskMembers() {
             ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
             : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp";
         scoreCell = `
-      <td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>
       <td>
         <div class="row" style="align-items:center;gap:4px;flex-wrap:nowrap">
           <input type="number" class="inline-cell-input tm-score-input" data-id="${tm.id}" step="0.1" value="${displayScore}" placeholder="—" style="width:64px" />
@@ -775,6 +782,7 @@ function renderTaskMembers() {
       <td>
         <select class="tm-phanloai-select inline-cell-input ${memberParticipationColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${categoryOptions}</select>
       </td>
+      ${contribCell}
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
       <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
@@ -810,22 +818,24 @@ function renderTaskMembers() {
     });
   });
 
-  if (graded) {
-    el.taskMemberTbody.querySelectorAll(".tm-contrib-input").forEach((input) => {
-      input.addEventListener("change", async () => {
-        const val = input.value.trim();
-        try {
-          await api(`/api/task-members/${input.dataset.id}`, {
-            method: "PUT",
-            body: JSON.stringify({ ty_le_dong_gop: val === "" ? null : Number(val) }),
-          });
-          await loadTaskMembers();
-        } catch (err) {
-          showToast(err.message);
-          await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
-        }
-      });
+  // Tỷ lệ đóng góp sửa được kể cả task chưa chấm điểm.
+  el.taskMemberTbody.querySelectorAll(".tm-contrib-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const val = input.value.trim();
+      try {
+        await api(`/api/task-members/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ ty_le_dong_gop: val === "" ? null : Number(val) }),
+        });
+        await loadTaskMembers();
+      } catch (err) {
+        showToast(err.message);
+        await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
+      }
     });
+  });
+
+  if (graded) {
     el.taskMemberTbody.querySelectorAll(".tm-score-input").forEach((input) => {
       input.addEventListener("change", async () => {
         const val = input.value.trim();
@@ -861,10 +871,8 @@ function renderTaskMembers() {
 }
 
 function updateTaskMemberTotalBadge() {
-  if (state.taskMemberTaskScore == null) {
-    el.taskMemberTotalBadge.textContent = ""; // task chưa chấm điểm — không để lại nội dung cũ
-    return;
-  }
+  // Tổng tỷ lệ đóng góp không phụ thuộc điểm task — tính kể cả khi task
+  // chưa chấm điểm.
   const total = round2(
     state.taskMembers.reduce((s, tm) => s + (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0), 0),
   );
