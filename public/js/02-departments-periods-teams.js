@@ -303,6 +303,38 @@ function renderGradingHistory(t, mode) {
   return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
 }
 
+// Lịch sử cột Tiến độ — cùng cơ chế với renderGradingHistory ở trên (chỉ
+// khác nguồn dữ liệu: tien_do_history thay vì grading_history, không có
+// % Đánh giá/graded_at đi kèm).
+function renderProgressHistory(t) {
+  let past = [];
+  try {
+    past = t.tien_do_history ? JSON.parse(t.tien_do_history) : [];
+  } catch {
+    past = [];
+  }
+  const curLabel = state.periods.find((p) => p.id === t.period_id)?.label ?? "Tháng này";
+  const entries = past.slice();
+  if (t.tien_do && t.tien_do.trim()) {
+    entries.push({ period_label: curLabel, tien_do: t.tien_do });
+  }
+  // Hiện nút Lịch sử khi có ghi của THÁNG TRƯỚC (không hiện ở ô chính), hoặc
+  // khi có từ 2 lần ghi trở lên.
+  if (past.length === 0 && entries.length <= 1) return "";
+
+  const rows = entries
+    .map(
+      (e) =>
+        `<div><span class="gh-period">${e.period_label}</span> ${
+          e.tien_do ? String(e.tien_do).replace(/\n/g, " ") : "—"
+        }</div>`,
+    )
+    .join("");
+  const hid = `hist-${t.id}-tiendo`;
+  const btn = `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử Tiến độ qua các tháng">Lịch sử ${entries.length} ▾</button>`;
+  return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
+}
+
 // "YYYY-MM-DD HH:MM:SS" -> "dd/mm/yyyy HH:MM:SS" (thời điểm chấm điểm).
 function fmtGradedAt(value) {
   if (!value) return "";

@@ -1064,7 +1064,8 @@ th {
 }
 .fr-attachment-chip:hover { color: var(--primary); }
 
-/* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
+/* Nút Lịch sử đánh giá/tiến độ — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
+#task-table td:nth-child(12), /* Tiến độ */
 #task-table td:nth-child(14), /* % Đánh giá */
 #task-table td:nth-child(15) { /* Nội dung đánh giá */
   position: relative;

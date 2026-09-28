@@ -64,7 +64,10 @@ function renderTasks() {
       </td>
       <td><span class="status-badge ${statusClass}">${t.trang_thai}</span></td>
       <td>${t.dau_moi_phoi_hop ?? ""}</td>
-      <td>${(t.tien_do ?? "").replace(/\n/g, "<br/>")}</td>
+      <td>
+        ${(t.tien_do ?? "").replace(/\n/g, "<br/>")}
+        ${renderProgressHistory(t)}
+      </td>
       <td>
         <div class="badge-group">
           ${t.khong_tinh_diem ? `<span class="status-badge tinh-chat-khong-tinh-diem">${t.khong_tinh_diem}</span>` : ""}

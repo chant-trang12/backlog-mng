@@ -263,6 +263,14 @@ export async function moveTasksToNextMonth(
       });
     }
 
+    // Lịch sử Tiến độ — cùng cơ chế với lịch sử đánh giá ở trên: nếu tháng
+    // nguồn có ghi Tiến độ thì snapshot vào lịch sử rồi reset về rỗng cho
+    // tháng mới (ô Tiến độ luôn là ghi chú của THÁNG ĐANG XEM).
+    const tienDoHistory: unknown[] = task.tien_do_history ? JSON.parse(task.tien_do_history) : [];
+    if (task.tien_do && task.tien_do.trim()) {
+      tienDoHistory.push({ period_label: fromPeriod.label, tien_do: task.tien_do });
+    }
+
     const [clone] = await db("tasks")
       .insert({
         period_id: targetPeriod.id,
@@ -279,7 +287,10 @@ export async function moveTasksToNextMonth(
         dau_moi_phoi_hop: task.dau_moi_phoi_hop,
         phan_tram_hoan_thanh: task.phan_tram_hoan_thanh,
         trang_thai: task.trang_thai,
-        tien_do: task.tien_do,
+        // Reset Tiến độ cho tháng mới (nội dung cũ đã snapshot vào
+        // tien_do_history ở trên) — giống cách cpo_comment reset bên dưới.
+        tien_do: null,
+        tien_do_history: tienDoHistory.length ? JSON.stringify(tienDoHistory) : null,
         // Reset đánh giá cho tháng mới; giữ snapshot LẦN ĐÁNH GIÁ GẦN NHẤT —
         // nếu tháng nguồn chưa chấm lại (kéo qua nhiều tháng) thì lấy tiếp
         // snapshot mà tháng nguồn đang mang.

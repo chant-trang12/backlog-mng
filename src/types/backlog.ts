@@ -122,6 +122,7 @@ export interface Task {
   prev_cpo_graded_at: string | null;
   prev_cpo_graded_by: string | null;
   grading_history: string | null; // JSON: { period_label, cpo_danh_gia, cpo_comment, graded_at, graded_by }[]
+  tien_do_history: string | null; // JSON: { period_label, tien_do }[] — lịch sử Tiến độ qua các tháng, cùng cơ chế với grading_history.
   da_chuyen_thang: number;
   created_at: string;
   updated_at: string;

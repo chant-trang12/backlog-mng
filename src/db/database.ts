@@ -17,6 +17,7 @@ import {
   migrateTaskDauMoiPhoiHop,
   migrateTaskGradingExtras,
   migrateTaskMembersTables,
+  migrateTaskTienDoHistory,
 } from "./migrations/tasks.js";
 import {
   migrateMembersGhiChu,
@@ -50,6 +51,8 @@ export async function initDatabase(): Promise<void> {
     await migrateTaskGradingExtras();
     // tasks.dau_moi_phoi_hop (cột "Đầu mối phối hợp" ở Backlog).
     await migrateTaskDauMoiPhoiHop();
+    // tasks.tien_do_history (lịch sử cột "Tiến độ" qua các tháng).
+    await migrateTaskTienDoHistory();
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();

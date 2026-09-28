@@ -34,6 +34,20 @@ export async function migrateTaskGradingExtras(): Promise<void> {
   }
 }
 
+// tasks.tien_do_history — lịch sử cột "Tiến độ" qua các tháng, dùng đúng cơ
+// chế với grading_history ở trên: khi task được kéo qua tháng sau (NV tồn),
+// nếu tháng nguồn có ghi Tiến độ thì snapshot vào đây rồi reset tien_do về
+// rỗng cho tháng mới (xem moveTasksToNextMonth ở task.service.ts) — để ô
+// Tiến độ luôn là ghi chú CỦA THÁNG ĐANG XEM, các tháng trước xem qua nút
+// "Lịch sử" giống cột Nội dung đánh giá.
+export async function migrateTaskTienDoHistory(): Promise<void> {
+  if (!(await db.schema.hasColumn("tasks", "tien_do_history"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.text("tien_do_history");
+    });
+  }
+}
+
 // tasks.dau_moi_phoi_hop — cột "Đầu mối phối hợp" ở bảng dữ liệu Backlog
 // (đặt sau cột Trạng thái), nhập/sửa cùng lúc với Nhiệm vụ/DoD/Deadline ở
 // dialog Thêm/Sửa task. Chỉ là text tự do (tên người/phòng ban phối hợp),
