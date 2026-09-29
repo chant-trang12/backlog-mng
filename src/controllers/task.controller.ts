@@ -86,6 +86,25 @@ export async function updateTaskHandler(req: Request, res: Response) {
   res.json(task);
 }
 
+// Chấm điểm (nút "Chấm điểm" ở menu Nhiệm vụ) — route RIÊNG với sửa task
+// thường ("PUT /tasks/:id" ở trên) để requireWrite chặn được đúng theo
+// role (chỉ admin/bgd — xem auth.middleware.ts) mà không ảnh hưởng sửa
+// nội dung/cập nhật tiến độ. CHỈ nhận đúng 2 trường cpo_danh_gia/
+// cpo_comment — bỏ qua mọi trường khác lỡ gửi kèm, tránh route này bị lợi
+// dụng để sửa cả nội dung task (phòng thủ ở tầng controller, không chỉ
+// dựa vào FE chỉ gửi đúng field).
+export async function updateTaskGradeHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const body = req.body ?? {};
+  const payload: { cpo_danh_gia?: number; cpo_comment?: string } = {};
+  if (body.cpo_danh_gia !== undefined) payload.cpo_danh_gia = body.cpo_danh_gia;
+  if (body.cpo_comment !== undefined) payload.cpo_comment = body.cpo_comment;
+  const task = await updateTask(id, payload, scopeOf(req), req.appUser?.name ?? null);
+  if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
+  res.json(task);
+}
+
 export async function deleteTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });

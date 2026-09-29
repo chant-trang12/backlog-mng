@@ -1,14 +1,18 @@
-// Quản lý User + Phân quyền — 3 role cố định, KHÔNG phải free-form:
+// Quản lý User + Phân quyền — 4 role cố định, KHÔNG phải free-form:
 // - admin: toàn quyền, gồm cả quản lý User (nâng/hạ quyền, khóa/mở tài khoản).
 // - editor: CRUD dữ liệu nghiệp vụ bình thường (task, nhân sự, tiêu chí...)
-//   nhưng không vào được Quản lý User.
+//   nhưng không vào được Quản lý User, KHÔNG được thao tác nút Chấm điểm
+//   (PUT /tasks/:id/grade — chỉ admin/bgd, xem requireWrite bên dưới).
+// - bgd (Ban Giám Đốc): giống hệt viewer (chỉ xem, mọi request ghi khác bị
+//   chặn) NGOẠI TRỪ được phép chấm điểm (PUT /tasks/:id/grade) — quyền xem
+//   kèm 1 thao tác ghi duy nhất, không phải 1 nấc quyền ghi rộng như editor.
 // - viewer: chỉ xem (read-only) — mọi request ghi (POST/PUT/PATCH/DELETE)
 //   tới /api bị chặn ở middleware (xem requireWrite trong auth.middleware.ts).
 // Role chỉ thực sự được ÁP DỤNG khi SSO_ENABLED=true — tắt SSO (mặc định ở
 // dev/test) thì mọi request đi qua thẳng, giống hành vi requireAuth hiện có.
-export type AppRole = "admin" | "editor" | "viewer";
+export type AppRole = "admin" | "editor" | "bgd" | "viewer";
 
-export const APP_ROLES: AppRole[] = ["admin", "editor", "viewer"];
+export const APP_ROLES: AppRole[] = ["admin", "editor", "bgd", "viewer"];
 
 export interface AppUser {
   id: number;

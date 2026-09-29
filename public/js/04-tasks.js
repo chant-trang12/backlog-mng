@@ -91,7 +91,7 @@ function renderTasks() {
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-btn">Sửa</button>
         <button class="small btn-delete delete-btn">Xóa</button>
-        <button class="small btn-grade grade-btn">Chấm điểm</button>
+        <button class="small btn-grade grade-write-action grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
         <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
       </div></td>
@@ -560,7 +560,9 @@ el.gradeForm.addEventListener("submit", async (e) => {
   };
 
   try {
-    await api(`/api/tasks/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    // Route riêng /grade (khác PUT /tasks/:id sửa task thường) — chỉ admin/
+    // BGĐ được phép, chặn ở requireWrite (auth.middleware.ts).
+    await api(`/api/tasks/${id}/grade`, { method: "PUT", body: JSON.stringify(payload) });
     el.gradeDialog.close();
     await loadTasks();
     showToast("Đã lưu chấm điểm.", "success");

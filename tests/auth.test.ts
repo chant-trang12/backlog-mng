@@ -136,7 +136,7 @@ describe("Authentication & SSO Integration", () => {
   });
 
   describe("requireWrite — Quy tắc 9.1: editor không được xóa", () => {
-    function callRequireWrite(role: "admin" | "editor" | "viewer" | undefined, method: string, path?: string) {
+    function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path?: string) {
       const req: any = { appUser: role ? { role } : undefined, method, path };
       let statusCode: number | undefined;
       let body: any;
@@ -215,7 +215,7 @@ describe("Authentication & SSO Integration", () => {
     });
 
     it("passes through GET for every role, including editor", () => {
-      for (const role of ["admin", "editor", "viewer"] as const) {
+      for (const role of ["admin", "editor", "bgd", "viewer"] as const) {
         const { nextCalled } = callRequireWrite(role, "GET");
         expect(nextCalled).toBe(true);
       }
@@ -223,6 +223,76 @@ describe("Authentication & SSO Integration", () => {
 
     it("passes through when req.appUser is not set (SSO disabled)", () => {
       const { nextCalled } = callRequireWrite(undefined, "DELETE");
+      expect(nextCalled).toBe(true);
+    });
+  });
+
+  describe("requireWrite — role 'bgd': giống viewer, CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
+    function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path?: string) {
+      const req: any = { appUser: role ? { role } : undefined, method, path };
+      let statusCode: number | undefined;
+      let body: any;
+      let nextCalled = false;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return res;
+        },
+        json: (payload: any) => {
+          body = payload;
+          return res;
+        },
+      };
+      requireWrite(req, res, () => {
+        nextCalled = true;
+      });
+      return { statusCode, body, nextCalled };
+    }
+
+    it("blocks bgd from write methods like viewer, including DELETE", () => {
+      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+        const { statusCode, nextCalled } = callRequireWrite("bgd", method, "/tasks/1");
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("allows bgd to PUT /tasks/:id/grade (chấm điểm)", () => {
+      const { nextCalled } = callRequireWrite("bgd", "PUT", "/tasks/1/grade");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("still blocks bgd from PUT /tasks/:id (sửa task thường, không phải chấm điểm)", () => {
+      const { statusCode, nextCalled } = callRequireWrite("bgd", "PUT", "/tasks/1");
+      expect(statusCode).toBe(403);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("allows bgd to POST /feature-requests (cùng ngoại lệ như viewer)", () => {
+      const { nextCalled } = callRequireWrite("bgd", "POST", "/feature-requests");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks viewer from PUT /tasks/:id/grade (chỉ admin/bgd được chấm điểm)", () => {
+      const { statusCode, nextCalled } = callRequireWrite("viewer", "PUT", "/tasks/1/grade");
+      expect(statusCode).toBe(403);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("blocks editor from PUT /tasks/:id/grade (trước đây được, nay bị chặn)", () => {
+      const { statusCode, body, nextCalled } = callRequireWrite("editor", "PUT", "/tasks/1/grade");
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/editor không có quyền chấm điểm/i);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("still allows editor to PUT /tasks/:id (sửa task thường không bị ảnh hưởng)", () => {
+      const { nextCalled } = callRequireWrite("editor", "PUT", "/tasks/1");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("allows admin to PUT /tasks/:id/grade", () => {
+      const { nextCalled } = callRequireWrite("admin", "PUT", "/tasks/1/grade");
       expect(nextCalled).toBe(true);
     });
   });

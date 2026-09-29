@@ -2197,6 +2197,10 @@ img, svg, canvas, video { max-width: 100%; }
    chối/Đưa vào Backlog/Roadmap/Sửa trong CÙNG trang thì vẫn mang
    write-action như bình thường (xem VIEWER_ALLOWED_WRITES ở
    auth.middleware.ts — server chỉ nới đúng 1 route POST /feature-requests).
+   Role "bgd" xử lý y hệt "viewer" ở mọi rule bên dưới (chỉ xem) — TRỪ
+   .grade-write-action (nút "Chấm điểm", menu Nhiệm vụ): bgd vẫn thấy,
+   admin cũng vẫn thấy (không role nào trong danh sách này), chỉ ẩn với
+   editor/viewer — đúng quyền mới "bgd = viewer + chấm điểm".
    .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
    (Quy tắc 9.1: editor không được xóa).
    .admin-only-action: vài thao tác cụ thể chỉ admin được làm dù editor vẫn
@@ -2209,12 +2213,19 @@ body[data-role="viewer"] .write-action,
 body[data-role="viewer"] .delete-action,
 body[data-role="viewer"] .btn-delete,
 body[data-role="viewer"] .admin-only-action,
+body[data-role="viewer"] .grade-write-action,
+body[data-role="bgd"] .write-action,
+body[data-role="bgd"] .delete-action,
+body[data-role="bgd"] .btn-delete,
+body[data-role="bgd"] .admin-only-action,
 body[data-role="editor"] .delete-action,
 body[data-role="editor"] .btn-delete,
-body[data-role="editor"] .admin-only-action {
+body[data-role="editor"] .admin-only-action,
+body[data-role="editor"] .grade-write-action {
   display: none !important;
 }
-body[data-role="viewer"] .inline-cell-input {
+body[data-role="viewer"] .inline-cell-input,
+body[data-role="bgd"] .inline-cell-input {
   pointer-events: none;
   opacity: 0.6;
 }

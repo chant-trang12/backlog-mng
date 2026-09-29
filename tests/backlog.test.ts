@@ -426,6 +426,24 @@ describe("Backlog CRUD", () => {
     expect(JSON.parse(move3.body.moved[0].grading_history)).toHaveLength(2);
   });
 
+  it("PUT /api/tasks/:id/grade — route riêng cho nút Chấm điểm: chỉ đụng cpo_danh_gia/cpo_comment, bỏ qua mọi trường khác lỡ gửi kèm", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2048, month: 1 });
+    const periodId = period.body.id;
+    const task = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Task gốc" });
+
+    const res = await request(app)
+      .put(`/api/tasks/${task.body.id}/grade`)
+      .send({ cpo_danh_gia: 90, cpo_comment: "Tốt", nhiem_vu: "BỊ SỬA TRỘM" });
+    expect(res.status).toBe(200);
+    expect(res.body.cpo_danh_gia).toBe(90);
+    expect(res.body.cpo_comment).toBe("Tốt");
+    // Route /grade không được phép sửa nội dung task khác dù client có gửi kèm.
+    expect(res.body.nhiem_vu).toBe("Task gốc");
+  });
+
   it("rejects a task import file missing the Nhiệm vụ column", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2045, month: 5 });

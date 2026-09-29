@@ -63,7 +63,7 @@ export async function upsertUserFromSso(authUser: AuthUser): Promise<AppUser> {
   return toAppUser(created);
 }
 
-const VALID_ROLES: AppRole[] = ["admin", "editor", "viewer"];
+const VALID_ROLES: AppRole[] = ["admin", "editor", "bgd", "viewer"];
 
 export function isValidRole(value: unknown): value is AppRole {
   return typeof value === "string" && (VALID_ROLES as string[]).includes(value);
