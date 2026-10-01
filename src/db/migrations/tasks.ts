@@ -1,4 +1,5 @@
 import { db } from "../connection.js";
+import { ensureSoftDeleteColumns, ensureFilteredUniqueIndex } from "./core.js";
 
 // Cột bổ sung cho tasks: lịch sử chấm điểm khi task được kéo qua nhiều
 // tháng backlog.
@@ -137,4 +138,13 @@ export async function migrateTaskMembersTables(): Promise<void> {
       }
     }
   }
+}
+
+// Xóa mềm cho task_members — UNIQUE(task_id, member_id) đổi sang filtered
+// unique index (chỉ áp dụng dòng chưa xóa), để gỡ 1 nhân sự khỏi task rồi
+// gán lại không bị chặn (xem comment đầy đủ ở migrateSoftDeleteCore,
+// core.ts).
+export async function migrateSoftDeleteTaskMembers(): Promise<void> {
+  await ensureSoftDeleteColumns("task_members");
+  await ensureFilteredUniqueIndex("task_members", ["task_id", "member_id"], "task_members_task_member_active_unique");
 }

@@ -137,4 +137,13 @@ export async function migrateFeatureRequestTables(): Promise<void> {
   await db("feature_requests")
     .whereIn("trang_thai", ["Đang triển khai", "Hoàn thành"])
     .update({ trang_thai: "Đã duyệt" });
+
+  // Xóa mềm — feature_requests không có UNIQUE riêng nên chỉ cần thêm cột
+  // (xem comment đầy đủ ở migrateSoftDeleteCore, core.ts).
+  if (!(await db.schema.hasColumn("feature_requests", "is_deleted"))) {
+    await db.schema.alterTable("feature_requests", (table) => {
+      table.boolean("is_deleted").notNullable().defaultTo(false);
+      table.dateTime("deleted_at");
+    });
+  }
 }

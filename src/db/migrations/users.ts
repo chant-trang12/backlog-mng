@@ -1,4 +1,5 @@
 import { db } from "../connection.js";
+import { ensureSoftDeleteColumns, ensureFilteredUniqueIndex } from "./core.js";
 
 // Quản lý User + Phân quyền — user cục bộ được tạo tự động khi đăng nhập
 // SSO lần đầu (upsertUserFromSso), KHÔNG tạo tay ở đây. sso_sub là
@@ -63,4 +64,16 @@ export async function migrateMembersGhiChu(): Promise<void> {
       table.text("ghi_chu");
     });
   }
+}
+
+// Xóa mềm cho users — sso_sub có UNIQUE, đổi sang filtered unique index
+// (chỉ áp dụng dòng chưa xóa): tài khoản bị xóa mềm mà đăng nhập SSO lại
+// thì upsertUserFromSso tạo bản ghi MỚI (không đụng bản ghi cũ đã xóa) —
+// xem upsertUserFromSso ở user.service.ts (query tra "đã có user chưa"
+// phải lọc is_deleted=false). Khác với "active" (khóa/mở tài khoản, vẫn
+// đăng nhập tra ra đúng bản ghi cũ) — is_deleted là xóa hẳn khỏi Quản lý
+// User, không phải khóa tạm.
+export async function migrateSoftDeleteUsers(): Promise<void> {
+  await ensureSoftDeleteColumns("users");
+  await ensureFilteredUniqueIndex("users", ["sso_sub"], "users_sso_sub_active_unique");
 }
