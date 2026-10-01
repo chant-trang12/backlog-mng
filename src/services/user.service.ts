@@ -83,7 +83,7 @@ export async function updateUser(
     return { error: "Không thể tự đổi quyền/khóa chính tài khoản đang đăng nhập — nhờ admin khác thực hiện." };
   }
   if (input.department_id !== undefined && input.department_id !== null) {
-    const department = await db("departments").where({ id: input.department_id }).first();
+    const department = await db("departments").where({ id: input.department_id, is_deleted: false }).first();
     if (!department) {
       return { error: "Phòng ban không tồn tại." };
     }
