@@ -6,6 +6,7 @@ import type {
   UpdateTicketInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromTeamId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 function withRate(row: Ticket & { team_name: string; period_label: string }): TicketWithTeam {
   return {
@@ -31,7 +32,7 @@ export async function createTicket(input: CreateTicketInput, scope: DataScope): 
 }
 
 export async function getTicket(id: number): Promise<Ticket | undefined> {
-  const row = await db("tickets").where({ id }).first();
+  const row = await db("tickets").where({ id, is_deleted: false }).first();
   return row as Ticket | undefined;
 }
 
@@ -39,6 +40,8 @@ export async function listTickets(departmentId?: number | null): Promise<TicketW
   const query = db("tickets")
     .join("teams", "teams.id", "tickets.team_id")
     .join("periods", "periods.id", "tickets.period_id")
+    .where("tickets.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "tickets.*",
       "teams.name as team_name",
@@ -86,6 +89,6 @@ export async function deleteTicket(id: number, scope: DataScope): Promise<boolea
   const existing = await getTicket(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("tickets").where({ id }).delete();
+  const count = await softDeleteWhere(db, "tickets", { id });
   return count > 0;
 }

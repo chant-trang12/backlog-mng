@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import type { CreateMemberInput, Member, MemberWithTeam, UpdateMemberInput } from "../types/backlog.js";
 import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 // sqlite trả boolean dạng 0/1 thô qua knex — ép về đúng kiểu boolean khai
 // trong type Member (ha_ki).
@@ -19,12 +20,14 @@ export async function createMember(input: CreateMemberInput, scope: DataScope): 
   // trùng (period_id, team_id, name) với 1 bản ghi đã có ở phòng ban khác sẽ
   // trả thẳng bản ghi đó về mà không qua kiểm tra, vô tình để lộ dữ liệu
   // ngoài phạm vi qua đường "idempotent return".
-  const team = await db("teams").where({ id: input.team_id }).first();
+  const team = await db("teams").where({ id: input.team_id, is_deleted: false }).first();
   const departmentId = (team as any)?.department_id ?? null;
   assertDepartmentInScope(scope, departmentId);
 
+  // is_deleted=false — nhân sự đã xóa mềm không tính "đã có", tạo mới bình
+  // thường đúng tên đó (khớp filtered unique index ở migration).
   const existing = await db("members")
-    .where({ period_id: input.period_id, team_id: input.team_id, name })
+    .where({ period_id: input.period_id, team_id: input.team_id, name, is_deleted: false })
     .first();
   if (existing) return toMember(existing);
 
@@ -51,7 +54,7 @@ export async function createMember(input: CreateMemberInput, scope: DataScope): 
 }
 
 export async function getMember(id: number): Promise<Member | undefined> {
-  const row = await db("members").where({ id }).first();
+  const row = await db("members").where({ id, is_deleted: false }).first();
   return row ? toMember(row) : undefined;
 }
 
@@ -70,6 +73,7 @@ export async function listMembers(
     .select("member_id")
     .sum({ total_vi_pham: "vi_pham" })
     .where("period_id", periodId)
+    .where("is_deleted", false)
     .groupBy("member_id")
     .as("cr");
 
@@ -77,6 +81,7 @@ export async function listMembers(
     .select("member_id")
     .count({ total_count: "*" })
     .where("period_id", periodId)
+    .where("is_deleted", false)
     .groupBy("member_id")
     .as("tr");
 
@@ -84,12 +89,14 @@ export async function listMembers(
     .select("member_id")
     .count({ total_count: "*" })
     .where("period_id", periodId)
+    .where("is_deleted", false)
     .groupBy("member_id")
     .as("sr");
 
   const dgSub = db("danh_gia_records")
     .select("member_id", "so_thu_tu")
     .where("period_id", periodId)
+    .where("is_deleted", false)
     .as("dg");
 
   const baseQuery = db("members")
@@ -98,7 +105,9 @@ export async function listMembers(
     .leftJoin(trSub, "tr.member_id", "members.id")
     .leftJoin(srSub, "sr.member_id", "members.id")
     .leftJoin(dgSub, "dg.member_id", "members.id")
-    .where("members.period_id", periodId);
+    .where("members.period_id", periodId)
+    .where("members.is_deleted", false)
+    .where("teams.is_deleted", false);
   if (departmentId != null) baseQuery.where("teams.department_id", departmentId);
 
   const rows = await baseQuery
@@ -170,12 +179,12 @@ export async function deleteMember(id: number, scope: DataScope): Promise<boolea
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
   return await db.transaction(async (trx) => {
-    await trx("compliance_records").where({ member_id: id }).delete();
-    await trx("training_records").where({ member_id: id }).delete();
-    await trx("support_records").where({ member_id: id }).delete();
-    await trx("danh_gia_records").where({ member_id: id }).delete();
-    await trx("task_members").where({ member_id: id }).delete();
-    const count = await trx("members").where({ id }).delete();
+    await softDeleteWhere(trx, "compliance_records", { member_id: id });
+    await softDeleteWhere(trx, "training_records", { member_id: id });
+    await softDeleteWhere(trx, "support_records", { member_id: id });
+    await softDeleteWhere(trx, "danh_gia_records", { member_id: id });
+    await softDeleteWhere(trx, "task_members", { member_id: id });
+    const count = await softDeleteWhere(trx, "members", { id });
     return count > 0;
   });
 }
@@ -189,12 +198,12 @@ export async function deleteMembers(ids: number[], scope: DataScope): Promise<nu
     if (ids.length === 0) return 0;
   }
   return await db.transaction(async (trx) => {
-    await trx("compliance_records").whereIn("member_id", ids).delete();
-    await trx("training_records").whereIn("member_id", ids).delete();
-    await trx("support_records").whereIn("member_id", ids).delete();
-    await trx("danh_gia_records").whereIn("member_id", ids).delete();
-    await trx("task_members").whereIn("member_id", ids).delete();
-    const count = await trx("members").whereIn("id", ids).delete();
+    await softDeleteWhereIn(trx, "compliance_records", "member_id", ids);
+    await softDeleteWhereIn(trx, "training_records", "member_id", ids);
+    await softDeleteWhereIn(trx, "support_records", "member_id", ids);
+    await softDeleteWhereIn(trx, "danh_gia_records", "member_id", ids);
+    await softDeleteWhereIn(trx, "task_members", "member_id", ids);
+    const count = await softDeleteWhereIn(trx, "members", "id", ids);
     return Number(count);
   });
 }
@@ -205,16 +214,18 @@ export async function cloneMembersFromPeriod(fromPeriodId: number, toPeriodId: n
   const oldMembers = await db("members as m")
     .join("teams as old_team", "old_team.id", "m.team_id")
     .where("m.period_id", fromPeriodId)
+    .where("m.is_deleted", false)
+    .where("old_team.is_deleted", false)
     .select("m.*", "old_team.name as team_name");
 
-  const newTeams = await db("teams").where({ period_id: toPeriodId });
+  const newTeams = await db("teams").where({ period_id: toPeriodId, is_deleted: false });
   const teamMap = new Map(newTeams.map((t) => [t.name, t.id]));
 
   for (const m of oldMembers) {
     const newTeamId = teamMap.get(m.team_name);
     if (!newTeamId) continue;
     const existing = await db("members")
-      .where({ period_id: toPeriodId, team_id: newTeamId, name: m.name })
+      .where({ period_id: toPeriodId, team_id: newTeamId, name: m.name, is_deleted: false })
       .first();
     if (!existing) {
       await db("members").insert({

@@ -6,6 +6,7 @@ import type {
   UpdateCreationRateInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromTeamId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 function withTotals(
   row: CreationRate & { team_name: string; period_label: string },
@@ -34,7 +35,7 @@ export async function createCreationRate(input: CreateCreationRateInput, scope: 
 }
 
 export async function getCreationRate(id: number): Promise<CreationRate | undefined> {
-  const row = await db("creation_rates").where({ id }).first();
+  const row = await db("creation_rates").where({ id, is_deleted: false }).first();
   return row as CreationRate | undefined;
 }
 
@@ -42,6 +43,8 @@ export async function listCreationRates(departmentId?: number | null): Promise<C
   const query = db("creation_rates")
     .join("teams", "teams.id", "creation_rates.team_id")
     .join("periods", "periods.id", "creation_rates.period_id")
+    .where("creation_rates.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "creation_rates.*",
       "teams.name as team_name",
@@ -88,6 +91,6 @@ export async function deleteCreationRate(id: number, scope: DataScope): Promise<
   const existing = await getCreationRate(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("creation_rates").where({ id }).delete();
+  const count = await softDeleteWhere(db, "creation_rates", { id });
   return count > 0;
 }
