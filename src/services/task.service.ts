@@ -2,6 +2,7 @@ import { db } from "../db/database.js";
 import type { CreateTaskInput, Task, UpdateTaskInput } from "../types/backlog.js";
 import { createPeriod, getPeriod } from "./period.service.js";
 import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 // Quy tắc 5.1 phương án A — lọc 1 danh sách id task về đúng những id nằm
 // trong phạm vi của người gọi (bản ghi ngoài phạm vi bị BỎ QUA lặng lẽ, vì
@@ -9,7 +10,7 @@ import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./
 // người dùng cần biết, chỉ có ý nghĩa khi ai đó gọi thẳng API).
 async function filterTaskIdsInScope(ids: number[], scope: DataScope): Promise<number[]> {
   if (scope.all || ids.length === 0) return ids;
-  const rows = await db("tasks").whereIn("id", ids).select("id", "department_id");
+  const rows = await db("tasks").whereIn("id", ids).where({ is_deleted: false }).select("id", "department_id");
   return rows.filter((r: any) => isDepartmentInScope(scope, r.department_id)).map((r: any) => Number(r.id));
 }
 
@@ -70,7 +71,7 @@ export async function listTasks(filter: {
   team?: string;
   department_id?: number | null;
 }): Promise<(Task & { member_count: number })[]> {
-  const query = db("tasks").where({ period_id: filter.period_id });
+  const query = db("tasks").where({ period_id: filter.period_id, is_deleted: false });
   if (filter.team) {
     query.where({ team: filter.team });
   }
@@ -85,6 +86,7 @@ export async function listTasks(filter: {
   // an toàn cho cả 2 engine (SQLite/MSSQL) đang hỗ trợ.
   const counts = await db("task_members")
     .whereIn("task_id", rows.map((t) => t.id))
+    .where({ is_deleted: false })
     .groupBy("task_id")
     .select("task_id")
     .count({ c: "*" });
@@ -95,7 +97,7 @@ export async function listTasks(filter: {
 }
 
 export async function getTask(id: number): Promise<Task | undefined> {
-  const row = await db("tasks").where({ id }).first();
+  const row = await db("tasks").where({ id, is_deleted: false }).first();
   return row as Task | undefined;
 }
 
@@ -166,7 +168,11 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
   // Gỡ liên kết thủ công (FK feature_requests.linked_task_id dùng NO ACTION
   // để tương thích MSSQL — xem migrations/featureRequests.ts).
   await db("feature_requests").where({ linked_task_id: id }).update({ linked_task_id: null });
-  const count = await db("tasks").where({ id }).delete();
+  // Cascade xuống task_members — TRƯỚC ĐÂY dựa hẳn vào DB CASCADE
+  // (task_members.task_id ON DELETE CASCADE), không còn tự chạy khi đổi
+  // sang xóa mềm (không phải lệnh DELETE thật nữa) nên phải tự gỡ ở đây.
+  await softDeleteWhere(db, "task_members", { task_id: id });
+  const count = await softDeleteWhere(db, "tasks", { id });
   return count > 0;
 }
 
@@ -175,7 +181,8 @@ export async function deleteTasks(ids: number[], scope: DataScope): Promise<numb
   const scopedIds = await filterTaskIdsInScope(ids, scope);
   if (scopedIds.length === 0) return 0;
   await db("feature_requests").whereIn("linked_task_id", scopedIds).update({ linked_task_id: null });
-  const count = await db("tasks").whereIn("id", scopedIds).delete();
+  await softDeleteWhereIn(db, "task_members", "task_id", scopedIds);
+  const count = await softDeleteWhereIn(db, "tasks", "id", scopedIds);
   return Number(count);
 }
 
