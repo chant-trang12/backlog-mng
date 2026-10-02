@@ -10,6 +10,7 @@ import type {
 import { getPeriodByYearMonth } from "./period.service.js";
 import { addTinhChatTag, createTask, TINH_CHAT_NV_NAM } from "./task.service.js";
 import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./scope.util.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 const FIELDS = [
   "team",
@@ -39,14 +40,14 @@ export async function listRoadmapItems(filter: {
   year: number;
   department_id?: number | null;
 }): Promise<RoadmapItem[]> {
-  const query = db("roadmap_items").where({ year: filter.year });
+  const query = db("roadmap_items").where({ year: filter.year, is_deleted: false });
   if (filter.department_id != null) query.where({ department_id: filter.department_id });
   const rows = await query.orderBy("thoi_gian_ket_thuc", "asc").orderBy("id", "asc");
   return rows as RoadmapItem[];
 }
 
 export async function getRoadmapItem(id: number): Promise<RoadmapItem | undefined> {
-  const row = await db("roadmap_items").where({ id }).first();
+  const row = await db("roadmap_items").where({ id, is_deleted: false }).first();
   return row as RoadmapItem | undefined;
 }
 
@@ -126,6 +127,7 @@ export async function syncRoadmapItemsForPeriod(year: number, month: number): Pr
   const prefix = `${year}-${String(month).padStart(2, "0")}`;
   const items = await db("roadmap_items")
     .whereNull("synced_task_id")
+    .where({ is_deleted: false })
     // LIKE 'YYYY-MM%' thay vì substr(...) — SQL Server không có hàm substr
     // (chỉ SUBSTRING), LIKE chạy được trên cả SQLite lẫn MSSQL.
     .where("thoi_gian_bat_dau", "like", `${prefix}%`);
@@ -141,12 +143,16 @@ export async function deleteRoadmapItem(id: number, scope: DataScope): Promise<b
   // Gỡ liên kết thủ công (FK feature_requests.linked_roadmap_item_id dùng
   // NO ACTION để tương thích MSSQL — xem migrations/featureRequests.ts).
   await db("feature_requests").where({ linked_roadmap_item_id: id }).update({ linked_roadmap_item_id: null });
-  const count = await db("roadmap_items").where({ id }).delete();
+  // Cascade xuống roadmap_details — TRƯỚC ĐÂY dựa hẳn vào DB CASCADE
+  // (roadmap_details.roadmap_item_id ON DELETE CASCADE), không còn tự chạy
+  // khi đổi sang xóa mềm (không phải lệnh DELETE thật nữa).
+  await softDeleteWhere(db, "roadmap_details", { roadmap_item_id: id });
+  const count = await softDeleteWhere(db, "roadmap_items", { id });
   return count > 0;
 }
 
 // Xóa nhiều dòng roadmap theo checkbox đã chọn trên bảng (chi tiết công
-// việc theo tháng của từng dòng cũng bị xóa theo, CASCADE).
+// việc theo tháng của từng dòng cũng bị xóa mềm theo).
 export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promise<number> {
   if (ids.length === 0) return 0;
   let scopedIds = ids;
@@ -158,7 +164,8 @@ export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promi
   await db("feature_requests")
     .whereIn("linked_roadmap_item_id", scopedIds)
     .update({ linked_roadmap_item_id: null });
-  const count = await db("roadmap_items").whereIn("id", scopedIds).delete();
+  await softDeleteWhereIn(db, "roadmap_details", "roadmap_item_id", scopedIds);
+  const count = await softDeleteWhereIn(db, "roadmap_items", "id", scopedIds);
   return Number(count);
 }
 
@@ -166,7 +173,7 @@ export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promi
 
 export async function listRoadmapDetails(itemId: number): Promise<RoadmapDetail[]> {
   const rows = await db("roadmap_details")
-    .where({ roadmap_item_id: itemId })
+    .where({ roadmap_item_id: itemId, is_deleted: false })
     .orderBy("month", "asc")
     .orderBy("id", "asc");
   return rows as RoadmapDetail[];
@@ -192,7 +199,7 @@ export async function updateRoadmapDetail(
   id: number,
   input: UpdateRoadmapDetailInput,
 ): Promise<RoadmapDetail | undefined> {
-  const existing = await db("roadmap_details").where({ id }).first();
+  const existing = await db("roadmap_details").where({ id, is_deleted: false }).first();
   if (!existing) return undefined;
   const [updated] = await db("roadmap_details")
     .where({ id })
@@ -208,6 +215,6 @@ export async function updateRoadmapDetail(
 }
 
 export async function deleteRoadmapDetail(id: number): Promise<boolean> {
-  const count = await db("roadmap_details").where({ id }).delete();
+  const count = await softDeleteWhere(db, "roadmap_details", { id });
   return count > 0;
 }
