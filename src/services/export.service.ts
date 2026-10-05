@@ -6,8 +6,10 @@ import { listRoadmapItems } from "./roadmap.service.js";
 
 // 1.5 Xuất Excel theo mẫu "Backlog theo team" (xem ảnh mẫu đính kèm yêu cầu):
 // hàng tiêu đề nền đỏ mận (maroon) chữ trắng, cột Trạng thái/% Hoàn thành tô
-// màu theo giá trị.
-const TOTAL_COLUMNS = 9; // A..I
+// màu theo giá trị. Đủ 14 cột — khớp CHÍNH XÁC các cột đang hiển thị ở bảng
+// Danh sách nhiệm vụ trên màn hình (xem #task-table, index.html), theo đúng
+// thứ tự trái sang phải.
+const TOTAL_COLUMNS = 14; // A..N
 const HEADER_FILL = "FF632423"; // đỏ mận đậm
 const HEADER_FONT = "FFFFFFFF";
 const TITLE_FILL = "FF9DC3E6";
@@ -38,11 +40,23 @@ function formatDate(value: string | null): string {
 }
 
 const HEADERS = [
-  "STT", "Tính chất", "Team", "Nhiệm vụ", "DoD", "Deadline",
-  "% Hoàn thành", "Trạng thái", "Tiến độ",
+  "STT", "Tag", "Phân loại", "Team", "Nhiệm vụ", "DoD", "Deadline",
+  "% Hoàn thành", "Trạng thái", "Đầu mối phối hợp", "Tiến độ", "Tính chất",
+  "% Đánh giá", "Nội dung đánh giá",
 ];
 
-const COLUMN_WIDTHS = [6, 12, 10, 26, 30, 12, 12, 14, 40];
+const COLUMN_WIDTHS = [6, 12, 16, 10, 26, 30, 12, 12, 14, 18, 36, 16, 12, 30];
+
+// "Tính chất" trên màn hình (cột cuối, KHÁC với cột "Phân loại" ở trên vốn
+// lấy từ tasks.tinh_chat) thật ra hiển thị 2 cờ trạng thái riêng —
+// khong_tinh_diem / da_chuyen_thang — xem renderTasks() ở 04-tasks.js. Gộp
+// lại thành 1 ô text cho Excel, cách nhau bằng ", " nếu có cả 2.
+function tinhChatSummary(task: Task): string {
+  const parts: string[] = [];
+  if (task.khong_tinh_diem) parts.push(task.khong_tinh_diem);
+  if (task.da_chuyen_thang) parts.push("Đã chuyển");
+  return parts.join(", ");
+}
 
 export async function exportBacklogToExcel(filter: {
   period_id: number;
@@ -88,6 +102,7 @@ export async function exportBacklogToExcel(filter: {
   for (const task of tasks) {
     const values: (string | number)[] = [
       task.stt,
+      task.tag ?? "",
       task.tinh_chat ?? "",
       task.team,
       task.nhiem_vu,
@@ -95,7 +110,11 @@ export async function exportBacklogToExcel(filter: {
       formatDate(task.deadline),
       task.phan_tram_hoan_thanh / 100,
       task.trang_thai,
+      task.dau_moi_phoi_hop ?? "",
       task.tien_do ?? "",
+      tinhChatSummary(task),
+      task.cpo_danh_gia !== null ? task.cpo_danh_gia / 100 : "",
+      task.cpo_comment ?? "",
     ];
 
     values.forEach((val, i) => {
@@ -103,15 +122,16 @@ export async function exportBacklogToExcel(filter: {
       cell.value = val;
       cell.alignment = { wrapText: true, vertical: "top" };
       cell.border = THIN_BORDER;
-      if (i === 6) cell.numFmt = "0%";
+      if (i === 7) cell.numFmt = "0%"; // % Hoàn thành
+      if (i === 12 && task.cpo_danh_gia !== null) cell.numFmt = "0%"; // % Đánh giá
     });
 
-    const statusCell = sheet.getCell(rowIndex, 8);
+    const statusCell = sheet.getCell(rowIndex, 9);
     const statusFill = STATUS_FILL[task.trang_thai];
     if (statusFill) fillCell(statusCell, statusFill);
 
     if (task.phan_tram_hoan_thanh >= 100) {
-      fillCell(sheet.getCell(rowIndex, 7), "FFC6E0B4");
+      fillCell(sheet.getCell(rowIndex, 8), "FFC6E0B4");
     }
 
     rowIndex += 1;
