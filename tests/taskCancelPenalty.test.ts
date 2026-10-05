@@ -113,11 +113,11 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     expect(res.status).toBe(200);
     expect(res.body.cpo_danh_gia).toBe(5);
     expect(res.body.khong_tinh_diem).toBeNull();
-    // Note ghi rõ "xin hủy ngày bao nhiêu, ai xin hủy" — SSO tắt trong môi
-    // trường test nên graderName là null, rơi vào nhánh "không rõ người
-    // thực hiện".
+    // Note ghi rõ "xin hủy ngày bao nhiêu" — SSO tắt trong môi trường test
+    // nên graderName là null, phần "bởi <người>" để TRỐNG (không hiện chữ
+    // giải thích dài dòng).
     expect(res.body.cpo_comment).toContain("Xin hủy nhiệm vụ ngày");
-    expect(res.body.cpo_comment).toContain("không rõ người thực hiện (SSO tắt)");
+    expect(res.body.cpo_comment).not.toContain("bởi");
     expect(res.body.cpo_graded_at).toBeTruthy();
   });
 

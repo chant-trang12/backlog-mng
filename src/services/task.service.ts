@@ -172,7 +172,10 @@ export async function updateTask(
       const [ngayHuy] = localTimestamp().split(" "); // "YYYY-MM-DD"
       const [huyY, huyM, huyD] = ngayHuy.split("-");
       const ngayHuyDisplay = `${huyD}/${huyM}/${huyY}`;
-      const nguoiHuy = graderName || "không rõ người thực hiện (SSO tắt)";
+      // Không nhận diện được tài khoản (SSO tắt, hoặc request không gắn
+      // người dùng) -> để trống phần "bởi ..." thay vì hiện chữ giải thích
+      // dài dòng trong note.
+      const boiNguoiHuy = graderName ? ` bởi ${graderName}` : "";
 
       if (fraction < 0.25) {
         const replacement = input.replacement_task;
@@ -187,7 +190,7 @@ export async function updateTask(
           ...replacement,
           dod:
             replacement.dod?.trim() ||
-            `Nhiệm vụ thay thế cho nhiệm vụ đã hủy ngày ${ngayHuyDisplay} (bởi ${nguoiHuy}): "${existing.nhiem_vu}".`,
+            `Nhiệm vụ thay thế cho nhiệm vụ đã hủy ngày ${ngayHuyDisplay}${boiNguoiHuy}: "${existing.nhiem_vu}".`,
         };
         const createdReplacement = await createTask(existing.period_id, replacementInput, scope);
         thayTheTaskId = createdReplacement.id;
@@ -201,7 +204,7 @@ export async function updateTask(
           merged.cpo_danh_gia = cancelPenaltyTier(fraction);
           merged.cpo_comment =
             existing.cpo_comment?.trim() ||
-            `Xin hủy nhiệm vụ ngày ${ngayHuyDisplay} bởi ${nguoiHuy} — tự động chấm điểm do đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian deadline.`;
+            `Xin hủy nhiệm vụ ngày ${ngayHuyDisplay}${boiNguoiHuy} — tự động chấm điểm do đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian deadline.`;
           autoPenaltyGraded = true;
         }
       }
