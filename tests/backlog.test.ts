@@ -54,12 +54,16 @@ describe("Backlog CRUD", () => {
     const period = await request(app).post("/api/periods").send({ year: 2033, month: 6 });
     const periodId = period.body.id;
 
+    // Deadline trong tháng nguồn (6) — trước tháng đích (7) khi chuyển ->
+    // thật sự quá hạn, đúng căn cứ để gắn "Nhiệm vụ tồn" (không dùng task
+    // thiếu deadline — thiếu deadline thì KHÔNG đánh dấu tồn, xem test
+    // "only tags Nhiệm vụ tồn when Deadline's month is earlier...").
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
-      .send({ team: "CRM", nhiem_vu: "Task A", tinh_chat: "NVKH" });
+      .send({ team: "CRM", nhiem_vu: "Task A", tinh_chat: "NVKH", deadline: "2033-06-15" });
     const t2 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
-      .send({ team: "CRM", nhiem_vu: "Task B" });
+      .send({ team: "CRM", nhiem_vu: "Task B", deadline: "2033-06-20" });
 
     const move = await request(app)
       .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
@@ -102,7 +106,10 @@ describe("Backlog CRUD", () => {
     const isTon = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Deadline trước tháng đích", deadline: "2040-08-20" });
-    // Không có deadline → mặc định vẫn là nhiệm vụ tồn (an toàn, giữ hành vi cũ).
+    // Không có deadline → KHÔNG đủ căn cứ để nói đã quá hạn, không phải
+    // nhiệm vụ tồn (BUG đã sửa: bản cũ mặc định coi thiếu deadline là tồn,
+    // khiến mọi task chưa nhập deadline đều bị gắn nhầm "Nhiệm vụ tồn" dù
+    // chưa hề quá hạn gì).
     const noDeadline = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Không có deadline" });
@@ -121,8 +128,8 @@ describe("Backlog CRUD", () => {
     expect(movedIsTon.khong_tinh_diem).toBe("Không tính điểm");
 
     const movedNoDeadline = move.body.moved.find((t: { nhiem_vu: string }) => t.nhiem_vu === "Không có deadline");
-    expect(movedNoDeadline.tinh_chat).toBe("Nhiệm vụ tồn");
-    expect(movedNoDeadline.khong_tinh_diem).toBe("Không tính điểm");
+    expect(movedNoDeadline.tinh_chat).toBeNull();
+    expect(movedNoDeadline.khong_tinh_diem).toBeNull();
   });
 
   it("blocks moving a task to next month a second time", async () => {

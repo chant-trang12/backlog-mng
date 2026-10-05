@@ -247,11 +247,16 @@ function removeTinhChatTon(tinhChat: string | null): string | null {
   return removeTinhChatTag(tinhChat, TINH_CHAT_TON);
 }
 
+// Task CHƯA CÓ Deadline (hoặc Deadline không đọc được) thì KHÔNG có căn cứ
+// gì để nói nó "đã quá hạn" — trả về false (không đánh dấu Nhiệm vụ tồn).
+// BUG đã gặp thực tế: bản cũ trả về true cho cả 2 trường hợp này, khiến MỌI
+// task chưa nhập Deadline đều tự động bị gắn "Nhiệm vụ tồn" khi chuyển
+// tháng dù chưa hề quá hạn gì.
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {
-  if (!deadline || deadline.length < 7) return true;
+  if (!deadline || deadline.length < 7) return false;
   const year = Number(deadline.slice(0, 4));
   const month = Number(deadline.slice(5, 7));
-  if (!Number.isFinite(year) || !Number.isFinite(month)) return true;
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return false;
   return year < targetYear || (year === targetYear && month < targetMonth);
 }
 
