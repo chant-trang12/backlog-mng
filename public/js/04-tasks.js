@@ -774,7 +774,7 @@ function updateProgressCancelWarning() {
   } else {
     replacementWrap.hidden = true;
     warningEl.hidden = false;
-    warningEl.textContent = `Đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian mục tiêu — hủy lúc này sẽ tự động chấm % Đánh giá = ${cancelPenaltyTierLabel(fraction)}% (trừ điểm nặng).`;
+    warningEl.textContent = `Đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian deadline — Xin hủy lúc này sẽ tự động chấm ${cancelPenaltyTierLabel(fraction)}%.`;
   }
 }
 
