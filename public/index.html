@@ -331,6 +331,17 @@
                     <button type="button" class="bulk-menu-item bulk-menu-item-danger delete-action" role="menuitem" data-bulk-action="delete">Xóa</button>
                   </div>
                 </div>
+                <div class="col-menu-wrap" id="task-col-menu-wrap">
+                  <button type="button" id="task-col-menu-btn" class="btn-edit" aria-haspopup="true" aria-expanded="false">
+                    <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
+                    <span class="caret" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="col-menu" id="task-col-menu" role="menu" hidden>
+                    <div class="col-menu-list" id="task-col-menu-list"></div>
+                    <div class="bulk-menu-sep"></div>
+                    <button type="button" class="bulk-menu-item" id="task-col-menu-reset">Hiện tất cả</button>
+                  </div>
+                </div>
                 <button id="export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
                 <button id="download-task-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="task-file-input" accept=".xlsx,.xls" hidden />
@@ -353,20 +364,20 @@
                 <thead>
                   <tr>
                     <th style="width:36px"><input type="checkbox" id="task-select-all" /></th>
-                    <th style="min-width:50px">STT</th>
-                    <th style="min-width:90px">Tag</th>
-                    <th style="min-width:90px">Phân loại</th>
-                    <th style="min-width:90px" id="task-table-team-th">Team</th>
+                    <th style="min-width:50px" data-col="stt">STT</th>
+                    <th style="min-width:90px" data-col="tag">Tag</th>
+                    <th style="min-width:90px" data-col="phan_loai">Phân loại</th>
+                    <th style="min-width:90px" id="task-table-team-th" data-col="team">Team</th>
                     <th style="min-width:280px">Nhiệm vụ</th>
-                    <th style="min-width:280px">DoD</th>
-                    <th style="min-width:110px">Deadline</th>
-                    <th style="min-width:110px">% Hoàn thành</th>
-                    <th style="min-width:110px">Trạng thái</th>
-                    <th style="min-width:160px">Đầu mối phối hợp</th>
-                    <th style="min-width:320px">Tiến độ</th>
-                    <th style="min-width:110px">Tính chất</th>
-                    <th style="min-width:100px">% Đánh giá</th>
-                    <th style="min-width:280px">Nội dung đánh giá</th>
+                    <th style="min-width:280px" data-col="dod">DoD</th>
+                    <th style="min-width:110px" data-col="deadline">Deadline</th>
+                    <th style="min-width:110px" data-col="hoan_thanh">% Hoàn thành</th>
+                    <th style="min-width:110px" data-col="trang_thai">Trạng thái</th>
+                    <th style="min-width:160px" data-col="dau_moi_phoi_hop">Đầu mối phối hợp</th>
+                    <th style="min-width:320px" data-col="tien_do">Tiến độ</th>
+                    <th style="min-width:110px" data-col="tinh_chat">Tính chất</th>
+                    <th style="min-width:100px" data-col="danh_gia_phan_tram">% Đánh giá</th>
+                    <th style="min-width:280px" data-col="danh_gia_noi_dung">Nội dung đánh giá</th>
                     <th style="min-width:170px"></th>
                   </tr>
                 </thead>

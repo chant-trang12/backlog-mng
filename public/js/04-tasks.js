@@ -1,5 +1,121 @@
 // ---- Tasks ----
 
+// ---- Cấu hình cột hiển thị ở bảng Danh sách nhiệm vụ ----
+// Bảng có 14 cột dữ liệu nên rất dài theo chiều ngang — cho người dùng tự
+// chọn ẩn cột nào không cần xem, lưu riêng theo máy/trình duyệt (localStorage,
+// KHÔNG lưu server) vì đây chỉ là tuỳ chọn hiển thị cá nhân, không phải dữ
+// liệu nghiệp vụ. Cột checkbox, "Nhiệm vụ" (tên task — cần thấy để biết
+// đang xem dòng nào) và cột hành động (Sửa/Xoá...) không cho ẩn.
+const TASK_TOGGLEABLE_COLUMNS = [
+  { key: "stt", label: "STT" },
+  { key: "tag", label: "Tag" },
+  { key: "phan_loai", label: "Phân loại" },
+  { key: "team", label: "Team" },
+  { key: "dod", label: "DoD" },
+  { key: "deadline", label: "Deadline" },
+  { key: "hoan_thanh", label: "% Hoàn thành" },
+  { key: "trang_thai", label: "Trạng thái" },
+  { key: "dau_moi_phoi_hop", label: "Đầu mối phối hợp" },
+  { key: "tien_do", label: "Tiến độ" },
+  { key: "tinh_chat", label: "Tính chất" },
+  { key: "danh_gia_phan_tram", label: "% Đánh giá" },
+  { key: "danh_gia_noi_dung", label: "Nội dung đánh giá" },
+];
+const TASK_COL_LS_KEY = "backlog.taskColumns.hiddenV1";
+
+function loadHiddenTaskColumns() {
+  try {
+    const raw = localStorage.getItem(TASK_COL_LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    // localStorage có thể bị chặn (chế độ ẩn danh, site data bị khoá) —
+    // bỏ qua, chỉ mất tuỳ chọn ẩn cột đã lưu trước đó trên máy này.
+    return new Set();
+  }
+}
+
+function saveHiddenTaskColumns() {
+  try {
+    localStorage.setItem(TASK_COL_LS_KEY, JSON.stringify([...state.hiddenTaskColumns]));
+  } catch {
+    // Không lưu được thì bỏ qua — tuỳ chọn vẫn áp dụng cho phiên hiện tại,
+    // chỉ không nhớ lại cho lần sau.
+  }
+}
+
+function isTaskColHidden(key) {
+  return state.hiddenTaskColumns.has(key);
+}
+
+// Đồng bộ thuộc tính hidden của các <th> tiêu đề theo đúng tuỳ chọn đã lưu
+// — header là markup tĩnh (không render lại theo state.tasks như tbody) nên
+// cần hàm riêng, gọi lúc khởi động trang (xem initTaskColumnMenu) và mỗi
+// lần vẽ lại bảng (renderTasks) để không bị ghi đè bởi lý do ẩn cột Team
+// khác (KPI tính theo task — applyDeptModeSidebarNav).
+function applyTaskColumnHeaderVisibility() {
+  TASK_TOGGLEABLE_COLUMNS.forEach(({ key }) => {
+    const th = document.querySelector(`#task-table thead [data-col="${key}"]`);
+    if (!th) return;
+    th.hidden = isTaskColHidden(key) || (key === "team" && homeCachTinhKpiTheoTask());
+  });
+}
+
+function renderTaskColMenu() {
+  el.taskColMenuList.innerHTML = TASK_TOGGLEABLE_COLUMNS.map(
+    ({ key, label }) => `
+    <label class="col-menu-item">
+      <input type="checkbox" class="task-col-checkbox" data-col-key="${key}" ${isTaskColHidden(key) ? "" : "checked"} />
+      ${label}
+    </label>`,
+  ).join("");
+  el.taskColMenuList.querySelectorAll(".task-col-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const key = e.target.dataset.colKey;
+      if (e.target.checked) state.hiddenTaskColumns.delete(key);
+      else state.hiddenTaskColumns.add(key);
+      saveHiddenTaskColumns();
+      renderTasks();
+    });
+  });
+}
+
+function openTaskColMenu() {
+  renderTaskColMenu();
+  el.taskColMenu.hidden = false;
+  el.taskColMenuBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeTaskColMenu() {
+  el.taskColMenu.hidden = true;
+  el.taskColMenuBtn.setAttribute("aria-expanded", "false");
+}
+
+function initTaskColumnMenu() {
+  state.hiddenTaskColumns = loadHiddenTaskColumns();
+  applyTaskColumnHeaderVisibility();
+
+  el.taskColMenuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (el.taskColMenu.hidden) openTaskColMenu();
+    else closeTaskColMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!el.taskColMenu.hidden && !el.taskColMenuWrap.contains(e.target)) closeTaskColMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeTaskColMenu();
+  });
+  el.taskColMenuReset.addEventListener("click", () => {
+    state.hiddenTaskColumns.clear();
+    saveHiddenTaskColumns();
+    applyTaskColumnHeaderVisibility();
+    renderTaskColMenu();
+    renderTasks();
+  });
+}
+initTaskColumnMenu();
+
 async function loadTasks() {
   if (!state.currentPeriodId) {
     state.tasksAll = [];
@@ -28,9 +144,15 @@ function renderEmpty() {
 function renderTasks() {
   el.emptyState.hidden = state.periods.length !== 0;
   // Phòng ban tính KPI theo task (không chia team) — ẩn cột Team (tiêu đề
-  // đã ẩn ở applyDeptModeSidebarNav, ở đây ẩn từng ô + trừ colspan tương ứng).
+  // đã ẩn ở applyDeptModeSidebarNav, ở đây ẩn từng ô). Đồng bộ lại tiêu đề
+  // theo đúng 2 lý do ẩn cột Team (KPI theo task + tuỳ chọn người dùng ở
+  // menu "Cột hiển thị") mỗi lần vẽ bảng — xem applyTaskColumnHeaderVisibility().
   const hideTeamColumn = homeCachTinhKpiTheoTask();
-  const colCount = hideTeamColumn ? 15 : 16;
+  applyTaskColumnHeaderVisibility();
+  // colCount tính động theo đúng số cột tiêu đề ĐANG hiện (đã áp dụng cả 2
+  // lý do ẩn ở trên) — để 2 dòng "trống"/"không khớp bộ lọc" bên dưới luôn
+  // colspan đúng, không cần cộng trừ thủ công mỗi khi thêm/ẩn cột.
+  const colCount = document.querySelectorAll("#task-table thead th:not([hidden])").length;
   if (state.tasksAll.length === 0) {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
     updateTaskSelectionUI();
@@ -46,35 +168,36 @@ function renderTasks() {
 
   const pageItems = taskPagination.slice(state.tasks);
 
+  const colHidden = (key) => (isTaskColHidden(key) || (key === "team" && hideTeamColumn) ? "hidden" : "");
   el.taskTbody.innerHTML = pageItems
     .map((t) => {
       const statusClass = STATUS_CLASS[t.trang_thai] || "status-default";
       return `
     <tr data-id="${t.id}">
       <td><input type="checkbox" class="task-row-checkbox" ${state.selectedTaskIds.has(t.id) ? "checked" : ""} /></td>
-      <td>${t.stt}</td>
-      <td>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
-      <td>${renderNatureBadges(t.tinh_chat)}</td>
-      <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
+      <td data-col="stt" ${colHidden("stt")}>${t.stt}</td>
+      <td data-col="tag" ${colHidden("tag")}>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
+      <td data-col="phan_loai" ${colHidden("phan_loai")}>${renderNatureBadges(t.tinh_chat)}</td>
+      <td data-col="team" ${colHidden("team")}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
-      <td>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
-      <td>${formatDateDisplay(t.deadline)}</td>
-      <td>
+      <td data-col="dod" ${colHidden("dod")}>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
+      <td data-col="deadline" ${colHidden("deadline")}>${formatDateDisplay(t.deadline)}</td>
+      <td data-col="hoan_thanh" ${colHidden("hoan_thanh")}>
         <span class="progress-bar"><span style="width:${Math.min(100, Math.max(0, t.phan_tram_hoan_thanh))}%"></span></span>${t.phan_tram_hoan_thanh}%
       </td>
-      <td><span class="status-badge ${statusClass}">${t.trang_thai}</span></td>
-      <td>${t.dau_moi_phoi_hop ?? ""}</td>
-      <td>
+      <td data-col="trang_thai" ${colHidden("trang_thai")}><span class="status-badge ${statusClass}">${t.trang_thai}</span></td>
+      <td data-col="dau_moi_phoi_hop" ${colHidden("dau_moi_phoi_hop")}>${t.dau_moi_phoi_hop ?? ""}</td>
+      <td data-col="tien_do" ${colHidden("tien_do")}>
         ${(t.tien_do ?? "").replace(/\n/g, "<br/>")}
         ${renderProgressHistory(t)}
       </td>
-      <td>
+      <td data-col="tinh_chat" ${colHidden("tinh_chat")}>
         <div class="badge-group">
           ${t.khong_tinh_diem ? `<span class="status-badge tinh-chat-khong-tinh-diem">${t.khong_tinh_diem}</span>` : ""}
           ${t.da_chuyen_thang ? `<span class="status-badge tinh-chat-da-chuyen" title="Đã chuyển sang tháng sau, không thể chuyển tiếp">Đã chuyển</span>` : ""}
         </div>
       </td>
-      <td style="position:relative">
+      <td data-col="danh_gia_phan_tram" ${colHidden("danh_gia_phan_tram")} style="position:relative">
         ${
           t.prev_cpo_danh_gia !== null
             ? `<span class="cell-prev-badge" title="Đánh giá gần nhất (tháng trước): ${t.prev_cpo_danh_gia}%${t.prev_cpo_graded_at ? " — " + fmtGradedAt(t.prev_cpo_graded_at) : ""}${t.prev_cpo_graded_by ? " · " + t.prev_cpo_graded_by : ""}">↩ ${t.prev_cpo_danh_gia}%</span>`
@@ -83,7 +206,7 @@ function renderTasks() {
         ${t.cpo_danh_gia !== null ? t.cpo_danh_gia + "%" : ""}
         ${renderGradingHistory(t, "percent")}
       </td>
-      <td>
+      <td data-col="danh_gia_noi_dung" ${colHidden("danh_gia_noi_dung")}>
         ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
         ${t.cpo_graded_at ? `<div class="cell-graded-at"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
         ${renderGradingHistory(t, "content")}
