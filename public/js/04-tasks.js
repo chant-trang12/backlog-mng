@@ -697,17 +697,35 @@ el.gradeForm.addEventListener("submit", async (e) => {
 // không đụng tới nội dung task (Team/Tag/Phân loại/Nhiệm vụ/DoD/Deadline).
 
 let progressDialogTask = null;
+// true khi đang bấm "Xin Hủy nhiệm vụ" (toggle) — KHÔNG còn là 1 lựa chọn
+// trong select Trạng thái nữa (tách riêng để không bị chọn nhầm như đổi
+// trạng thái thường, xem index.html).
+let progressCancelRequested = false;
 
 function openProgressDialog(task) {
   el.progressForm.reset();
   progressDialogTask = task ?? null;
+  progressCancelRequested = false;
   document.getElementById("progress-task-id").value = task?.id ?? "";
   document.getElementById("progress-phan-tram").value = task?.phan_tram_hoan_thanh ?? 0;
-  document.getElementById("progress-trang-thai").value = task?.trang_thai ?? "Chưa thực hiện";
+  // Task đã ở trạng thái Hủy từ trước (do dữ liệu cũ, hoặc hủy qua đường
+  // khác) -> select không còn option "Hủy" để hiển thị đúng giá trị, mặc
+  // định về "Chưa thực hiện" (chỉ ảnh hưởng hiển thị, không tự đổi lại
+  // trạng thái trừ khi người dùng chủ động Lưu).
+  document.getElementById("progress-trang-thai").value =
+    task?.trang_thai === "Hủy" ? "Chưa thực hiện" : task?.trang_thai ?? "Chưa thực hiện";
   document.getElementById("progress-tien-do").value = task?.tien_do ?? "";
   document.getElementById("progress-cancel-replacement-nhiemvu").value = "";
+  updateRequestCancelBtnUI();
   updateProgressCancelWarning();
   el.progressDialog.showModal();
+}
+
+function updateRequestCancelBtnUI() {
+  const btn = document.getElementById("progress-request-cancel-btn");
+  btn.textContent = progressCancelRequested ? "Bỏ xin Hủy nhiệm vụ" : "Xin Hủy nhiệm vụ";
+  btn.classList.toggle("btn-exclude", progressCancelRequested);
+  btn.classList.toggle("btn-delete", !progressCancelRequested);
 }
 
 // % thời gian mục tiêu (đầu tháng backlog -> Deadline task) đã trôi qua —
@@ -732,14 +750,13 @@ function cancelPenaltyTierLabel(fraction) {
   return 50;
 }
 
-// Chỉ hiện cảnh báo/form task thay thế khi ĐANG đổi SANG "Hủy" từ trạng
-// thái khác — khớp đúng điều kiện backend (chỉ xử lý ở lần đầu chuyển vào
-// Hủy, xem updateTask, task.service.ts).
+// Chỉ hiện cảnh báo/form task thay thế khi ĐANG xin Hủy (nút toggle) VÀ
+// task chưa ở trạng thái Hủy từ trước — khớp đúng điều kiện backend (chỉ
+// xử lý ở lần đầu chuyển vào Hủy, xem updateTask, task.service.ts).
 function updateProgressCancelWarning() {
   const warningEl = document.getElementById("progress-cancel-warning");
   const replacementWrap = document.getElementById("progress-cancel-replacement");
-  const nextStatus = document.getElementById("progress-trang-thai").value;
-  const isNewCancel = nextStatus === "Hủy" && progressDialogTask?.trang_thai !== "Hủy";
+  const isNewCancel = progressCancelRequested && progressDialogTask?.trang_thai !== "Hủy";
   if (!isNewCancel) {
     warningEl.hidden = true;
     replacementWrap.hidden = true;
@@ -761,7 +778,11 @@ function updateProgressCancelWarning() {
   }
 }
 
-document.getElementById("progress-trang-thai").addEventListener("change", updateProgressCancelWarning);
+document.getElementById("progress-request-cancel-btn").addEventListener("click", () => {
+  progressCancelRequested = !progressCancelRequested;
+  updateRequestCancelBtnUI();
+  updateProgressCancelWarning();
+});
 
 el.progressCancelBtn.addEventListener("click", () => el.progressDialog.close());
 
@@ -770,7 +791,9 @@ el.progressForm.addEventListener("submit", async (e) => {
   const id = document.getElementById("progress-task-id").value;
   const payload = {
     phan_tram_hoan_thanh: Number(document.getElementById("progress-phan-tram").value) || 0,
-    trang_thai: document.getElementById("progress-trang-thai").value,
+    // Xin Hủy (nút toggle) ghi đè Trạng thái thành "Hủy" bất kể select đang
+    // chọn gì — "Hủy" không còn là 1 lựa chọn trong select nữa.
+    trang_thai: progressCancelRequested ? "Hủy" : document.getElementById("progress-trang-thai").value,
     tien_do: document.getElementById("progress-tien-do").value.trim() || undefined,
   };
 
