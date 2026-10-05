@@ -307,7 +307,7 @@ async function doMoveTasksToNextMonth() {
   if (ids.length === 0) return;
   if (
     !await confirmDialog(
-      `Chuyển ${ids.length} task đã chọn sang tháng sau? Task sẽ được đánh dấu "Nhiệm vụ tồn".`,
+      `Chuyển ${ids.length} task đã chọn sang tháng sau? Task có Deadline trước tháng đích sẽ được đánh dấu "Nhiệm vụ tồn".`,
       { danger: false },
     )
   ) {
