@@ -32,6 +32,7 @@ import {
   migrateMembersGhiChu,
   migrateMembersHaKi,
   migrateMembersTangKi,
+  migrateMembersKiLyDo,
   migrateUsersDepartment,
   migrateUsersTable,
   migrateSoftDeleteUsers,
@@ -84,6 +85,8 @@ export async function initDatabase(): Promise<void> {
     await migrateMembersHaKi();
     // members.tang_ki (nút "Tăng KI" — đối nghịch với Hạ KI).
     await migrateMembersTangKi();
+    // members.ki_ly_do (lý do Hạ KI/Tăng KI gần nhất).
+    await migrateMembersKiLyDo();
     // members.ghi_chu (Ghi chú tự do ở tab Nhân sự).
     await migrateMembersGhiChu();
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")

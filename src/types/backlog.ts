@@ -60,6 +60,9 @@ export interface Member {
   // Ranking > "Ranking thành viên team". Loại trừ với ha_ki — bật cờ này
   // tự tắt ha_ki và ngược lại (xem updateMember, member.service.ts).
   tang_ki: boolean;
+  // Lý do của lần Hạ KI/Tăng KI gần nhất — nhập bắt buộc qua popup xác nhận
+  // khi bấm "Hạ KI"/"Tăng KI". Tự về null khi bấm "Bỏ hạ KI"/"Bỏ tăng KI".
+  ki_ly_do: string | null;
   // Ghi chú tự do — nhập/sửa ở dialog Thêm/Sửa nhân sự (dạng textarea),
   // không dùng trong bất kỳ công thức KPI/Nội quy nào.
   ghi_chu: string | null;
@@ -94,6 +97,7 @@ export interface UpdateMemberInput {
   danh_gia?: string;
   ha_ki?: boolean;
   tang_ki?: boolean;
+  ki_ly_do?: string;
   ghi_chu?: string;
 }
 

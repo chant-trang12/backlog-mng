@@ -68,6 +68,20 @@ export async function migrateMembersTangKi(): Promise<void> {
   }
 }
 
+// members.ki_ly_do — lý do của lần Hạ KI/Tăng KI GẦN NHẤT, nhập bắt buộc
+// qua popup xác nhận khi bấm "Hạ KI"/"Tăng KI" (xem openKiReasonDialog,
+// 03-members.js). Hiển thị ở cột "Ghi chú" (tab Nhân sự) và cạnh badge Hạ
+// KI/Tăng KI ở Home > Ranking > "Ranking thành viên team". Tự xoá về NULL
+// khi bấm "Bỏ hạ KI"/"Bỏ tăng KI" (xem updateMember, member.service.ts) —
+// lý do không còn ý nghĩa khi cờ đã tắt.
+export async function migrateMembersKiLyDo(): Promise<void> {
+  if (!(await db.schema.hasColumn("members", "ki_ly_do"))) {
+    await db.schema.alterTable("members", (table) => {
+      table.text("ki_ly_do");
+    });
+  }
+}
+
 // members.ghi_chu — cột "Ghi chú" tự do (textarea) ở tab Nhân sự, nhập/sửa
 // trong dialog Thêm/Sửa nhân sự cùng Chức vụ/Team. Không có ý nghĩa tính
 // toán gì (không dùng ở bất kỳ công thức KPI/Nội quy nào) — chỉ để lưu ghi

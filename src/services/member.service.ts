@@ -120,6 +120,7 @@ export async function listMembers(
       "members.noi_quy",
       "members.ha_ki",
       "members.tang_ki",
+      "members.ki_ly_do",
       "members.ghi_chu",
       "members.created_at",
       "teams.name as team_name",
@@ -145,6 +146,7 @@ export async function listMembers(
     danh_gia: r.danh_gia ?? null,
     ha_ki: !!r.ha_ki,
     tang_ki: !!r.tang_ki,
+    ki_ly_do: r.ki_ly_do ?? null,
     ghi_chu: r.ghi_chu ?? null,
     created_at: r.created_at,
   }));
@@ -170,10 +172,14 @@ export async function updateMember(id: number, input: UpdateMemberInput, scope: 
     // request chỉ tắt 1 cờ hoặc không đổi field KI nào).
     ha_ki: input.ha_ki !== undefined ? input.ha_ki : existing.ha_ki,
     tang_ki: input.tang_ki !== undefined ? input.tang_ki : existing.tang_ki,
+    ki_ly_do: input.ki_ly_do !== undefined ? input.ki_ly_do.trim() || null : existing.ki_ly_do,
     ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
   };
   if (input.ha_ki === true) merged.tang_ki = false;
   if (input.tang_ki === true) merged.ha_ki = false;
+  // Bấm "Bỏ hạ KI"/"Bỏ tăng KI" (tắt hẳn cờ đang bật) — lý do cũ không còn
+  // áp dụng nữa, xoá về null thay vì giữ lại lý do của lần hạ/tăng trước.
+  if (input.ha_ki === false || input.tang_ki === false) merged.ki_ly_do = null;
 
   const [updated] = await db("members")
     .where({ id })

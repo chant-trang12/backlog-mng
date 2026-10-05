@@ -150,6 +150,20 @@ document.getElementById("member-task-detail-close-btn").addEventListener("click"
   document.getElementById("member-task-detail-dialog").close();
 });
 
+// Cột "Ghi chú" hiển thị GỘP ghi chú tự do (m.ghi_chu) + lý do Hạ KI/Tăng
+// KI gần nhất (m.ki_ly_do, nếu còn đang bật 1 trong 2 cờ) — tách dòng riêng
+// có nhãn rõ để không lẫn với ghi chú tự do, theo đúng yêu cầu "lý do hiển
+// thị ở cột ghi chú" (xem openKiReasonDialog bên dưới).
+function memberNoteCellContent(m) {
+  const parts = [];
+  if (m.ghi_chu) parts.push(m.ghi_chu.replace(/\n/g, "<br/>"));
+  if (m.ki_ly_do && (m.ha_ki || m.tang_ki)) {
+    const label = m.ha_ki ? "Lý do hạ KI" : "Lý do tăng KI";
+    parts.push(`<div class="ki-reason-note"><strong>${label}:</strong> ${m.ki_ly_do.replace(/\n/g, "<br/>")}</div>`);
+  }
+  return parts.join("");
+}
+
 function renderMemberTable() {
   const visible = filteredMembers();
   el.memberEmpty.hidden = visible.length > 0;
@@ -177,7 +191,7 @@ function renderMemberTable() {
       <td>${m.ho_tro ?? ""}</td>
       <td>${m.danh_gia ?? ""}</td>
       <td>${avgDiem ?? "-"}</td>
-      <td>${(m.ghi_chu ?? "").replace(/\n/g, "<br/>")}</td>
+      <td>${memberNoteCellContent(m)}</td>
       <td><div class="actions-cell" title="">
         <button class="small ${m.ha_ki ? "btn-progress" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
         <button class="small ${m.tang_ki ? "btn-member" : "btn-restore"} write-action toggle-tang-ki-btn" data-tang-ki="${m.tang_ki}">${m.tang_ki ? "Bỏ tăng KI" : "Tăng KI"}</button>
@@ -210,15 +224,22 @@ function renderMemberTable() {
       updateMemberSelectionUI();
     });
   });
+  // Bấm "Hạ KI" (đang tắt -> bật): mở popup bắt buộc nhập lý do (xem
+  // openKiReasonDialog). Bấm "Bỏ hạ KI" (đang bật -> tắt): tắt luôn, không
+  // cần lý do (backend tự xoá ki_ly_do cũ — xem updateMember, member.service.ts).
   el.memberTbody.querySelectorAll(".toggle-ha-ki-btn").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       const nextHaKi = btn.dataset.haKi !== "true";
+      if (nextHaKi) {
+        openKiReasonDialog(id, "ha_ki", "Hạ KI");
+        return;
+      }
       try {
-        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ ha_ki: nextHaKi }) });
+        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ ha_ki: false }) });
         await loadMembers();
         syncHomeFromCurrentIfNeeded();
-        showToast(nextHaKi ? "Đã hạ 1 KI." : "Đã bỏ hạ KI.", "success");
+        showToast("Đã bỏ hạ KI.", "success");
       } catch (err) {
         showToast(err.message);
       }
@@ -232,11 +253,15 @@ function renderMemberTable() {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       const nextTangKi = btn.dataset.tangKi !== "true";
+      if (nextTangKi) {
+        openKiReasonDialog(id, "tang_ki", "Tăng KI");
+        return;
+      }
       try {
-        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ tang_ki: nextTangKi }) });
+        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ tang_ki: false }) });
         await loadMembers();
         syncHomeFromCurrentIfNeeded();
-        showToast(nextTangKi ? "Đã tăng 1 KI." : "Đã bỏ tăng KI.", "success");
+        showToast("Đã bỏ tăng KI.", "success");
       } catch (err) {
         showToast(err.message);
       }
@@ -433,6 +458,39 @@ el.memberForm.addEventListener("submit", async (e) => {
       await loadMembers();
       showToast("Đã thêm nhân sự.", "success");
     }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Popup xác nhận Hạ KI/Tăng KI (bắt buộc nhập lý do) ----
+
+function openKiReasonDialog(memberId, field, label) {
+  document.getElementById("ki-reason-member-id").value = memberId;
+  document.getElementById("ki-reason-field").value = field;
+  document.getElementById("ki-reason-dialog-title").textContent = `${label} nhân sự`;
+  document.getElementById("ki-reason-label").textContent = `Lý do ${label.toLowerCase()} *`;
+  document.getElementById("ki-reason-text").value = "";
+  document.getElementById("ki-reason-dialog").showModal();
+}
+
+document.getElementById("ki-reason-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("ki-reason-dialog").close();
+});
+
+document.getElementById("ki-reason-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("ki-reason-member-id").value;
+  const field = document.getElementById("ki-reason-field").value; // "ha_ki" | "tang_ki"
+  const reason = document.getElementById("ki-reason-text").value.trim();
+  const payload = { ki_ly_do: reason };
+  payload[field] = true;
+  try {
+    await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    document.getElementById("ki-reason-dialog").close();
+    await loadMembers();
+    syncHomeFromCurrentIfNeeded();
+    showToast(field === "ha_ki" ? "Đã hạ 1 KI." : "Đã tăng 1 KI.", "success");
   } catch (err) {
     showToast(err.message);
   }

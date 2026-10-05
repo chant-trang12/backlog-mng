@@ -1489,6 +1489,17 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   gap: 4px 8px;
 }
 
+/* Lý do Hạ KI/Tăng KI — hiển thị ở cột "Ghi chú" (tab Nhân sự) và ngay dưới
+   tên ở Home > Ranking > "Ranking thành viên team" (xem memberNoteCellContent,
+   03-members.js và kiReasonLine, 08-home.js). Chữ nhỏ/nghiêng, tách biệt rõ
+   với nội dung chính xung quanh. */
+.ki-reason-note {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
 /* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
 .status-default { background: var(--border); color: var(--maroon); }
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }

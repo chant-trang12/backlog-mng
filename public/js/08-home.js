@@ -831,12 +831,22 @@ function renderHomeRankingTab(rankingData, eligible) {
 
   const haKiBadge = (memberId) => {
     const member = state.homeMembers.find((m) => m.id === memberId);
-    if (member?.ha_ki) return `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`;
+    const reasonSuffix = member?.ki_ly_do ? ` — Lý do: ${member.ki_ly_do}` : "";
+    if (member?.ha_ki) return `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI${reasonSuffix}">Hạ KI</span>`;
     if (member?.tang_ki)
-      return `<span class="status-badge status-hoan-thanh ha-ki-badge" title="Đã tăng 1 KI">Tăng KI</span>`;
+      return `<span class="status-badge status-hoan-thanh ha-ki-badge" title="Đã tăng 1 KI${reasonSuffix}">Tăng KI</span>`;
     return "";
   };
-  const nameWithHaKi = (name, memberId) => `<div class="name-with-ha-ki">${name}${haKiBadge(memberId)}</div>`;
+  // Lý do hạ/tăng KI hiển thị TRỰC TIẾP dưới tên (không chỉ nằm trong
+  // tooltip của badge) để nhìn thấy ngay, không cần hover — theo đúng yêu
+  // cầu "hiển thị lý do ở Ranking thành viên cho trực quan".
+  const kiReasonLine = (memberId) => {
+    const member = state.homeMembers.find((m) => m.id === memberId);
+    if (!member?.ki_ly_do || !(member.ha_ki || member.tang_ki)) return "";
+    return `<div class="ki-reason-note" title="${member.ki_ly_do}">${member.ki_ly_do}</div>`;
+  };
+  const nameWithHaKi = (name, memberId) =>
+    `<div class="name-with-ha-ki">${name}${haKiBadge(memberId)}</div>${kiReasonLine(memberId)}`;
 
   const rankedRows = rankedMembers
     .map((m, i) => {

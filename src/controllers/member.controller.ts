@@ -79,7 +79,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
 
-  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ha_ki, tang_ki, ghi_chu } =
+  const { name, chuc_vu, team_id, tuan_thu, noi_quy, dao_tao, ho_tro, danh_gia, ha_ki, tang_ki, ki_ly_do, ghi_chu } =
     req.body ?? {};
   if (team_id !== undefined) {
     const team = await getTeam(Number(team_id));
@@ -92,6 +92,13 @@ export async function updateMemberHandler(req: Request, res: Response) {
   }
   if (tang_ki !== undefined && typeof tang_ki !== "boolean") {
     return res.status(400).json({ error: "Trường 'tang_ki' phải là boolean" });
+  }
+  // Bật Hạ KI/Tăng KI (true) bắt buộc phải kèm lý do — khớp đúng popup xác
+  // nhận ở FE (ki-reason-dialog, 03-members.js) luôn gửi kèm ki_ly_do khi
+  // bật 1 trong 2 cờ này. Validate lại ở BE để không phụ thuộc hoàn toàn
+  // vào `required` phía client.
+  if ((ha_ki === true || tang_ki === true) && !(typeof ki_ly_do === "string" && ki_ly_do.trim())) {
+    return res.status(400).json({ error: "Cần nhập lý do khi Hạ KI/Tăng KI" });
   }
 
   const member = await updateMember(
@@ -107,6 +114,7 @@ export async function updateMemberHandler(req: Request, res: Response) {
       danh_gia,
       ha_ki,
       tang_ki,
+      ki_ly_do,
       ghi_chu,
     },
     scopeOf(req),
