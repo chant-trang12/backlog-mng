@@ -615,7 +615,12 @@ function openTaskDialog(task) {
     .join("");
   setNatureValue(task?.tinh_chat ?? "");
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
-  document.getElementById("f-dod").value = task?.dod ?? "";
+  const dodEl = document.getElementById("f-dod");
+  dodEl.value = task?.dod ?? "";
+  // DoD là ghi chú hệ thống tự tạo (task thay thế khi Xin Hủy nhiệm vụ) ->
+  // khóa hẳn, không cho sửa/xóa (xem AUTO_CANCEL_NOTE_PREFIXES ở trên) —
+  // vẫn LƯU nguyên giá trị khi submit (chỉ disabled UI, không xóa dữ liệu).
+  dodEl.disabled = AUTO_CANCEL_NOTE_PREFIXES.some((p) => (task?.dod ?? "").trim().startsWith(p));
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
   document.getElementById("f-dau-moi-phoi-hop").value = task?.dau_moi_phoi_hop ?? "";
   el.taskDialog.showModal();
@@ -680,7 +685,11 @@ function openGradeDialog(task) {
   el.gradeForm.reset();
   document.getElementById("grade-task-id").value = task?.id ?? "";
   document.getElementById("grade-percent").value = task?.cpo_danh_gia ?? "";
-  document.getElementById("grade-comment").value = task?.cpo_comment ?? "";
+  const commentEl = document.getElementById("grade-comment");
+  commentEl.value = task?.cpo_comment ?? "";
+  // Nội dung đánh giá là ghi chú hệ thống tự tạo khi Xin Hủy nhiệm vụ ->
+  // khóa hẳn, không cho sửa/xóa — % Đánh giá vẫn sửa được bình thường.
+  commentEl.disabled = AUTO_CANCEL_NOTE_PREFIXES.some((p) => (task?.cpo_comment ?? "").trim().startsWith(p));
   el.gradeDialog.showModal();
 }
 
