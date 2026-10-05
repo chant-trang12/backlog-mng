@@ -699,8 +699,8 @@ function homeLowerKiOneLevel(value) {
 // vị trí lên đầu thang (thứ tự tăng: D > C > B > A > A+). Không tăng vượt
 // quá KI cao nhất THỰC SỰ ĐƯỢC CẤU HÌNH trong Cấu hình → Ranking team (VD
 // hệ thống chỉ cấu hình tới "A", chưa từng dùng "A+" ở ô nào, thì tăng từ A
-// sẽ KHÔNG nhảy lên A+ — trả về cờ atCeiling để gọi nơi hiển thị thay bằng
-// thông báo "KI đang cao nhất trong cấu hình" thay vì 1 ký tự KI).
+// sẽ KHÔNG nhảy lên A+ — trả về cờ atCeiling để nơi gọi GIỮ NGUYÊN KI hiển
+// thị và tự tắt cờ tang_ki, xem autoRevertTangKiAtCeiling() bên dưới).
 function homeConfiguredKiCeiling() {
   const used = new Set((state.rankingConfig?.cells ?? []).map((c) => c.gia_tri).filter((v) => v && v !== "-"));
   return HOME_KI_SCALE.find((level) => used.has(level)) ?? null;
@@ -712,6 +712,38 @@ function homeRaiseKiOneLevel(value) {
   const ceilingIdx = ceiling ? HOME_KI_SCALE.indexOf(ceiling) : 0;
   if (idx <= ceilingIdx) return { value, atCeiling: true };
   return { value: HOME_KI_SCALE[idx - 1], atCeiling: false };
+}
+
+// Chặn hành động "Tăng KI" khi KI thực tế (tính theo Cấu hình → Ranking
+// team) đã ở mức cao nhất — lúc này tăng thêm không có tác dụng gì (xem
+// homeRaiseKiOneLevel ở trên). Việc này CHỈ phát hiện được ở đây (lúc vẽ
+// bảng Ranking thành viên), vì KI thực tế phụ thuộc hạng team + vị trí
+// trong team + cấu hình — không có sẵn ở tab Nhân sự lúc bấm nút. Tự gọi
+// API tắt tang_ki (và xoá ki_ly_do kèm theo, xem updateMember) + báo cho
+// người dùng biết, thay vì để cờ bật vô nghĩa. kiCeilingReverted chặn gọi
+// lặp lại nhiều lần cho cùng 1 nhân sự trong phiên làm việc hiện tại.
+const kiCeilingReverted = new Set();
+async function autoRevertTangKiAtCeiling(memberId, memberName) {
+  if (kiCeilingReverted.has(memberId)) return;
+  kiCeilingReverted.add(memberId);
+  try {
+    await api(`/api/members/${memberId}`, { method: "PUT", body: JSON.stringify({ tang_ki: false }) });
+    showToast(`KI của ${memberName} đã ở mức cao nhất trong cấu hình — đã tự bỏ Tăng KI.`, "error");
+    // Dùng refreshHomeForPeriod() (không phải syncHomeFromCurrentIfNeeded())
+    // vì Home có bộ lọc Tháng RIÊNG (state.homePeriodId, xem 02-departments-
+    // periods-teams.js) — có thể đang xem khác tháng với Backlog đang chọn,
+    // syncHomeFromCurrentIfNeeded() sẽ bỏ qua không đồng bộ trong trường
+    // hợp đó, để lại badge "Tăng KI" cũ trên màn hình dù đã tắt ở backend.
+    await refreshHomeForPeriod(state.homePeriodId);
+    renderHomeDashboard();
+    // Đồng bộ luôn tab Nhân sự nếu đang xem đúng tháng đó, để nút "Tăng KI"
+    // ở đó cũng hiện lại đúng trạng thái đã tắt.
+    if (state.homePeriodId === state.currentPeriodId) await loadMembers();
+  } catch {
+    // Không chặn được do lỗi mạng/API — bỏ qua, cờ hẹn giờ lần render sau
+    // thử lại (xoá khỏi kiCeilingReverted) để không im lặng bỏ cuộc hẳn.
+    kiCeilingReverted.delete(memberId);
+  }
 }
 
 // Tab "Ranking" — bảng xếp hạng team (theo đúng Tổng điểm ở tab Tổng hợp),
@@ -858,7 +890,11 @@ function renderHomeRankingTab(rankingData, eligible) {
         ki = homeLowerKiOneLevel(rawKi);
       } else if (member?.tang_ki) {
         const raised = homeRaiseKiOneLevel(rawKi);
-        ki = raised.atCeiling ? "KI đang cao nhất trong cấu hình" : raised.value;
+        // Đã ở KI cao nhất được cấu hình — KI hiển thị GIỮ NGUYÊN (không
+        // tăng được nữa), và tự tắt luôn cờ tang_ki (chặn hành động "Tăng
+        // KI" vì không còn tác dụng gì) — xem autoRevertTangKiAtCeiling().
+        ki = rawKi;
+        if (raised.atCeiling) autoRevertTangKiAtCeiling(member.id, m.member_name);
       }
       return `
       <tr>
