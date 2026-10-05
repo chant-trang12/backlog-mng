@@ -6,6 +6,7 @@ import type {
   UpdateTaskMemberInput,
 } from "../types/backlog.js";
 import { assertDepartmentInScope, departmentIdFromTaskId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 const SELECT_COLUMNS = [
   "task_members.id",
@@ -28,7 +29,7 @@ const SELECT_COLUMNS = [
 export async function listTaskMembers(taskId: number): Promise<TaskMemberWithName[]> {
   const rows = await db("task_members")
     .join("members", "task_members.member_id", "members.id")
-    .where({ task_id: taskId })
+    .where({ task_id: taskId, "task_members.is_deleted": false })
     .select(SELECT_COLUMNS)
     .orderBy("task_members.id", "asc");
   return rows as TaskMemberWithName[];
@@ -37,7 +38,7 @@ export async function listTaskMembers(taskId: number): Promise<TaskMemberWithNam
 export async function getTaskMember(id: number): Promise<TaskMemberWithName | undefined> {
   const row = await db("task_members")
     .join("members", "task_members.member_id", "members.id")
-    .where({ "task_members.id": id })
+    .where({ "task_members.id": id, "task_members.is_deleted": false })
     .select(SELECT_COLUMNS)
     .first();
   return row as TaskMemberWithName | undefined;
@@ -64,7 +65,9 @@ async function assertContributionWithinLimit(
   if (!Number.isFinite(newValue) || newValue < 0 || newValue > 100) {
     throw new Error("Tỷ lệ đóng góp phải là số trong khoảng 0-100%");
   }
-  const query = db("task_members").where({ task_id: taskId }).whereNotNull("ty_le_dong_gop");
+  const query = db("task_members")
+    .where({ task_id: taskId, is_deleted: false })
+    .whereNotNull("ty_le_dong_gop");
   if (excludeId != null) query.whereNot({ id: excludeId });
   const rows = await query.select("ty_le_dong_gop");
   const othersSum = rows.reduce((s, r: any) => s + Number(r.ty_le_dong_gop), 0);
@@ -94,8 +97,10 @@ export async function createTaskMember(
     await assertContributionWithinLimit(taskId, null, input.ty_le_dong_gop);
   }
 
+  // is_deleted=false — nhân sự đã gỡ khỏi task (xóa mềm) trước đó không
+  // tính "đã có", gán lại tạo dòng mới (khớp filtered unique index).
   const existing = await db("task_members")
-    .where({ task_id: taskId, member_id: input.member_id })
+    .where({ task_id: taskId, member_id: input.member_id, is_deleted: false })
     .first();
   if (existing) {
     const update: Record<string, unknown> = { updated_at: db.fn.now() };
@@ -128,7 +133,7 @@ export async function updateTaskMember(
 ): Promise<TaskMemberWithName | undefined> {
   const existing = await getTaskMember(id);
   if (!existing) return undefined;
-  const existingRow = await db("task_members").where({ id }).select("department_id").first();
+  const existingRow = await db("task_members").where({ id, is_deleted: false }).select("department_id").first();
   assertDepartmentInScope(scope, (existingRow as any)?.department_id ?? null);
 
   if (input.ty_le_dong_gop !== undefined && input.ty_le_dong_gop !== null) {
@@ -148,10 +153,10 @@ export async function updateTaskMember(
 }
 
 export async function deleteTaskMember(id: number, scope: DataScope): Promise<boolean> {
-  const existingRow = await db("task_members").where({ id }).select("department_id").first();
+  const existingRow = await db("task_members").where({ id, is_deleted: false }).select("department_id").first();
   if (!existingRow) return false;
   assertDepartmentInScope(scope, (existingRow as any).department_id ?? null);
-  const count = await db("task_members").where({ id }).delete();
+  const count = await softDeleteWhere(db, "task_members", { id });
   return count > 0;
 }
 
@@ -183,7 +188,10 @@ export async function listKpiTheoTask(
     .join("tasks", "task_members.task_id", "tasks.id")
     .join("members", "task_members.member_id", "members.id")
     .leftJoin("teams", "members.team_id", "teams.id")
-    .where("tasks.period_id", periodId);
+    .where("tasks.period_id", periodId)
+    .where("task_members.is_deleted", false)
+    .where("tasks.is_deleted", false)
+    .where("members.is_deleted", false);
   if (departmentId != null) query.where("tasks.department_id", departmentId);
 
   const rows = await query.select(

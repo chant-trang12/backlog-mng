@@ -54,6 +54,18 @@ if (isMssql) {
     },
     useNullAsDefault: true,
     pool: {
+      // better-sqlite3 là driver ĐỒNG BỘ (mọi lệnh chặn luồng, không có
+      // I/O bất đồng bộ thật) — nhiều connection trong pool không mang lại
+      // lợi ích song song nào cho 1 file SQLite duy nhất, chỉ thêm rủi ro:
+      // PRAGMA (VD foreign_keys) là thiết lập RIÊNG TỪNG CONNECTION trong
+      // SQLite — bật/tắt ở 1 connection rồi 1 câu lệnh sau đó rơi vào
+      // connection KHÁC trong pool (vẫn còn pragma mặc định từ afterCreate)
+      // sẽ không có tác dụng như mong đợi (gặp thực tế ở bước rebuild bảng
+      // khi chuyển sang xóa mềm — xem migrations/core.ts). Ép đúng 1
+      // connection cho cả vòng đời app để mọi PRAGMA/transaction luôn nhất
+      // quán.
+      min: 1,
+      max: 1,
       afterCreate: (conn: any, done: any) => {
         try {
           conn.pragma("journal_mode = WAL");

@@ -90,4 +90,20 @@ export async function migrateRoadmapTables(): Promise<void> {
       table.integer("synced_task_id").references("id").inTable("tasks").onDelete("SET NULL");
     });
   }
+
+  // Xóa mềm — không có UNIQUE constraint nào trên 2 bảng này nên chỉ cần
+  // thêm cột, không cần rebuild (xem comment đầy đủ ở migrateSoftDeleteCore,
+  // core.ts).
+  if (!(await db.schema.hasColumn("roadmap_items", "is_deleted"))) {
+    await db.schema.alterTable("roadmap_items", (table) => {
+      table.boolean("is_deleted").notNullable().defaultTo(false);
+      table.dateTime("deleted_at");
+    });
+  }
+  if (!(await db.schema.hasColumn("roadmap_details", "is_deleted"))) {
+    await db.schema.alterTable("roadmap_details", (table) => {
+      table.boolean("is_deleted").notNullable().defaultTo(false);
+      table.dateTime("deleted_at");
+    });
+  }
 }

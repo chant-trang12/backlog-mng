@@ -13,6 +13,7 @@ import {
   unmarkTasksNoScoreHandler,
   unmarkTasksTonHandler,
   moveTasksToNextMonthHandler,
+  updateTaskGradeHandler,
   updateTaskHandler,
 } from "../controllers/task.controller.js";
 import {
@@ -45,6 +46,10 @@ router.get("/periods/:periodId/tasks", listTasksHandler);
 
 router.get("/tasks/:id", getTaskHandler);
 router.put("/tasks/:id", updateTaskHandler);
+// Chấm điểm — route riêng, đặt TRƯỚC "/tasks/:id" chung không xung đột
+// (Express match theo path đầy đủ) — chỉ admin/bgd, chặn ở requireWrite
+// theo path "/tasks/:id/grade" (auth.middleware.ts).
+router.put("/tasks/:id/grade", updateTaskGradeHandler);
 router.delete("/tasks/:id", deleteTaskHandler);
 
 // Nhân sự tham gia task (VD 1 task dự án phần mềm có SM, PO, Dev, QA...).

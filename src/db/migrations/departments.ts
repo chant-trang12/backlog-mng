@@ -1,4 +1,5 @@
 import { db } from "../connection.js";
+import { ensureSoftDeleteColumns, ensureFilteredUniqueIndex } from "./core.js";
 
 // 23. departments — tầng "Phòng" trên team, cùng mọi cột/backfill liên quan
 // ở các bảng khác (teams/tasks/tieu_chi_configs). Phải chạy SAU
@@ -204,4 +205,13 @@ export async function migrateDepartments(): Promise<void> {
         .update({ kieu_tinh: b.kieuTinh, nguon_du_lieu: b.nguon, he_so: b.heSo });
     }
   }
+}
+
+// Xóa mềm cho departments — tên phòng (name) có UNIQUE, đổi sang filtered
+// unique index (chỉ áp dụng dòng chưa xóa) để xóa mềm 1 phòng rồi tạo lại
+// đúng tên đó không bị chặn (xem comment đầy đủ ở migrateSoftDeleteCore,
+// core.ts).
+export async function migrateSoftDeleteDepartments(): Promise<void> {
+  await ensureSoftDeleteColumns("departments");
+  await ensureFilteredUniqueIndex("departments", ["name"], "departments_name_active_unique");
 }

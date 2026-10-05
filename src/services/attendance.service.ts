@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { db } from "../db/database.js";
 import type { AttendanceRecord, ImportAttendanceResult } from "../types/cskh.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 function cellToText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
@@ -62,7 +63,7 @@ export async function replaceAttendanceRecords(
   rows: Record<string, string>[],
 ): Promise<AttendanceRecord[]> {
   return await db.transaction(async (trx) => {
-    await trx("attendance_records").where({ period_id: periodId }).delete();
+    await softDeleteWhere(trx, "attendance_records", { period_id: periodId });
     const inserted: AttendanceRecord[] = [];
     for (let index = 0; index < rows.length; index++) {
       const rowData = rows[index];
@@ -89,7 +90,7 @@ export async function replaceAttendanceRecords(
 
 export async function listAttendanceRecords(periodId: number): Promise<ImportAttendanceResult> {
   const raws = await db("attendance_records")
-    .where({ period_id: periodId })
+    .where({ period_id: periodId, is_deleted: false })
     .orderBy("row_index", "asc");
 
   const rows: AttendanceRecord[] = raws.map((raw: any) => ({
@@ -114,11 +115,11 @@ export async function setAttendanceExcluded(ids: number[], excluded: boolean): P
 }
 
 export async function deleteAttendanceRecord(id: number): Promise<boolean> {
-  const count = await db("attendance_records").where({ id }).delete();
+  const count = await softDeleteWhere(db, "attendance_records", { id });
   return count > 0;
 }
 
 export async function deleteAttendanceRecords(ids: number[]): Promise<number> {
   if (ids.length === 0) return 0;
-  return await db("attendance_records").whereIn("id", ids).delete();
+  return await softDeleteWhereIn(db, "attendance_records", "id", ids);
 }

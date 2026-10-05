@@ -1,4 +1,5 @@
 import { db } from "../db/database.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 import type { Department } from "../types/backlog.js";
 
 function toDepartment(row: any): Department {
@@ -12,18 +13,20 @@ function toDepartment(row: any): Department {
 // Danh sách phòng — dùng chung cho mọi tháng backlog. Team (và nhân sự / task
 // / CSKH qua đó) thuộc đúng 1 phòng.
 export async function listDepartments(): Promise<Department[]> {
-  const rows = await db("departments").orderBy("thu_tu", "asc").orderBy("id", "asc");
+  const rows = await db("departments").where({ is_deleted: false }).orderBy("thu_tu", "asc").orderBy("id", "asc");
   return rows.map(toDepartment);
 }
 
 export async function getDepartment(id: number): Promise<Department | undefined> {
-  const row = await db("departments").where({ id }).first();
+  const row = await db("departments").where({ id, is_deleted: false }).first();
   return row ? toDepartment(row) : undefined;
 }
 
 export async function createDepartment(input: { name: string; code?: string }): Promise<Department> {
   const name = input.name.trim();
-  const existing = await db("departments").where({ name }).first();
+  // is_deleted=false — phòng đã xóa mềm không tính là "đã có", tạo mới bình
+  // thường đúng tên đó (khớp filtered unique index ở migration).
+  const existing = await db("departments").where({ name, is_deleted: false }).first();
   if (existing) return toDepartment(existing);
 
   const maxRow = await db("departments").max({ m: "thu_tu" }).first();
@@ -66,7 +69,7 @@ export async function updateDepartment(
 // Chỉ cho xóa phòng khi không còn team nào thuộc phòng đó (tránh mồ côi
 // nhân sự / task). FE hiển thị lỗi để người dùng chuyển team trước.
 export async function deleteDepartment(id: number): Promise<{ ok: boolean; reason?: string }> {
-  const teamCountRes = await db("teams").where({ department_id: id }).count({ c: "*" }).first();
+  const teamCountRes = await db("teams").where({ department_id: id, is_deleted: false }).count({ c: "*" }).first();
   if (Number((teamCountRes as any)?.c ?? 0) > 0) {
     return { ok: false, reason: "Phòng vẫn còn team — xóa/chuyển hết team của phòng trước." };
   }
@@ -75,6 +78,6 @@ export async function deleteDepartment(id: number): Promise<{ ok: boolean; reaso
   // migrations/featureRequests.ts).
   await db("feature_requests").where({ department_id: id }).update({ department_id: null });
   await db("feature_requests").where({ target_department_id: id }).update({ target_department_id: null });
-  const count = await db("departments").where({ id }).delete();
+  const count = await softDeleteWhere(db, "departments", { id });
   return { ok: count > 0 };
 }

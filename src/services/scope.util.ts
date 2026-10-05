@@ -66,17 +66,17 @@ export function isDepartmentInScope(scope: DataScope, departmentId: number | nul
 // service tạo bản ghi theo team_id/member_id nhưng KHÔNG có sẵn department_id
 // trực tiếp trong input (CSKH, Chấm điểm...).
 export async function departmentIdFromTeamId(teamId: number): Promise<number | null> {
-  const team = await db("teams").where({ id: teamId }).first();
+  const team = await db("teams").where({ id: teamId, is_deleted: false }).first();
   return (team as any)?.department_id ?? null;
 }
 
 export async function departmentIdFromMemberId(memberId: number): Promise<number | null> {
-  const member = await db("members").where({ id: memberId }).first();
+  const member = await db("members").where({ id: memberId, is_deleted: false }).first();
   return (member as any)?.department_id ?? null;
 }
 
 export async function departmentIdFromTaskId(taskId: number): Promise<number | null> {
-  const task = await db("tasks").where({ id: taskId }).first();
+  const task = await db("tasks").where({ id: taskId, is_deleted: false }).first();
   return (task as any)?.department_id ?? null;
 }
 

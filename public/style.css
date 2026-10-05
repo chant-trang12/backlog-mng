@@ -884,6 +884,15 @@ th {
 
 .table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
 
+/* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
+   thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
+   hết mới thấy. .table-scroll-top là 1 thanh giả cùng chiều rộng, đồng bộ
+   2 chiều với #task-table-wrap thật bên dưới (xem syncTaskScrollTop() ở
+   04-tasks.js) — #task-table-scroll-top-spacer được set width bằng JS
+   đúng bằng scrollWidth thật của bảng để thanh cuộn giả có cùng tỉ lệ. */
+.table-scroll-top { overflow-x: auto; overflow-y: hidden; height: 16px; margin-top: 14px; }
+.table-scroll-top > div { height: 1px; }
+
 /* Cố định cột checkbox (chọn nhiều dòng) khi cuộn ngang — áp dụng cho mọi
    bảng có cột chọn: Nội quy, Roadmap năm, Chấm công (bảng Backlog cố định
    riêng tới hết cột "Nhiệm vụ", xem khối #task-table bên dưới; bảng Nhân sự
@@ -999,21 +1008,91 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
-/* Bảng Yêu cầu tính năng — label cột căn giữa; TẤT CẢ các cột căn giữa
-   theo chiều dọc (kể cả Tiêu đề/Mô tả nhiều dòng), riêng cột STT/Hệ
-   thống/Đính kèm/Ưu tiên/Trạng thái/Thời gian mong muốn/Ngày tạo (vị trí
-   1/2/6/10/11/12/13, đều là số/badge/link ngắn) căn thêm cả chiều ngang —
-   các cột còn lại (Tiêu đề, Mô tả...) giữ căn trái vì là văn bản dài. */
+/* Bảng Yêu cầu tính năng — đã rút gọn chỉ còn cột cần thiết để lướt danh
+   sách (checkbox/STT/Hệ thống/Tiêu đề/Phòng ban/Ưu tiên/Trạng thái/Ngày
+   tạo/Thao tác), đầy đủ thông tin xem ở dialog chi tiết (bấm vào dòng —
+   xem openFrDetailDialog() ở 10-feature-requests.js). Cột checkbox/STT/Hệ
+   thống/Ưu tiên/Ngày tạo (vị trí 1/2/3/6/8, ô/số/badge/ngày ngắn) căn thêm
+   chiều ngang; Tiêu đề/Phòng ban/Trạng thái giữ căn trái. Cả dòng bấm được
+   (trỏ mở dialog chi tiết) trừ khi bấm đúng checkbox/nút/link thao tác —
+   xem .fr-row-clickable bên dưới. */
 #fr-table th { text-align: center; }
 #fr-table td { vertical-align: middle; }
 #fr-table td:nth-child(1),
 #fr-table td:nth-child(2),
+#fr-table td:nth-child(3),
 #fr-table td:nth-child(6),
-#fr-table td:nth-child(10),
-#fr-table td:nth-child(11),
-#fr-table td:nth-child(12),
-#fr-table td:nth-child(13) {
+#fr-table td:nth-child(8) {
   text-align: center;
+}
+#fr-table tbody tr.fr-row-clickable { cursor: pointer; }
+#fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
+
+/* Dialog xem chi tiết 1 yêu cầu tính năng — 3 khối rõ ràng: đầu trang (hệ
+   thống/tiêu đề/trạng thái, có viền dưới tách khỏi phần thân), khối "thông
+   số" dạng thẻ (lưới nhãn/giá trị 2 cột, nền + viền để tách khỏi nền dialog
+   trắng — đúng lỗi bản cũ bị chê "nhìn xấu": không có gì phân tách các
+   dòng thông tin với nhau), và khối văn bản dài (Mô tả/Kết quả mong muốn)
+   dạng "quote box" nền nhạt, viền trái nổi bật. Nút thao tác tách hẳn bằng
+   viền trên. */
+.fr-detail-dialog { max-width: 720px; }
+.fr-detail-head {
+  padding-bottom: 14px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.fr-detail-head #fr-detail-he-thong { align-self: flex-start; }
+.fr-detail-head h2 {
+  margin: 0;
+  padding-right: 26px; /* chừa chỗ nút X */
+  font-size: 1.3rem;
+  line-height: 1.3;
+}
+
+.fr-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.fr-detail-field { min-width: 0; }
+.fr-detail-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.fr-detail-block { margin-top: 2px; }
+.fr-detail-quote {
+  white-space: pre-wrap;
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  line-height: 1.5;
+}
+.fr-detail-quote-warn { border-left-color: var(--delete); color: var(--delete); background: var(--delete-light); }
+
+/* #id để thắng specificity của "dialog .actions" (căn phải mặc định mọi
+   dialog khác) — khối này căn giữa vì là 1 dãy nút thao tác chính (Duyệt/
+   Từ chối/Đưa vào Backlog...), không phải cặp Hủy/Lưu căn phải thông thường. */
+#fr-detail-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
 }
 
 /* Bảng Nhật ký hoạt động — cột Thời gian/Hành động căn giữa (badge/ngày
@@ -1053,18 +1132,22 @@ th {
 /* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
    nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
 .fr-attachment-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.85rem;
   color: var(--muted);
+  text-decoration: none;
   vertical-align: bottom;
 }
-.fr-attachment-chip:hover { color: var(--primary); }
+.fr-attachment-chip:hover { color: var(--primary); text-decoration: underline; }
 
-/* Nút Lịch sử đánh giá — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
+/* Nút Lịch sử đánh giá/tiến độ — ghim ở góc trên của ô, không chiếm 1 dòng riêng. */
+#task-table td:nth-child(12), /* Tiến độ */
 #task-table td:nth-child(14), /* % Đánh giá */
 #task-table td:nth-child(15) { /* Nội dung đánh giá */
   position: relative;
@@ -2062,6 +2145,7 @@ img, svg, canvas, video { max-width: 100%; }
   dialog .field-row { flex-direction: column; gap: 12px; }
   dialog .actions { flex-wrap: wrap; }
   dialog .actions button { flex: 1 1 auto; }
+  .fr-detail-grid { grid-template-columns: 1fr; }
 
   .table-wrap { -webkit-overflow-scrolling: touch; }
   table { font-size: 0.8rem; }
@@ -2113,6 +2197,10 @@ img, svg, canvas, video { max-width: 100%; }
    chối/Đưa vào Backlog/Roadmap/Sửa trong CÙNG trang thì vẫn mang
    write-action như bình thường (xem VIEWER_ALLOWED_WRITES ở
    auth.middleware.ts — server chỉ nới đúng 1 route POST /feature-requests).
+   Role "bgd" xử lý y hệt "viewer" ở mọi rule bên dưới (chỉ xem) — TRỪ
+   .grade-write-action (nút "Chấm điểm", menu Nhiệm vụ): bgd vẫn thấy,
+   admin cũng vẫn thấy (không role nào trong danh sách này), chỉ ẩn với
+   editor/viewer — đúng quyền mới "bgd = viewer + chấm điểm".
    .delete-action / .btn-delete: nút xóa — ẩn với CẢ viewer lẫn editor
    (Quy tắc 9.1: editor không được xóa).
    .admin-only-action: vài thao tác cụ thể chỉ admin được làm dù editor vẫn
@@ -2125,12 +2213,19 @@ body[data-role="viewer"] .write-action,
 body[data-role="viewer"] .delete-action,
 body[data-role="viewer"] .btn-delete,
 body[data-role="viewer"] .admin-only-action,
+body[data-role="viewer"] .grade-write-action,
+body[data-role="bgd"] .write-action,
+body[data-role="bgd"] .delete-action,
+body[data-role="bgd"] .btn-delete,
+body[data-role="bgd"] .admin-only-action,
 body[data-role="editor"] .delete-action,
 body[data-role="editor"] .btn-delete,
-body[data-role="editor"] .admin-only-action {
+body[data-role="editor"] .admin-only-action,
+body[data-role="editor"] .grade-write-action {
   display: none !important;
 }
-body[data-role="viewer"] .inline-cell-input {
+body[data-role="viewer"] .inline-cell-input,
+body[data-role="bgd"] .inline-cell-input {
   pointer-events: none;
   opacity: 0.6;
 }

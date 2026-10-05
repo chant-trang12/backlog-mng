@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import { cloneMembersFromPeriod } from "./member.service.js";
 import { cloneTeamsFromPeriod } from "./team.service.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 import type { CreatePeriodInput, Period } from "../types/backlog.js";
 
 const MONTH_NAMES = [
@@ -43,36 +44,56 @@ export async function createPeriod(input: CreatePeriodInput): Promise<Period> {
   return created as Period;
 }
 
+// is_deleted=false ở đây để sau khi xóa mềm 1 tháng, tạo lại ĐÚNG năm/tháng
+// đó qua createPeriod() (gọi hàm này để kiểm tra "đã có chưa") sẽ KHÔNG
+// thấy bản ghi cũ đã xóa — tạo mới bình thường, đúng ý nghĩa filtered
+// unique index ở migration (xem migrateSoftDeleteCore, core.ts).
 export async function getPeriodByYearMonth(year: number, month: number): Promise<Period | undefined> {
-  const row = await db("periods").where({ year, month }).first();
+  const row = await db("periods").where({ year, month, is_deleted: false }).first();
   return row as Period | undefined;
 }
 
 export async function getPeriod(id: number): Promise<Period | undefined> {
-  const row = await db("periods").where({ id }).first();
+  const row = await db("periods").where({ id, is_deleted: false }).first();
   return row as Period | undefined;
 }
 
 export async function listPeriods(): Promise<Period[]> {
-  const rows = await db("periods").orderBy("year", "desc").orderBy("month", "desc");
+  const rows = await db("periods").where({ is_deleted: false }).orderBy("year", "desc").orderBy("month", "desc");
   return rows as Period[];
 }
 
+// Xóa mềm — gắn cờ is_deleted thay vì DELETE thật (không mất dữ liệu khi có
+// sự cố, vẫn backup/khôi phục được — xem softDelete.util.ts). Cascade thủ
+// công xuống toàn bộ bảng con y hệt trước đây (chỉ đổi hành động cuối từ
+// .delete() sang softDeleteWhere()), giữ nguyên thứ tự/transaction.
 export async function deletePeriod(id: number): Promise<boolean> {
   return await db.transaction(async (trx) => {
-    await trx("tasks").where({ period_id: id }).delete();
-    await trx("attendance_records").where({ period_id: id }).delete();
-    await trx("compliance_records").where({ period_id: id }).delete();
-    await trx("training_records").where({ period_id: id }).delete();
-    await trx("support_records").where({ period_id: id }).delete();
-    await trx("danh_gia_records").where({ period_id: id }).delete();
-    await trx("noiquy_overrides").where({ period_id: id }).delete();
-    await trx("incidents").where({ period_id: id }).delete();
-    await trx("tickets").where({ period_id: id }).delete();
-    await trx("creation_rates").where({ period_id: id }).delete();
-    await trx("members").where({ period_id: id }).delete();
-    await trx("teams").where({ period_id: id }).delete();
-    const count = await trx("periods").where({ id }).delete();
+    await softDeleteWhere(trx, "tasks", { period_id: id });
+    await softDeleteWhere(trx, "attendance_records", { period_id: id });
+    await softDeleteWhere(trx, "compliance_records", { period_id: id });
+    await softDeleteWhere(trx, "training_records", { period_id: id });
+    await softDeleteWhere(trx, "support_records", { period_id: id });
+    await softDeleteWhere(trx, "danh_gia_records", { period_id: id });
+    await softDeleteWhere(trx, "noiquy_overrides", { period_id: id });
+    await softDeleteWhere(trx, "incidents", { period_id: id });
+    await softDeleteWhere(trx, "tickets", { period_id: id });
+    await softDeleteWhere(trx, "creation_rates", { period_id: id });
+    // task_members không có period_id trực tiếp — cascade qua tasks ở trên
+    // KHÔNG tự lan xuống (task_members.task_id không có is_deleted check
+    // theo task cha) nên gỡ riêng theo danh sách task vừa xóa mềm.
+    const taskIds = await trx("tasks").where({ period_id: id }).select("id");
+    if (taskIds.length > 0) {
+      await softDeleteWhereIn(
+        trx,
+        "task_members",
+        "task_id",
+        taskIds.map((t: { id: number }) => t.id),
+      );
+    }
+    await softDeleteWhere(trx, "members", { period_id: id });
+    await softDeleteWhere(trx, "teams", { period_id: id });
+    const count = await softDeleteWhere(trx, "periods", { id });
     return count > 0;
   });
 }

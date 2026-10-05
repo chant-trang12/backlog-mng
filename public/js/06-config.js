@@ -846,7 +846,7 @@ document.getElementById("department-form").addEventListener("submit", async (e) 
 // ---- Cấu hình > Quản lý User & Phân quyền (chỉ Admin thấy được, xem
 // checkAuth()/#config-users-pill) ----
 
-const USER_ROLE_LABELS = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };
+const USER_ROLE_LABELS = { admin: "Admin", editor: "Biên tập", bgd: "BGĐ", viewer: "Chỉ xem" };
 
 function formatUserLastLogin(value) {
   const f = formatDbDateTime(value);

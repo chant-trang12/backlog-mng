@@ -6,6 +6,7 @@ import type {
   UpdateIncidentInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromTeamId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 export async function createIncident(input: CreateIncidentInput, scope: DataScope): Promise<Incident> {
   const departmentId = await departmentIdFromTeamId(input.team_id);
@@ -23,7 +24,7 @@ export async function createIncident(input: CreateIncidentInput, scope: DataScop
 }
 
 export async function getIncident(id: number): Promise<Incident | undefined> {
-  const row = await db("incidents").where({ id }).first();
+  const row = await db("incidents").where({ id, is_deleted: false }).first();
   return row as Incident | undefined;
 }
 
@@ -31,6 +32,8 @@ export async function listIncidents(departmentId?: number | null): Promise<Incid
   const query = db("incidents")
     .join("teams", "teams.id", "incidents.team_id")
     .join("periods", "periods.id", "incidents.period_id")
+    .where("incidents.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "incidents.*",
       "teams.name as team_name",
@@ -77,6 +80,6 @@ export async function deleteIncident(id: number, scope: DataScope): Promise<bool
   const existing = await getIncident(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("incidents").where({ id }).delete();
+  const count = await softDeleteWhere(db, "incidents", { id });
   return count > 0;
 }

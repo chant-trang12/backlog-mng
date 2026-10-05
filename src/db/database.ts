@@ -9,20 +9,30 @@
 // để biết chi tiết từng bảng — file này chỉ còn phần "gọi theo thứ tự".
 export { db } from "./connection.js";
 import { migrateCatalogTables, seedCatalogData } from "./migrations/catalogs.js";
-import { migrateDepartments } from "./migrations/departments.js";
-import { migrateCoreTables, migrateCskhTables, migrateTeamRecordTables } from "./migrations/core.js";
+import { migrateDepartments, migrateSoftDeleteDepartments } from "./migrations/departments.js";
+import {
+  migrateCoreTables,
+  migrateCskhTables,
+  migrateTeamRecordTables,
+  migrateSoftDeleteCore,
+  migrateSoftDeleteCskh,
+  migrateSoftDeleteTeamRecords,
+} from "./migrations/core.js";
 import { migrateRoadmapTables } from "./migrations/roadmap.js";
 import { migrateScoringTables } from "./migrations/scoring.js";
 import {
   migrateTaskDauMoiPhoiHop,
   migrateTaskGradingExtras,
   migrateTaskMembersTables,
+  migrateTaskTienDoHistory,
+  migrateSoftDeleteTaskMembers,
 } from "./migrations/tasks.js";
 import {
   migrateMembersGhiChu,
   migrateMembersHaKi,
   migrateUsersDepartment,
   migrateUsersTable,
+  migrateSoftDeleteUsers,
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
@@ -50,6 +60,8 @@ export async function initDatabase(): Promise<void> {
     await migrateTaskGradingExtras();
     // tasks.dau_moi_phoi_hop (cột "Đầu mối phối hợp" ở Backlog).
     await migrateTaskDauMoiPhoiHop();
+    // tasks.tien_do_history (lịch sử cột "Tiến độ" qua các tháng).
+    await migrateTaskTienDoHistory();
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();
@@ -73,6 +85,21 @@ export async function initDatabase(): Promise<void> {
     // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
     // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
     await migrateActionLogsTable();
+
+    // Xóa mềm (is_deleted/deleted_at) cho dữ liệu nghiệp vụ chính — gắn cờ
+    // thay vì DELETE thật để không mất dữ liệu khi có sự cố (vẫn backup/
+    // khôi phục được). KHÔNG áp dụng cho bảng danh mục/cấu hình (tags,
+    // phân loại, hệ thống, mục tiêu, tiêu chí, ranking...). Chạy sau cùng,
+    // chỉ cần đúng các bảng liên quan đã tồn tại (đã tạo ở các bước trên).
+    await migrateSoftDeleteCore(); // periods / teams / members / tasks
+    await migrateSoftDeleteCskh(); // incidents / tickets / creation_rates
+    await migrateSoftDeleteTeamRecords(); // compliance/training/attendance/noiquy/support/danh_gia
+    await migrateSoftDeleteDepartments();
+    await migrateSoftDeleteTaskMembers();
+    await migrateSoftDeleteUsers();
+    // roadmap_items/roadmap_details và feature_requests tự thêm is_deleted
+    // ngay trong migrateRoadmapTables()/migrateFeatureRequestTables() ở
+    // trên (không có UNIQUE riêng nên không cần tách hàm riêng).
   })();
 
   return initPromise;

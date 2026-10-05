@@ -342,7 +342,13 @@
               <label for="task-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="task-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <!-- Thanh cuộn ngang PHÍA TRÊN bảng — bảng Nhiệm vụ có nhiều cột,
+                 trước đây chỉ có thanh cuộn ở cuối bảng (phải cuộn dọc hết
+                 bảng mới thấy) nên thêm 1 thanh giả ở đây, đồng bộ 2 chiều
+                 với .table-wrap thật bên dưới qua setupTaskScrollTopSync() ở
+                 04-tasks.js. -->
+            <div class="table-scroll-top" id="task-table-scroll-top"><div id="task-table-scroll-top-spacer"></div></div>
+            <div class="table-wrap" id="task-table-wrap">
               <table id="task-table">
                 <thead>
                   <tr>
@@ -958,24 +964,28 @@
                 <h2 style="margin:0">Yêu cầu tính năng</h2>
                 <p class="muted" style="margin:6px 0 0">Hộp thư yêu cầu — đề xuất thêm/nâng cấp tính năng cho hệ thống.</p>
               </div>
-              <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+              <div class="row">
+                <!-- Chọn nhiều để xóa — CHỈ admin (Quy tắc 9.1: editor/viewer
+                     không được xóa). class="delete-action" đã ẩn sẵn với cả
+                     viewer lẫn editor qua CSS (xem cuối style.css), khớp
+                     đúng luật chặn thật ở server (requireAdmin, scope theo
+                     tiền tố "/api/feature-requests/delete-selected" — app.ts). -->
+                <button id="delete-selected-fr-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-fr-count">0</span>)</button>
+                <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+              </div>
             </div>
+            <p class="muted" style="margin:0 0 8px">Bấm vào 1 dòng để xem đầy đủ chi tiết.</p>
             <div class="table-wrap">
               <table id="fr-table">
                 <thead>
                   <tr>
+                    <th style="width:36px"><input type="checkbox" id="fr-select-all" /></th>
                     <th style="min-width:44px">STT</th>
                     <th style="min-width:140px">Hệ thống</th>
-                    <th style="min-width:140px">Loại yêu cầu</th>
-                    <th style="min-width:220px">Tiêu đề</th>
-                    <th style="min-width:260px">Mô tả yêu cầu</th>
-                    <th style="min-width:140px">Đính kèm</th>
-                    <th style="min-width:130px">Từ phòng ban</th>
-                    <th style="min-width:130px">Đến phòng ban</th>
-                    <th style="min-width:110px">Người đề xuất</th>
+                    <th style="min-width:260px">Tiêu đề</th>
+                    <th style="min-width:200px">Phòng ban</th>
                     <th style="min-width:100px">Ưu tiên</th>
-                    <th style="min-width:200px">Trạng thái</th>
-                    <th style="min-width:130px">Thời gian mong muốn</th>
+                    <th style="min-width:180px">Trạng thái</th>
                     <th style="min-width:110px">Ngày tạo</th>
                     <th style="min-width:130px"></th>
                   </tr>
@@ -1067,6 +1077,69 @@
           </form>
         </dialog>
 
+        <!-- Xem chi tiết 1 yêu cầu (mở khi bấm vào 1 dòng ở bảng danh sách —
+             bảng chỉ hiện thông tin rút gọn, đầy đủ thông tin xem ở đây).
+             Chỉ đọc — Sửa/Xóa/Duyệt/Từ chối/Đưa vào Backlog/Roadmap vẫn
+             dùng đúng nút + luồng đã có (frActionsHtml() dùng chung cho cả
+             ô Thao tác ở bảng và khối Thao tác dưới đây). -->
+        <dialog id="fr-detail-dialog" class="fr-detail-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <div class="dialog-body">
+            <div class="fr-detail-head">
+              <span class="status-badge" id="fr-detail-he-thong"></span>
+              <h2 id="fr-detail-title"></h2>
+              <div class="row" id="fr-detail-status-badges" style="gap:5px;flex-wrap:wrap"></div>
+            </div>
+            <div class="fr-detail-grid">
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Loại yêu cầu</div>
+                <div id="fr-detail-loai"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Ưu tiên</div>
+                <div id="fr-detail-uu-tien"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Từ phòng ban</div>
+                <div id="fr-detail-from-dept"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Đến phòng ban</div>
+                <div id="fr-detail-to-dept"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Người đề xuất</div>
+                <div id="fr-detail-nguoi-de-xuat"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Thời gian mong muốn</div>
+                <div id="fr-detail-thoi-gian"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Ngày tạo</div>
+                <div id="fr-detail-ngay-tao"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Đính kèm</div>
+                <div id="fr-detail-attachment"></div>
+              </div>
+            </div>
+            <div class="fr-detail-block">
+              <div class="fr-detail-label">Mô tả yêu cầu</div>
+              <p id="fr-detail-mo-ta" class="fr-detail-quote"></p>
+            </div>
+            <div class="fr-detail-block">
+              <div class="fr-detail-label">Kết quả mong muốn</div>
+              <p id="fr-detail-ket-qua" class="fr-detail-quote"></p>
+            </div>
+            <div class="fr-detail-block" id="fr-detail-ghi-chu-wrap" hidden>
+              <div class="fr-detail-label">Lý do từ chối / Ghi chú xử lý</div>
+              <p id="fr-detail-ghi-chu" class="fr-detail-quote fr-detail-quote-warn"></p>
+            </div>
+            <div class="actions" id="fr-detail-actions"></div>
+          </div>
+        </dialog>
+
         <!-- Từ chối yêu cầu — chỉ phòng đích thấy nút mở dialog này. -->
         <dialog id="fr-reject-dialog">
           <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
@@ -1153,6 +1226,7 @@
                   <option value="">Tất cả</option>
                   <option value="admin">Admin</option>
                   <option value="editor">Biên tập</option>
+                  <option value="bgd">BGĐ</option>
                   <option value="viewer">Chỉ xem</option>
                 </select>
               </div>
@@ -2006,22 +2080,20 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
-      <!-- Chỉ hiện khi task đã có % Đánh giá. Dòng 1: % Đánh giá (nổi bật).
-           Dòng 2: đơn vị nhập điểm cá nhân + nút Chia đều tỷ lệ (nổi bật,
-           góc phải, cùng dòng với đơn vị). Tổng đã phân bổ chuyển xuống
-           riêng 1 dòng, ngay trên bảng danh sách (xem task-member-total-row). -->
+      <!-- % Đánh giá + đơn vị điểm cá nhân chỉ hiện khi task đã chấm điểm
+           (2 thứ này phụ thuộc điểm task). Tỷ lệ đóng góp giữa các nhân sự
+           thì KHÔNG phụ thuộc điểm task — cho chia/sửa được ngay cả khi task
+           chưa chấm điểm, nên nút "Chia đều tỷ lệ" và tổng đã phân bổ
+           (task-member-total-row) luôn hiện. -->
       <div class="row" id="task-member-score-row" hidden style="align-items:center;gap:8px">
         <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
       </div>
-      <div class="row" id="task-member-unit-row" hidden style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div class="row" style="align-items:center;gap:8px">
-          <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
-          <select id="tm-score-unit" style="max-width:140px">
-            <option value="percent">% (theo task)</option>
-            <option value="scale5" id="tm-score-unit-scale5">Thang điểm 5</option>
-          </select>
-        </div>
-        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
+      <div class="row" id="task-member-unit-row" hidden style="align-items:center;gap:8px">
+        <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
+        <select id="tm-score-unit" style="max-width:140px">
+          <option value="percent">% (theo task)</option>
+          <option value="scale5" id="tm-score-unit-scale5">Thang điểm 5</option>
+        </select>
       </div>
 
       <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
@@ -2045,8 +2117,9 @@
         </div>
       </div>
 
-      <div class="row" id="task-member-total-row" hidden style="justify-content:flex-end">
+      <div class="row" id="task-member-total-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <span id="task-member-total-badge" class="status-badge status-default"></span>
+        <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
 
       <div class="table-wrap">

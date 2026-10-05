@@ -30,6 +30,8 @@
     --role-editor-ink: #79500f;
     --role-admin-bg: #f4dbd4;
     --role-admin-ink: #8a3a2a;
+    --role-bgd-bg: #dce6f2;
+    --role-bgd-ink: #2c4a6e;
     --code-bg: #ece8da;
     --shadow: 0 1px 2px rgba(33,36,29,0.06), 0 8px 24px -12px rgba(33,36,29,0.18);
   }
@@ -54,6 +56,8 @@
       --role-editor-ink: #e3bb63;
       --role-admin-bg: #3a221c;
       --role-admin-ink: #e39383;
+      --role-bgd-bg: #1e2c3d;
+      --role-bgd-ink: #9dbbdc;
       --code-bg: #262a1c;
       --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
     }
@@ -78,6 +82,8 @@
     --role-editor-ink: #e3bb63;
     --role-admin-bg: #3a221c;
     --role-admin-ink: #e39383;
+    --role-bgd-bg: #1e2c3d;
+    --role-bgd-ink: #9dbbdc;
     --code-bg: #262a1c;
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
   }
@@ -259,6 +265,7 @@
   .role-all { background: var(--role-all-bg); color: var(--role-all-ink); }
   .role-editor { background: var(--role-editor-bg); color: var(--role-editor-ink); }
   .role-admin { background: var(--role-admin-bg); color: var(--role-admin-ink); }
+  .role-bgd { background: var(--role-bgd-bg); color: var(--role-bgd-ink); }
 
   table {
     width: 100%;
@@ -384,11 +391,12 @@
       <h3 class="feature">Tháng backlog</h3>
       <p>Phần lớn dữ liệu nghiệp vụ (Nhiệm vụ, CSKH, Tuân thủ, Đào tạo, Hỗ trợ, Đánh giá, Chấm công) được tổ chức <strong>theo tháng</strong>. Team và Nhân sự được khai báo lại cho mỗi tháng (tháng mới tự kế thừa danh sách từ tháng gần nhất, nhưng từ đó là 2 danh sách độc lập — sửa ở tháng này không ảnh hưởng tháng khác).</p>
 
-      <h3 class="feature">3 cấp phân quyền</h3>
-      <p>Khi hệ thống bật đăng nhập, mỗi tài khoản mang đúng 1 trong 3 vai trò sau. Xem chi tiết đầy đủ ở mục <a href="#phan-quyen">Bảng phân quyền</a> cuối tài liệu.</p>
+      <h3 class="feature">4 cấp phân quyền</h3>
+      <p>Khi hệ thống bật đăng nhập, mỗi tài khoản mang đúng 1 trong 4 vai trò sau. <span class="role role-bgd">BGĐ</span> giống hệt <span class="role role-all">CHỈ XEM</span> (không sửa/xóa/tạo được gì) — NGOẠI TRỪ được thao tác nút <span class="ui">Chấm điểm</span> ở menu Nhiệm vụ (Backlog). Xem chi tiết đầy đủ ở mục <a href="#phan-quyen">Bảng phân quyền</a> cuối tài liệu.</p>
       <div class="badge-row">
         <span class="role role-all">CHỈ XEM</span>
         <span class="role role-editor">BIÊN TẬP</span>
+        <span class="role role-bgd">BGĐ</span>
         <span class="role role-admin">ADMIN</span>
       </div>
     </section>
@@ -440,7 +448,7 @@
         <tbody>
           <tr><td><span class="ui">Sửa</span></td><td>Sửa nội dung: Team, Nhiệm vụ, DoD, Deadline, Đầu mối phối hợp, Tính chất, Tag.</td><td><span class="role role-editor">Biên tập</span></td></tr>
           <tr><td><span class="ui">Xóa</span></td><td>Xóa hẳn nhiệm vụ.</td><td><span class="role role-admin">Admin</span></td></tr>
-          <tr><td><span class="ui">Chấm điểm</span></td><td>Nhập % Đánh giá + Nội dung đánh giá.</td><td><span class="role role-editor">Biên tập</span></td></tr>
+          <tr><td><span class="ui">Chấm điểm</span></td><td>Nhập % Đánh giá + Nội dung đánh giá.</td><td><span class="role role-bgd">BGĐ</span> <span class="role role-admin">Admin</span></td></tr>
           <tr><td><span class="ui">Cập nhật tiến độ</span></td><td>Sửa % Hoàn thành, Trạng thái, Tiến độ.</td><td><span class="role role-editor">Biên tập</span></td></tr>
           <tr><td><span class="ui"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự</span></td><td>Quản lý nhân sự tham gia + tỷ lệ đóng góp.</td><td><span class="role role-editor">Biên tập</span></td></tr>
         </tbody>
@@ -596,16 +604,17 @@
       <p class="section-sub">Áp dụng khi hệ thống bật đăng nhập (SSO). Chặn thật luôn nằm ở máy chủ — giao diện chỉ ẩn bớt nút để tránh bấm vào thứ chắc chắn bị từ chối.</p>
       <div class="table-wrap">
       <table>
-        <thead><tr><th>Nhóm chức năng</th><th style="width:130px">Chỉ xem</th><th style="width:130px">Biên tập</th><th style="width:110px">Admin</th></tr></thead>
+        <thead><tr><th>Nhóm chức năng</th><th style="width:110px">Chỉ xem</th><th style="width:110px">Biên tập</th><th style="width:110px">BGĐ</th><th style="width:110px">Admin</th></tr></thead>
         <tbody>
-          <tr><td>Xem mọi trang, mọi bảng dữ liệu</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Tạo mới <a href="#feature-requests">Yêu cầu tính năng</a></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Thêm / Sửa dữ liệu nghiệp vụ (task, nhân sự, CSKH, roadmap…)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Duyệt / Từ chối Yêu cầu tính năng (đúng phòng đích)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Xóa dữ liệu nghiệp vụ</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Tạo / Xóa tháng backlog</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Trang <a href="#config">Cấu hình</a> (Tiêu chí, Ranking, Danh mục, Phòng ban, Quản lý User)</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
-          <tr><td>Trang <a href="#action-logs">Nhật ký hoạt động</a></td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Xem mọi trang, mọi bảng dữ liệu</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Tạo mới <a href="#feature-requests">Yêu cầu tính năng</a></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Chấm điểm nhiệm vụ (nút <a href="#backlog-cham-diem">Chấm điểm</a>, Backlog)</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Thêm / Sửa dữ liệu nghiệp vụ khác (task, nhân sự, CSKH, roadmap…)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Duyệt / Từ chối Yêu cầu tính năng (đúng phòng đích)</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Xóa dữ liệu nghiệp vụ</td><td>—</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Tạo / Xóa tháng backlog</td><td>—</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Trang <a href="#config">Cấu hình</a> (Tiêu chí, Ranking, Danh mục, Phòng ban, Quản lý User)</td><td>—</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
+          <tr><td>Trang <a href="#action-logs">Nhật ký hoạt động</a></td><td>—</td><td>—</td><td>—</td><td><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></td></tr>
         </tbody>
       </table>
       </div>

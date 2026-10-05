@@ -4,6 +4,7 @@ import {
   createFeatureRequestHandler,
   deleteFeatureRequestAttachmentHandler,
   deleteFeatureRequestHandler,
+  deleteSelectedFeatureRequestsHandler,
   downloadFeatureRequestAttachmentHandler,
   getFeatureRequestHandler,
   linkFeatureRequestToBacklogHandler,
@@ -20,6 +21,11 @@ const router = Router();
 router.get("/loai-yeu-cau", listLoaiYeuCauHandler);
 router.get("/feature-requests", listFeatureRequestsHandler);
 router.post("/feature-requests", createFeatureRequestHandler);
+// Đặt trước "/:id" — path riêng "delete-selected" không khớp ":id" nên
+// không xung đột, nhưng đặt trước cho dễ đọc (đi cùng nhóm route chung,
+// không phải route theo id). Chỉ admin gọi tới được — xem requireAdmin
+// scope theo tiền tố "/api/feature-requests/delete-selected" ở app.ts.
+router.post("/feature-requests/delete-selected", deleteSelectedFeatureRequestsHandler);
 router.get("/feature-requests/:id", getFeatureRequestHandler);
 router.put("/feature-requests/:id", updateFeatureRequestHandler);
 router.delete("/feature-requests/:id", deleteFeatureRequestHandler);

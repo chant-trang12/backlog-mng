@@ -44,7 +44,7 @@ export async function listTieuChiConfigs(
 ): Promise<TieuChiConfigWithDiemChuan[]> {
   const query = db("tieu_chi_configs");
   if (departmentId != null) {
-    const dept = await db("departments").where({ id: departmentId }).first();
+    const dept = await db("departments").where({ id: departmentId, is_deleted: false }).first();
     const dungChung = dept ? Boolean((dept as any).dung_tieu_chi_chung) : true;
     if (dungChung) {
       query.where((qb) => qb.whereNull("department_id").orWhere({ department_id: departmentId }));

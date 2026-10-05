@@ -64,7 +64,10 @@ function renderTasks() {
       </td>
       <td><span class="status-badge ${statusClass}">${t.trang_thai}</span></td>
       <td>${t.dau_moi_phoi_hop ?? ""}</td>
-      <td>${(t.tien_do ?? "").replace(/\n/g, "<br/>")}</td>
+      <td>
+        ${(t.tien_do ?? "").replace(/\n/g, "<br/>")}
+        ${renderProgressHistory(t)}
+      </td>
       <td>
         <div class="badge-group">
           ${t.khong_tinh_diem ? `<span class="status-badge tinh-chat-khong-tinh-diem">${t.khong_tinh_diem}</span>` : ""}
@@ -88,7 +91,7 @@ function renderTasks() {
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-btn">Sửa</button>
         <button class="small btn-delete delete-btn">Xóa</button>
-        <button class="small btn-grade grade-btn">Chấm điểm</button>
+        <button class="small btn-grade grade-write-action grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
         <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
       </div></td>
@@ -557,7 +560,9 @@ el.gradeForm.addEventListener("submit", async (e) => {
   };
 
   try {
-    await api(`/api/tasks/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+    // Route riêng /grade (khác PUT /tasks/:id sửa task thường) — chỉ admin/
+    // BGĐ được phép, chặn ở requireWrite (auth.middleware.ts).
+    await api(`/api/tasks/${id}/grade`, { method: "PUT", body: JSON.stringify(payload) });
     el.gradeDialog.close();
     await loadTasks();
     showToast("Đã lưu chấm điểm.", "success");
@@ -636,11 +641,15 @@ function fillTaskMemberCategorySelect() {
 
 function renderTaskMemberThead() {
   const graded = state.taskMemberTaskScore != null;
+  // Tỷ lệ đóng góp KHÔNG phụ thuộc điểm task — luôn hiện được, kể cả task
+  // chưa chấm điểm. Điểm cá nhân thì cần % Đánh giá của task để quy đổi nên
+  // vẫn chỉ hiện khi đã chấm điểm.
   el.taskMemberThead.innerHTML = `<tr>
     <th style="width:190px">Nhân sự</th>
     <th style="width:190px">Vai trò</th>
     <th style="width:150px">Phân loại</th>
-    ${graded ? '<th style="width:120px">Tỷ lệ đóng góp (%)</th><th style="width:140px">Điểm cá nhân</th>' : ""}
+    <th style="width:120px">Tỷ lệ đóng góp (%)</th>
+    ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
     <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
   </tr>`;
@@ -722,14 +731,18 @@ function renderTaskMembers() {
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberUnitRow.hidden = !graded;
-  el.taskMemberTotalRow.hidden = !graded;
+  // Tổng tỷ lệ đóng góp đã phân bổ không phụ thuộc điểm task — luôn hiện.
+  el.taskMemberTotalRow.hidden = false;
   const unit = state.taskMemberScoreUnit;
 
   el.taskMemberTbody.innerHTML = state.taskMembers
     .map((tm) => {
+      const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
+      // Tỷ lệ đóng góp giữa các nhân sự cho task — không cần task đã chấm
+      // điểm mới chia được, nên luôn hiện cột này.
+      const contribCell = `<td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>`;
       let scoreCell = "";
       if (graded) {
-        const contrib = tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : null;
         // Công thức tự tính (áp dụng mọi phòng ban, không phân biệt
         // theo_team/theo_task nữa — khớp đúng công thức đã dùng ở "Điểm cá
         // nhân (Tính theo task)"/tong_diem, xem taskMember.service.ts):
@@ -751,7 +764,6 @@ function renderTaskMembers() {
             ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
             : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp";
         scoreCell = `
-      <td><input type="number" class="inline-cell-input tm-contrib-input" data-id="${tm.id}" min="0" max="100" step="0.1" value="${contrib ?? ""}" placeholder="—" style="width:76px" /></td>
       <td>
         <div class="row" style="align-items:center;gap:4px;flex-wrap:nowrap">
           <input type="number" class="inline-cell-input tm-score-input" data-id="${tm.id}" step="0.1" value="${displayScore}" placeholder="—" style="width:64px" />
@@ -775,6 +787,7 @@ function renderTaskMembers() {
       <td>
         <select class="tm-phanloai-select inline-cell-input ${memberParticipationColorClass(tm.phan_loai)}" data-id="${tm.id}" style="border:none;font-weight:600">${categoryOptions}</select>
       </td>
+      ${contribCell}
       ${scoreCell}
       <td>${tm.ghi_chu ?? ""}</td>
       <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
@@ -810,22 +823,24 @@ function renderTaskMembers() {
     });
   });
 
-  if (graded) {
-    el.taskMemberTbody.querySelectorAll(".tm-contrib-input").forEach((input) => {
-      input.addEventListener("change", async () => {
-        const val = input.value.trim();
-        try {
-          await api(`/api/task-members/${input.dataset.id}`, {
-            method: "PUT",
-            body: JSON.stringify({ ty_le_dong_gop: val === "" ? null : Number(val) }),
-          });
-          await loadTaskMembers();
-        } catch (err) {
-          showToast(err.message);
-          await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
-        }
-      });
+  // Tỷ lệ đóng góp sửa được kể cả task chưa chấm điểm.
+  el.taskMemberTbody.querySelectorAll(".tm-contrib-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const val = input.value.trim();
+      try {
+        await api(`/api/task-members/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ ty_le_dong_gop: val === "" ? null : Number(val) }),
+        });
+        await loadTaskMembers();
+      } catch (err) {
+        showToast(err.message);
+        await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
+      }
     });
+  });
+
+  if (graded) {
     el.taskMemberTbody.querySelectorAll(".tm-score-input").forEach((input) => {
       input.addEventListener("change", async () => {
         const val = input.value.trim();
@@ -861,10 +876,8 @@ function renderTaskMembers() {
 }
 
 function updateTaskMemberTotalBadge() {
-  if (state.taskMemberTaskScore == null) {
-    el.taskMemberTotalBadge.textContent = ""; // task chưa chấm điểm — không để lại nội dung cũ
-    return;
-  }
+  // Tổng tỷ lệ đóng góp không phụ thuộc điểm task — tính kể cả khi task
+  // chưa chấm điểm.
   const total = round2(
     state.taskMembers.reduce((s, tm) => s + (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0), 0),
   );
@@ -978,4 +991,48 @@ el.exportBtn.addEventListener("click", () => {
     : "";
   window.location.href = `/api/periods/${state.currentPeriodId}/tasks/export${query}`;
 });
+
+// ---- Thanh cuộn ngang phía trên bảng Nhiệm vụ ----
+// Bảng Nhiệm vụ có tới 15-16 cột, thanh cuộn ngang mặc định của trình
+// duyệt chỉ nằm ở CUỐI bảng (#task-table-wrap) — phải cuộn dọc hết bảng
+// mới thấy được để kéo qua lại. Thêm 1 thanh giả (#task-table-scroll-top)
+// PHÍA TRÊN, đồng bộ 2 chiều với thanh thật bên dưới; bề rộng thanh giả
+// (spacer) khớp đúng scrollWidth thật của bảng qua ResizeObserver — tự cập
+// nhật mỗi khi bảng đổi kích thước (đổi trang, ẩn/hiện cột Team theo
+// cach_tinh_kpi, resize cửa sổ...), không cần sửa gì trong renderTasks().
+function setupTaskScrollTopSync() {
+  const top = document.getElementById("task-table-scroll-top");
+  const spacer = document.getElementById("task-table-scroll-top-spacer");
+  const wrap = document.getElementById("task-table-wrap");
+  const table = document.getElementById("task-table");
+  if (!top || !spacer || !wrap || !table) return;
+
+  function syncWidth() {
+    spacer.style.width = `${table.scrollWidth}px`;
+    // Bảng không cần cuộn ngang (màn hình đủ rộng) thì ẩn hẳn thanh giả,
+    // đỡ chiếm chỗ vô ích.
+    top.hidden = table.scrollWidth <= wrap.clientWidth;
+  }
+
+  // Cờ chặn vòng lặp vô hạn (2 bên cùng lắng nghe "scroll" của nhau, set
+  // scrollLeft của bên kia lại kích hoạt sự kiện "scroll" của chính nó).
+  let syncing = false;
+  top.addEventListener("scroll", () => {
+    if (syncing) return;
+    syncing = true;
+    wrap.scrollLeft = top.scrollLeft;
+    syncing = false;
+  });
+  wrap.addEventListener("scroll", () => {
+    if (syncing) return;
+    syncing = true;
+    top.scrollLeft = wrap.scrollLeft;
+    syncing = false;
+  });
+
+  syncWidth();
+  new ResizeObserver(syncWidth).observe(table);
+  window.addEventListener("resize", syncWidth);
+}
+setupTaskScrollTopSync();
 

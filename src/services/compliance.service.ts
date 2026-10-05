@@ -6,6 +6,7 @@ import type {
   UpdateComplianceRecordInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromMemberId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 export async function createComplianceRecord(
   input: CreateComplianceRecordInput,
@@ -26,7 +27,7 @@ export async function createComplianceRecord(
 }
 
 export async function getComplianceRecord(id: number): Promise<ComplianceRecord | undefined> {
-  const row = await db("compliance_records").where({ id }).first();
+  const row = await db("compliance_records").where({ id, is_deleted: false }).first();
   return row as ComplianceRecord | undefined;
 }
 
@@ -42,6 +43,9 @@ export async function listComplianceRecords(
     .join("teams", "teams.id", "members.team_id")
     .join("periods", "periods.id", "compliance_records.period_id")
     .where("compliance_records.period_id", periodId)
+    .where("compliance_records.is_deleted", false)
+    .where("members.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "compliance_records.*",
       "members.name as member_name",
@@ -85,6 +89,6 @@ export async function deleteComplianceRecord(id: number, scope: DataScope): Prom
   const existing = await getComplianceRecord(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("compliance_records").where({ id }).delete();
+  const count = await softDeleteWhere(db, "compliance_records", { id });
   return count > 0;
 }

@@ -3,7 +3,7 @@ import type { NoiQuyOverride } from "../types/cskh.js";
 
 export async function listNoiQuyOverrides(periodId: number): Promise<NoiQuyOverride[]> {
   const rows = await db("noiquy_overrides")
-    .where({ period_id: periodId })
+    .where({ period_id: periodId, is_deleted: false })
     .orderBy("member_name", "asc");
   return rows as NoiQuyOverride[];
 }
@@ -13,8 +13,10 @@ export async function listNoiQuyOverrides(periodId: number): Promise<NoiQuyOverr
 export async function setNoiQuyOverrides(periodId: number, memberNames: string[]): Promise<void> {
   await db.transaction(async (trx) => {
     for (const name of memberNames) {
+      // is_deleted=false — override đã bỏ (xóa mềm) trước đó không tính là
+      // "đã có", thêm lại bình thường (khớp filtered unique index).
       const existing = await trx("noiquy_overrides")
-        .where({ period_id: periodId, member_name: name })
+        .where({ period_id: periodId, member_name: name, is_deleted: false })
         .first();
       if (!existing) {
         await trx("noiquy_overrides").insert({ period_id: periodId, member_name: name });
@@ -30,5 +32,5 @@ export async function removeNoiQuyOverrides(periodId: number, memberNames: strin
   await db("noiquy_overrides")
     .where({ period_id: periodId })
     .whereIn("member_name", memberNames)
-    .delete();
+    .update({ is_deleted: true, deleted_at: db.fn.now() });
 }

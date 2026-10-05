@@ -6,6 +6,7 @@ import type {
   UpdateTrainingRecordInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromMemberId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 export async function createTrainingRecord(
   input: CreateTrainingRecordInput,
@@ -28,7 +29,7 @@ export async function createTrainingRecord(
 }
 
 export async function getTrainingRecord(id: number): Promise<TrainingRecord | undefined> {
-  const row = await db("training_records").where({ id }).first();
+  const row = await db("training_records").where({ id, is_deleted: false }).first();
   return row as TrainingRecord | undefined;
 }
 
@@ -45,6 +46,9 @@ export async function listTrainingRecords(
     .join("teams", "teams.id", "members.team_id")
     .join("periods", "periods.id", "training_records.period_id")
     .where("training_records.period_id", periodId)
+    .where("training_records.is_deleted", false)
+    .where("members.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "training_records.*",
       "members.name as member_name",
@@ -92,6 +96,6 @@ export async function deleteTrainingRecord(id: number, scope: DataScope): Promis
   const existing = await getTrainingRecord(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("training_records").where({ id }).delete();
+  const count = await softDeleteWhere(db, "training_records", { id });
   return count > 0;
 }

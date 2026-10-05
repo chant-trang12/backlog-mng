@@ -6,6 +6,7 @@ import type {
   UpdateSupportRecordInput,
 } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromMemberId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 // department_id lấy theo team CỦA NHÂN SỰ đi hỗ trợ (team thực hiện), không
 // phải team nhận hỗ trợ — khớp với backfill ở migrations/departments.ts và
@@ -29,7 +30,7 @@ export async function createSupportRecord(input: CreateSupportRecordInput, scope
 }
 
 export async function getSupportRecord(id: number): Promise<SupportRecord | undefined> {
-  const row = await db("support_records").where({ id }).first();
+  const row = await db("support_records").where({ id, is_deleted: false }).first();
   return row as SupportRecord | undefined;
 }
 
@@ -47,6 +48,10 @@ export async function listSupportRecords(
     .join("teams as teams_nhan", "teams_nhan.id", "support_records.team_nhan_ho_tro_id")
     .join("periods", "periods.id", "support_records.period_id")
     .where("support_records.period_id", periodId)
+    .where("support_records.is_deleted", false)
+    .where("members.is_deleted", false)
+    .where("teams.is_deleted", false)
+    .where("teams_nhan.is_deleted", false)
     .select(
       "support_records.*",
       "members.name as member_name",
@@ -94,6 +99,6 @@ export async function deleteSupportRecord(id: number, scope: DataScope): Promise
   const existing = await getSupportRecord(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("support_records").where({ id }).delete();
+  const count = await softDeleteWhere(db, "support_records", { id });
   return count > 0;
 }

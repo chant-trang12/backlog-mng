@@ -11,6 +11,7 @@ import type {
 import { createTask } from "./task.service.js";
 import { createRoadmapItem } from "./roadmap.service.js";
 import { getPeriod } from "./period.service.js";
+import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 const UNRESTRICTED = { all: true, departmentId: null } as const;
 
@@ -37,8 +38,8 @@ export async function listFeatureRequests(departmentId: number | null): Promise<
     .leftJoin("departments as d", "d.id", "fr.department_id")
     .leftJoin("departments as td", "td.id", "fr.target_department_id")
     .select("fr.*", "d.name as department_name", "td.name as target_department_name")
-    .where("fr.department_id", departmentId)
-    .orWhere("fr.target_department_id", departmentId)
+    .where("fr.is_deleted", false)
+    .where((qb) => qb.where("fr.department_id", departmentId).orWhere("fr.target_department_id", departmentId))
     .orderBy("fr.created_at", "desc");
   return rows.map(stripAttachmentData) as FeatureRequestWithDept[];
 }
@@ -49,6 +50,7 @@ export async function getFeatureRequest(id: number): Promise<FeatureRequestWithD
     .leftJoin("departments as td", "td.id", "fr.target_department_id")
     .select("fr.*", "d.name as department_name", "td.name as target_department_name")
     .where("fr.id", id)
+    .where("fr.is_deleted", false)
     .first();
   return row ? (stripAttachmentData(row) as FeatureRequestWithDept) : undefined;
 }
@@ -77,7 +79,7 @@ export async function updateFeatureRequest(
   id: number,
   input: UpdateFeatureRequestInput,
 ): Promise<FeatureRequestWithDept | undefined> {
-  const existing = await db("feature_requests").where({ id }).first();
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing) return undefined;
 
   await db("feature_requests")
@@ -105,8 +107,28 @@ export async function updateFeatureRequest(
   return getFeatureRequest(id);
 }
 
+// Xóa nhiều yêu cầu theo checkbox đã chọn trên bảng (chỉ admin — chặn ở
+// route qua requireAdmin, xem app.ts). Cùng luật phạm vi với xóa từng cái
+// (isInScope() ở featureRequest.controller.ts) — chỉ xóa những id mà phòng
+// đang thao tác là bên đề xuất HOẶC bên đích, lọc bằng 1 query duy nhất
+// (giống deleteRoadmapItems() ở roadmap.service.ts) thay vì gọi getFeatureRequest
+// từng cái.
+export async function deleteFeatureRequests(ids: number[], departmentId: number | null): Promise<number> {
+  if (ids.length === 0 || departmentId == null) return 0;
+  const rows = await db("feature_requests")
+    .whereIn("id", ids)
+    .where({ is_deleted: false })
+    .select("id", "department_id", "target_department_id");
+  const scopedIds = rows
+    .filter((r: any) => r.department_id === departmentId || r.target_department_id === departmentId)
+    .map((r: any) => Number(r.id));
+  if (scopedIds.length === 0) return 0;
+  const count = await softDeleteWhereIn(db, "feature_requests", "id", scopedIds);
+  return Number(count);
+}
+
 export async function deleteFeatureRequest(id: number): Promise<boolean> {
-  const count = await db("feature_requests").where({ id }).delete();
+  const count = await softDeleteWhere(db, "feature_requests", { id });
   return count > 0;
 }
 
@@ -130,7 +152,7 @@ export async function setFeatureRequestAttachment(
 
 export async function getFeatureRequestAttachment(id: number): Promise<FeatureRequestAttachment | undefined> {
   const row = await db("feature_requests")
-    .where({ id })
+    .where({ id, is_deleted: false })
     .whereNotNull("attachment_data")
     .first("attachment_filename", "attachment_mime", "attachment_data");
   if (!row) return undefined;
@@ -163,7 +185,7 @@ export async function listLoaiYeuCau(): Promise<LoaiYeuCauOption[]> {
 // controller trước khi tới đây) ----
 
 export async function approveFeatureRequest(id: number): Promise<FeatureRequestWithDept | undefined> {
-  const existing = await db("feature_requests").where({ id }).first();
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing || existing.trang_thai !== "Chờ duyệt") return undefined;
   await db("feature_requests").where({ id }).update({ trang_thai: "Đã duyệt", updated_at: db.fn.now() });
   return getFeatureRequest(id);
@@ -173,7 +195,7 @@ export async function rejectFeatureRequest(
   id: number,
   ghiChu?: string,
 ): Promise<FeatureRequestWithDept | undefined> {
-  const existing = await db("feature_requests").where({ id }).first();
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing || existing.trang_thai !== "Chờ duyệt") return undefined;
   await db("feature_requests")
     .where({ id })
@@ -192,7 +214,7 @@ export async function linkFeatureRequestToBacklog(
   id: number,
   input: LinkToBacklogInput,
 ): Promise<FeatureRequestWithDept | undefined> {
-  const existing = await db("feature_requests").where({ id }).first();
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing || existing.trang_thai !== "Đã duyệt" || existing.linked_task_id) return undefined;
 
   const period = await getPeriod(input.period_id);
@@ -222,7 +244,7 @@ export async function linkFeatureRequestToRoadmap(
   id: number,
   input: LinkToRoadmapInput,
 ): Promise<FeatureRequestWithDept | undefined> {
-  const existing = await db("feature_requests").where({ id }).first();
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing || existing.trang_thai !== "Đã duyệt" || existing.linked_roadmap_item_id) return undefined;
 
   const roadmapItem = await createRoadmapItem(

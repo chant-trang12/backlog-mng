@@ -27,6 +27,10 @@ async function loadFeatureRequests() {
   // bên đích (xem listFeatureRequestsHandler) — không dùng prefix mặc định
   // "&" vì đây là query đầu tiên của URL.
   state.featureRequests = await api(`/api/feature-requests${deptParam("?")}`);
+  const frIds = new Set(state.featureRequests.map((r) => r.id));
+  state.selectedFeatureRequestIds.forEach((id) => {
+    if (!frIds.has(id)) state.selectedFeatureRequestIds.delete(id);
+  });
   populateFrHeThongFilter();
   populateFrTargetDeptFilter();
   frPagination.reset();
@@ -135,6 +139,137 @@ function frStatusLabel(r) {
   return side === "target" ? "Chờ duyệt" : "Đã gửi yêu cầu";
 }
 
+// Badge "Đã đưa vào Backlog/Roadmap" — 2 màu khác nhau (tím/xanh dương) để
+// phân biệt Backlog/Roadmap với nhau, đồng thời KHÔNG trùng bất kỳ màu nào
+// đã dùng cho 3 trạng thái chính (vàng "Chờ duyệt", xanh lá "Đã duyệt", đỏ
+// "Từ chối") hay màu Ưu tiên trong cùng bảng — tránh đọc nhầm badge nào là
+// trạng thái gì.
+function frLinkedBadgesHtml(r) {
+  return (
+    (r.linked_task_id ? `<span class="status-badge fr-linked-badge-backlog" title="Đã đưa vào Backlog">✓ Backlog</span>` : "") +
+    (r.linked_roadmap_item_id
+      ? `<span class="status-badge fr-linked-badge-roadmap" title="Đã đưa vào Roadmap năm">✓ Roadmap</span>`
+      : "")
+  );
+}
+
+// HTML các nút thao tác cho 1 yêu cầu — DÙNG CHUNG cho ô Thao tác ở bảng
+// danh sách và khối Thao tác ở dialog xem chi tiết (wireFrActionButtons()
+// bên dưới gắn listener chung cho cả 2 nơi).
+function frActionsHtml(r, side) {
+  let actions = "";
+  const id = r.id;
+  // Duyệt/Từ chối/Đưa vào Backlog/Roadmap: CHỈ phòng đích được thao tác
+  // (chặn thật ở server — requireTargetScope), và chỉ user có quyền ghi
+  // (editor/admin — write-action ẩn với viewer, xem style.css) mới thấy
+  // nút. Viewer thuộc phòng đích vẫn thấy trạng thái "Chờ duyệt" bình
+  // thường, chỉ không thấy 2 nút này.
+  if (side === "target" && r.trang_thai === "Chờ duyệt") {
+    actions += `<button class="small btn-edit write-action approve-fr-btn" data-id="${id}">Duyệt</button>`;
+    actions += `<button class="small btn-reject write-action reject-fr-btn" data-id="${id}">Từ chối</button>`;
+  }
+  if (side === "target" && r.trang_thai === "Đã duyệt") {
+    // Chỉ hiện NÚT khi còn thao tác thật sự cần làm — đã đưa vào rồi thì bỏ
+    // hẳn khỏi Thao tác (không để "trạng thái xong" giả dạng nút gây nhầm
+    // bấm được), đọc trạng thái đã đưa vào qua badge (frLinkedBadgesHtml).
+    if (!r.linked_task_id) {
+      actions += `<button class="small btn-exclude write-action to-backlog-fr-btn" data-id="${id}">Đưa vào Backlog</button>`; // vàng (giống nút Backlog sẵn có)
+    }
+    if (!r.linked_roadmap_item_id) {
+      actions += `<button class="small btn-progress write-action to-roadmap-fr-btn" data-id="${id}">Đưa vào Roadmap</button>`; // xanh dương — tách biệt màu với nút Backlog
+    }
+  }
+  // Sửa/Xóa: chỉ bên đề xuất, chỉ khi còn "Chờ duyệt" (đã Duyệt/Từ chối thì
+  // khoá nội dung, tránh sửa sau khi bên kia đã hành động). Khác với "Tạo
+  // mới" (mọi quyền kể cả viewer), Sửa vẫn là PUT nên cần quyền ghi —
+  // write-action ẩn với viewer.
+  if (side === "proposer" && r.trang_thai === "Chờ duyệt") {
+    actions += `<button class="small btn-edit write-action edit-fr-btn" data-id="${id}">Sửa</button>`;
+    actions += `<button class="small btn-delete delete-fr-btn" data-id="${id}">Xóa</button>`;
+  }
+  return actions;
+}
+
+// Gắn listener cho các nút thao tác (.approve-fr-btn/.reject-fr-btn/...)
+// tìm thấy bên trong `root` — dùng chung cho tbody bảng danh sách lẫn khối
+// Thao tác ở dialog chi tiết. `id` lấy từ data-id ở chính nút bấm (không
+// phải closest("tr") nữa vì dialog chi tiết không có <tr>).
+function wireFrActionButtons(root) {
+  root.querySelectorAll(".edit-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("fr-detail-dialog").close();
+      openFeatureRequestDialog(state.featureRequests.find((r) => r.id === Number(btn.dataset.id)));
+    });
+  });
+  root.querySelectorAll(".delete-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = Number(btn.dataset.id);
+      if (!(await confirmDialog("Xóa yêu cầu tính năng này?"))) return;
+      try {
+        await api(`/api/feature-requests/${id}${deptParam("?")}`, { method: "DELETE" });
+        document.getElementById("fr-detail-dialog").close();
+        await loadFeatureRequests();
+        showToast("Đã xóa yêu cầu.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  root.querySelectorAll(".approve-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = Number(btn.dataset.id);
+      if (!(await confirmDialog("Duyệt yêu cầu tính năng này?", { danger: false }))) return;
+      try {
+        await api(`/api/feature-requests/${id}/approve${deptParam("?")}`, { method: "POST" });
+        document.getElementById("fr-detail-dialog").close();
+        await loadFeatureRequests();
+        showToast("Đã duyệt yêu cầu.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  root.querySelectorAll(".reject-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("fr-detail-dialog").close();
+      document.getElementById("fr-reject-id").value = btn.dataset.id;
+      document.getElementById("fr-reject-reason").value = "";
+      document.getElementById("fr-reject-dialog").showModal();
+    });
+  });
+  root.querySelectorAll(".to-backlog-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("fr-detail-dialog").close();
+      openFrBacklogDialog(Number(btn.dataset.id));
+    });
+  });
+  root.querySelectorAll(".to-roadmap-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("fr-detail-dialog").close();
+      openFrRoadmapDialog(Number(btn.dataset.id));
+    });
+  });
+}
+
+// Chọn nhiều để xóa hàng loạt — CHỈ admin (nút "Xóa đã chọn" mang class
+// "delete-action", tự ẩn với viewer/editor qua CSS role, khớp luật chặn
+// thật ở server — requireAdmin gắn riêng cho path "delete-selected", xem
+// app.ts). Checkbox từng dòng/chọn tất cả vẫn hiện với mọi quyền (giống
+// bảng Nhân sự) — chỉ nút Xóa mới ẩn, không phải cả cột.
+function updateFrSelectionUI() {
+  const visible = filteredFeatureRequests();
+  const visibleSelectedCount = visible.filter((r) => state.selectedFeatureRequestIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-fr-btn");
+  const countEl = document.getElementById("selected-fr-count");
+  const selectAll = document.getElementById("fr-select-all");
+  if (btn) btn.hidden = state.selectedFeatureRequestIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedFeatureRequestIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
 function renderFeatureRequestTable() {
   const tbody = document.getElementById("fr-tbody");
   const empty = document.getElementById("fr-empty");
@@ -144,133 +279,132 @@ function renderFeatureRequestTable() {
   const pageItems = frPagination.slice(rows);
   const pageStart = (frPagination.page - 1) * frPagination.pageSize;
 
+  // Bảng chỉ hiện thông tin rút gọn để lướt danh sách nhanh — đầy đủ thông
+  // tin (Loại yêu cầu, Mô tả, Kết quả mong muốn, Đính kèm, Người đề xuất,
+  // Thời gian mong muốn, Lý do từ chối...) xem ở dialog chi tiết, mở bằng
+  // cách bấm vào dòng (xem .fr-row-clickable bên dưới + openFrDetailDialog()).
   tbody.innerHTML = pageItems
     .map((r, i) => {
       const side = frViewerSide(r);
       const statusLabel = frStatusLabel(r);
-      let actions = "";
-      // Duyệt/Từ chối/Đưa vào Backlog/Roadmap: CHỈ phòng đích được thao tác
-      // (chặn thật ở server — requireTargetScope), và chỉ user có quyền
-      // ghi (editor/admin — write-action ẩn với viewer, xem style.css) mới
-      // thấy nút. Viewer thuộc phòng đích vẫn thấy trạng thái "Chờ duyệt"
-      // bình thường, chỉ không thấy 2 nút này.
-      if (side === "target" && r.trang_thai === "Chờ duyệt") {
-        actions += `<button class="small btn-edit write-action approve-fr-btn">Duyệt</button>`;
-        actions += `<button class="small btn-reject write-action reject-fr-btn">Từ chối</button>`;
-      }
-      if (side === "target" && r.trang_thai === "Đã duyệt") {
-        // Chỉ hiện NÚT khi còn thao tác thật sự cần làm — đã đưa vào rồi
-        // thì bỏ hẳn khỏi ô Thao tác (không để "trạng thái xong" giả dạng
-        // nút gây nhầm bấm được), chuyển sang badge nhỏ ở cột Trạng thái
-        // (xem linkedBadges bên dưới) — tách bạch rõ "nút để bấm" và
-        // "trạng thái để đọc".
-        if (!r.linked_task_id) {
-          actions += `<button class="small btn-exclude write-action to-backlog-fr-btn">Đưa vào Backlog</button>`; // vàng (giống nút Backlog sẵn có)
-        }
-        if (!r.linked_roadmap_item_id) {
-          actions += `<button class="small btn-progress write-action to-roadmap-fr-btn">Đưa vào Roadmap</button>`; // xanh dương — tách biệt màu với nút Backlog
-        }
-      }
-      // 2 màu khác nhau (tím/xanh dương) để phân biệt Backlog/Roadmap với
-      // nhau, đồng thời KHÔNG trùng bất kỳ màu nào đã dùng cho 3 trạng thái
-      // chính (vàng "Chờ duyệt", xanh lá "Đã duyệt", đỏ "Từ chối") hay màu
-      // Ưu tiên trong cùng bảng — tránh đọc nhầm badge nào là trạng thái gì.
-      const linkedBadges =
-        (r.linked_task_id ? `<span class="status-badge fr-linked-badge-backlog" title="Đã đưa vào Backlog">✓ Backlog</span>` : "") +
-        (r.linked_roadmap_item_id
-          ? `<span class="status-badge fr-linked-badge-roadmap" title="Đã đưa vào Roadmap năm">✓ Roadmap</span>`
-          : "");
-      // Sửa/Xóa: chỉ bên đề xuất, chỉ khi còn "Chờ duyệt" (đã Duyệt/Từ chối
-      // thì khoá nội dung, tránh sửa sau khi bên kia đã hành động). Khác
-      // với "Tạo mới" (mọi quyền kể cả viewer), Sửa vẫn là PUT nên cần
-      // quyền ghi — write-action ẩn với viewer.
-      if (side === "proposer" && r.trang_thai === "Chờ duyệt") {
-        actions += `<button class="small btn-edit write-action edit-fr-btn">Sửa</button>`;
-        actions += `<button class="small btn-delete delete-fr-btn">Xóa</button>`;
-      }
+      const actions = frActionsHtml(r, side);
 
       return `
-    <tr data-id="${r.id}">
+    <tr data-id="${r.id}" class="fr-row-clickable" title="Bấm để xem chi tiết yêu cầu">
+      <td><input type="checkbox" class="fr-row-checkbox" ${state.selectedFeatureRequestIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
       <td><span class="status-badge ${systemColorClass(r.he_thong)}">${r.he_thong}</span></td>
-      <td>${r.loai_yeu_cau ?? ""}</td>
-      <td>${r.tieu_de}</td>
-      <td>${(r.mo_ta ?? "").replace(/\n/g, "<br/>")}</td>
-      <td>${
-        r.attachment_filename
-          ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-paperclip"/></svg>${r.attachment_filename}</a>`
-          : `<span class="muted">—</span>`
-      }</td>
-      <td>${r.department_name ?? `<span class="muted">—</span>`}</td>
-      <td><strong>${r.target_department_name ?? `<span class="muted">—</span>`}</strong></td>
-      <td>${r.nguoi_de_xuat ?? ""}</td>
+      <td>
+        ${r.tieu_de}
+        ${r.attachment_filename ? `<svg class="icon" aria-hidden="true" title="Có file đính kèm" style="margin-left:4px;vertical-align:-2px"><use href="icons.svg#i-paperclip"/></svg>` : ""}
+      </td>
+      <td>${r.department_name ?? `<span class="muted">—</span>`} → <strong>${r.target_department_name ?? `<span class="muted">—</span>`}</strong></td>
       <td><span class="status-badge ${FR_PRIORITY_CLASS[r.do_uu_tien] ?? "status-default"}">${r.do_uu_tien}</span></td>
       <td>
         <div class="row" style="gap:5px;flex-wrap:wrap">
           <span class="status-badge ${FR_STATUS_BADGE_CLASS[r.trang_thai] ?? "status-default"}">${statusLabel}</span>
-          ${linkedBadges}
+          ${frLinkedBadgesHtml(r)}
         </div>
-        ${r.ghi_chu_xu_ly && r.trang_thai === "Từ chối" ? `<div class="cell-graded-at" title="${r.ghi_chu_xu_ly}">Lý do: ${r.ghi_chu_xu_ly}</div>` : ""}
       </td>
-      <td>${r.thoi_gian_mong_muon ? frFormatDate(r.thoi_gian_mong_muon) : `<span class="muted">—</span>`}</td>
       <td>${frFormatDate(r.created_at)}</td>
       <td><div class="actions-cell" title="">${actions}</div></td>
     </tr>`;
     })
     .join("");
 
-  tbody.querySelectorAll(".edit-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  tbody.querySelectorAll(".fr-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
-      openFeatureRequestDialog(state.featureRequests.find((r) => r.id === id));
-    });
-  });
-  tbody.querySelectorAll(".delete-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      if (!(await confirmDialog("Xóa yêu cầu tính năng này?"))) return;
-      try {
-        await api(`/api/feature-requests/${id}${deptParam("?")}`, { method: "DELETE" });
-        await loadFeatureRequests();
-        showToast("Đã xóa yêu cầu.", "success");
-      } catch (err) {
-        showToast(err.message);
+      if (e.target.checked) {
+        state.selectedFeatureRequestIds.add(id);
+      } else {
+        state.selectedFeatureRequestIds.delete(id);
       }
+      updateFrSelectionUI();
     });
   });
-  tbody.querySelectorAll(".approve-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      if (!(await confirmDialog("Duyệt yêu cầu tính năng này?", { danger: false }))) return;
-      try {
-        await api(`/api/feature-requests/${id}/approve${deptParam("?")}`, { method: "POST" });
-        await loadFeatureRequests();
-        showToast("Đã duyệt yêu cầu.", "success");
-      } catch (err) {
-        showToast(err.message);
-      }
+
+  tbody.querySelectorAll("tr.fr-row-clickable").forEach((tr) => {
+    tr.addEventListener("click", (e) => {
+      // Bấm vào ô checkbox hoặc nút/link thao tác (Sửa/Xóa/Duyệt/Từ
+      // chối/Đưa vào...) thì để đúng handler của nó chạy, không mở dialog
+      // chi tiết đè lên.
+      if (e.target.closest("input, button, a, .actions-cell")) return;
+      const id = Number(tr.dataset.id);
+      openFrDetailDialog(state.featureRequests.find((r) => r.id === id));
     });
   });
-  tbody.querySelectorAll(".reject-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      document.getElementById("fr-reject-id").value = id;
-      document.getElementById("fr-reject-reason").value = "";
-      document.getElementById("fr-reject-dialog").showModal();
+  wireFrActionButtons(tbody);
+  updateFrSelectionUI();
+}
+
+document.getElementById("fr-select-all")?.addEventListener("change", (e) => {
+  const visible = filteredFeatureRequests();
+  if (e.target.checked) {
+    visible.forEach((r) => state.selectedFeatureRequestIds.add(r.id));
+  } else {
+    visible.forEach((r) => state.selectedFeatureRequestIds.delete(r.id));
+  }
+  renderFeatureRequestTable();
+});
+
+document.getElementById("delete-selected-fr-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedFeatureRequestIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} yêu cầu tính năng đã chọn?`))) return;
+  try {
+    const res = await api(`/api/feature-requests/delete-selected${deptParam("?")}`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
     });
-  });
-  tbody.querySelectorAll(".to-backlog-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      openFrBacklogDialog(id);
-    });
-  });
-  tbody.querySelectorAll(".to-roadmap-fr-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      openFrRoadmapDialog(id);
-    });
-  });
+    state.selectedFeatureRequestIds.clear();
+    await loadFeatureRequests();
+    showToast(`Đã xóa ${res?.deleted ?? 0} yêu cầu.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Xem chi tiết ----
+
+function openFrDetailDialog(r) {
+  if (!r) return;
+  const side = frViewerSide(r);
+  const statusLabel = frStatusLabel(r);
+
+  document.getElementById("fr-detail-he-thong").className = `status-badge ${systemColorClass(r.he_thong)}`;
+  document.getElementById("fr-detail-he-thong").textContent = r.he_thong;
+  document.getElementById("fr-detail-title").textContent = r.tieu_de;
+  document.getElementById("fr-detail-status-badges").innerHTML =
+    `<span class="status-badge ${FR_STATUS_BADGE_CLASS[r.trang_thai] ?? "status-default"}">${statusLabel}</span>${frLinkedBadgesHtml(r)}`;
+
+  document.getElementById("fr-detail-loai").textContent = r.loai_yeu_cau || "—";
+  document.getElementById("fr-detail-uu-tien").innerHTML = `<span class="status-badge ${FR_PRIORITY_CLASS[r.do_uu_tien] ?? "status-default"}">${r.do_uu_tien}</span>`;
+  document.getElementById("fr-detail-from-dept").textContent = r.department_name || "—";
+  document.getElementById("fr-detail-to-dept").textContent = r.target_department_name || "—";
+  document.getElementById("fr-detail-nguoi-de-xuat").textContent = r.nguoi_de_xuat || "—";
+  document.getElementById("fr-detail-thoi-gian").textContent = r.thoi_gian_mong_muon ? frFormatDate(r.thoi_gian_mong_muon) : "—";
+  document.getElementById("fr-detail-ngay-tao").textContent = frFormatDate(r.created_at);
+  document.getElementById("fr-detail-attachment").innerHTML = r.attachment_filename
+    ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-paperclip"/></svg>${r.attachment_filename}</a>`
+    : "—";
+
+  document.getElementById("fr-detail-mo-ta").textContent = r.mo_ta || "Không có mô tả.";
+  document.getElementById("fr-detail-ket-qua").textContent = r.ket_qua_mong_muon || "Không có.";
+
+  const ghiChuWrap = document.getElementById("fr-detail-ghi-chu-wrap");
+  if (r.ghi_chu_xu_ly && r.ghi_chu_xu_ly.trim()) {
+    document.getElementById("fr-detail-ghi-chu").textContent = r.ghi_chu_xu_ly;
+    ghiChuWrap.hidden = false;
+  } else {
+    ghiChuWrap.hidden = true;
+  }
+
+  const actionsEl = document.getElementById("fr-detail-actions");
+  actionsEl.innerHTML = frActionsHtml(r, side);
+  wireFrActionButtons(actionsEl);
+
+  document.getElementById("fr-detail-dialog").showModal();
 }
 
 // ---- Thêm/Sửa yêu cầu ----

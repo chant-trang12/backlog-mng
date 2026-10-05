@@ -1,9 +1,10 @@
 import { db } from "../db/database.js";
 import type { DanhGiaRecord, DanhGiaRecordWithDetails, UpsertDanhGiaEntry } from "../types/cskh.js";
 import { assertDepartmentInScope, departmentIdFromMemberId, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 export async function getDanhGiaRecord(id: number): Promise<DanhGiaRecord | undefined> {
-  const row = await db("danh_gia_records").where({ id }).first();
+  const row = await db("danh_gia_records").where({ id, is_deleted: false }).first();
   return row as DanhGiaRecord | undefined;
 }
 
@@ -19,6 +20,9 @@ export async function listDanhGiaRecords(
     .join("teams", "teams.id", "members.team_id")
     .join("periods", "periods.id", "danh_gia_records.period_id")
     .where("danh_gia_records.period_id", periodId)
+    .where("danh_gia_records.is_deleted", false)
+    .where("members.is_deleted", false)
+    .where("teams.is_deleted", false)
     .select(
       "danh_gia_records.*",
       "members.name as member_name",
@@ -56,7 +60,7 @@ export async function upsertDanhGiaRecords(
     for (const entry of entries) {
       const departmentId = departmentIdByMember.get(entry.member_id) ?? null;
       const existing = await trx("danh_gia_records")
-        .where({ period_id: periodId, member_id: entry.member_id })
+        .where({ period_id: periodId, member_id: entry.member_id, is_deleted: false })
         .first();
 
       if (existing) {
@@ -103,6 +107,6 @@ export async function deleteDanhGiaRecord(id: number, scope: DataScope): Promise
   const existing = await getDanhGiaRecord(id);
   if (!existing) return false;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
-  const count = await db("danh_gia_records").where({ id }).delete();
+  const count = await softDeleteWhere(db, "danh_gia_records", { id });
   return count > 0;
 }
