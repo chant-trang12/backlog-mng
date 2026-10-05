@@ -696,14 +696,72 @@ el.gradeForm.addEventListener("submit", async (e) => {
 // Tách riêng khỏi dialog Sửa: đây là cập nhật định kỳ trong lúc làm việc,
 // không đụng tới nội dung task (Team/Tag/Phân loại/Nhiệm vụ/DoD/Deadline).
 
+let progressDialogTask = null;
+
 function openProgressDialog(task) {
   el.progressForm.reset();
+  progressDialogTask = task ?? null;
   document.getElementById("progress-task-id").value = task?.id ?? "";
   document.getElementById("progress-phan-tram").value = task?.phan_tram_hoan_thanh ?? 0;
   document.getElementById("progress-trang-thai").value = task?.trang_thai ?? "Chưa thực hiện";
   document.getElementById("progress-tien-do").value = task?.tien_do ?? "";
+  document.getElementById("progress-cancel-replacement-nhiemvu").value = "";
+  updateProgressCancelWarning();
   el.progressDialog.showModal();
 }
+
+// % thời gian mục tiêu (đầu tháng backlog -> Deadline task) đã trôi qua —
+// BẢN SAO công thức ở computeElapsedFraction (task.service.ts), chỉ để
+// quyết định UI (hiện cảnh báo/bắt nhập task thay thế); server luôn tính
+// lại và validate đúng, đây không phải nguồn sự thật cuối cùng.
+function clientComputeElapsedFraction(task) {
+  if (!task?.deadline) return null;
+  const period = state.periods.find((p) => p.id === task.period_id);
+  if (!period) return null;
+  const start = new Date(period.year, period.month - 1, 1).getTime();
+  const end = new Date(task.deadline).getTime();
+  if (!Number.isFinite(end)) return null;
+  const total = end - start;
+  if (total <= 0) return Infinity;
+  return Math.max(0, (Date.now() - start) / total);
+}
+
+function cancelPenaltyTierLabel(fraction) {
+  if (fraction >= 0.75) return 5;
+  if (fraction >= 2 / 3) return 10;
+  return 50;
+}
+
+// Chỉ hiện cảnh báo/form task thay thế khi ĐANG đổi SANG "Hủy" từ trạng
+// thái khác — khớp đúng điều kiện backend (chỉ xử lý ở lần đầu chuyển vào
+// Hủy, xem updateTask, task.service.ts).
+function updateProgressCancelWarning() {
+  const warningEl = document.getElementById("progress-cancel-warning");
+  const replacementWrap = document.getElementById("progress-cancel-replacement");
+  const nextStatus = document.getElementById("progress-trang-thai").value;
+  const isNewCancel = nextStatus === "Hủy" && progressDialogTask?.trang_thai !== "Hủy";
+  if (!isNewCancel) {
+    warningEl.hidden = true;
+    replacementWrap.hidden = true;
+    return;
+  }
+  const fraction = clientComputeElapsedFraction(progressDialogTask);
+  if (fraction === null) {
+    warningEl.hidden = true;
+    replacementWrap.hidden = true;
+    return;
+  }
+  if (fraction < 0.25) {
+    warningEl.hidden = true;
+    replacementWrap.hidden = false;
+  } else {
+    replacementWrap.hidden = true;
+    warningEl.hidden = false;
+    warningEl.textContent = `Đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian mục tiêu — hủy lúc này sẽ tự động chấm % Đánh giá = ${cancelPenaltyTierLabel(fraction)}% (trừ điểm nặng).`;
+  }
+}
+
+document.getElementById("progress-trang-thai").addEventListener("change", updateProgressCancelWarning);
 
 el.progressCancelBtn.addEventListener("click", () => el.progressDialog.close());
 
@@ -715,6 +773,20 @@ el.progressForm.addEventListener("submit", async (e) => {
     trang_thai: document.getElementById("progress-trang-thai").value,
     tien_do: document.getElementById("progress-tien-do").value.trim() || undefined,
   };
+
+  const replacementWrap = document.getElementById("progress-cancel-replacement");
+  if (!replacementWrap.hidden) {
+    const nhiemVu = document.getElementById("progress-cancel-replacement-nhiemvu").value.trim();
+    if (!nhiemVu) {
+      showToast("Hãy nhập Nhiệm vụ thay thế để hủy task này.");
+      return;
+    }
+    payload.replacement_task = {
+      team: progressDialogTask?.team,
+      department_id: progressDialogTask?.department_id ?? undefined,
+      nhiem_vu: nhiemVu,
+    };
+  }
 
   try {
     await api(`/api/tasks/${id}`, { method: "PUT", body: JSON.stringify(payload) });

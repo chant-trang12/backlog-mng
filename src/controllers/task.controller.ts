@@ -81,9 +81,15 @@ export async function getTaskHandler(req: Request, res: Response) {
 export async function updateTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const task = await updateTask(id, req.body ?? {}, scopeOf(req), req.appUser?.name ?? null);
-  if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
-  res.json(task);
+  try {
+    const task = await updateTask(id, req.body ?? {}, scopeOf(req), req.appUser?.name ?? null);
+    if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
+    res.json(task);
+  } catch (err: any) {
+    // updateTask ném lỗi khi Hủy task quá sớm (<1/4 thời gian mục tiêu) mà
+    // thiếu Nhiệm vụ thay thế — xem task.service.ts.
+    res.status(400).json({ error: err?.message || "Không thể cập nhật task" });
+  }
 }
 
 // Chấm điểm (nút "Chấm điểm" ở menu Nhiệm vụ) — route RIÊNG với sửa task

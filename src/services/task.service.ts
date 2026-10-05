@@ -17,6 +17,29 @@ async function filterTaskIdsInScope(ids: number[], scope: DataScope): Promise<nu
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
 
+// Phạt điểm khi Hủy task theo % thời gian mục tiêu đã trôi qua (từ ngày 01
+// của tháng backlog chứa task tới Deadline) — hủy càng sát hạn càng bị trừ
+// nặng, để team không lạm dụng hủy task gần hết giờ. Trả về null nếu không
+// đủ dữ liệu để tính (thiếu Deadline) — khi đó KHÔNG có cơ sở để phạt,
+// giữ nguyên hành vi cũ (chỉ gắn "Không tính điểm").
+function computeElapsedFraction(periodYear: number, periodMonth: number, deadline: string | null): number | null {
+  if (!deadline) return null;
+  const start = new Date(periodYear, periodMonth - 1, 1).getTime();
+  const end = new Date(deadline).getTime();
+  if (!Number.isFinite(end)) return null;
+  const total = end - start;
+  if (total <= 0) return Infinity; // Deadline <= đầu tháng -> coi như đã trôi hết, mức phạt nặng nhất
+  return Math.max(0, (Date.now() - start) / total);
+}
+
+// Mức % Đánh giá tự chấm khi Hủy — CHỈ gọi khi fraction đã biết >= 0.25
+// (nơi gọi tự lo nhánh < 0.25, không phạt điểm mà bắt task thay thế).
+function cancelPenaltyTier(fraction: number): number {
+  if (fraction >= 0.75) return 5;
+  if (fraction >= 2 / 3) return 10;
+  return 50;
+}
+
 // Giá trị Tính chất hệ thống tự gắn cho task được Roadmap năm tự động đưa
 // vào backlog (xem roadmap.service.ts#syncRoadmapItemToBacklog) — cùng kiểu
 // với "Nhiệm vụ tồn": không nằm trong danh mục Phân loại quản lý ở Cấu hình.
@@ -135,12 +158,49 @@ export async function updateTask(
   assertDepartmentInScope(scope, existing.department_id);
 
   const merged = { ...existing, ...input };
-  // Trạng thái Hủy mặc định đánh dấu Không tính điểm ở cột Tính chất; các
-  // trạng thái khác giữ nguyên giá trị Không tính điểm đã có (nếu có).
-  const khongTinhDiem = merged.trang_thai === "Hủy" ? KHONG_TINH_DIEM : existing.khong_tinh_diem;
+  let khongTinhDiem = merged.trang_thai === "Hủy" ? KHONG_TINH_DIEM : existing.khong_tinh_diem;
+  let thayTheTaskId = existing.thay_the_task_id;
+  let autoPenaltyGraded = false;
+
+  // Phạt điểm khi Hủy — chỉ xử lý ở LẦN ĐẦU chuyển vào trạng thái Hủy, để
+  // không ghi đè điểm đã tự chấm/CPO đã sửa khi lưu lại tiến độ về sau lúc
+  // vẫn đang "Hủy" (xem computeElapsedFraction/cancelPenaltyTier ở trên).
+  if (existing.trang_thai !== "Hủy" && merged.trang_thai === "Hủy") {
+    const period = await getPeriod(existing.period_id);
+    const fraction = period ? computeElapsedFraction(period.year, period.month, merged.deadline) : null;
+    if (fraction !== null) {
+      if (fraction < 0.25) {
+        const replacement = input.replacement_task;
+        if (!replacement || !replacement.nhiem_vu?.trim()) {
+          throw new Error(
+            "Hủy task khi chưa trôi qua 1/4 thời gian mục tiêu cần khai báo ngay 1 Nhiệm vụ thay thế.",
+          );
+        }
+        const createdReplacement = await createTask(existing.period_id, replacement, scope);
+        thayTheTaskId = createdReplacement.id;
+        // khongTinhDiem giữ nguyên "Không tính điểm" (đã gán ở trên) — hủy
+        // sớm không bị phạt điểm, đổi lại là bắt buộc task thay thế.
+      } else {
+        // Hủy từ 1/4 thời gian trở đi PHẢI tính vào điểm (đó là hình phạt)
+        // — không gắn "Không tính điểm" nữa.
+        khongTinhDiem = existing.khong_tinh_diem;
+        if (input.cpo_danh_gia === undefined) {
+          merged.cpo_danh_gia = cancelPenaltyTier(fraction);
+          merged.cpo_comment =
+            existing.cpo_comment?.trim() ||
+            `Tự động chấm điểm do hủy nhiệm vụ khi đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian mục tiêu.`;
+          autoPenaltyGraded = true;
+        }
+      }
+    }
+    // fraction === null (thiếu Deadline/period) -> giữ nguyên hành vi cũ,
+    // không phạt, không chặn (không đủ dữ liệu để có cơ sở phạt).
+  }
 
   // Có chấm điểm trong lần cập nhật này -> đóng dấu thời điểm + người chấm.
-  const isGrading = input.cpo_danh_gia !== undefined || input.cpo_comment !== undefined;
+  // autoPenaltyGraded: tự chấm điểm phạt khi Hủy (xem ở trên) cũng tính là
+  // 1 lần chấm, dù input không trực tiếp gửi cpo_danh_gia.
+  const isGrading = input.cpo_danh_gia !== undefined || input.cpo_comment !== undefined || autoPenaltyGraded;
   const cpoGradedAt = isGrading ? localTimestamp() : existing.cpo_graded_at;
   const cpoGradedBy = isGrading ? graderName : existing.cpo_graded_by;
 
@@ -164,6 +224,7 @@ export async function updateTask(
       cpo_graded_at: cpoGradedAt,
       cpo_graded_by: cpoGradedBy,
       khong_tinh_diem: khongTinhDiem,
+      thay_the_task_id: thayTheTaskId,
       updated_at: db.fn.now(),
     })
     .returning("*");

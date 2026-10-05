@@ -88,6 +88,21 @@ export async function migrateTaskMovedToTaskId(): Promise<void> {
   }
 }
 
+// tasks.thay_the_task_id — id task thay thế được tạo khi task này bị Hủy
+// quá SỚM (chưa trôi qua 1/4 thời gian mục tiêu, từ đầu tháng backlog tới
+// Deadline — xem computeElapsedFraction, task.service.ts): hủy sớm không
+// bị phạt điểm, nhưng bắt buộc khai báo ngay 1 task thay thế mới cho hủy,
+// id task thay thế lưu ở đây để truy vết. CHỦ Ý không khai báo FK — lý do
+// y hệt moved_to_task_id ở trên (tự tham chiếu, tránh SQLite rebuild toàn
+// bảng khi thêm cột kèm FK).
+export async function migrateTaskThayTheTaskId(): Promise<void> {
+  if (!(await db.schema.hasColumn("tasks", "thay_the_task_id"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.integer("thay_the_task_id");
+    });
+  }
+}
+
 // 29-30. task_members — nhân sự tham gia 1 task ở Backlog (VD 1 task dự án
 // phần mềm có nhiều người cùng làm). "Vai trò" KHÔNG có danh mục riêng —
 // lấy thẳng theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự

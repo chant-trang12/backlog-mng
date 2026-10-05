@@ -140,6 +140,9 @@ export interface Task {
   // bị xóa (kể cả xóa mềm), cho phép chuyển lại thay vì chặn cứng theo cờ
   // da_chuyen_thang (xem moveTasksToNextMonth, task.service.ts).
   moved_to_task_id: number | null;
+  // Id task thay thế được tạo khi task này bị Hủy quá sớm (chưa trôi qua
+  // 1/4 thời gian mục tiêu) — xem computeElapsedFraction, task.service.ts.
+  thay_the_task_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -164,7 +167,13 @@ export interface CreateTaskInput {
 
 // Cập nhật tiến độ: mọi trường đều optional, dùng chung cho cả sửa thông tin
 // task lẫn cập nhật tiến độ định kỳ (% hoàn thành, trạng thái, tiến độ, CPO...).
-export type UpdateTaskInput = Partial<CreateTaskInput>;
+export type UpdateTaskInput = Partial<CreateTaskInput> & {
+  // Khai báo task thay thế — BẮT BUỘC kèm theo khi chuyển trang_thai sang
+  // "Hủy" lúc chưa trôi qua 1/4 thời gian mục tiêu (xem updateTask,
+  // task.service.ts). Không phải field lưu trực tiếp vào task đang sửa —
+  // dùng để tạo 1 task MỚI, rồi lưu id vào thay_the_task_id của task này.
+  replacement_task?: CreateTaskInput;
+};
 
 // ---- Roadmap năm (theo department_id + year) ----
 export interface RoadmapItem {

@@ -2098,6 +2098,15 @@
         <label for="progress-tien-do">Tiến độ</label>
         <textarea id="progress-tien-do" style="min-height:120px"></textarea>
       </div>
+      <!-- Chọn Trạng thái "Hủy" -> hiện cảnh báo/form tương ứng theo % thời
+           gian mục tiêu (từ đầu tháng backlog tới Deadline) đã trôi qua, xem
+           updateProgressCancelWarning() ở 04-tasks.js. Server luôn validate
+           lại (không chỉ dựa vào UI này) — xem updateTask, task.service.ts. -->
+      <p class="muted" id="progress-cancel-warning" hidden style="margin:0"></p>
+      <div id="progress-cancel-replacement" hidden>
+        <label for="progress-cancel-replacement-nhiemvu">Nhiệm vụ thay thế * (bắt buộc vì hủy quá sớm)</label>
+        <input id="progress-cancel-replacement-nhiemvu" placeholder="Nhiệm vụ thay thế..." style="width:100%" />
+      </div>
       <div class="actions">
         <button type="button" id="progress-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>
