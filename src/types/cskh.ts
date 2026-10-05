@@ -200,6 +200,9 @@ export interface DanhGiaRecord {
   period_id: number;
   member_id: number;
   so_thu_tu: number | null;
+  // Ghi chú tự do — nhập cùng Ranking ở popup "+ Thêm Đánh giá"/"Sửa",
+  // không dùng trong công thức tính điểm/ranking nào.
+  ghi_chu: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -214,6 +217,7 @@ export interface DanhGiaRecordWithDetails extends DanhGiaRecord {
 export interface UpsertDanhGiaEntry {
   member_id: number;
   so_thu_tu: number;
+  ghi_chu?: string | null;
 }
 
 // Trang Cấu hình, tab Tiêu chí — cấu hình tiêu chí + công thức tính điểm cho

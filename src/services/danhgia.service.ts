@@ -69,6 +69,7 @@ export async function upsertDanhGiaRecords(
           .where({ id: existing.id })
           .update({
             so_thu_tu: entry.so_thu_tu,
+            ghi_chu: entry.ghi_chu?.trim() || null,
             updated_at: db.fn.now(),
           });
       } else {
@@ -77,6 +78,7 @@ export async function upsertDanhGiaRecords(
           member_id: entry.member_id,
           department_id: departmentId,
           so_thu_tu: entry.so_thu_tu,
+          ghi_chu: entry.ghi_chu?.trim() || null,
         });
       }
     }
@@ -87,6 +89,7 @@ export async function updateDanhGiaRecord(
   id: number,
   soThuTu: number,
   scope: DataScope,
+  ghiChu?: string,
 ): Promise<DanhGiaRecord | undefined> {
   const existing = await getDanhGiaRecord(id);
   if (!existing) return undefined;
@@ -96,6 +99,7 @@ export async function updateDanhGiaRecord(
     .where({ id })
     .update({
       so_thu_tu: soThuTu,
+      ghi_chu: ghiChu !== undefined ? ghiChu.trim() || null : (existing as any).ghi_chu,
       updated_at: db.fn.now(),
     })
     .returning("*");

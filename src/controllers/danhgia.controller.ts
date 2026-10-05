@@ -34,7 +34,7 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
     return res.status(400).json({ error: "Trường 'entries' phải là mảng không rỗng" });
   }
 
-  const parsedEntries: { member_id: number; so_thu_tu: number }[] = [];
+  const parsedEntries: { member_id: number; so_thu_tu: number; ghi_chu?: string }[] = [];
   for (const entry of entries) {
     const memberId = Number(entry?.member_id);
     const member = await getMember(memberId);
@@ -45,7 +45,7 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
     if (!Number.isFinite(soThuTu)) {
       return res.status(400).json({ error: `Số thứ tự của nhân sự (member_id=${memberId}) phải là số` });
     }
-    parsedEntries.push({ member_id: memberId, so_thu_tu: soThuTu });
+    parsedEntries.push({ member_id: memberId, so_thu_tu: soThuTu, ghi_chu: entry?.ghi_chu });
   }
 
   await upsertDanhGiaRecords(periodId, parsedEntries, scopeOf(req));
@@ -67,12 +67,12 @@ export async function listDanhGiaRecordsHandler(req: Request, res: Response) {
 export async function updateDanhGiaRecordHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const { so_thu_tu } = req.body ?? {};
+  const { so_thu_tu, ghi_chu } = req.body ?? {};
   const soThuTu = Number(so_thu_tu);
   if (!Number.isFinite(soThuTu)) {
     return res.status(400).json({ error: "Trường 'so_thu_tu' phải là số" });
   }
-  const record = await updateDanhGiaRecord(id, soThuTu, scopeOf(req));
+  const record = await updateDanhGiaRecord(id, soThuTu, scopeOf(req), ghi_chu);
   if (!record) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.json(record);
 }

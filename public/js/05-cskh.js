@@ -612,6 +612,7 @@ function renderEvaluationRecords() {
       <td><span class="status-badge ${teamColorClass(d.team_name)}">${d.team_name}</span></td>
       <td>${d.member_name}</td>
       <td>${d.so_thu_tu ?? ""}</td>
+      <td>${(d.ghi_chu ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-danhgia-btn">Sửa</button>
         <button class="small btn-delete delete-danhgia-btn">Xóa</button>
@@ -666,6 +667,7 @@ async function openEvaluationDialog(initialTeamId, title = "Thêm Đánh giá") 
       <tr data-member-id="${m.id}">
         <td>${m.name}</td>
         <td><input type="number" step="1" class="dg-so-thu-tu-input" value="${existing?.so_thu_tu ?? ""}" /></td>
+        <td><input type="text" class="dg-ghi-chu-input" value="${existing?.ghi_chu ?? ""}" placeholder="Ghi chú (không bắt buộc)..." /></td>
       </tr>`;
       })
       .join("");
@@ -699,9 +701,10 @@ el.evaluationForm.addEventListener("submit", async (e) => {
     .map((tr) => ({
       member_id: Number(tr.dataset.memberId),
       so_thu_tu: tr.querySelector(".dg-so-thu-tu-input").value,
+      ghi_chu: tr.querySelector(".dg-ghi-chu-input").value.trim(),
     }))
     .filter((entry) => entry.so_thu_tu !== "")
-    .map((entry) => ({ member_id: entry.member_id, so_thu_tu: Number(entry.so_thu_tu) }));
+    .map((entry) => ({ member_id: entry.member_id, so_thu_tu: Number(entry.so_thu_tu), ghi_chu: entry.ghi_chu }));
 
   if (entries.length === 0) {
     showToast("Hãy nhập ít nhất 1 Ranking.");

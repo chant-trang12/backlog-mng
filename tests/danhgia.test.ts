@@ -108,6 +108,50 @@ describe("Team & Nhân sự: Đánh giá", () => {
     expect(res.status).toBe(400);
   });
 
+  it("ghi_chu: lưu qua bulk, hiển thị ở list, sửa được qua PUT đơn lẻ", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2048, 5);
+    const teamId = await makeTeam(app, "Đánh giá ghi chú team", periodId);
+    const member = await request(app)
+      .post("/api/members")
+      .send({ name: "Nhân sự Ghi chú", team_id: teamId, period_id: periodId });
+
+    const bulk = await request(app)
+      .post("/api/danh-gia-records/bulk")
+      .send({
+        period_id: periodId,
+        team_id: teamId,
+        entries: [{ member_id: member.body.id, so_thu_tu: 1, ghi_chu: "Ghi chú ban đầu" }],
+      });
+    expect(bulk.status).toBe(201);
+    const recordId = bulk.body[0].id;
+    expect(bulk.body[0].ghi_chu).toBe("Ghi chú ban đầu");
+
+    const list = await request(app).get(`/api/danh-gia-records?period_id=${periodId}`);
+    const found = list.body.find((d: { member_id: number }) => d.member_id === member.body.id);
+    expect(found.ghi_chu).toBe("Ghi chú ban đầu");
+
+    // Bulk lại (upsert) kèm ghi_chu mới -> ghi đè đúng ghi chú mới.
+    await request(app)
+      .post("/api/danh-gia-records/bulk")
+      .send({
+        period_id: periodId,
+        team_id: teamId,
+        entries: [{ member_id: member.body.id, so_thu_tu: 1, ghi_chu: "Ghi chú cập nhật" }],
+      });
+    const listAfterBulk = await request(app).get(`/api/danh-gia-records?period_id=${periodId}`);
+    expect(listAfterBulk.body.find((d: { member_id: number }) => d.member_id === member.body.id).ghi_chu).toBe(
+      "Ghi chú cập nhật",
+    );
+
+    // PUT đơn lẻ cũng sửa được ghi_chu.
+    const updated = await request(app)
+      .put(`/api/danh-gia-records/${recordId}`)
+      .send({ so_thu_tu: 2, ghi_chu: "Ghi chú sửa qua PUT" });
+    expect(updated.status).toBe(200);
+    expect(updated.body.ghi_chu).toBe("Ghi chú sửa qua PUT");
+  });
+
   it("only lists records for the requested Tháng theo dõi, not other months", async () => {
     const app = createApp();
     const augId = await makePeriod(app, 2049, 8);

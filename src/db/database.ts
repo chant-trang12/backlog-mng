@@ -14,6 +14,7 @@ import {
   migrateCoreTables,
   migrateCskhTables,
   migrateTeamRecordTables,
+  migrateDanhGiaGhiChu,
   migrateSoftDeleteCore,
   migrateSoftDeleteCskh,
   migrateSoftDeleteTeamRecords,
@@ -52,6 +53,8 @@ export async function initDatabase(): Promise<void> {
     await migrateCskhTables();
     // 8-13: compliance / training / attendance / noiquy / support / danh_gia.
     await migrateTeamRecordTables();
+    // danh_gia_records.ghi_chu (cột "Ghi chú" ở tab Đánh giá).
+    await migrateDanhGiaGhiChu();
     // 14-18: tieu_chi_configs / tieu_chi_diem_chuan / ranking_rows-columns-cells.
     await migrateScoringTables();
     // 19-22: tags / phan_loai_options / nhom_options / chuc_vu_options (schema).

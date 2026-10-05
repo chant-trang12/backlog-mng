@@ -476,6 +476,18 @@ export async function migrateTeamRecordTables(): Promise<void> {
   }
 }
 
+// danh_gia_records.ghi_chu — cột "Ghi chú" ở tab Đánh giá (Team & Nhân sự):
+// nhập cùng lúc với Ranking (so_thu_tu) ở popup "+ Thêm Đánh giá"/"Sửa",
+// hiển thị thêm ở bảng dữ liệu Đánh giá. Chỉ là text tự do, không dùng
+// trong bất kỳ công thức tính điểm/ranking nào.
+export async function migrateDanhGiaGhiChu(): Promise<void> {
+  if (!(await db.schema.hasColumn("danh_gia_records", "ghi_chu"))) {
+    await db.schema.alterTable("danh_gia_records", (table) => {
+      table.text("ghi_chu");
+    });
+  }
+}
+
 // Xóa mềm cho 6 bảng "record theo tháng" ở trang Team & Nhân sự.
 // noiquy_overrides(period_id,member_name) và danh_gia_records(period_id,
 // member_id) có UNIQUE riêng -> đổi sang filtered unique index (chỉ áp
