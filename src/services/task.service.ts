@@ -184,15 +184,13 @@ export async function updateTask(
             "Hủy task khi chưa trôi qua 1/4 thời gian mục tiêu cần khai báo ngay 1 Nhiệm vụ thay thế.",
           );
         }
-        // Ghi chú task thay thế trỏ ngược lại task gốc vừa hủy — chỉ gán khi
-        // người dùng CHƯA tự nhập DoD cho task thay thế (không ghi đè).
-        const replacementInput = {
-          ...replacement,
-          dod:
-            replacement.dod?.trim() ||
-            `Nhiệm vụ thay thế cho nhiệm vụ đã hủy ngày ${ngayHuyDisplay}${boiNguoiHuy}: "${existing.nhiem_vu}".`,
-        };
-        const createdReplacement = await createTask(existing.period_id, replacementInput, scope);
+        // KHÔNG còn nhét ghi chú vào DoD (DoD của task thay thế phải là nội
+        // dung THẬT, sửa/xóa tự do bình thường) — liên kết ngược lưu riêng
+        // ở cột thay_cho_task_id, FE tự tra task gốc (cùng period) để hiển
+        // thị TÁCH BIỆT khỏi DoD, kiểu "lịch sử"/badge thông tin, không lẫn
+        // vào nội dung tự nhập.
+        const createdReplacement = await createTask(existing.period_id, replacement, scope);
+        await db("tasks").where({ id: createdReplacement.id }).update({ thay_cho_task_id: existing.id });
         thayTheTaskId = createdReplacement.id;
         // khongTinhDiem giữ nguyên "Không tính điểm" (đã gán ở trên) — hủy
         // sớm không bị phạt điểm, đổi lại là bắt buộc task thay thế.

@@ -27,6 +27,7 @@ import {
   migrateTaskMembersTables,
   migrateTaskMovedToTaskId,
   migrateTaskThayTheTaskId,
+  migrateTaskThayChoTaskId,
   migrateTaskTienDoHistory,
   migrateSoftDeleteTaskMembers,
 } from "./migrations/tasks.js";
@@ -74,6 +75,8 @@ export async function initDatabase(): Promise<void> {
     await migrateTaskMovedToTaskId();
     // tasks.thay_the_task_id (task thay thế khi hủy sớm — xem phạt điểm khi hủy).
     await migrateTaskThayTheTaskId();
+    // tasks.thay_cho_task_id (chiều ngược lại — task thay thế trỏ về task gốc đã hủy).
+    await migrateTaskThayChoTaskId();
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();

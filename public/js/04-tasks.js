@@ -147,6 +147,16 @@ function renderEmpty() {
 // không phải để khóa cứng việc sửa (CPO vẫn sửa lại được ở dialog Chấm
 // điểm/Sửa như bình thường, chỉ đổi cách HIỂN THỊ ở bảng danh sách).
 const AUTO_CANCEL_NOTE_PREFIXES = ["Xin hủy nhiệm vụ ngày", "Nhiệm vụ thay thế cho nhiệm vụ đã hủy"];
+// Task thay thế (tạo khi Xin Hủy nhiệm vụ) — liên kết tới task gốc đã hủy,
+// hiển thị TÁCH BIỆT với DoD (không chèn vào DoD, DoD luôn là nội dung
+// thật, sửa/xóa tự do bình thường — xem updateTask, task.service.ts).
+function renderReplacementInfoNote(t) {
+  if (!t.thay_cho_task_id) return "";
+  const original = state.tasksAll.find((x) => x.id === t.thay_cho_task_id);
+  if (!original) return "";
+  return `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy #${original.stt}: "${original.nhiem_vu}".</div>`;
+}
+
 function renderCellWithAutoNote(text) {
   const trimmed = (text ?? "").trim();
   if (!trimmed) return "";
@@ -195,7 +205,7 @@ function renderTasks() {
       <td data-col="phan_loai" ${colHidden("phan_loai")}>${renderNatureBadges(t.tinh_chat)}</td>
       <td data-col="team" ${colHidden("team")}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
-      <td data-col="dod" ${colHidden("dod")}>${renderCellWithAutoNote(t.dod)}</td>
+      <td data-col="dod" ${colHidden("dod")}>${(t.dod ?? "").replace(/\n/g, "<br/>")}${renderReplacementInfoNote(t)}</td>
       <td data-col="deadline" ${colHidden("deadline")}>${formatDateDisplay(t.deadline)}</td>
       <td data-col="hoan_thanh" ${colHidden("hoan_thanh")}>
         <span class="progress-bar"><span style="width:${Math.min(100, Math.max(0, t.phan_tram_hoan_thanh))}%"></span></span>${t.phan_tram_hoan_thanh}%
@@ -615,12 +625,16 @@ function openTaskDialog(task) {
     .join("");
   setNatureValue(task?.tinh_chat ?? "");
   document.getElementById("f-nhiem-vu").value = task?.nhiem_vu ?? "";
-  const dodEl = document.getElementById("f-dod");
-  dodEl.value = task?.dod ?? "";
-  // DoD là ghi chú hệ thống tự tạo (task thay thế khi Xin Hủy nhiệm vụ) ->
-  // khóa hẳn, không cho sửa/xóa (xem AUTO_CANCEL_NOTE_PREFIXES ở trên) —
-  // vẫn LƯU nguyên giá trị khi submit (chỉ disabled UI, không xóa dữ liệu).
-  dodEl.disabled = AUTO_CANCEL_NOTE_PREFIXES.some((p) => (task?.dod ?? "").trim().startsWith(p));
+  // DoD luôn là nội dung THẬT, sửa/xóa tự do bình thường — liên kết "task
+  // thay thế cho task nào đã hủy" hiển thị RIÊNG ở replacementInfoEl bên
+  // dưới (không còn nhét vào DoD nữa), giống kiểu khối "lịch sử" tách biệt.
+  document.getElementById("f-dod").value = task?.dod ?? "";
+  const replacementInfoEl = document.getElementById("f-dod-replacement-info");
+  const originalTask = task?.thay_cho_task_id ? state.tasksAll.find((t) => t.id === task.thay_cho_task_id) : null;
+  replacementInfoEl.hidden = !originalTask;
+  if (originalTask) {
+    replacementInfoEl.textContent = `Thay thế cho nhiệm vụ đã hủy #${originalTask.stt}: "${originalTask.nhiem_vu}".`;
+  }
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
   document.getElementById("f-dau-moi-phoi-hop").value = task?.dau_moi_phoi_hop ?? "";
   el.taskDialog.showModal();

@@ -2036,6 +2036,11 @@
       <div>
         <label for="f-dod">DoD</label>
         <textarea id="f-dod"></textarea>
+        <!-- Task thay thế (tạo khi Xin Hủy nhiệm vụ) — liên kết tới task gốc
+             đã hủy, hiển thị TÁCH BIỆT với DoD (không chèn vào nội dung DoD
+             nữa, DoD luôn sửa/xóa tự do bình thường) — xem openTaskDialog,
+             04-tasks.js. Chỉ thông tin, không phải field nhập liệu. -->
+        <p class="muted auto-cancel-note" id="f-dod-replacement-info" hidden style="margin:6px 0 0"></p>
       </div>
       <div class="field-row">
         <div>

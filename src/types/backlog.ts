@@ -143,6 +143,9 @@ export interface Task {
   // Id task thay thế được tạo khi task này bị Hủy quá sớm (chưa trôi qua
   // 1/4 thời gian mục tiêu) — xem computeElapsedFraction, task.service.ts.
   thay_the_task_id: number | null;
+  // Chiều ngược lại — lưu trên chính task THAY THẾ, trỏ về id task GỐC đã
+  // bị hủy. FE tự tra task gốc (cùng period) để hiển thị tách biệt với DoD.
+  thay_cho_task_id: number | null;
   created_at: string;
   updated_at: string;
 }

@@ -91,10 +91,12 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     expect(replacement.body.nhiem_vu).toBe("Task thay thế");
     expect(replacement.body.team).toBe(teamName);
     expect(replacement.body.period_id).toBe(periodId);
-    // DoD tự ghi chú trỏ ngược lại task gốc đã hủy (vì không gửi dod khi
-    // khai báo task thay thế ở request trên).
-    expect(replacement.body.dod).toContain("Nhiệm vụ thay thế cho nhiệm vụ đã hủy");
-    expect(replacement.body.dod).toContain("Task huy som");
+    // DoD KHÔNG còn bị nhét ghi chú — phải là rỗng/null (không gửi dod khi
+    // khai báo task thay thế), FE tự tra ngược qua thay_cho_task_id để
+    // hiển thị liên kết TÁCH BIỆT với DoD (xem renderReplacementInfoNote,
+    // 04-tasks.js) — DoD luôn là nội dung thật, sửa/xóa tự do bình thường.
+    expect(replacement.body.dod).toBeFalsy();
+    expect(replacement.body.thay_cho_task_id).toBe(taskId);
     void teamId;
   });
 

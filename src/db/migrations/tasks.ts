@@ -103,6 +103,20 @@ export async function migrateTaskThayTheTaskId(): Promise<void> {
   }
 }
 
+// tasks.thay_cho_task_id — CHIỀU NGƯỢC LẠI của thay_the_task_id ở trên: lưu
+// trên chính task THAY THẾ, trỏ về id task GỐC đã bị hủy. Dùng để FE hiển
+// thị "Thay thế cho nhiệm vụ đã hủy: ..." như 1 khối thông tin TÁCH BIỆT
+// với DoD (không còn nhét chữ vào DoD nữa — xem updateTask, task.service.ts
+// — DoD phải luôn là nội dung thật, sửa/xóa tự do). Không khai báo FK —
+// cùng lý do tự tham chiếu như thay_the_task_id/moved_to_task_id.
+export async function migrateTaskThayChoTaskId(): Promise<void> {
+  if (!(await db.schema.hasColumn("tasks", "thay_cho_task_id"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.integer("thay_cho_task_id");
+    });
+  }
+}
+
 // 29-30. task_members — nhân sự tham gia 1 task ở Backlog (VD 1 task dự án
 // phần mềm có nhiều người cùng làm). "Vai trò" KHÔNG có danh mục riêng —
 // lấy thẳng theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự
