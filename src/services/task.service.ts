@@ -283,8 +283,16 @@ export async function moveTasksToNextMonth(
     const task = await getTask(id);
     if (!task || task.period_id !== fromPeriodId) continue;
     if (task.da_chuyen_thang) {
-      skippedAlreadyMoved.push(task);
-      continue;
+      // Chỉ thật sự chặn khi bản sao đã tạo ra lần trước VẪN CÒN (chưa bị
+      // xóa) — nếu bản sao đó đã bị xóa (kể cả xóa mềm — getTask() đã lọc
+      // is_deleted=false), hoặc dữ liệu cũ từ trước khi có cột
+      // moved_to_task_id (null), thì KHÔNG còn nguy cơ tạo trùng nữa, cho
+      // chuyển lại bình thường thay vì kẹt cứng mãi mãi.
+      const existingClone = task.moved_to_task_id ? await getTask(task.moved_to_task_id) : undefined;
+      if (existingClone) {
+        skippedAlreadyMoved.push(task);
+        continue;
+      }
     }
     const stt = await nextStt(targetPeriod.id);
     const isTon = isDeadlineBeforeTarget(task.deadline, targetPeriod.year, targetPeriod.month);
@@ -348,7 +356,9 @@ export async function moveTasksToNextMonth(
       })
       .returning("*");
 
-    await db("tasks").where({ id: task.id }).update({ da_chuyen_thang: 1, updated_at: db.fn.now() });
+    await db("tasks")
+      .where({ id: task.id })
+      .update({ da_chuyen_thang: 1, moved_to_task_id: clone.id, updated_at: db.fn.now() });
     moved.push(clone as Task);
   }
 

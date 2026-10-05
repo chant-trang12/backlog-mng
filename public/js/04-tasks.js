@@ -220,7 +220,6 @@ function taskHasNatureTon(t) {
 // (disabled) kèm tooltip khi thao tác không áp dụng cho lựa chọn hiện tại.
 function updateBulkMenuItems() {
   const sel = selectedTasks();
-  const anyMoved = sel.some((t) => t.da_chuyen_thang);
   const allNoScore = sel.length > 0 && sel.every((t) => t.khong_tinh_diem);
   const anyNoScore = sel.some((t) => t.khong_tinh_diem);
   const allTon = sel.length > 0 && sel.every(taskHasNatureTon);
@@ -233,12 +232,11 @@ function updateBulkMenuItems() {
     item.title = title;
   };
 
-  setItem("move", {
-    disabled: anyMoved,
-    title: anyMoved
-      ? "Trong lựa chọn có task đã được chuyển sang tháng sau — bỏ chọn task đó để tiếp tục."
-      : "",
-  });
+  // Không còn khóa cứng theo cờ da_chuyen_thang ở đây nữa — task đã chuyển
+  // mà bản sao bên tháng sau đã bị xóa thì vẫn chuyển lại được bình thường
+  // (server tự kiểm tra đúng việc này, xem moveTasksToNextMonth ở
+  // task.service.ts). Task nào thật sự còn bản sao (chưa xóa) thì server tự
+  // bỏ qua, báo lại qua "skippedAlreadyMoved" — xem toast sau khi bấm.
   setItem("ton", {
     disabled: allTon,
     title: allTon ? 'Mọi task đã chọn đều đã có "Nhiệm vụ tồn".' : "",

@@ -61,6 +61,33 @@ export async function migrateTaskDauMoiPhoiHop(): Promise<void> {
   }
 }
 
+// tasks.moved_to_task_id — id của task bản sao được tạo ra lần GẦN NHẤT
+// "Chuyển sang tháng sau". Trước đây chỉ có cờ da_chuyen_thang (boolean) để
+// chặn chuyển trùng — nhưng nếu bản sao ở tháng sau bị xóa đi (xóa mềm hay
+// xóa thật), bản gốc vẫn mắc kẹt với da_chuyen_thang=1, không chuyển lại
+// được nữa dù bản sao không còn tồn tại. Thêm cột này để tại thời điểm
+// chuyển, kiểm tra ĐÚNG bản sao đó còn sống hay không (xem
+// moveTasksToNextMonth, task.service.ts) thay vì chỉ dựa vào cờ boolean.
+//
+// CHỦ Ý không khai báo FK (.references()) cho cột này — chỉ 1 integer
+// thường: tasks tự tham chiếu chính nó (self-reference) nên THÊM CỘT KÈM
+// FK sẽ buộc SQLite rebuild lại toàn bộ bảng tasks (ADD COLUMN có ràng
+// buộc luôn cần rebuild) — lúc rebuild, SQLite validate lại TẤT CẢ FK sẵn
+// có của bảng (period_id/department_id), và gặp thực tế: DB đang dùng có
+// sẵn một số dòng mồ côi lịch sử (period_id trỏ tới period đã xóa từ trước
+// — dữ liệu demo cũ, không liên quan đợt này) khiến rebuild báo lỗi
+// "FOREIGN KEY constraint failed" dù dữ liệu mới thêm hoàn toàn hợp lệ.
+// Không khai báo FK tránh được rebuild, chỉ ADD COLUMN đơn thuần (an toàn,
+// không rebuild) — ứng dụng tự quản lý tính hợp lệ của cột này (chỉ gán
+// trong moveTasksToNextMonth, chỉ đọc qua getTask() đã lọc is_deleted).
+export async function migrateTaskMovedToTaskId(): Promise<void> {
+  if (!(await db.schema.hasColumn("tasks", "moved_to_task_id"))) {
+    await db.schema.alterTable("tasks", (table) => {
+      table.integer("moved_to_task_id");
+    });
+  }
+}
+
 // 29-30. task_members — nhân sự tham gia 1 task ở Backlog (VD 1 task dự án
 // phần mềm có nhiều người cùng làm). "Vai trò" KHÔNG có danh mục riêng —
 // lấy thẳng theo Chức vụ đã khai báo sẵn cho nhân sự đó ở Team & Nhân sự

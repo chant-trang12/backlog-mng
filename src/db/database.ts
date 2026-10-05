@@ -24,6 +24,7 @@ import {
   migrateTaskDauMoiPhoiHop,
   migrateTaskGradingExtras,
   migrateTaskMembersTables,
+  migrateTaskMovedToTaskId,
   migrateTaskTienDoHistory,
   migrateSoftDeleteTaskMembers,
 } from "./migrations/tasks.js";
@@ -62,6 +63,9 @@ export async function initDatabase(): Promise<void> {
     await migrateTaskDauMoiPhoiHop();
     // tasks.tien_do_history (lịch sử cột "Tiến độ" qua các tháng).
     await migrateTaskTienDoHistory();
+    // tasks.moved_to_task_id (biết đúng bản sao "Chuyển sang tháng sau" còn
+    // tồn tại hay không, để cho chuyển lại khi bản sao đã bị xóa).
+    await migrateTaskMovedToTaskId();
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();

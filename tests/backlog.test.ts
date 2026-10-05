@@ -165,6 +165,45 @@ describe("Backlog CRUD", () => {
     expect(newList.body).toHaveLength(1);
   });
 
+  it("allows moving a task again after its clone in the target month was deleted", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2042, month: 1 });
+    const periodId = period.body.id;
+
+    const task = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Task chuyển rồi bị xóa bản sao" });
+
+    const firstMove = await request(app)
+      .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
+      .send({ ids: [task.body.id] });
+    expect(firstMove.status).toBe(200);
+    const cloneId = firstMove.body.moved[0].id;
+
+    // Xóa bản sao ở tháng sau — bản gốc vẫn còn da_chuyen_thang=1 nhưng
+    // KHÔNG còn bản sao nào thật sự tồn tại nữa.
+    const del = await request(app).delete(`/api/tasks/${cloneId}`);
+    expect(del.status).toBe(204);
+
+    // Quay lại chấm điểm task gốc rồi chuyển lại -> phải chuyển được, không
+    // bị chặn (BUG đã sửa: trước đây kẹt cứng vĩnh viễn ở da_chuyen_thang=1
+    // dù bản sao không còn tồn tại).
+    await request(app).put(`/api/tasks/${task.body.id}/grade`).send({ cpo_danh_gia: 90, cpo_comment: "Tốt" });
+    const secondMove = await request(app)
+      .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
+      .send({ ids: [task.body.id] });
+    expect(secondMove.status).toBe(200);
+    expect(secondMove.body.skippedAlreadyMoved).toHaveLength(0);
+    expect(secondMove.body.moved).toHaveLength(1);
+    expect(secondMove.body.moved[0].id).not.toBe(cloneId);
+    expect(secondMove.body.moved[0].grading_history).toContain("90");
+
+    // Bản gốc giờ trỏ đúng sang bản sao MỚI (không phải bản sao cũ đã xóa).
+    const refreshedOld = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const refreshedTask = refreshedOld.body.find((t: { id: number }) => t.id === task.body.id);
+    expect(refreshedTask.moved_to_task_id).toBe(secondMove.body.moved[0].id);
+  });
+
   it("marks selected tasks as Không tính điểm without touching Phân loại (tinh_chat)", async () => {
     const app = createApp();
     const period = await request(app).post("/api/periods").send({ year: 2037, month: 3 });

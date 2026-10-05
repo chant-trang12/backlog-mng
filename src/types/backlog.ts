@@ -124,6 +124,12 @@ export interface Task {
   grading_history: string | null; // JSON: { period_label, cpo_danh_gia, cpo_comment, graded_at, graded_by }[]
   tien_do_history: string | null; // JSON: { period_label, tien_do }[] — lịch sử Tiến độ qua các tháng, cùng cơ chế với grading_history.
   da_chuyen_thang: number;
+  // Id của task bản sao đã tạo ra khi "Chuyển sang tháng sau" (null nếu
+  // chưa từng chuyển, hoặc dữ liệu cũ trước khi có cột này). Dùng để kiểm
+  // tra bản sao CÒN TỒN TẠI hay không khi bấm chuyển lại — nếu bản sao đã
+  // bị xóa (kể cả xóa mềm), cho phép chuyển lại thay vì chặn cứng theo cờ
+  // da_chuyen_thang (xem moveTasksToNextMonth, task.service.ts).
+  moved_to_task_id: number | null;
   created_at: string;
   updated_at: string;
 }
