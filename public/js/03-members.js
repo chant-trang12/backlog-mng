@@ -168,7 +168,7 @@ function renderMemberTable() {
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>
       <td>${pageStart + i + 1}</td>
-      <td><div class="name-with-ha-ki">${m.name}${m.ha_ki ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}</div></td>
+      <td><div class="name-with-ha-ki">${m.name}${m.ha_ki ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Hạ KI</span>` : ""}${m.tang_ki ? `<span class="status-badge status-hoan-thanh ha-ki-badge" title="Đã tăng 1 KI — xem Home &gt; Ranking &gt; Ranking thành viên team">Tăng KI</span>` : ""}</div></td>
       <td>${m.chuc_vu ?? ""}</td>
       <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(m.team_name)}">${m.team_name}</span></td>
       <td>${m.tuan_thu ?? ""}</td>
@@ -180,6 +180,7 @@ function renderMemberTable() {
       <td>${(m.ghi_chu ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell" title="">
         <button class="small ${m.ha_ki ? "btn-edit" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
+        <button class="small ${m.tang_ki ? "btn-edit" : "btn-exclude"} write-action toggle-tang-ki-btn" data-tang-ki="${m.tang_ki}">${m.tang_ki ? "Bỏ tăng KI" : "Tăng KI"}</button>
         <button class="small btn-edit write-action edit-member-btn">Sửa</button>
         <button class="small btn-delete delete-member-btn">Xóa</button>
       </div></td>
@@ -218,6 +219,24 @@ function renderMemberTable() {
         await loadMembers();
         syncHomeFromCurrentIfNeeded();
         showToast(nextHaKi ? "Đã hạ 1 KI." : "Đã bỏ hạ KI.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  // Đối nghịch với "Hạ KI" — tăng KI của nhân sự lên 1 bậc (xem
+  // homeRaiseKiOneLevel, 08-home.js). Loại trừ với ha_ki ở backend
+  // (bật cờ này tự tắt Hạ KI nếu đang bật) nên load lại danh sách sau khi
+  // bật/tắt để badge "Hạ KI" (nếu có) cũng được cập nhật đúng.
+  el.memberTbody.querySelectorAll(".toggle-tang-ki-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      const nextTangKi = btn.dataset.tangKi !== "true";
+      try {
+        await api(`/api/members/${id}`, { method: "PUT", body: JSON.stringify({ tang_ki: nextTangKi }) });
+        await loadMembers();
+        syncHomeFromCurrentIfNeeded();
+        showToast(nextTangKi ? "Đã tăng 1 KI." : "Đã bỏ tăng KI.", "success");
       } catch (err) {
         showToast(err.message);
       }

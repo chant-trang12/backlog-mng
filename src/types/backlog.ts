@@ -55,6 +55,11 @@ export interface Member {
   // viên team". Toggle được (bấm lại để bỏ hạ). Theo period_id (mỗi tháng
   // backlog có bảng members riêng nên field này tự động cũng theo tháng).
   ha_ki: boolean;
+  // Nút "Tăng KI" ở tab Nhân sự — đối nghịch với ha_ki: tăng KI của nhân
+  // sự này lên 1 bậc (thang D > C > B > A > A+) khi hiển thị ở Home >
+  // Ranking > "Ranking thành viên team". Loại trừ với ha_ki — bật cờ này
+  // tự tắt ha_ki và ngược lại (xem updateMember, member.service.ts).
+  tang_ki: boolean;
   // Ghi chú tự do — nhập/sửa ở dialog Thêm/Sửa nhân sự (dạng textarea),
   // không dùng trong bất kỳ công thức KPI/Nội quy nào.
   ghi_chu: string | null;
@@ -88,6 +93,7 @@ export interface UpdateMemberInput {
   ho_tro?: string;
   danh_gia?: string;
   ha_ki?: boolean;
+  tang_ki?: boolean;
   ghi_chu?: string;
 }
 

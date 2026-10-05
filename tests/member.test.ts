@@ -106,6 +106,37 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
     expect(rejected.status).toBe(400);
   });
 
+  it("tang_ki (nút 'Tăng KI'): mặc định false, toggle được, rejects giá trị không phải boolean, loại trừ với ha_ki", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2042, 2);
+    const teamId = await makeTeam(app, "Tang KI test team", periodId);
+
+    const member = await request(app)
+      .post("/api/members")
+      .send({ name: "Trần Văn Tăng KI", team_id: teamId, period_id: periodId });
+    expect(member.body.tang_ki).toBe(false);
+
+    const raised = await request(app).put(`/api/members/${member.body.id}`).send({ tang_ki: true });
+    expect(raised.status).toBe(200);
+    expect(raised.body.tang_ki).toBe(true);
+
+    const listAfter = await request(app).get(`/api/members?period_id=${periodId}`);
+    const foundAfter = listAfter.body.find((m: { id: number }) => m.id === member.body.id);
+    expect(foundAfter.tang_ki).toBe(true);
+
+    const rejected = await request(app).put(`/api/members/${member.body.id}`).send({ tang_ki: "yes" });
+    expect(rejected.status).toBe(400);
+
+    // ha_ki và tang_ki loại trừ nhau — bật cờ này phải tự tắt cờ kia.
+    const switchedToHaKi = await request(app).put(`/api/members/${member.body.id}`).send({ ha_ki: true });
+    expect(switchedToHaKi.body.ha_ki).toBe(true);
+    expect(switchedToHaKi.body.tang_ki).toBe(false);
+
+    const switchedBackToTangKi = await request(app).put(`/api/members/${member.body.id}`).send({ tang_ki: true });
+    expect(switchedBackToTangKi.body.tang_ki).toBe(true);
+    expect(switchedBackToTangKi.body.ha_ki).toBe(false);
+  });
+
   it("rejects creating a member with an invalid team_id", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2041, 2);

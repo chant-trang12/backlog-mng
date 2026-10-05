@@ -118,6 +118,7 @@ const USER_ROLE_LABEL: Record<string, string> = { admin: "Admin", editor: "Biên
 // trong body (không quan tâm body còn field nào khác).
 const FIELD_VERB_OVERRIDES: Record<string, (value: unknown) => { action: ActionLogType; verb: string }> = {
   "members:ha_ki": (v) => ({ action: "cap_nhat", verb: v ? "Hạ KI" : "Bỏ hạ KI" }),
+  "members:tang_ki": (v) => ({ action: "cap_nhat", verb: v ? "Tăng KI" : "Bỏ tăng KI" }),
   "users:active": (v) => ({ action: "cap_nhat", verb: v ? "Mở khóa tài khoản" : "Khóa tài khoản" }),
   "users:role": (v) => ({ action: "cap_nhat", verb: `Đổi quyền thành "${USER_ROLE_LABEL[String(v)] ?? v}"` }),
   "users:department_id": (v) => ({ action: "cap_nhat", verb: v == null ? "Gỡ gán phòng ban" : "Gán phòng ban" }),

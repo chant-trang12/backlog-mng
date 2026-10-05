@@ -4,9 +4,9 @@ import { assertDepartmentInScope, isDepartmentInScope, type DataScope } from "./
 import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
 
 // sqlite trả boolean dạng 0/1 thô qua knex — ép về đúng kiểu boolean khai
-// trong type Member (ha_ki).
+// trong type Member (ha_ki, tang_ki).
 function toMember(row: any): Member {
-  return { ...row, ha_ki: !!row.ha_ki };
+  return { ...row, ha_ki: !!row.ha_ki, tang_ki: !!row.tang_ki };
 }
 
 // Khai báo nhân sự — dùng để chọn NVTT (người phụ trách) khi nhập/cập nhật
@@ -119,6 +119,7 @@ export async function listMembers(
       "members.chuc_vu",
       "members.noi_quy",
       "members.ha_ki",
+      "members.tang_ki",
       "members.ghi_chu",
       "members.created_at",
       "teams.name as team_name",
@@ -143,6 +144,7 @@ export async function listMembers(
     ho_tro: r.sr_count != null && Number(r.sr_count) > 0 ? `+${r.sr_count}` : null,
     danh_gia: r.danh_gia ?? null,
     ha_ki: !!r.ha_ki,
+    tang_ki: !!r.tang_ki,
     ghi_chu: r.ghi_chu ?? null,
     created_at: r.created_at,
   }));
@@ -162,9 +164,16 @@ export async function updateMember(id: number, input: UpdateMemberInput, scope: 
     dao_tao: input.dao_tao !== undefined ? input.dao_tao.trim() || null : existing.dao_tao,
     ho_tro: input.ho_tro !== undefined ? input.ho_tro.trim() || null : existing.ho_tro,
     danh_gia: input.danh_gia !== undefined ? input.danh_gia.trim() || null : existing.danh_gia,
+    // ha_ki/tang_ki loại trừ nhau — bật 1 cờ (true) tự tắt cờ còn lại, vì
+    // "hạ 1 bậc" và "tăng 1 bậc" cùng lúc không có ý nghĩa. Chỉ ép tắt cờ
+    // đối nghịch khi request này THỰC SỰ bật cờ true (không đụng tới khi
+    // request chỉ tắt 1 cờ hoặc không đổi field KI nào).
     ha_ki: input.ha_ki !== undefined ? input.ha_ki : existing.ha_ki,
+    tang_ki: input.tang_ki !== undefined ? input.tang_ki : existing.tang_ki,
     ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
   };
+  if (input.ha_ki === true) merged.tang_ki = false;
+  if (input.tang_ki === true) merged.ha_ki = false;
 
   const [updated] = await db("members")
     .where({ id })

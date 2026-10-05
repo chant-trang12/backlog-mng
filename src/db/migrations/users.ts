@@ -54,6 +54,20 @@ export async function migrateMembersHaKi(): Promise<void> {
   }
 }
 
+// members.tang_ki — nút "Tăng KI" ở tab Nhân sự, đối nghịch với "Hạ KI":
+// tăng KI của nhân sự đó lên 1 bậc khi hiển thị ở Home > Ranking > "Ranking
+// thành viên team" (cùng thang D > C > B > A > A+, xem homeRaiseKiOneLevel
+// ở 08-home.js). 2 cờ loại trừ nhau — bật cờ này tự tắt ha_ki và ngược lại
+// (xem updateMember, member.service.ts), không có ý nghĩa gì khi bật cả 2
+// cùng lúc. Mặc định false — hành vi cũ không đổi.
+export async function migrateMembersTangKi(): Promise<void> {
+  if (!(await db.schema.hasColumn("members", "tang_ki"))) {
+    await db.schema.alterTable("members", (table) => {
+      table.boolean("tang_ki").notNullable().defaultTo(false);
+    });
+  }
+}
+
 // members.ghi_chu — cột "Ghi chú" tự do (textarea) ở tab Nhân sự, nhập/sửa
 // trong dialog Thêm/Sửa nhân sự cùng Chức vụ/Team. Không có ý nghĩa tính
 // toán gì (không dùng ở bất kỳ công thức KPI/Nội quy nào) — chỉ để lưu ghi

@@ -695,6 +695,25 @@ function homeLowerKiOneLevel(value) {
   return HOME_KI_SCALE[idx + 1];
 }
 
+// Nút "Tăng KI" (tab Nhân sự) — đối nghịch với "Hạ KI": tăng 1 bậc = tiến 1
+// vị trí lên đầu thang (thứ tự tăng: D > C > B > A > A+). Không tăng vượt
+// quá KI cao nhất THỰC SỰ ĐƯỢC CẤU HÌNH trong Cấu hình → Ranking team (VD
+// hệ thống chỉ cấu hình tới "A", chưa từng dùng "A+" ở ô nào, thì tăng từ A
+// sẽ KHÔNG nhảy lên A+ — trả về cờ atCeiling để gọi nơi hiển thị thay bằng
+// thông báo "KI đang cao nhất trong cấu hình" thay vì 1 ký tự KI).
+function homeConfiguredKiCeiling() {
+  const used = new Set((state.rankingConfig?.cells ?? []).map((c) => c.gia_tri).filter((v) => v && v !== "-"));
+  return HOME_KI_SCALE.find((level) => used.has(level)) ?? null;
+}
+function homeRaiseKiOneLevel(value) {
+  const idx = HOME_KI_SCALE.indexOf(value);
+  if (idx === -1) return { value, atCeiling: false };
+  const ceiling = homeConfiguredKiCeiling();
+  const ceilingIdx = ceiling ? HOME_KI_SCALE.indexOf(ceiling) : 0;
+  if (idx <= ceilingIdx) return { value, atCeiling: true };
+  return { value: HOME_KI_SCALE[idx - 1], atCeiling: false };
+}
+
 // Tab "Ranking" — bảng xếp hạng team (theo đúng Tổng điểm ở tab Tổng hợp),
 // bấm vào 1 team để xem "Điểm chi tiết theo team" (nhóm theo Nhóm tiêu chí,
 // dùng lại homeComputeTeamScores) và "Ranking thành viên team" (Rank từ tab
@@ -812,9 +831,10 @@ function renderHomeRankingTab(rankingData, eligible) {
 
   const haKiBadge = (memberId) => {
     const member = state.homeMembers.find((m) => m.id === memberId);
-    return member?.ha_ki
-      ? `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`
-      : "";
+    if (member?.ha_ki) return `<span class="status-badge status-huy ha-ki-badge" title="Đã hạ 1 KI">Hạ KI</span>`;
+    if (member?.tang_ki)
+      return `<span class="status-badge status-hoan-thanh ha-ki-badge" title="Đã tăng 1 KI">Tăng KI</span>`;
+    return "";
   };
   const nameWithHaKi = (name, memberId) => `<div class="name-with-ha-ki">${name}${haKiBadge(memberId)}</div>`;
 
@@ -823,7 +843,13 @@ function renderHomeRankingTab(rankingData, eligible) {
       const kiColumn = homeKiColumnForMemberRank(i, rankedMembers.length);
       const rawKi = homeKiValue(kiColumn, teamRankPosition);
       const member = state.homeMembers.find((mem) => mem.id === m.member_id);
-      const ki = member?.ha_ki ? homeLowerKiOneLevel(rawKi) : rawKi;
+      let ki = rawKi;
+      if (member?.ha_ki) {
+        ki = homeLowerKiOneLevel(rawKi);
+      } else if (member?.tang_ki) {
+        const raised = homeRaiseKiOneLevel(rawKi);
+        ki = raised.atCeiling ? "KI đang cao nhất trong cấu hình" : raised.value;
+      }
       return `
       <tr>
         <td style="text-align:left">${nameWithHaKi(m.member_name, m.member_id)}</td>
