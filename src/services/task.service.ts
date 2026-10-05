@@ -24,11 +24,29 @@ export const TINH_CHAT_NV_NAM = "NV năm";
 
 async function nextStt(periodId: number): Promise<number> {
   const row = await db("tasks")
-    .where({ period_id: periodId })
+    .where({ period_id: periodId, is_deleted: false })
     .max({ max_stt: "stt" })
     .first();
   const max = Number(row?.max_stt ?? 0);
   return max + 1;
+}
+
+// Đánh lại STT liền mạch (1, 2, 3...) cho các task CHƯA XÓA của 1 tháng,
+// giữ nguyên thứ tự tương đối hiện có — gọi sau khi xóa task (xóa mềm để
+// lại "lỗ hổng" STT giữa các dòng còn lại, menu Nhiệm vụ cần STT luôn liên
+// tục không hở để không gây nhầm lẫn khi xem/xuất Excel).
+async function renumberTaskStt(periodId: number): Promise<void> {
+  const remaining = await db("tasks")
+    .where({ period_id: periodId, is_deleted: false })
+    .orderBy("stt", "asc")
+    .orderBy("id", "asc")
+    .select("id", "stt");
+  for (let i = 0; i < remaining.length; i++) {
+    const newStt = i + 1;
+    if (remaining[i].stt !== newStt) {
+      await db("tasks").where({ id: remaining[i].id }).update({ stt: newStt });
+    }
+  }
 }
 
 // 1.3 Nhập mới task cho một team trong một tháng (period) — STT tự tăng theo
@@ -173,6 +191,7 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
   // sang xóa mềm (không phải lệnh DELETE thật nữa) nên phải tự gỡ ở đây.
   await softDeleteWhere(db, "task_members", { task_id: id });
   const count = await softDeleteWhere(db, "tasks", { id });
+  if (count > 0) await renumberTaskStt(existing.period_id);
   return count > 0;
 }
 
@@ -180,9 +199,19 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
 export async function deleteTasks(ids: number[], scope: DataScope): Promise<number> {
   const scopedIds = await filterTaskIdsInScope(ids, scope);
   if (scopedIds.length === 0) return 0;
+  // Ghi lại các tháng bị ảnh hưởng TRƯỚC khi xóa — ids có thể thuộc nhiều
+  // tháng khác nhau (chọn qua nhiều trang/bộ lọc), mỗi tháng cần đánh lại
+  // STT riêng.
+  const affectedPeriods = await db("tasks")
+    .whereIn("id", scopedIds)
+    .distinct("period_id")
+    .pluck("period_id");
   await db("feature_requests").whereIn("linked_task_id", scopedIds).update({ linked_task_id: null });
   await softDeleteWhereIn(db, "task_members", "task_id", scopedIds);
   const count = await softDeleteWhereIn(db, "tasks", "id", scopedIds);
+  for (const periodId of affectedPeriods) {
+    await renumberTaskStt(periodId);
+  }
   return Number(count);
 }
 
@@ -218,11 +247,16 @@ function removeTinhChatTon(tinhChat: string | null): string | null {
   return removeTinhChatTag(tinhChat, TINH_CHAT_TON);
 }
 
+// Task CHƯA CÓ Deadline (hoặc Deadline không đọc được) thì KHÔNG có căn cứ
+// gì để nói nó "đã quá hạn" — trả về false (không đánh dấu Nhiệm vụ tồn).
+// BUG đã gặp thực tế: bản cũ trả về true cho cả 2 trường hợp này, khiến MỌI
+// task chưa nhập Deadline đều tự động bị gắn "Nhiệm vụ tồn" khi chuyển
+// tháng dù chưa hề quá hạn gì.
 function isDeadlineBeforeTarget(deadline: string | null, targetYear: number, targetMonth: number): boolean {
-  if (!deadline || deadline.length < 7) return true;
+  if (!deadline || deadline.length < 7) return false;
   const year = Number(deadline.slice(0, 4));
   const month = Number(deadline.slice(5, 7));
-  if (!Number.isFinite(year) || !Number.isFinite(month)) return true;
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return false;
   return year < targetYear || (year === targetYear && month < targetMonth);
 }
 
@@ -249,8 +283,16 @@ export async function moveTasksToNextMonth(
     const task = await getTask(id);
     if (!task || task.period_id !== fromPeriodId) continue;
     if (task.da_chuyen_thang) {
-      skippedAlreadyMoved.push(task);
-      continue;
+      // Chỉ thật sự chặn khi bản sao đã tạo ra lần trước VẪN CÒN (chưa bị
+      // xóa) — nếu bản sao đó đã bị xóa (kể cả xóa mềm — getTask() đã lọc
+      // is_deleted=false), hoặc dữ liệu cũ từ trước khi có cột
+      // moved_to_task_id (null), thì KHÔNG còn nguy cơ tạo trùng nữa, cho
+      // chuyển lại bình thường thay vì kẹt cứng mãi mãi.
+      const existingClone = task.moved_to_task_id ? await getTask(task.moved_to_task_id) : undefined;
+      if (existingClone) {
+        skippedAlreadyMoved.push(task);
+        continue;
+      }
     }
     const stt = await nextStt(targetPeriod.id);
     const isTon = isDeadlineBeforeTarget(task.deadline, targetPeriod.year, targetPeriod.month);
@@ -314,7 +356,9 @@ export async function moveTasksToNextMonth(
       })
       .returning("*");
 
-    await db("tasks").where({ id: task.id }).update({ da_chuyen_thang: 1, updated_at: db.fn.now() });
+    await db("tasks")
+      .where({ id: task.id })
+      .update({ da_chuyen_thang: 1, moved_to_task_id: clone.id, updated_at: db.fn.now() });
     moved.push(clone as Task);
   }
 

@@ -209,7 +209,9 @@ export async function rejectFeatureRequest(
 
 // Đưa yêu cầu (đã Duyệt) vào Backlog đúng tháng được chọn — tạo 1 Task mới
 // gắn department_id = phòng đích (phòng thực hiện), Nhiệm vụ = Tiêu đề yêu
-// cầu, DoD = Mô tả chi tiết. Chỉ đưa được 1 lần (linked_task_id).
+// cầu, DoD = Kết quả mong muốn (không phải Mô tả chi tiết — DoD là tiêu chí
+// hoàn thành, tương ứng đúng ý nghĩa với Kết quả mong muốn của yêu cầu).
+// Chỉ đưa được 1 lần (linked_task_id).
 export async function linkFeatureRequestToBacklog(
   id: number,
   input: LinkToBacklogInput,
@@ -230,7 +232,7 @@ export async function linkFeatureRequestToBacklog(
       department_id: existing.target_department_id ?? undefined,
       team: input.team,
       nhiem_vu: existing.tieu_de,
-      dod: existing.mo_ta ?? undefined,
+      dod: existing.ket_qua_mong_muon ?? undefined,
     },
     UNRESTRICTED,
   );
@@ -239,7 +241,9 @@ export async function linkFeatureRequestToBacklog(
 }
 
 // Đưa yêu cầu (đã Duyệt) vào Roadmap năm — tạo 1 dòng roadmap mới gắn
-// department_id = phòng đích. Chỉ đưa được 1 lần (linked_roadmap_item_id).
+// department_id = phòng đích, DoD = Kết quả mong muốn (giống lý do ở
+// linkFeatureRequestToBacklog phía trên). Chỉ đưa được 1 lần
+// (linked_roadmap_item_id).
 export async function linkFeatureRequestToRoadmap(
   id: number,
   input: LinkToRoadmapInput,
@@ -254,7 +258,7 @@ export async function linkFeatureRequestToRoadmap(
       team: input.team,
       he_thong: existing.he_thong ?? undefined,
       nhiem_vu: existing.tieu_de,
-      dod: existing.mo_ta ?? undefined,
+      dod: existing.ket_qua_mong_muon ?? undefined,
     },
     UNRESTRICTED,
   );

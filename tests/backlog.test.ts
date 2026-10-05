@@ -54,12 +54,16 @@ describe("Backlog CRUD", () => {
     const period = await request(app).post("/api/periods").send({ year: 2033, month: 6 });
     const periodId = period.body.id;
 
+    // Deadline trong tháng nguồn (6) — trước tháng đích (7) khi chuyển ->
+    // thật sự quá hạn, đúng căn cứ để gắn "Nhiệm vụ tồn" (không dùng task
+    // thiếu deadline — thiếu deadline thì KHÔNG đánh dấu tồn, xem test
+    // "only tags Nhiệm vụ tồn when Deadline's month is earlier...").
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
-      .send({ team: "CRM", nhiem_vu: "Task A", tinh_chat: "NVKH" });
+      .send({ team: "CRM", nhiem_vu: "Task A", tinh_chat: "NVKH", deadline: "2033-06-15" });
     const t2 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
-      .send({ team: "CRM", nhiem_vu: "Task B" });
+      .send({ team: "CRM", nhiem_vu: "Task B", deadline: "2033-06-20" });
 
     const move = await request(app)
       .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
@@ -102,7 +106,10 @@ describe("Backlog CRUD", () => {
     const isTon = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Deadline trước tháng đích", deadline: "2040-08-20" });
-    // Không có deadline → mặc định vẫn là nhiệm vụ tồn (an toàn, giữ hành vi cũ).
+    // Không có deadline → KHÔNG đủ căn cứ để nói đã quá hạn, không phải
+    // nhiệm vụ tồn (BUG đã sửa: bản cũ mặc định coi thiếu deadline là tồn,
+    // khiến mọi task chưa nhập deadline đều bị gắn nhầm "Nhiệm vụ tồn" dù
+    // chưa hề quá hạn gì).
     const noDeadline = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Không có deadline" });
@@ -121,8 +128,8 @@ describe("Backlog CRUD", () => {
     expect(movedIsTon.khong_tinh_diem).toBe("Không tính điểm");
 
     const movedNoDeadline = move.body.moved.find((t: { nhiem_vu: string }) => t.nhiem_vu === "Không có deadline");
-    expect(movedNoDeadline.tinh_chat).toBe("Nhiệm vụ tồn");
-    expect(movedNoDeadline.khong_tinh_diem).toBe("Không tính điểm");
+    expect(movedNoDeadline.tinh_chat).toBeNull();
+    expect(movedNoDeadline.khong_tinh_diem).toBeNull();
   });
 
   it("blocks moving a task to next month a second time", async () => {
@@ -156,6 +163,45 @@ describe("Backlog CRUD", () => {
 
     const newList = await request(app).get(`/api/periods/${firstMove.body.targetPeriod.id}/tasks`);
     expect(newList.body).toHaveLength(1);
+  });
+
+  it("allows moving a task again after its clone in the target month was deleted", async () => {
+    const app = createApp();
+    const period = await request(app).post("/api/periods").send({ year: 2042, month: 1 });
+    const periodId = period.body.id;
+
+    const task = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "CRM", nhiem_vu: "Task chuyển rồi bị xóa bản sao" });
+
+    const firstMove = await request(app)
+      .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
+      .send({ ids: [task.body.id] });
+    expect(firstMove.status).toBe(200);
+    const cloneId = firstMove.body.moved[0].id;
+
+    // Xóa bản sao ở tháng sau — bản gốc vẫn còn da_chuyen_thang=1 nhưng
+    // KHÔNG còn bản sao nào thật sự tồn tại nữa.
+    const del = await request(app).delete(`/api/tasks/${cloneId}`);
+    expect(del.status).toBe(204);
+
+    // Quay lại chấm điểm task gốc rồi chuyển lại -> phải chuyển được, không
+    // bị chặn (BUG đã sửa: trước đây kẹt cứng vĩnh viễn ở da_chuyen_thang=1
+    // dù bản sao không còn tồn tại).
+    await request(app).put(`/api/tasks/${task.body.id}/grade`).send({ cpo_danh_gia: 90, cpo_comment: "Tốt" });
+    const secondMove = await request(app)
+      .post(`/api/periods/${periodId}/tasks/move-to-next-month`)
+      .send({ ids: [task.body.id] });
+    expect(secondMove.status).toBe(200);
+    expect(secondMove.body.skippedAlreadyMoved).toHaveLength(0);
+    expect(secondMove.body.moved).toHaveLength(1);
+    expect(secondMove.body.moved[0].id).not.toBe(cloneId);
+    expect(secondMove.body.moved[0].grading_history).toContain("90");
+
+    // Bản gốc giờ trỏ đúng sang bản sao MỚI (không phải bản sao cũ đã xóa).
+    const refreshedOld = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const refreshedTask = refreshedOld.body.find((t: { id: number }) => t.id === task.body.id);
+    expect(refreshedTask.moved_to_task_id).toBe(secondMove.body.moved[0].id);
   });
 
   it("marks selected tasks as Không tính điểm without touching Phân loại (tinh_chat)", async () => {
