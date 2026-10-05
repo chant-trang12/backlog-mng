@@ -590,7 +590,7 @@ let editingTaskHasTon = false;
 function openTaskDialog(task) {
   el.taskForm.reset();
   document.getElementById("task-id").value = task?.id ?? "";
-  el.taskDialogTitle.textContent = task ? `Sửa task #${task.stt}` : "Nhập task mới";
+  el.taskDialogTitle.textContent = task ? `Sửa nhiệm vụ: ${task.nhiem_vu}` : "Nhập task mới";
   editingTaskHasTon = task ? taskHasNatureTon(task) : false;
 
   teamSelect.innerHTML = state.teams
