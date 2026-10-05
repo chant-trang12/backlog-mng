@@ -169,14 +169,6 @@ export async function updateTask(
     const period = await getPeriod(existing.period_id);
     const fraction = period ? computeElapsedFraction(period.year, period.month, merged.deadline) : null;
     if (fraction !== null) {
-      const [ngayHuy] = localTimestamp().split(" "); // "YYYY-MM-DD"
-      const [huyY, huyM, huyD] = ngayHuy.split("-");
-      const ngayHuyDisplay = `${huyD}/${huyM}/${huyY}`;
-      // Không nhận diện được tài khoản (SSO tắt, hoặc request không gắn
-      // người dùng) -> để trống phần "bởi ..." thay vì hiện chữ giải thích
-      // dài dòng trong note.
-      const boiNguoiHuy = graderName ? ` bởi ${graderName}` : "";
-
       if (fraction < 0.25) {
         const replacement = input.replacement_task;
         if (!replacement || !replacement.nhiem_vu?.trim()) {
@@ -200,9 +192,11 @@ export async function updateTask(
         khongTinhDiem = existing.khong_tinh_diem;
         if (input.cpo_danh_gia === undefined) {
           merged.cpo_danh_gia = cancelPenaltyTier(fraction);
-          merged.cpo_comment =
-            existing.cpo_comment?.trim() ||
-            `Xin hủy nhiệm vụ ngày ${ngayHuyDisplay}${boiNguoiHuy} — tự động chấm điểm do đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian deadline.`;
+          // KHÔNG còn tự ghi vào Nội dung đánh giá — CPO phải gõ tự do,
+          // không bị khóa/chiếm chỗ bởi ghi chú hệ thống. "Ngày hủy/ai hủy"
+          // đã có sẵn qua cpo_graded_at/cpo_graded_by (đóng dấu bên dưới,
+          // isGrading=true vì autoPenaltyGraded), FE tự suy lại % đã trôi
+          // qua từ cpo_graded_at để hiển thị TÁCH BIỆT (xem 04-tasks.js).
           autoPenaltyGraded = true;
         }
       }

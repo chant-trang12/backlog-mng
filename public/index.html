@@ -2071,6 +2071,11 @@
       <div>
         <label for="grade-comment">Nội dung đánh giá</label>
         <textarea id="grade-comment" style="min-height:120px"></textarea>
+        <!-- Task bị Hủy quá hạn: % Đánh giá tự chấm theo mức phạt, nhưng Nội
+             dung đánh giá KHÔNG bị chiếm chỗ bởi ghi chú hệ thống nữa (CPO
+             gõ tự do) — thông tin "xin hủy ngày/ai chấm" hiển thị RIÊNG ở
+             đây, không phải field nhập liệu. Xem openGradeDialog, 04-tasks.js. -->
+        <p class="muted auto-cancel-note" id="grade-comment-cancel-info" hidden style="margin:6px 0 0"></p>
       </div>
       <div class="actions">
         <button type="button" id="grade-cancel-btn">Hủy</button>

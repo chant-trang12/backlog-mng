@@ -115,11 +115,11 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     expect(res.status).toBe(200);
     expect(res.body.cpo_danh_gia).toBe(5);
     expect(res.body.khong_tinh_diem).toBeNull();
-    // Note ghi rõ "xin hủy ngày bao nhiêu" — SSO tắt trong môi trường test
-    // nên graderName là null, phần "bởi <người>" để TRỐNG (không hiện chữ
-    // giải thích dài dòng).
-    expect(res.body.cpo_comment).toContain("Xin hủy nhiệm vụ ngày");
-    expect(res.body.cpo_comment).not.toContain("bởi");
+    // Nội dung đánh giá KHÔNG còn bị tự động điền ghi chú nữa — để trống,
+    // CPO gõ tự do (không bị khóa/chiếm chỗ). "Ngày/ai chấm" đã có sẵn qua
+    // cpo_graded_at/cpo_graded_by (FE tự hiển thị tách biệt, xem
+    // cancelGradeInfoLine, 04-tasks.js).
+    expect(res.body.cpo_comment).toBeFalsy();
     expect(res.body.cpo_graded_at).toBeTruthy();
   });
 

@@ -141,12 +141,6 @@ function renderEmpty() {
   el.emptyState.hidden = false;
 }
 
-// Ghi chú hệ thống tự tạo khi "Xin Hủy nhiệm vụ" (DoD task thay thế, Nội
-// dung đánh giá task bị hủy — xem updateTask, task.service.ts) — hiển thị
-// RIÊNG dạng ô nhỏ/mờ "disabled" để phân biệt với nội dung tự nhập tay,
-// không phải để khóa cứng việc sửa (CPO vẫn sửa lại được ở dialog Chấm
-// điểm/Sửa như bình thường, chỉ đổi cách HIỂN THỊ ở bảng danh sách).
-const AUTO_CANCEL_NOTE_PREFIXES = ["Xin hủy nhiệm vụ ngày", "Nhiệm vụ thay thế cho nhiệm vụ đã hủy"];
 // Task thay thế (tạo khi Xin Hủy nhiệm vụ) — liên kết tới task gốc đã hủy,
 // hiển thị TÁCH BIỆT với DoD (không chèn vào DoD, DoD luôn là nội dung
 // thật, sửa/xóa tự do bình thường — xem updateTask, task.service.ts).
@@ -155,15 +149,6 @@ function renderReplacementInfoNote(t) {
   const original = state.tasksAll.find((x) => x.id === t.thay_cho_task_id);
   if (!original) return "";
   return `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy #${original.stt}: "${original.nhiem_vu}".</div>`;
-}
-
-function renderCellWithAutoNote(text) {
-  const trimmed = (text ?? "").trim();
-  if (!trimmed) return "";
-  const html = trimmed.replace(/\n/g, "<br/>");
-  const isAutoNote = AUTO_CANCEL_NOTE_PREFIXES.some((p) => trimmed.startsWith(p));
-  if (!isAutoNote) return html;
-  return `<div class="auto-cancel-note" title="Ghi chú hệ thống tự tạo khi Xin hủy nhiệm vụ">${html}</div>`;
 }
 
 function renderTasks() {
@@ -232,7 +217,7 @@ function renderTasks() {
         ${renderGradingHistory(t, "percent")}
       </td>
       <td data-col="danh_gia_noi_dung" ${colHidden("danh_gia_noi_dung")}>
-        ${renderCellWithAutoNote(t.cpo_comment)}
+        ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
         ${t.cpo_graded_at ? `<div class="cell-graded-at"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
         ${renderGradingHistory(t, "content")}
       </td>
@@ -695,15 +680,26 @@ el.taskForm.addEventListener("submit", async (e) => {
 
 // ---- Chấm điểm (% Đánh giá, Nội dung đánh giá) ----
 
+// Task đang Hủy và đã được (tự) chấm điểm — hiển thị "xin hủy ngày nào,
+// ai chấm" dựa trên cpo_graded_at/cpo_graded_by sẵn có (KHÔNG lưu thêm
+// field riêng) — tách biệt khỏi Nội dung đánh giá, để ô đó luôn gõ tự do
+// được, không bị ghi chú hệ thống chiếm chỗ/khóa.
+function cancelGradeInfoLine(task) {
+  if (task?.trang_thai !== "Hủy" || !task?.cpo_graded_at) return "";
+  const ngay = fmtGradedAt(task.cpo_graded_at).split(" ")[0];
+  const boiNguoi = task.cpo_graded_by ? ` bởi ${task.cpo_graded_by}` : "";
+  return `Nhiệm vụ đã Hủy — chấm điểm gần nhất ngày ${ngay}${boiNguoi}.`;
+}
+
 function openGradeDialog(task) {
   el.gradeForm.reset();
   document.getElementById("grade-task-id").value = task?.id ?? "";
   document.getElementById("grade-percent").value = task?.cpo_danh_gia ?? "";
-  const commentEl = document.getElementById("grade-comment");
-  commentEl.value = task?.cpo_comment ?? "";
-  // Nội dung đánh giá là ghi chú hệ thống tự tạo khi Xin Hủy nhiệm vụ ->
-  // khóa hẳn, không cho sửa/xóa — % Đánh giá vẫn sửa được bình thường.
-  commentEl.disabled = AUTO_CANCEL_NOTE_PREFIXES.some((p) => (task?.cpo_comment ?? "").trim().startsWith(p));
+  document.getElementById("grade-comment").value = task?.cpo_comment ?? "";
+  const infoEl = document.getElementById("grade-comment-cancel-info");
+  const infoText = cancelGradeInfoLine(task);
+  infoEl.hidden = !infoText;
+  infoEl.textContent = infoText;
   el.gradeDialog.showModal();
 }
 
