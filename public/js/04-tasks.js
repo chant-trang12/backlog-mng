@@ -141,6 +141,21 @@ function renderEmpty() {
   el.emptyState.hidden = false;
 }
 
+// Ghi chú hệ thống tự tạo khi "Xin Hủy nhiệm vụ" (DoD task thay thế, Nội
+// dung đánh giá task bị hủy — xem updateTask, task.service.ts) — hiển thị
+// RIÊNG dạng ô nhỏ/mờ "disabled" để phân biệt với nội dung tự nhập tay,
+// không phải để khóa cứng việc sửa (CPO vẫn sửa lại được ở dialog Chấm
+// điểm/Sửa như bình thường, chỉ đổi cách HIỂN THỊ ở bảng danh sách).
+const AUTO_CANCEL_NOTE_PREFIXES = ["Xin hủy nhiệm vụ ngày", "Nhiệm vụ thay thế cho nhiệm vụ đã hủy"];
+function renderCellWithAutoNote(text) {
+  const trimmed = (text ?? "").trim();
+  if (!trimmed) return "";
+  const html = trimmed.replace(/\n/g, "<br/>");
+  const isAutoNote = AUTO_CANCEL_NOTE_PREFIXES.some((p) => trimmed.startsWith(p));
+  if (!isAutoNote) return html;
+  return `<div class="auto-cancel-note" title="Ghi chú hệ thống tự tạo khi Xin hủy nhiệm vụ">${html}</div>`;
+}
+
 function renderTasks() {
   el.emptyState.hidden = state.periods.length !== 0;
   // Phòng ban tính KPI theo task (không chia team) — ẩn cột Team (tiêu đề
@@ -180,7 +195,7 @@ function renderTasks() {
       <td data-col="phan_loai" ${colHidden("phan_loai")}>${renderNatureBadges(t.tinh_chat)}</td>
       <td data-col="team" ${colHidden("team")}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
       <td>${t.nhiem_vu}</td>
-      <td data-col="dod" ${colHidden("dod")}>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
+      <td data-col="dod" ${colHidden("dod")}>${renderCellWithAutoNote(t.dod)}</td>
       <td data-col="deadline" ${colHidden("deadline")}>${formatDateDisplay(t.deadline)}</td>
       <td data-col="hoan_thanh" ${colHidden("hoan_thanh")}>
         <span class="progress-bar"><span style="width:${Math.min(100, Math.max(0, t.phan_tram_hoan_thanh))}%"></span></span>${t.phan_tram_hoan_thanh}%
@@ -207,7 +222,7 @@ function renderTasks() {
         ${renderGradingHistory(t, "percent")}
       </td>
       <td data-col="danh_gia_noi_dung" ${colHidden("danh_gia_noi_dung")}>
-        ${(t.cpo_comment ?? "").replace(/\n/g, "<br/>")}
+        ${renderCellWithAutoNote(t.cpo_comment)}
         ${t.cpo_graded_at ? `<div class="cell-graded-at"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clock"/></svg>${fmtGradedAt(t.cpo_graded_at)}${t.cpo_graded_by ? " · " + t.cpo_graded_by : ""}</div>` : ""}
         ${renderGradingHistory(t, "content")}
       </td>

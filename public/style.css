@@ -1183,6 +1183,23 @@ th {
   white-space: nowrap;
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+/* Ghi chú hệ thống tự tạo khi "Xin Hủy nhiệm vụ" (DoD task thay thế, Nội
+   dung đánh giá task bị hủy — xem renderCellWithAutoNote, 04-tasks.js) —
+   ô nhỏ/mờ kiểu "disabled" để phân biệt rõ với nội dung tự nhập tay, chữ
+   bé hơn nội dung thường. Vẫn sửa được bình thường qua dialog Sửa/Chấm
+   điểm — đây chỉ là cách hiển thị ở bảng danh sách, không khóa dữ liệu. */
+.auto-cancel-note {
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--muted);
+  cursor: not-allowed;
+}
 /* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
    nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
 .fr-attachment-chip {
