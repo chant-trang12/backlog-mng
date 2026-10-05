@@ -619,6 +619,11 @@ button.small + button.small { margin-left: 6px; }
 /* Nút hành động trong bảng — nền màu để nổi bật thay vì chỉ viền. */
 button.btn-edit { background: #ffeab0; border-color: #f6d989; color: #7a4e12; }
 button.btn-edit:hover { background: #f6d989; }
+/* Nút "Nhiệm vụ đã hủy" (popup Cập nhật tiến độ) — khóa, không bấm lại
+   được (xem updateRequestCancelBtnUI, 04-tasks.js), tô xám để nhìn rõ là
+   trạng thái đã chốt, không phải 1 hành động còn làm được nữa. */
+button.btn-muted-disabled,
+button.btn-muted-disabled:hover { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
 button.btn-delete:hover { background: var(--delete-light-hover); }
 /* Cùng tông màu với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu" (Quy
