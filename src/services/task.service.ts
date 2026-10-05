@@ -24,11 +24,29 @@ export const TINH_CHAT_NV_NAM = "NV năm";
 
 async function nextStt(periodId: number): Promise<number> {
   const row = await db("tasks")
-    .where({ period_id: periodId })
+    .where({ period_id: periodId, is_deleted: false })
     .max({ max_stt: "stt" })
     .first();
   const max = Number(row?.max_stt ?? 0);
   return max + 1;
+}
+
+// Đánh lại STT liền mạch (1, 2, 3...) cho các task CHƯA XÓA của 1 tháng,
+// giữ nguyên thứ tự tương đối hiện có — gọi sau khi xóa task (xóa mềm để
+// lại "lỗ hổng" STT giữa các dòng còn lại, menu Nhiệm vụ cần STT luôn liên
+// tục không hở để không gây nhầm lẫn khi xem/xuất Excel).
+async function renumberTaskStt(periodId: number): Promise<void> {
+  const remaining = await db("tasks")
+    .where({ period_id: periodId, is_deleted: false })
+    .orderBy("stt", "asc")
+    .orderBy("id", "asc")
+    .select("id", "stt");
+  for (let i = 0; i < remaining.length; i++) {
+    const newStt = i + 1;
+    if (remaining[i].stt !== newStt) {
+      await db("tasks").where({ id: remaining[i].id }).update({ stt: newStt });
+    }
+  }
 }
 
 // 1.3 Nhập mới task cho một team trong một tháng (period) — STT tự tăng theo
@@ -173,6 +191,7 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
   // sang xóa mềm (không phải lệnh DELETE thật nữa) nên phải tự gỡ ở đây.
   await softDeleteWhere(db, "task_members", { task_id: id });
   const count = await softDeleteWhere(db, "tasks", { id });
+  if (count > 0) await renumberTaskStt(existing.period_id);
   return count > 0;
 }
 
@@ -180,9 +199,19 @@ export async function deleteTask(id: number, scope: DataScope): Promise<boolean>
 export async function deleteTasks(ids: number[], scope: DataScope): Promise<number> {
   const scopedIds = await filterTaskIdsInScope(ids, scope);
   if (scopedIds.length === 0) return 0;
+  // Ghi lại các tháng bị ảnh hưởng TRƯỚC khi xóa — ids có thể thuộc nhiều
+  // tháng khác nhau (chọn qua nhiều trang/bộ lọc), mỗi tháng cần đánh lại
+  // STT riêng.
+  const affectedPeriods = await db("tasks")
+    .whereIn("id", scopedIds)
+    .distinct("period_id")
+    .pluck("period_id");
   await db("feature_requests").whereIn("linked_task_id", scopedIds).update({ linked_task_id: null });
   await softDeleteWhereIn(db, "task_members", "task_id", scopedIds);
   const count = await softDeleteWhereIn(db, "tasks", "id", scopedIds);
+  for (const periodId of affectedPeriods) {
+    await renumberTaskStt(periodId);
+  }
   return Number(count);
 }
 
