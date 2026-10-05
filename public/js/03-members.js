@@ -180,7 +180,7 @@ function renderMemberTable() {
       <td>${(m.ghi_chu ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell" title="">
         <button class="small ${m.ha_ki ? "btn-edit" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
-        <button class="small ${m.tang_ki ? "btn-edit" : "btn-exclude"} write-action toggle-tang-ki-btn" data-tang-ki="${m.tang_ki}">${m.tang_ki ? "Bỏ tăng KI" : "Tăng KI"}</button>
+        <button class="small ${m.tang_ki ? "btn-edit" : "btn-restore"} write-action toggle-tang-ki-btn" data-tang-ki="${m.tang_ki}">${m.tang_ki ? "Bỏ tăng KI" : "Tăng KI"}</button>
         <button class="small btn-edit write-action edit-member-btn">Sửa</button>
         <button class="small btn-delete delete-member-btn">Xóa</button>
       </div></td>
