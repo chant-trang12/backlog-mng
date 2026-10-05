@@ -723,6 +723,17 @@ function openProgressDialog(task) {
 
 function updateRequestCancelBtnUI() {
   const btn = document.getElementById("progress-request-cancel-btn");
+  // Task ĐÃ ở trạng thái Hủy từ trước (VD đã xin hủy + thay thế xong ở lần
+  // mở dialog trước) -> backend chỉ xử lý ở LẦN ĐẦU chuyển vào Hủy (xem
+  // updateTask, task.service.ts), bấm lại nút này không còn tác dụng gì —
+  // khóa nút, không cho bấm lại, tránh hiểu nhầm là xin hủy lại được.
+  if (progressDialogTask?.trang_thai === "Hủy") {
+    btn.textContent = "Nhiệm vụ đã hủy";
+    btn.disabled = true;
+    btn.classList.remove("btn-delete", "btn-exclude");
+    return;
+  }
+  btn.disabled = false;
   btn.textContent = progressCancelRequested ? "Bỏ xin Hủy nhiệm vụ" : "Xin Hủy nhiệm vụ";
   btn.classList.toggle("btn-exclude", progressCancelRequested);
   btn.classList.toggle("btn-delete", !progressCancelRequested);

@@ -169,6 +169,11 @@ export async function updateTask(
     const period = await getPeriod(existing.period_id);
     const fraction = period ? computeElapsedFraction(period.year, period.month, merged.deadline) : null;
     if (fraction !== null) {
+      const [ngayHuy] = localTimestamp().split(" "); // "YYYY-MM-DD"
+      const [huyY, huyM, huyD] = ngayHuy.split("-");
+      const ngayHuyDisplay = `${huyD}/${huyM}/${huyY}`;
+      const nguoiHuy = graderName || "không rõ người thực hiện (SSO tắt)";
+
       if (fraction < 0.25) {
         const replacement = input.replacement_task;
         if (!replacement || !replacement.nhiem_vu?.trim()) {
@@ -176,7 +181,15 @@ export async function updateTask(
             "Hủy task khi chưa trôi qua 1/4 thời gian mục tiêu cần khai báo ngay 1 Nhiệm vụ thay thế.",
           );
         }
-        const createdReplacement = await createTask(existing.period_id, replacement, scope);
+        // Ghi chú task thay thế trỏ ngược lại task gốc vừa hủy — chỉ gán khi
+        // người dùng CHƯA tự nhập DoD cho task thay thế (không ghi đè).
+        const replacementInput = {
+          ...replacement,
+          dod:
+            replacement.dod?.trim() ||
+            `Nhiệm vụ thay thế cho nhiệm vụ đã hủy ngày ${ngayHuyDisplay} (bởi ${nguoiHuy}): "${existing.nhiem_vu}".`,
+        };
+        const createdReplacement = await createTask(existing.period_id, replacementInput, scope);
         thayTheTaskId = createdReplacement.id;
         // khongTinhDiem giữ nguyên "Không tính điểm" (đã gán ở trên) — hủy
         // sớm không bị phạt điểm, đổi lại là bắt buộc task thay thế.
@@ -188,7 +201,7 @@ export async function updateTask(
           merged.cpo_danh_gia = cancelPenaltyTier(fraction);
           merged.cpo_comment =
             existing.cpo_comment?.trim() ||
-            `Tự động chấm điểm do hủy nhiệm vụ khi đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian mục tiêu.`;
+            `Xin hủy nhiệm vụ ngày ${ngayHuyDisplay} bởi ${nguoiHuy} — tự động chấm điểm do đã trôi qua ${Math.round(Math.min(fraction, 1) * 100)}% thời gian deadline.`;
           autoPenaltyGraded = true;
         }
       }

@@ -91,6 +91,10 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     expect(replacement.body.nhiem_vu).toBe("Task thay thế");
     expect(replacement.body.team).toBe(teamName);
     expect(replacement.body.period_id).toBe(periodId);
+    // DoD tự ghi chú trỏ ngược lại task gốc đã hủy (vì không gửi dod khi
+    // khai báo task thay thế ở request trên).
+    expect(replacement.body.dod).toContain("Nhiệm vụ thay thế cho nhiệm vụ đã hủy");
+    expect(replacement.body.dod).toContain("Task huy som");
     void teamId;
   });
 
@@ -109,7 +113,11 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     expect(res.status).toBe(200);
     expect(res.body.cpo_danh_gia).toBe(5);
     expect(res.body.khong_tinh_diem).toBeNull();
-    expect(res.body.cpo_comment).toContain("Tự động chấm điểm do hủy nhiệm vụ");
+    // Note ghi rõ "xin hủy ngày bao nhiêu, ai xin hủy" — SSO tắt trong môi
+    // trường test nên graderName là null, rơi vào nhánh "không rõ người
+    // thực hiện".
+    expect(res.body.cpo_comment).toContain("Xin hủy nhiệm vụ ngày");
+    expect(res.body.cpo_comment).toContain("không rõ người thực hiện (SSO tắt)");
     expect(res.body.cpo_graded_at).toBeTruthy();
   });
 
