@@ -638,6 +638,11 @@ button.btn-member:hover { background: #cbb8e8; }
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
 button.btn-move-month:hover { background: var(--primary-hover); }
+
+/* Nút "Cột hiển thị" — tách riêng màu (xanh dương nhạt) với .btn-edit ("File
+   mẫu" cũng ở thanh công cụ này) để không bị trùng màu giữa 2 nút cạnh nhau. */
+button.btn-col-menu { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
+button.btn-col-menu:hover { background: #b7d9ea; }
 button.btn-move-month:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 
 /* Cụm "Thao tác với N task đã chọn" — 1 nút mở menu xổ xuống, gom các thao
