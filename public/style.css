@@ -725,7 +725,11 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
   cursor: pointer;
 }
 .col-menu-item:hover { background: var(--bg); }
-.col-menu-item input { margin: 0; cursor: pointer; }
+/* accent-color = --primary (xanh olive/sage) thay vì xanh dương mặc định
+   của trình duyệt — khớp đúng bảng màu chung của trang (các checkbox khác
+   trong app trước giờ không cần chỉnh vì không nổi bật bằng checkbox to ở
+   menu xổ xuống này). */
+.col-menu-item input { margin: 0; cursor: pointer; accent-color: var(--primary); }
 
 /* Banner cảnh báo ở trang Backlog — chưa chấm điểm / quá hạn / sắp đến hạn. */
 .task-warnings-row {
