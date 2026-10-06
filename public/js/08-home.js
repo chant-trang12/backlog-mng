@@ -140,7 +140,7 @@ async function renderHomeCanXuLyGap() {
       <td><span class="status-badge ${homeTeamColorClass(r.team)}">${r.team}</span></td>
       <td>${r.can_xu_ly_gap_ly_do ?? ""}</td>
       <td><span class="status-badge status-huy">${r.so_ngay} ngày</span></td>
-      <td><button type="button" class="small btn-restore can-xu-ly-gap-resolve-btn" data-id="${r.id}">Đã xử lý</button></td>
+      <td><button type="button" class="small btn-restore can-xu-ly-gap-resolve-btn" data-id="${r.id}">Đánh dấu Đã xử lý</button></td>
     </tr>`,
     )
     .join("");
