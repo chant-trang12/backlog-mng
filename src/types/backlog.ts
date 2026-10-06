@@ -250,6 +250,12 @@ export interface TaskMember {
 export interface TaskMemberWithName extends TaskMember {
   member_name: string;
   member_chuc_vu: string | null;
+  // Tổng Giờ công/MD = SUM gio_cong của người này trên MỌI Việc (task_items)
+  // của CHÍNH task — chỉ listTaskMembers() tính kèm (xem taskMember.service.ts),
+  // optional vì getTaskMember() (dùng nội bộ khi tạo/sửa 1 dòng) không tính
+  // lại, FE luôn gọi lại loadTaskMembers() sau đó để có số đúng.
+  tong_gio_cong?: number;
+  tong_md?: number;
 }
 
 export interface CreateTaskMemberInput {

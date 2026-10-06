@@ -33,7 +33,31 @@ export async function listTaskMembers(taskId: number): Promise<TaskMemberWithNam
     .where({ task_id: taskId, "task_members.is_deleted": false })
     .select(SELECT_COLUMNS)
     .orderBy("task_members.id", "asc");
-  return rows as TaskMemberWithName[];
+
+  // Tổng Giờ công/MD = SUM(gio_cong) của người đó trên TẤT CẢ Việc (task_items)
+  // của CHÍNH task này — cộng dồn qua các Việc khác nhau, MD = Hours/8 (cố
+  // định, giống tasks.service.ts/taskItem.service.ts). Hiển thị ở bảng
+  // "Nhân sự tham gia" để thấy ngay khối lượng thật, không cần mở từng Việc.
+  const hoursByMember = await db("task_item_members as tim")
+    .join("task_items as ti", "tim.task_item_id", "ti.id")
+    .where("ti.task_id", taskId)
+    .where("ti.is_deleted", false)
+    .where("tim.is_deleted", false)
+    .groupBy("tim.member_id")
+    .select("tim.member_id")
+    .sum({ tong_gio_cong: "tim.gio_cong" });
+  const hoursMap = new Map<number, number>(
+    hoursByMember.map((r: any) => [Number(r.member_id), Number(r.tong_gio_cong) || 0]),
+  );
+
+  return rows.map((r: any) => {
+    const tongGioCong = hoursMap.get(r.member_id) ?? 0;
+    return {
+      ...r,
+      tong_gio_cong: Math.round(tongGioCong * 100) / 100,
+      tong_md: Math.round((tongGioCong / 8) * 100) / 100,
+    };
+  }) as TaskMemberWithName[];
 }
 
 export async function getTaskMember(id: number): Promise<TaskMemberWithName | undefined> {

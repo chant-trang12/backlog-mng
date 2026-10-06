@@ -920,6 +920,8 @@ function renderTaskMemberThead() {
     <th style="width:150px">Phân loại</th>
     <th style="width:120px">Tỷ lệ đóng góp (%)</th>
     ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
+    <th style="width:100px">Hours</th>
+    <th style="width:90px">MD</th>
     <th style="width:570px">Nội dung công việc</th>
     <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
@@ -1013,6 +1015,8 @@ function renderTaskMembers() {
       </td>
       ${contribCell}
       ${scoreCell}
+      <td style="text-align:center">${tm.tong_gio_cong ?? 0}h</td>
+      <td style="text-align:center">${tm.tong_md ?? 0} MD</td>
       <td><input type="text" class="inline-cell-input tm-work-content-input" data-id="${tm.id}" value="${(tm.noi_dung_cong_viec ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
       <td><input type="text" class="inline-cell-input tm-note-input" data-id="${tm.id}" value="${(tm.ghi_chu ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
       <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
