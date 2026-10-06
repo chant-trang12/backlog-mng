@@ -373,6 +373,11 @@ export interface CreateTaskItemMemberInput {
   member_id: number;
   gio_cong?: number | null;
   ghi_chu?: string;
+  // Phân loại THAM GIA của người này (Thực hiện chính/Hỗ trợ...) — set
+  // luôn lên task_members khi tự tạo participant (xem addTaskItemMember,
+  // taskItem.service.ts), KHÔNG lưu trên task_item_members (phân loại là
+  // thuộc tính của việc tham gia task nói chung, không riêng theo Việc).
+  phan_loai?: string;
 }
 
 export interface UpdateTaskItemMemberInput {

@@ -2340,8 +2340,38 @@
           <span class="caret" aria-hidden="true">▾</span>
         </button>
         <div id="ti-add-frame-body" hidden>
-          <div class="row">
-            <input id="ti-new-ten-viec" placeholder="Tên việc mới (VD: Xây dựng nghiệp vụ...)..." style="flex:1" />
+          <div>
+            <label for="ti-new-ten-viec">Tên việc</label>
+            <input id="ti-new-ten-viec" placeholder="VD: Xây dựng nghiệp vụ để ứng dụng được OCR..." style="width:100%" />
+          </div>
+          <div class="field-row" style="align-items:flex-end;margin-top:10px">
+            <div style="flex:1">
+              <label for="ti-new-member">Nhân sự</label>
+              <select id="ti-new-member"><option value="">— Không gán ngay —</option></select>
+            </div>
+            <div style="flex:1">
+              <label for="ti-new-trangthai">Trạng thái</label>
+              <select id="ti-new-trangthai">
+                <option>Chưa thực hiện</option>
+                <option>Đang thực hiện</option>
+                <option>Hoàn thành</option>
+                <option>Hủy</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label for="ti-new-phan-loai">Phân loại</label>
+              <select id="ti-new-phan-loai"><option value="">— Không —</option></select>
+            </div>
+          </div>
+          <div class="field-row" style="align-items:flex-end;margin-top:10px">
+            <div style="width:140px">
+              <label for="ti-new-gio-cong">Giờ công</label>
+              <input id="ti-new-gio-cong" type="number" min="0" step="0.5" placeholder="Hours" />
+            </div>
+            <div style="width:140px">
+              <label>MD</label>
+              <p class="muted" id="ti-new-md-display" style="margin:0;padding:8px 0">0 MD</p>
+            </div>
             <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
           </div>
         </div>

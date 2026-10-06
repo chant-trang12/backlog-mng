@@ -1220,10 +1220,25 @@ let taskItemDialogTask = null;
 // dialog/nút riêng) — gọi từ openTaskMemberDialog(), dùng lại CHÍNH
 // state.taskMembers đã load ở đó làm nguồn nhân sự gán vào từng Việc
 // (danh sách phải tham gia task trước mới gán được việc cụ thể).
+function resetTaskItemAddForm() {
+  document.getElementById("ti-new-ten-viec").value = "";
+  document.getElementById("ti-new-trangthai").value = "Chưa thực hiện";
+  document.getElementById("ti-new-gio-cong").value = "";
+  document.getElementById("ti-new-md-display").textContent = "0 MD";
+  const memberSelect = document.getElementById("ti-new-member");
+  memberSelect.innerHTML =
+    `<option value="">— Không gán ngay —</option>` +
+    state.members.map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`).join("");
+  const phanLoaiSelect = document.getElementById("ti-new-phan-loai");
+  phanLoaiSelect.innerHTML =
+    `<option value="">— Không —</option>` +
+    state.memberParticipationOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`).join("");
+}
+
 async function loadAndRenderTaskItems(task) {
   if (!task) return;
   taskItemDialogTask = task;
-  document.getElementById("ti-new-ten-viec").value = "";
+  resetTaskItemAddForm();
   // Mặc định luôn ĐÓNG khung "Thêm việc" mỗi lần mở dialog — giống khung
   // "Thêm nhân sự" trước đây, đỡ chiếm chỗ khi chỉ cần xem.
   document.getElementById("ti-add-frame-toggle").setAttribute("aria-expanded", "false");
@@ -1236,6 +1251,11 @@ async function loadAndRenderTaskItems(task) {
   }
   renderTaskItemList();
 }
+
+document.getElementById("ti-new-gio-cong").addEventListener("input", (e) => {
+  const hours = Number(e.target.value) || 0;
+  document.getElementById("ti-new-md-display").textContent = `${Math.round((hours / 8) * 100) / 100} MD`;
+});
 
 function taskItemMdLabel(it) {
   return `${it.tong_gio_cong ?? 0}h (${it.tong_md ?? 0} MD)`;
@@ -1429,21 +1449,37 @@ document.getElementById("ti-add-frame-toggle").addEventListener("click", () => {
 });
 
 document.getElementById("ti-add-btn").addEventListener("click", async () => {
-  const input = document.getElementById("ti-new-ten-viec");
-  const tenViec = input.value.trim();
+  const tenViec = document.getElementById("ti-new-ten-viec").value.trim();
   if (!tenViec) {
     showToast("Hãy nhập tên việc.");
     return;
   }
+  const trangThai = document.getElementById("ti-new-trangthai").value;
+  const memberId = document.getElementById("ti-new-member").value;
+  const gioCong = document.getElementById("ti-new-gio-cong").value.trim();
+  const phanLoai = document.getElementById("ti-new-phan-loai").value;
   try {
-    await api(`/api/tasks/${taskItemDialogTask.id}/items`, {
+    const created = await api(`/api/tasks/${taskItemDialogTask.id}/items`, {
       method: "POST",
-      body: JSON.stringify({ ten_viec: tenViec }),
+      body: JSON.stringify({ ten_viec: tenViec, trang_thai: trangThai }),
     });
-    input.value = "";
+    // Chọn sẵn Nhân sự ngay lúc tạo -> gán luôn (tự thêm người này vào
+    // "Nhân sự tham gia" nếu chưa có — xem addTaskItemMember, taskItem.service.ts).
+    if (memberId) {
+      await api(`/api/task-items/${created.id}/members`, {
+        method: "POST",
+        body: JSON.stringify({
+          member_id: Number(memberId),
+          gio_cong: gioCong === "" ? undefined : Number(gioCong),
+          phan_loai: phanLoai || undefined,
+        }),
+      });
+    }
+    resetTaskItemAddForm();
     document.getElementById("ti-add-frame-toggle").setAttribute("aria-expanded", "false");
     document.getElementById("ti-add-frame-body").hidden = true;
     await reloadTaskItems();
+    if (memberId) await loadTaskMembers();
   } catch (err) {
     showToast(err.message);
   }
