@@ -1063,8 +1063,8 @@ function renderTaskMembers() {
       </td>
       ${contribCell}
       ${scoreCell}
-      <td>${(tm.noi_dung_cong_viec ?? "").replace(/\n/g, "<br/>")}</td>
-      <td>${tm.ghi_chu ?? ""}</td>
+      <td><input type="text" class="inline-cell-input tm-work-content-input" data-id="${tm.id}" value="${(tm.noi_dung_cong_viec ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
+      <td><input type="text" class="inline-cell-input tm-note-input" data-id="${tm.id}" value="${(tm.ghi_chu ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
       <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
     </tr>`;
     })
@@ -1111,6 +1111,35 @@ function renderTaskMembers() {
       } catch (err) {
         showToast(err.message);
         await loadTaskMembers(); // trả input về giá trị đã lưu (request bị từ chối)
+      }
+    });
+  });
+
+  // Nội dung công việc/Ghi chú — sửa trực tiếp trong bảng sau khi đã thêm
+  // nhân sự (trước đây chỉ nhập được lúc thêm mới, không sửa lại được).
+  el.taskMemberTbody.querySelectorAll(".tm-work-content-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      try {
+        await api(`/api/task-members/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ noi_dung_cong_viec: input.value.trim() || null }),
+        });
+      } catch (err) {
+        showToast(err.message);
+        await loadTaskMembers();
+      }
+    });
+  });
+  el.taskMemberTbody.querySelectorAll(".tm-note-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      try {
+        await api(`/api/task-members/${input.dataset.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ ghi_chu: input.value.trim() || null }),
+        });
+      } catch (err) {
+        showToast(err.message);
+        await loadTaskMembers();
       }
     });
   });
