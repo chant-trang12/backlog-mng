@@ -203,6 +203,13 @@ describe("Authentication & SSO Integration", () => {
       }
     });
 
+    it("allows viewer (và bgd) to POST /feature-requests/import — xem/tải file mẫu/import đều mở cho mọi role", () => {
+      const viewer = callRequireWrite("viewer", "POST", "/feature-requests/import");
+      expect(viewer.nextCalled).toBe(true);
+      const bgd = callRequireWrite("bgd", "POST", "/feature-requests/import");
+      expect(bgd.nextCalled).toBe(true);
+    });
+
     it("allows viewer to POST /feature-requests/:id/attachment (đính kèm file bổ sung cho chính đề xuất — cùng tinh thần ngoại lệ tạo mới)", () => {
       const { nextCalled } = callRequireWrite("viewer", "POST", "/feature-requests/1/attachment");
       expect(nextCalled).toBe(true);

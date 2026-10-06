@@ -5,20 +5,21 @@ import { createApp } from "../src/app.js";
 // "Xin Hủy nhiệm vụ" (menu Nhiệm vụ, popup "Cập nhật tiến độ") — hủy task
 // bị phạt điểm theo % thời gian mục tiêu (từ ngày 01 tháng backlog tới
 // Deadline task) đã trôi qua, xem computeElapsedFraction/cancelPenaltyTier
-// ở task.service.ts. Vì fraction tính theo THỜI ĐIỂM THỰC (Date.now()),
-// test này dùng đúng THÁNG HIỆN TẠI làm period (period.year/month = tháng
-// backlog chứa "hôm nay") rồi chọn Deadline cách "hôm nay" X ngày để điều
-// khiển % đã trôi qua một cách chủ động, không phụ thuộc đồng hồ hệ thống
-// lúc chạy test (miễn chạy trong cùng tháng, không chạy đúng lúc giao
-// thừa cuối tháng — rủi ro rất nhỏ, chấp nhận được).
+// ở task.service.ts. fraction tính theo THỜI ĐIỂM THỰC (Date.now()) nên
+// test dùng 1 PERIOD CỐ ĐỊNH TRONG QUÁ KHỨ XA (5 năm trước, tháng 1) thay
+// vì tháng hiện tại — số ngày "đã trôi qua" (elapsed) nhờ đó rất lớn
+// (hàng nghìn ngày), nên sai số làm tròn ngày khi suy ra Deadline cho từng
+// mức % mong muốn trở nên không đáng kể (<0.1%), tránh test bị flaky do
+// rơi sát biên giữa 2 mức phạt — khác với dùng tháng hiện tại (elapsed chỉ
+// vài ngày đầu tháng, sai số làm tròn 1 ngày đủ lớn để nhảy mức).
 
-function todayPeriodYm(): { year: number; month: number } {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+function pastPeriodYm(): { year: number; month: number } {
+  return { year: new Date().getFullYear() - 5, month: 1 };
 }
 
 // Deadline cách đầu tháng backlog N ngày (tính từ ngày 01, UTC-safe bằng
-// cách build lại Date từ y/m/d local).
+// cách build lại Date từ y/m/d local) — JS Date tự cộng dồn qua các
+// tháng/năm tiếp theo đúng, kể cả N rất lớn (hàng nghìn ngày).
 function deadlineDaysFromPeriodStart(year: number, month: number, days: number): string {
   const d = new Date(year, month - 1, 1 + days);
   const p = (n: number) => String(n).padStart(2, "0");
@@ -67,7 +68,7 @@ async function makeTask(
 describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục tiêu đã trôi qua", () => {
   it("hủy khi chưa trôi qua 1/4 thời gian: chặn nếu thiếu task thay thế, cho qua nếu có", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy som team ${Date.now()}`;
     const teamId = await makeTeam(app, teamName, periodId);
@@ -102,7 +103,7 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
 
   it("hủy khi đã trôi qua >= 3/4 thời gian: tự chấm % Đánh giá = 5", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy tre team ${Date.now()}`;
     await makeTeam(app, teamName, periodId);
@@ -125,7 +126,7 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
 
   it("hủy khi đã trôi qua [2/3, 3/4): tự chấm % Đánh giá = 10", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy 23 team ${Date.now()}`;
     await makeTeam(app, teamName, periodId);
@@ -141,7 +142,7 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
 
   it("hủy khi đã trôi qua [1/4, 2/3): tự chấm % Đánh giá = 50", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy 14 team ${Date.now()}`;
     await makeTeam(app, teamName, periodId);
@@ -157,7 +158,7 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
 
   it("task không có Deadline: giữ hành vi cũ, không phạt điểm, không chặn", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy no deadline team ${Date.now()}`;
     await makeTeam(app, teamName, periodId);
@@ -172,7 +173,7 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
 
   it("chỉ xử lý ở lần đầu chuyển vào Hủy — lưu lại khi đã Hủy không ghi đè % Đánh giá đã sửa", async () => {
     const app = createApp();
-    const { year, month } = todayPeriodYm();
+    const { year, month } = pastPeriodYm();
     const periodId = await findOrMakePeriod(app, year, month);
     const teamName = `Huy giu diem team ${Date.now()}`;
     await makeTeam(app, teamName, periodId);

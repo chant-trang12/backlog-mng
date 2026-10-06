@@ -74,7 +74,7 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // thêm điều kiện phải thuộc đúng phòng ban đích (requireTargetScope ở
 // featureRequest.controller.ts, không liên quan role).
 // req.path đã bị Express cắt bỏ tiền tố "/api" (mount ở app.use("/api", ...)).
-const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests"]);
+const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests", "POST /feature-requests/import"]);
 // File đính kèm là 1 phần của việc "đề xuất" (bổ sung tài liệu cho chính
 // yêu cầu vừa/đang tạo) — cùng tinh thần ngoại lệ ở trên, nhưng path có
 // :id động nên không đưa được vào Set literal, phải so bằng regex riêng.
