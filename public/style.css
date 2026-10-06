@@ -1641,6 +1641,23 @@ select.tm-phanloai-select {
   flex-direction: column;
   gap: 12px;
 }
+/* Nút mở/đóng khung "Thêm nhân sự" — xem tm-add-frame-toggle, 04-tasks.js. */
+.tm-add-frame-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.tm-add-frame-toggle .caret { transition: transform 0.15s ease; }
+.tm-add-frame-toggle[aria-expanded="false"] .caret { transform: rotate(-90deg); }
+#tm-add-frame-body { display: flex; flex-direction: column; gap: 12px; }
+#tm-add-frame-body[hidden] { display: none; }
 
 /* Nút "Chia đều tỷ lệ" — màu riêng, tách biệt hẳn với primary (olive) và
    các nút hành động khác trong dialog để nổi bật hơn. */

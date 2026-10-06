@@ -881,6 +881,10 @@ async function openTaskMemberDialog(task) {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
   el.taskMemberDialogTeam.textContent = `Team ${task.team}`;
+  // Luôn mở khung "Thêm nhân sự" mỗi lần mở dialog — trạng thái đóng chỉ
+  // là tiện ích tạm thời trong phiên xem hiện tại, không nhớ lại.
+  document.getElementById("tm-add-frame-toggle").setAttribute("aria-expanded", "true");
+  document.getElementById("tm-add-frame-body").hidden = false;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
@@ -1213,6 +1217,14 @@ el.tmSplitEvenBtn.addEventListener("click", async () => {
     showToast(err.message);
     await loadTaskMembers();
   }
+});
+
+document.getElementById("tm-add-frame-toggle").addEventListener("click", () => {
+  const toggle = document.getElementById("tm-add-frame-toggle");
+  const body = document.getElementById("tm-add-frame-body");
+  const expanded = toggle.getAttribute("aria-expanded") !== "false";
+  toggle.setAttribute("aria-expanded", String(!expanded));
+  body.hidden = expanded;
 });
 
 el.tmAddBtn.addEventListener("click", async () => {
