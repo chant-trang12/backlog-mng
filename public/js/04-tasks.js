@@ -1224,6 +1224,10 @@ async function loadAndRenderTaskItems(task) {
   if (!task) return;
   taskItemDialogTask = task;
   document.getElementById("ti-new-ten-viec").value = "";
+  // Mặc định luôn ĐÓNG khung "Thêm việc" mỗi lần mở dialog — giống khung
+  // "Thêm nhân sự" trước đây, đỡ chiếm chỗ khi chỉ cần xem.
+  document.getElementById("ti-add-frame-toggle").setAttribute("aria-expanded", "false");
+  document.getElementById("ti-add-frame-body").hidden = true;
   try {
     state.taskItems = await api(`/api/tasks/${task.id}/items`);
   } catch (err) {
@@ -1416,6 +1420,14 @@ async function reloadTaskItems() {
   renderTaskItemList();
 }
 
+document.getElementById("ti-add-frame-toggle").addEventListener("click", () => {
+  const toggle = document.getElementById("ti-add-frame-toggle");
+  const body = document.getElementById("ti-add-frame-body");
+  const expanded = toggle.getAttribute("aria-expanded") !== "false";
+  toggle.setAttribute("aria-expanded", String(!expanded));
+  body.hidden = expanded;
+});
+
 document.getElementById("ti-add-btn").addEventListener("click", async () => {
   const input = document.getElementById("ti-new-ten-viec");
   const tenViec = input.value.trim();
@@ -1429,6 +1441,8 @@ document.getElementById("ti-add-btn").addEventListener("click", async () => {
       body: JSON.stringify({ ten_viec: tenViec }),
     });
     input.value = "";
+    document.getElementById("ti-add-frame-toggle").setAttribute("aria-expanded", "false");
+    document.getElementById("ti-add-frame-body").hidden = true;
     await reloadTaskItems();
   } catch (err) {
     showToast(err.message);

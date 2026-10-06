@@ -2329,6 +2329,24 @@
       <h2 id="task-member-dialog-title" style="margin:0">Nhân sự tham gia</h2>
       <p class="muted" id="task-member-dialog-team" style="margin:0"></p>
 
+      <!-- "Thêm việc" — khung đóng/mở được (giống pattern tm-add-frame-toggle
+           đã dùng ở các dialog khác), đặt TRƯỚC bảng dữ liệu (Nhân sự tham
+           gia) để không chiếm chỗ khi chỉ cần xem danh sách. Danh sách Việc
+           hiện có (task-item-list) vẫn hiện ở phần "Chi tiết công việc" bên
+           dưới bảng Nhân sự tham gia. -->
+      <div class="tm-add-frame">
+        <button type="button" id="ti-add-frame-toggle" class="tm-add-frame-toggle" aria-expanded="false">
+          <span>Thêm việc</span>
+          <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="ti-add-frame-body" hidden>
+          <div class="row">
+            <input id="ti-new-ten-viec" placeholder="Tên việc mới (VD: Xây dựng nghiệp vụ...)..." style="flex:1" />
+            <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
+          </div>
+        </div>
+      </div>
+
       <!-- % Đánh giá + đơn vị điểm cá nhân chỉ hiện khi task đã chấm điểm
            (2 thứ này phụ thuộc điểm task). Tỷ lệ đóng góp giữa các nhân sự
            thì KHÔNG phụ thuộc điểm task — cho chia/sửa được ngay cả khi task
@@ -2366,10 +2384,6 @@
            recomputeTaskScoreFromItems, taskItem.service.ts. Render động
            hoàn toàn bằng JS — xem renderTaskItemList(), 04-tasks.js. -->
       <h2 style="margin:8px 0 0;font-size:1.05rem">Chi tiết công việc</h2>
-      <div class="row">
-        <input id="ti-new-ten-viec" placeholder="Tên việc mới (VD: Xây dựng nghiệp vụ...)..." style="flex:1" />
-        <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
-      </div>
       <div id="task-item-list"></div>
 
       <div class="actions">
