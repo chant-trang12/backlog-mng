@@ -368,7 +368,7 @@ function frActionsHtml(r, side) {
   // còn "Chờ duyệt" — yêu cầu đổi phòng đích, sau đó hiển thị ở hộp thư của
   // phòng mới thay vì phòng cũ (server chặn cùng luật isInScope + Chờ duyệt).
   if (r.trang_thai === "Chờ duyệt") {
-    actions += `<button class="small btn-progress write-action transfer-fr-btn" data-id="${id}">Chuyển đơn vị thực hiện</button>`;
+    actions += `<button class="small btn-member write-action transfer-fr-btn" data-id="${id}">Chuyển đơn vị thực hiện</button>`; // tím — tránh trùng xanh dương với nút Đưa vào Roadmap
   }
   // Sửa/Xóa: chỉ bên đề xuất, chỉ khi còn "Chờ duyệt" (đã Duyệt/Từ chối thì
   // khoá nội dung, tránh sửa sau khi bên kia đã hành động). Khác với "Tạo
