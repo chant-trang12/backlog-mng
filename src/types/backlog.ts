@@ -241,6 +241,11 @@ export interface TaskMember {
   // chú (ghi_chu là ghi chú tự do chung chung).
   noi_dung_cong_viec: string | null;
   ghi_chu: string | null;
+  // "Việc cần xử lý gấp" — tick ở cột hành động bảng Nhân sự tham gia,
+  // CÙNG CƠ CHẾ với task_items.treo_viec (bắt buộc lý do + tự ghi ngày).
+  can_xu_ly_gap: boolean;
+  can_xu_ly_gap_ly_do: string | null;
+  can_xu_ly_gap_tu_ngay: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -273,6 +278,10 @@ export interface UpdateTaskMemberInput {
   phan_loai?: string | null;
   noi_dung_cong_viec?: string;
   ghi_chu?: string;
+  // set true -> service tự ghi can_xu_ly_gap_tu_ngay = hôm nay (bắt buộc
+  // kèm can_xu_ly_gap_ly_do); set false -> service tự clear ly do/ngày.
+  can_xu_ly_gap?: boolean;
+  can_xu_ly_gap_ly_do?: string;
 }
 
 // KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =

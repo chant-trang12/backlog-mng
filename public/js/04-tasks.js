@@ -924,7 +924,7 @@ function renderTaskMemberThead() {
     <th style="width:90px">MD</th>
     <th style="width:570px">Nội dung công việc</th>
     <th style="width:190px">Ghi chú</th>
-    <th style="width:56px"></th>
+    <th style="width:170px"></th>
   </tr>`;
 }
 
@@ -1019,7 +1019,20 @@ function renderTaskMembers() {
       <td style="text-align:center">${tm.tong_md ?? 0} MD</td>
       <td><input type="text" class="inline-cell-input tm-work-content-input" data-id="${tm.id}" value="${(tm.noi_dung_cong_viec ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
       <td><input type="text" class="inline-cell-input tm-note-input" data-id="${tm.id}" value="${(tm.ghi_chu ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
-      <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
+      <td>
+        <div class="actions-cell" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;font-size:0.78rem;white-space:nowrap">
+            <input type="checkbox" class="tm-urgent-checkbox" data-id="${tm.id}" ${tm.can_xu_ly_gap ? "checked" : ""} />
+            Việc cần xử lý gấp
+          </label>
+          ${
+            tm.can_xu_ly_gap
+              ? `<span class="status-badge status-huy" style="font-size:0.72rem" title="${(tm.can_xu_ly_gap_ly_do ?? "").replace(/"/g, "&quot;")}">Gấp: ${tm.can_xu_ly_gap_ly_do ?? ""} (từ ${formatDateDisplay(tm.can_xu_ly_gap_tu_ngay)})</span>`
+              : ""
+          }
+          <button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button>
+        </div>
+      </td>
     </tr>`;
     })
     .join("");
@@ -1034,6 +1047,38 @@ function renderTaskMembers() {
       } catch (err) {
         showToast(err.message);
       }
+    });
+  });
+
+  // "Việc cần xử lý gấp" — cùng cơ chế Treo việc: tick lên bắt nhập lý do
+  // (bắt buộc), tự ghi ngày; bỏ tick thì tắt thẳng, không cần lý do.
+  el.taskMemberTbody.querySelectorAll(".tm-urgent-checkbox").forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      if (cb.checked) {
+        const lyDo = window.prompt("Lý do cần xử lý gấp (bắt buộc):", "");
+        if (!lyDo || !lyDo.trim()) {
+          cb.checked = false;
+          return;
+        }
+        try {
+          await api(`/api/task-members/${cb.dataset.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ can_xu_ly_gap: true, can_xu_ly_gap_ly_do: lyDo.trim() }),
+          });
+        } catch (err) {
+          showToast(err.message);
+        }
+      } else {
+        try {
+          await api(`/api/task-members/${cb.dataset.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ can_xu_ly_gap: false }),
+          });
+        } catch (err) {
+          showToast(err.message);
+        }
+      }
+      await loadTaskMembers();
     });
   });
 

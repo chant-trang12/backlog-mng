@@ -17,6 +17,9 @@ const SELECT_COLUMNS = [
   "task_members.phan_loai",
   "task_members.noi_dung_cong_viec",
   "task_members.ghi_chu",
+  "task_members.can_xu_ly_gap",
+  "task_members.can_xu_ly_gap_ly_do",
+  "task_members.can_xu_ly_gap_tu_ngay",
   "task_members.created_at",
   "task_members.updated_at",
   "members.name as member_name",
@@ -54,6 +57,7 @@ export async function listTaskMembers(taskId: number): Promise<TaskMemberWithNam
     const tongGioCong = hoursMap.get(r.member_id) ?? 0;
     return {
       ...r,
+      can_xu_ly_gap: !!r.can_xu_ly_gap,
       tong_gio_cong: Math.round(tongGioCong * 100) / 100,
       tong_md: Math.round((tongGioCong / 8) * 100) / 100,
     };
@@ -66,7 +70,15 @@ export async function getTaskMember(id: number): Promise<TaskMemberWithName | un
     .where({ "task_members.id": id, "task_members.is_deleted": false })
     .select(SELECT_COLUMNS)
     .first();
-  return row as TaskMemberWithName | undefined;
+  return row ? ({ ...row, can_xu_ly_gap: !!row.can_xu_ly_gap } as TaskMemberWithName) : undefined;
+}
+
+// "YYYY-MM-DD" theo giờ local — dùng cho can_xu_ly_gap_tu_ngay (giống
+// treo_viec_tu_ngay ở taskItem.service.ts).
+function todayDateString(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 // undefined -> giữ nguyên giá trị cũ, null -> xóa (về "— Không —"), chuỗi
@@ -167,17 +179,31 @@ export async function updateTaskMember(
   if (input.ty_le_dong_gop !== undefined && input.ty_le_dong_gop !== null) {
     await assertContributionWithinLimit(existing.task_id, id, input.ty_le_dong_gop);
   }
+  if (input.can_xu_ly_gap === true && !input.can_xu_ly_gap_ly_do?.trim()) {
+    throw new Error("Cần nhập lý do khi đánh dấu Việc cần xử lý gấp");
+  }
 
-  await db("task_members")
-    .where({ id })
-    .update({
-      ty_le_dong_gop: input.ty_le_dong_gop !== undefined ? input.ty_le_dong_gop : existing.ty_le_dong_gop,
-      diem_ca_nhan: input.diem_ca_nhan !== undefined ? input.diem_ca_nhan : existing.diem_ca_nhan,
-      phan_loai: normalizeNullableText(input.phan_loai, existing.phan_loai),
-      noi_dung_cong_viec: normalizeNullableText(input.noi_dung_cong_viec, existing.noi_dung_cong_viec),
-      ghi_chu: normalizeNullableText(input.ghi_chu, existing.ghi_chu),
-      updated_at: db.fn.now(),
-    });
+  const update: Record<string, unknown> = {
+    ty_le_dong_gop: input.ty_le_dong_gop !== undefined ? input.ty_le_dong_gop : existing.ty_le_dong_gop,
+    diem_ca_nhan: input.diem_ca_nhan !== undefined ? input.diem_ca_nhan : existing.diem_ca_nhan,
+    phan_loai: normalizeNullableText(input.phan_loai, existing.phan_loai),
+    noi_dung_cong_viec: normalizeNullableText(input.noi_dung_cong_viec, existing.noi_dung_cong_viec),
+    ghi_chu: normalizeNullableText(input.ghi_chu, existing.ghi_chu),
+    updated_at: db.fn.now(),
+  };
+  // "Việc cần xử lý gấp" — cùng cơ chế Treo việc (task_items.treo_viec,
+  // xem taskItem.service.ts): bắt buộc lý do, tự ghi/xóa ngày đánh dấu.
+  if (input.can_xu_ly_gap === true) {
+    update.can_xu_ly_gap = true;
+    update.can_xu_ly_gap_ly_do = input.can_xu_ly_gap_ly_do!.trim();
+    update.can_xu_ly_gap_tu_ngay = existing.can_xu_ly_gap ? existing.can_xu_ly_gap_tu_ngay : todayDateString();
+  } else if (input.can_xu_ly_gap === false) {
+    update.can_xu_ly_gap = false;
+    update.can_xu_ly_gap_ly_do = null;
+    update.can_xu_ly_gap_tu_ngay = null;
+  }
+
+  await db("task_members").where({ id }).update(update);
   return getTaskMember(id);
 }
 

@@ -98,6 +98,39 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(updated.body.member_chuc_vu).toBe("BA"); // vai trò không đổi — vẫn theo chức vụ nhân sự
   });
 
+  it("can_xu_ly_gap (\"Việc cần xử lý gấp\"): bắt buộc lý do, tự ghi/xóa ngày đánh dấu", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2007, 4);
+    const teamId = await makeTeam(app, "TM gap team", periodId);
+    const memberId = await makeMember(app, "Ngô Văn G", teamId, periodId, "Dev");
+    const taskId = await makeTask(app, periodId, "TM gap team", "Task gap");
+    const created = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
+    expect(created.body.can_xu_ly_gap).toBe(false);
+
+    const missingReason = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ can_xu_ly_gap: true });
+    expect(missingReason.status).toBe(400);
+
+    const marked = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ can_xu_ly_gap: true, can_xu_ly_gap_ly_do: "Khách hàng gấp" });
+    expect(marked.status).toBe(200);
+    expect(marked.body.can_xu_ly_gap).toBe(true);
+    expect(marked.body.can_xu_ly_gap_ly_do).toBe("Khách hàng gấp");
+    expect(marked.body.can_xu_ly_gap_tu_ngay).toBeTruthy();
+
+    const list = await request(app).get(`/api/tasks/${taskId}/members`);
+    expect(list.body.find((m: { id: number }) => m.id === created.body.id).can_xu_ly_gap).toBe(true);
+
+    const unmarked = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ can_xu_ly_gap: false });
+    expect(unmarked.body.can_xu_ly_gap).toBe(false);
+    expect(unmarked.body.can_xu_ly_gap_ly_do).toBeNull();
+    expect(unmarked.body.can_xu_ly_gap_tu_ngay).toBeNull();
+  });
+
   it("noi_dung_cong_viec: nhập lúc gán, hiển thị ở list, sửa được sau (độc lập với ghi_chu)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2007, 2);

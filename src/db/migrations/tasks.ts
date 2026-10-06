@@ -187,6 +187,18 @@ export async function migrateTaskMembersTables(): Promise<void> {
     });
   }
 
+  // task_members.can_xu_ly_gap — "Việc cần xử lý gấp", tick ở cột hành
+  // động của bảng "Nhân sự tham gia" — CÙNG CƠ CHẾ với "Treo việc"
+  // (task_items.treo_viec, xem taskItem.service.ts): bắt buộc nhập lý do
+  // + tự ghi ngày đánh dấu, hiển thị note để dễ nhận biết.
+  if (!(await db.schema.hasColumn("task_members", "can_xu_ly_gap"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.boolean("can_xu_ly_gap").notNullable().defaultTo(false);
+      table.text("can_xu_ly_gap_ly_do");
+      table.string("can_xu_ly_gap_tu_ngay", 10);
+    });
+  }
+
   // task_members.department_id — Quy tắc 9.2, suy trực tiếp từ department_id
   // của chính task (đáng tin cậy hơn suy qua team/member vì task luôn có
   // đúng 1 department_id cố định — xem departments.ts). Cần chạy sau
