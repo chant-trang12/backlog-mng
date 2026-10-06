@@ -402,7 +402,7 @@ main {
 }
 .home-urgent-card h2 .icon { width: 1.3em; height: 1.3em; }
 .home-urgent-card .table-wrap { background: var(--card-bg); border-radius: 8px; overflow: hidden; }
-.home-urgent-card thead th { background: var(--delete) !important; }
+.home-urgent-card thead th { background: var(--delete) !important; text-align: center; }
 
 .row {
   display: flex;
