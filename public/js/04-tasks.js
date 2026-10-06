@@ -227,6 +227,7 @@ function renderTasks() {
         <button class="small btn-grade grade-write-action grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
         <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
+        <button class="small btn-progress task-item-btn" title="Chi tiết công việc — tách Nhiệm vụ thành từng đầu việc cụ thể"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg>Việc</button>
       </div></td>
     </tr>`;
     })
@@ -265,6 +266,12 @@ function renderTasks() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openTaskMemberDialog(state.tasks.find((t) => t.id === id));
+    });
+  });
+  el.taskTbody.querySelectorAll(".task-item-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      openTaskItemDialog(state.tasks.find((t) => t.id === id));
     });
   });
   el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
@@ -700,6 +707,19 @@ function openGradeDialog(task) {
   const infoText = cancelGradeInfoLine(task);
   infoEl.hidden = !infoText;
   infoEl.textContent = infoText;
+  const fromItemsNote = document.getElementById("grade-percent-from-items-note");
+  fromItemsNote.hidden = true;
+  if (task?.id) {
+    api(`/api/tasks/${task.id}/items`)
+      .then((items) => {
+        const gradedCount = (items ?? []).filter((it) => it.diem_danh_gia != null).length;
+        if (gradedCount > 0) {
+          fromItemsNote.hidden = false;
+          fromItemsNote.textContent = `% Đánh giá đang tự tính = trung bình ${gradedCount} Việc con đã chấm (xem nút "Việc") — sửa tay ở đây vẫn lưu được, nhưng lần sau chấm lại 1 Việc con sẽ tính lại và ghi đè.`;
+        }
+      })
+      .catch(() => {});
+  }
   el.gradeDialog.showModal();
 }
 
@@ -1292,6 +1312,235 @@ el.tmAddBtn.addEventListener("click", async () => {
 });
 
 el.taskMemberCloseBtn.addEventListener("click", () => el.taskMemberDialog.close());
+
+// ---- "Chi tiết công việc" (task_items) — tách 1 Nhiệm vụ thành từng đầu
+// việc cụ thể, mỗi Việc phân công 1-nhiều nhân sự (lấy từ "Nhân sự tham
+// gia" của chính task) kèm giờ công (Hours, MD tự tính = Hours/8). % Đánh
+// giá của Task tự = trung bình các Việc đã chấm (xem
+// recomputeTaskScoreFromItems, taskItem.service.ts) — không tính ở đây.
+
+let taskItemDialogTask = null;
+let taskItemAssignablePeople = []; // Nhân sự tham gia task này (từ task_members) — nguồn để gán vào từng Việc.
+
+async function openTaskItemDialog(task) {
+  if (!task) return;
+  taskItemDialogTask = task;
+  document.getElementById("task-item-dialog-title").textContent = `Chi tiết công việc: ${task.nhiem_vu}`;
+  document.getElementById("ti-new-ten-viec").value = "";
+  const taskItemDialog = document.getElementById("task-item-dialog");
+  try {
+    const [items, members] = await Promise.all([
+      api(`/api/tasks/${task.id}/items`),
+      api(`/api/tasks/${task.id}/members`),
+    ]);
+    state.taskItems = items;
+    taskItemAssignablePeople = members;
+  } catch (err) {
+    showToast(err.message);
+    state.taskItems = [];
+    taskItemAssignablePeople = [];
+  }
+  renderTaskItemList();
+  taskItemDialog.showModal();
+}
+
+function taskItemMdLabel(it) {
+  return `${it.tong_gio_cong ?? 0}h (${it.tong_md ?? 0} MD)`;
+}
+
+function renderTaskItemList() {
+  const wrap = document.getElementById("task-item-list");
+  if (state.taskItems.length === 0) {
+    wrap.innerHTML = `<p class="muted" style="text-align:center;padding:16px">Chưa có Việc nào — nhập tên ở ô trên để thêm.</p>`;
+    return;
+  }
+  wrap.innerHTML = state.taskItems
+    .map((it) => {
+      const assigneeIds = new Set(it.assignees.map((a) => a.member_id));
+      const availableToAdd = taskItemAssignablePeople.filter((m) => !assigneeIds.has(m.member_id));
+      return `
+    <div class="tm-add-frame" data-item-id="${it.id}" style="gap:10px">
+      <div class="field-row" style="align-items:flex-end">
+        <div style="flex:1">
+          <label>Tên việc</label>
+          <input class="inline-cell-input ti-ten-viec-input" data-id="${it.id}" value="${(it.ten_viec ?? "").replace(/"/g, "&quot;")}" style="text-align:left" />
+        </div>
+        <div>
+          <label>Trạng thái</label>
+          <select class="ti-trangthai-select" data-id="${it.id}">
+            ${["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"]
+              .map((s) => `<option value="${s}" ${s === it.trang_thai ? "selected" : ""}>${s}</option>`)
+              .join("")}
+          </select>
+        </div>
+        <div style="width:110px">
+          <label>% Đánh giá</label>
+          <input type="number" class="inline-cell-input ti-score-input" data-id="${it.id}" min="0" max="100" value="${it.diem_danh_gia ?? ""}" placeholder="—" />
+        </div>
+        <button type="button" class="small btn-delete ti-delete-btn" data-id="${it.id}" title="Xóa Việc">×</button>
+      </div>
+      <div class="row" style="align-items:center;gap:8px">
+        <span class="status-badge status-default">${taskItemMdLabel(it)}</span>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+          <input type="checkbox" class="ti-treo-checkbox" data-id="${it.id}" ${it.treo_viec ? "checked" : ""} />
+          Treo việc
+        </label>
+        ${
+          it.treo_viec
+            ? `<span class="status-badge status-huy" title="${(it.treo_viec_ly_do ?? "").replace(/"/g, "&quot;")}">Lý do: ${it.treo_viec_ly_do ?? ""} (từ ${formatDateDisplay(it.treo_viec_tu_ngay)})</span>`
+            : ""
+        }
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        ${it.assignees
+          .map(
+            (a) =>
+              `<span class="status-badge status-default" style="display:inline-flex;align-items:center;gap:6px">${a.member_name}${a.gio_cong != null ? ` — ${a.gio_cong}h` : ""}<button type="button" class="ti-assignee-remove" data-id="${a.id}" style="border:none;background:transparent;cursor:pointer;color:var(--delete);font-weight:700">×</button></span>`,
+          )
+          .join("")}
+      </div>
+      ${
+        availableToAdd.length > 0
+          ? `
+      <div class="field-row" style="align-items:flex-end">
+        <div style="flex:1">
+          <label>Thêm nhân sự phụ trách</label>
+          <select class="ti-assignee-select" data-id="${it.id}">
+            ${availableToAdd.map((m) => `<option value="${m.member_id}">${m.member_name}</option>`).join("")}
+          </select>
+        </div>
+        <div style="width:110px">
+          <label>Giờ công</label>
+          <input type="number" class="ti-assignee-hours-input" data-id="${it.id}" min="0" step="0.5" placeholder="Hours" />
+        </div>
+        <button type="button" class="small btn-exclude ti-assignee-add-btn" data-id="${it.id}">+ Gán</button>
+      </div>`
+          : `<p class="muted" style="margin:0;font-size:0.82rem">Đã gán hết nhân sự tham gia task này — thêm người ở nút "Nhân sự" trước.</p>`
+      }
+    </div>`;
+    })
+    .join("");
+
+  wrap.querySelectorAll(".ti-ten-viec-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      await taskItemApiCall(`/api/task-items/${input.dataset.id}`, "PUT", { ten_viec: input.value.trim() });
+    });
+  });
+  wrap.querySelectorAll(".ti-trangthai-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      await taskItemApiCall(`/api/task-items/${select.dataset.id}`, "PUT", { trang_thai: select.value });
+    });
+  });
+  wrap.querySelectorAll(".ti-score-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const val = input.value.trim();
+      await taskItemApiCall(`/api/task-items/${input.dataset.id}`, "PUT", {
+        diem_danh_gia: val === "" ? null : Number(val),
+      });
+      await loadTasks(); // % Đánh giá cấp Task có thể đã đổi theo trung bình
+    });
+  });
+  wrap.querySelectorAll(".ti-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      if (!(await confirmDialog("Xóa Việc này?"))) return;
+      try {
+        await api(`/api/task-items/${btn.dataset.id}`, { method: "DELETE" });
+        state.taskItems = state.taskItems.filter((it) => it.id !== Number(btn.dataset.id));
+        renderTaskItemList();
+        await loadTasks();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  wrap.querySelectorAll(".ti-treo-checkbox").forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      if (cb.checked) {
+        const lyDo = window.prompt("Lý do Treo việc (bắt buộc):", "");
+        if (!lyDo || !lyDo.trim()) {
+          cb.checked = false;
+          return;
+        }
+        await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: true, treo_viec_ly_do: lyDo.trim() });
+      } else {
+        await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: false });
+      }
+    });
+  });
+  wrap.querySelectorAll(".ti-assignee-add-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const itemId = btn.dataset.id;
+      const select = wrap.querySelector(`.ti-assignee-select[data-id="${itemId}"]`);
+      const hoursInput = wrap.querySelector(`.ti-assignee-hours-input[data-id="${itemId}"]`);
+      if (!select || !select.value) return;
+      try {
+        await api(`/api/task-items/${itemId}/members`, {
+          method: "POST",
+          body: JSON.stringify({
+            member_id: Number(select.value),
+            gio_cong: hoursInput.value.trim() === "" ? undefined : Number(hoursInput.value),
+          }),
+        });
+        await reloadTaskItems();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  wrap.querySelectorAll(".ti-assignee-remove").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await api(`/api/task-item-members/${btn.dataset.id}`, { method: "DELETE" });
+        await reloadTaskItems();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+async function taskItemApiCall(url, method, body) {
+  try {
+    await api(url, { method, body: JSON.stringify(body) });
+    await reloadTaskItems();
+  } catch (err) {
+    showToast(err.message);
+    await reloadTaskItems();
+  }
+}
+
+async function reloadTaskItems() {
+  if (!taskItemDialogTask) return;
+  try {
+    state.taskItems = await api(`/api/tasks/${taskItemDialogTask.id}/items`);
+  } catch (err) {
+    showToast(err.message);
+  }
+  renderTaskItemList();
+}
+
+document.getElementById("ti-add-btn").addEventListener("click", async () => {
+  const input = document.getElementById("ti-new-ten-viec");
+  const tenViec = input.value.trim();
+  if (!tenViec) {
+    showToast("Hãy nhập tên việc.");
+    return;
+  }
+  try {
+    await api(`/api/tasks/${taskItemDialogTask.id}/items`, {
+      method: "POST",
+      body: JSON.stringify({ ten_viec: tenViec }),
+    });
+    input.value = "";
+    await reloadTaskItems();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById("task-item-close-btn").addEventListener("click", () => {
+  document.getElementById("task-item-dialog").close();
+});
 
 // ---- Export ----
 

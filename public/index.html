@@ -82,6 +82,28 @@
             </section>
           </div>
 
+          <!-- "Việc đang treo" — các đầu việc (task_items) bị đánh dấu Treo
+               việc, liệt kê để đôn đốc tới khi gỡ treo (đạt mục tiêu). Chỉ
+               hiện khi có dữ liệu — xem renderHomeTreoViec(), 08-home.js. -->
+          <section class="card" id="home-treo-viec-card" hidden style="margin-bottom:20px">
+            <h2 style="margin:0 0 12px">Việc đang treo — cần đôn đốc</h2>
+            <div class="table-wrap">
+              <table id="home-treo-viec-table">
+                <thead>
+                  <tr>
+                    <th>Tên việc</th>
+                    <th>Nhiệm vụ gốc</th>
+                    <th>Team</th>
+                    <th>Nhân sự phụ trách</th>
+                    <th>Lý do treo</th>
+                    <th style="width:120px">Đã treo</th>
+                  </tr>
+                </thead>
+                <tbody id="home-treo-viec-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+
           <div class="tab-panel-group">
           <div class="chrome-tabs" id="home-subnav">
             <span class="pill active" data-tab="ranking">Ranking</span>
@@ -2229,6 +2251,12 @@
       <div>
         <label for="grade-percent">% Đánh giá</label>
         <input id="grade-percent" type="number" min="0" />
+        <!-- Task có Việc con (task_items) mang điểm riêng -> % này đang tự
+             tính = trung bình các Việc đã chấm (xem
+             recomputeTaskScoreFromItems, taskItem.service.ts) — sửa tay ở
+             đây vẫn lưu được nhưng lần sau có Việc con đổi điểm sẽ TÍNH
+             LẠI VÀ GHI ĐÈ. Chỉ là dòng CẢNH BÁO, không khóa ô nhập. -->
+        <p class="muted" id="grade-percent-from-items-note" hidden style="margin:4px 0 0;font-size:0.8rem"></p>
       </div>
       <div>
         <label for="grade-comment">Nội dung đánh giá</label>
@@ -2370,6 +2398,28 @@
         <button type="button" id="task-member-close-btn">Đóng</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- "Chi tiết công việc" — tách 1 Nhiệm vụ thành từng đầu việc cụ thể
+       (Việc), mỗi Việc phân công 1-nhiều nhân sự (lấy từ danh sách "Nhân
+       sự tham gia" của chính task) kèm giờ công, có thể chấm điểm riêng
+       (% Đánh giá của Task tự = trung bình các Việc đã chấm — xem
+       recomputeTaskScoreFromItems, taskItem.service.ts) và đánh dấu "Treo
+       việc" (đôn đốc ở Trang chủ). Render động hoàn toàn bằng JS (danh
+       sách Việc đổi liên tục) — xem renderTaskItemList(), 04-tasks.js. -->
+  <dialog id="task-item-dialog" style="max-width:900px; width:92vw">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <h2 id="task-item-dialog-title" style="margin:0">Chi tiết công việc</h2>
+      <div class="row">
+        <input id="ti-new-ten-viec" placeholder="Tên việc mới (VD: Xây dựng nghiệp vụ...)..." style="flex:1" />
+        <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
+      </div>
+      <div id="task-item-list"></div>
+      <div class="actions">
+        <button type="button" id="task-item-close-btn">Đóng</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="roadmap-dialog">

@@ -74,6 +74,41 @@ function renderHomeDashboard() {
   renderHomeCompletionTable(teamNames, filteredTasks);
   renderHomeRankingTab(rankingData, eligibleForRanking);
   renderHomeKpiTheoTaskTable();
+  renderHomeTreoViec();
+}
+
+// "Việc đang treo" — đôn đốc tới khi gỡ treo (đạt mục tiêu) hoặc Việc bị
+// xóa. Lấy theo đúng tháng Home đang xem (state.homePeriodId) — độc lập
+// bộ lọc Team (hiện TẤT CẢ team, giống card cảnh báo task hiện có).
+async function renderHomeTreoViec() {
+  const card = document.getElementById("home-treo-viec-card");
+  const tbody = document.getElementById("home-treo-viec-tbody");
+  if (!card || !state.homePeriodId) {
+    if (card) card.hidden = true;
+    return;
+  }
+  let rows = [];
+  try {
+    rows = await api(`/api/task-items/treo?period_id=${state.homePeriodId}${deptParam()}`);
+  } catch {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = rows.length === 0;
+  if (rows.length === 0) return;
+  tbody.innerHTML = rows
+    .map(
+      (r) => `
+    <tr>
+      <td>${r.ten_viec}</td>
+      <td>${r.task_nhiem_vu}</td>
+      <td><span class="status-badge ${homeTeamColorClass(r.team)}">${r.team}</span></td>
+      <td>${r.assignee_names.join(", ") || "—"}</td>
+      <td>${r.treo_viec_ly_do ?? ""}</td>
+      <td><span class="status-badge status-huy">${r.so_ngay_treo} ngày</span></td>
+    </tr>`,
+    )
+    .join("");
 }
 
 // Bật/tắt các phần tử UI ở Home theo cách tính KPI của phòng ban đang chọn

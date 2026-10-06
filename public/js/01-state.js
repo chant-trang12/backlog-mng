@@ -52,6 +52,7 @@ const state = {
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
   taskMemberAvailable: [], // nhân sự chưa gán, để gõ tìm/gợi ý
+  taskItems: [], // danh sách Việc (task_items) của task đang mở dialog "Chi tiết công việc"
   taskMemberSelectedId: null, // member_id đã chọn từ gợi ý (bấm "+ Thêm" cần có)
   taskMemberScoreUnit: "percent", // đơn vị hiển thị/nhập cột Điểm cá nhân: "percent" | "scale5"
   roadmapItems: [],
