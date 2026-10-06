@@ -2326,23 +2326,25 @@
           <span class="caret" aria-hidden="true">▾</span>
         </button>
         <div id="tm-add-frame-body" hidden>
-          <div style="position:relative">
-            <label for="tm-member">Nhân sự</label>
-            <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
-            <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
-          </div>
-          <div>
-            <label for="tm-noi-dung-cong-viec">Nội dung công việc</label>
-            <input id="tm-noi-dung-cong-viec" placeholder="Không bắt buộc" />
-          </div>
           <div class="field-row" style="align-items:flex-end">
-            <div>
+            <div style="position:relative;flex:1">
+              <label for="tm-member">Nhân sự</label>
+              <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
+              <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
+            </div>
+            <div style="flex:1">
               <label for="tm-phan-loai">Phân loại</label>
               <select id="tm-phan-loai"></select>
             </div>
+          </div>
+          <div>
+            <label for="tm-noi-dung-cong-viec">Nội dung công việc</label>
+            <textarea id="tm-noi-dung-cong-viec" placeholder="Không bắt buộc" style="min-height:70px"></textarea>
+          </div>
+          <div class="field-row" style="align-items:flex-end">
             <div style="flex:1">
               <label for="tm-ghi-chu">Ghi chú</label>
-              <input id="tm-ghi-chu" placeholder="Không bắt buộc" />
+              <textarea id="tm-ghi-chu" placeholder="Không bắt buộc" style="min-height:70px"></textarea>
             </div>
             <button type="button" id="tm-add-btn" class="write-action primary">+ Thêm</button>
           </div>
