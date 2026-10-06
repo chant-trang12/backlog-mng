@@ -282,6 +282,10 @@ export interface UpdateTaskMemberInput {
   // kèm can_xu_ly_gap_ly_do); set false -> service tự clear ly do/ngày.
   can_xu_ly_gap?: boolean;
   can_xu_ly_gap_ly_do?: string;
+  // true -> "Đã xử lý": tắt can_xu_ly_gap (gỡ lý do/ngày) + note thêm vào
+  // ghi_chu "Việc đã được xử lý ngày dd/mm/yyyy". Bỏ qua mọi field
+  // can_xu_ly_gap* khác gửi kèm (nếu có) — field này luôn thắng.
+  mark_can_xu_ly_gap_resolved?: boolean;
 }
 
 // KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =

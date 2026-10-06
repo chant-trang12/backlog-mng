@@ -82,6 +82,14 @@ function todayDateString(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// "dd/mm/yyyy" hôm nay — dùng cho note "Việc đã được xử lý ngày ..." khi
+// bấm "Đã xử lý" (mark_can_xu_ly_gap_resolved).
+function todayDateDisplayVN(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
 // undefined -> giữ nguyên giá trị cũ, null -> xóa (về "— Không —"), chuỗi
 // -> trim rồi lưu (rỗng cũng thành null).
 function normalizeNullableText(
@@ -180,7 +188,7 @@ export async function updateTaskMember(
   if (input.ty_le_dong_gop !== undefined && input.ty_le_dong_gop !== null) {
     await assertContributionWithinLimit(existing.task_id, id, input.ty_le_dong_gop);
   }
-  if (input.can_xu_ly_gap === true && !input.can_xu_ly_gap_ly_do?.trim()) {
+  if (!input.mark_can_xu_ly_gap_resolved && input.can_xu_ly_gap === true && !input.can_xu_ly_gap_ly_do?.trim()) {
     throw new Error("Cần nhập lý do khi đánh dấu Việc cần xử lý gấp");
   }
 
@@ -192,9 +200,20 @@ export async function updateTaskMember(
     ghi_chu: normalizeNullableText(input.ghi_chu, existing.ghi_chu),
     updated_at: db.fn.now(),
   };
-  // "Việc cần xử lý gấp" — cùng cơ chế Treo việc (task_items.treo_viec,
-  // xem taskItem.service.ts): bắt buộc lý do, tự ghi/xóa ngày đánh dấu.
-  if (input.can_xu_ly_gap === true) {
+  // "Đã xử lý" (nút ở card đôn đốc Trang chủ) — tắt can_xu_ly_gap + note
+  // lại ngày xử lý vào Ghi chú để lưu vết, thắng mọi field can_xu_ly_gap*
+  // khác gửi kèm.
+  if (input.mark_can_xu_ly_gap_resolved) {
+    // Ghi chú ở popup Nhân sự hiện bằng <input> 1 dòng — nối bằng " | " thay
+    // vì xuống dòng để vẫn đọc được trọn vẹn trên 1 dòng.
+    const noteLine = `Việc đã được xử lý ngày ${todayDateDisplayVN()}`;
+    update.ghi_chu = existing.ghi_chu ? `${existing.ghi_chu} | ${noteLine}` : noteLine;
+    update.can_xu_ly_gap = false;
+    update.can_xu_ly_gap_ly_do = null;
+    update.can_xu_ly_gap_tu_ngay = null;
+  } else if (input.can_xu_ly_gap === true) {
+    // "Việc cần xử lý gấp" — cùng cơ chế Treo việc (task_items.treo_viec,
+    // xem taskItem.service.ts): bắt buộc lý do, tự ghi/xóa ngày đánh dấu.
     update.can_xu_ly_gap = true;
     update.can_xu_ly_gap_ly_do = input.can_xu_ly_gap_ly_do!.trim();
     update.can_xu_ly_gap_tu_ngay = existing.can_xu_ly_gap ? existing.can_xu_ly_gap_tu_ngay : todayDateString();

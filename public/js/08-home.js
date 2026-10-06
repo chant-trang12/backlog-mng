@@ -140,10 +140,30 @@ async function renderHomeCanXuLyGap() {
       <td><span class="status-badge ${homeTeamColorClass(r.team)}">${r.team}</span></td>
       <td>${r.can_xu_ly_gap_ly_do ?? ""}</td>
       <td><span class="status-badge status-huy">${r.so_ngay} ngày</span></td>
+      <td><button type="button" class="small btn-restore can-xu-ly-gap-resolve-btn" data-id="${r.id}">Đã xử lý</button></td>
     </tr>`,
     )
     .join("");
 }
+
+// "Đã xử lý" ở card "Việc cần xử lý gấp" — tắt cờ can_xu_ly_gap, note lại
+// ngày xử lý vào Ghi chú (xem mark_can_xu_ly_gap_resolved,
+// taskMember.service.ts), rồi gỡ ngay dòng đó khỏi bảng Trang chủ.
+document.getElementById("home-can-xu-ly-gap-tbody")?.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".can-xu-ly-gap-resolve-btn");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    await api(`/api/task-members/${btn.dataset.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ mark_can_xu_ly_gap_resolved: true }),
+    });
+    await renderHomeCanXuLyGap();
+  } catch (err) {
+    alert(err.message || "Không thể cập nhật");
+    btn.disabled = false;
+  }
+});
 
 // Bật/tắt các phần tử UI ở Home theo cách tính KPI của phòng ban đang chọn
 // (departments.cach_tinh_kpi — xem homeCachTinhKpiTheoTask): phòng

@@ -81,7 +81,14 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    const { ghi_chu, phan_loai, noi_dung_cong_viec, can_xu_ly_gap, can_xu_ly_gap_ly_do } = req.body ?? {};
+    const {
+      ghi_chu,
+      phan_loai,
+      noi_dung_cong_viec,
+      can_xu_ly_gap,
+      can_xu_ly_gap_ly_do,
+      mark_can_xu_ly_gap_resolved,
+    } = req.body ?? {};
     const row = await updateTaskMember(
       id,
       {
@@ -90,6 +97,7 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
         noi_dung_cong_viec,
         can_xu_ly_gap,
         can_xu_ly_gap_ly_do,
+        mark_can_xu_ly_gap_resolved,
         ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
         diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
       },

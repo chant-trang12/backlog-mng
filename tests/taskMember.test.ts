@@ -131,6 +131,36 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(unmarked.body.can_xu_ly_gap_tu_ngay).toBeNull();
   });
 
+  it('"Đã xử lý" (mark_can_xu_ly_gap_resolved): tắt can_xu_ly_gap + note ngày xử lý vào Ghi chú, biến mất khỏi danh sách đôn đốc', async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2007, 5);
+    const teamId = await makeTeam(app, "TM resolve team", periodId);
+    const memberId = await makeMember(app, "Trần Văn H", teamId, periodId, "Dev");
+    const taskId = await makeTask(app, periodId, "TM resolve team", "Task resolve");
+    const created = await request(app)
+      .post(`/api/tasks/${taskId}/members`)
+      .send({ member_id: memberId, ghi_chu: "Ghi chú cũ" });
+
+    await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ can_xu_ly_gap: true, can_xu_ly_gap_ly_do: "Trễ deadline" });
+
+    const beforeList = await request(app).get(`/api/task-members/can-xu-ly-gap?period_id=${periodId}`);
+    expect(beforeList.body.some((r: { id: number }) => r.id === created.body.id)).toBe(true);
+
+    const resolved = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ mark_can_xu_ly_gap_resolved: true });
+    expect(resolved.status).toBe(200);
+    expect(resolved.body.can_xu_ly_gap).toBe(false);
+    expect(resolved.body.can_xu_ly_gap_ly_do).toBeNull();
+    expect(resolved.body.can_xu_ly_gap_tu_ngay).toBeNull();
+    expect(resolved.body.ghi_chu).toMatch(/^Ghi chú cũ \| Việc đã được xử lý ngày \d{2}\/\d{2}\/\d{4}$/);
+
+    const afterList = await request(app).get(`/api/task-members/can-xu-ly-gap?period_id=${periodId}`);
+    expect(afterList.body.some((r: { id: number }) => r.id === created.body.id)).toBe(false);
+  });
+
   it("noi_dung_cong_viec: nhập lúc gán, hiển thị ở list, sửa được sau (độc lập với ghi_chu)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2007, 2);
