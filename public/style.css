@@ -385,6 +385,25 @@ main {
 
 .card h2 { margin-top: 0; font-size: 1.1rem; }
 
+/* Card đôn đốc ở Trang chủ ("Việc đang treo"/"Việc cần xử lý gấp") — cần
+   nổi bật rõ hẳn so với các card thông tin thường (viền/nền đỏ đất ấm,
+   tiêu đề có icon cảnh báo), để không bị lướt qua như 1 bảng dữ liệu
+   bình thường. */
+.home-urgent-card {
+  background: var(--delete-light);
+  border: 2px solid var(--delete);
+  box-shadow: 0 4px 14px rgba(179, 69, 47, 0.18);
+}
+.home-urgent-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--delete);
+}
+.home-urgent-card h2 .icon { width: 1.3em; height: 1.3em; }
+.home-urgent-card .table-wrap { background: var(--card-bg); border-radius: 8px; overflow: hidden; }
+.home-urgent-card thead th { background: var(--delete) !important; }
+
 .row {
   display: flex;
   gap: 12px;
