@@ -15,6 +15,7 @@ const SELECT_COLUMNS = [
   "task_members.ty_le_dong_gop",
   "task_members.diem_ca_nhan",
   "task_members.phan_loai",
+  "task_members.noi_dung_cong_viec",
   "task_members.ghi_chu",
   "task_members.created_at",
   "task_members.updated_at",
@@ -105,6 +106,7 @@ export async function createTaskMember(
   if (existing) {
     const update: Record<string, unknown> = { updated_at: db.fn.now() };
     if (input.ghi_chu !== undefined) update.ghi_chu = input.ghi_chu.trim() || null;
+    if (input.noi_dung_cong_viec !== undefined) update.noi_dung_cong_viec = input.noi_dung_cong_viec.trim() || null;
     if (input.ty_le_dong_gop !== undefined) update.ty_le_dong_gop = input.ty_le_dong_gop;
     if (input.diem_ca_nhan !== undefined) update.diem_ca_nhan = input.diem_ca_nhan;
     if (input.phan_loai !== undefined) update.phan_loai = normalizeNullableText(input.phan_loai, null);
@@ -120,6 +122,7 @@ export async function createTaskMember(
       ty_le_dong_gop: input.ty_le_dong_gop ?? null,
       diem_ca_nhan: input.diem_ca_nhan ?? null,
       phan_loai: normalizeNullableText(input.phan_loai, null),
+      noi_dung_cong_viec: input.noi_dung_cong_viec?.trim() || null,
       ghi_chu: input.ghi_chu?.trim() || null,
     })
     .returning("*");
@@ -146,6 +149,10 @@ export async function updateTaskMember(
       ty_le_dong_gop: input.ty_le_dong_gop !== undefined ? input.ty_le_dong_gop : existing.ty_le_dong_gop,
       diem_ca_nhan: input.diem_ca_nhan !== undefined ? input.diem_ca_nhan : existing.diem_ca_nhan,
       phan_loai: normalizeNullableText(input.phan_loai, existing.phan_loai),
+      noi_dung_cong_viec:
+        input.noi_dung_cong_viec !== undefined
+          ? input.noi_dung_cong_viec.trim() || null
+          : existing.noi_dung_cong_viec,
       ghi_chu: input.ghi_chu !== undefined ? input.ghi_chu.trim() || null : existing.ghi_chu,
       updated_at: db.fn.now(),
     });

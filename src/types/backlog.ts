@@ -237,6 +237,9 @@ export interface TaskMember {
   // Phân loại nhân sự tham gia (Thực hiện chính / Hỗ trợ...) — giá trị lấy
   // từ danh mục phan_loai_nhan_su_options, lưu dạng chuỗi tự do (không FK).
   phan_loai: string | null;
+  // Nội dung công việc cụ thể nhân sự này đảm nhận trong task — khác Ghi
+  // chú (ghi_chu là ghi chú tự do chung chung).
+  noi_dung_cong_viec: string | null;
   ghi_chu: string | null;
   created_at: string;
   updated_at: string;
@@ -254,6 +257,7 @@ export interface CreateTaskMemberInput {
   ty_le_dong_gop?: number | null;
   diem_ca_nhan?: number | null;
   phan_loai?: string | null;
+  noi_dung_cong_viec?: string;
   ghi_chu?: string;
 }
 
@@ -261,6 +265,7 @@ export interface UpdateTaskMemberInput {
   ty_le_dong_gop?: number | null;
   diem_ca_nhan?: number | null;
   phan_loai?: string | null;
+  noi_dung_cong_viec?: string;
   ghi_chu?: string;
 }
 

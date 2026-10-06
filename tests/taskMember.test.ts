@@ -98,6 +98,33 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(updated.body.member_chuc_vu).toBe("BA"); // vai trò không đổi — vẫn theo chức vụ nhân sự
   });
 
+  it("noi_dung_cong_viec: nhập lúc gán, hiển thị ở list, sửa được sau (độc lập với ghi_chu)", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2007, 2);
+    const teamId = await makeTeam(app, "TM noi dung team", periodId);
+    const memberId = await makeMember(app, "Lê Văn E", teamId, periodId, "Dev");
+    const taskId = await makeTask(app, periodId, "TM noi dung team", "Task noi dung cong viec");
+
+    const created = await request(app)
+      .post(`/api/tasks/${taskId}/members`)
+      .send({ member_id: memberId, noi_dung_cong_viec: "Code module A", ghi_chu: "Ghi chu rieng" });
+    expect(created.status).toBe(201);
+    expect(created.body.noi_dung_cong_viec).toBe("Code module A");
+    expect(created.body.ghi_chu).toBe("Ghi chu rieng");
+
+    const list = await request(app).get(`/api/tasks/${taskId}/members`);
+    expect(list.body.find((tm: { id: number }) => tm.id === created.body.id).noi_dung_cong_viec).toBe(
+      "Code module A",
+    );
+
+    const updated = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ noi_dung_cong_viec: "Code module B" });
+    expect(updated.status).toBe(200);
+    expect(updated.body.noi_dung_cong_viec).toBe("Code module B");
+    expect(updated.body.ghi_chu).toBe("Ghi chu rieng"); // không bị ảnh hưởng
+  });
+
   it("xóa task -> mất luôn các dòng gán nhân sự (CASCADE)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2008, 1);

@@ -176,6 +176,17 @@ export async function migrateTaskMembersTables(): Promise<void> {
     });
   }
 
+  // task_members.noi_dung_cong_viec — mô tả cụ thể nhân sự này LÀM GÌ
+  // trong task (khác Ghi chú — ghi_chu là ghi chú tự do chung chung, còn
+  // cột này riêng cho nội dung công việc cụ thể được giao). Nhập cùng lúc
+  // với Ghi chú ở khung "Thêm nhân sự", chỉ hiển thị (không sửa trực tiếp
+  // trong bảng danh sách), giống hệt cơ chế ghi_chu.
+  if (!(await db.schema.hasColumn("task_members", "noi_dung_cong_viec"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.text("noi_dung_cong_viec");
+    });
+  }
+
   // task_members.department_id — Quy tắc 9.2, suy trực tiếp từ department_id
   // của chính task (đáng tin cậy hơn suy qua team/member vì task luôn có
   // đúng 1 department_id cố định — xem departments.ts). Cần chạy sau

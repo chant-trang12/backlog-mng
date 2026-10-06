@@ -918,6 +918,7 @@ function renderTaskMemberThead() {
     <th style="width:150px">Phân loại</th>
     <th style="width:120px">Tỷ lệ đóng góp (%)</th>
     ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
+    <th style="width:190px">Nội dung công việc</th>
     <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
   </tr>`;
@@ -1062,6 +1063,7 @@ function renderTaskMembers() {
       </td>
       ${contribCell}
       ${scoreCell}
+      <td>${(tm.noi_dung_cong_viec ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${tm.ghi_chu ?? ""}</td>
       <td><button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></td>
     </tr>`;
@@ -1245,9 +1247,11 @@ el.tmAddBtn.addEventListener("click", async () => {
       body: JSON.stringify({
         member_id: memberId,
         phan_loai: el.tmCategory.value || undefined,
+        noi_dung_cong_viec: el.tmWorkContent.value.trim() || undefined,
         ghi_chu: el.tmNote.value.trim() || undefined,
       }),
     });
+    el.tmWorkContent.value = "";
     el.tmNote.value = "";
     el.tmCategory.value = "";
     await loadTaskMembers();

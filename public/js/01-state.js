@@ -258,6 +258,7 @@ const el = {
   tmMember: document.getElementById("tm-member"),
   tmMemberSuggestions: document.getElementById("tm-member-suggestions"),
   tmCategory: document.getElementById("tm-phan-loai"),
+  tmWorkContent: document.getElementById("tm-noi-dung-cong-viec"),
   tmNote: document.getElementById("tm-ghi-chu"),
   tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
