@@ -792,6 +792,11 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .task-warning-graded { background: #ead9b0; border-color: #d9c187; color: #7a5a12; }
 .task-warning-overdue { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
 .task-warning-upcoming { background: #ffedd5; border-color: #f0cd9e; color: #9a3412; }
+/* Đậm hơn hẳn "quá hạn" (cũng tông đỏ) — đây là cờ người tự tay đánh dấu
+   (can_xu_ly_gap), không phải suy ra từ deadline, nên cần nổi bật rõ hơn
+   1 bậc so với các cảnh báo tự động còn lại. */
+.task-warning-urgent { background: var(--delete); border-color: var(--delete); color: #fff; }
+.task-warning-urgent .task-warning-count { color: var(--delete); } /* nền trắng mờ kế thừa, chữ trắng trên nền đó sẽ mờ -> đổi lại màu đậm */
 .task-warning-chip.active { outline: 2px solid currentColor; }
 button.btn-no-score { background: #ead9b0; border-color: #d9c187; color: #7a5a12; }
 button.btn-no-score:hover { background: #d9c187; }
@@ -1096,6 +1101,28 @@ th {
 #task-table tbody tr:hover { background: var(--bg); }
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
+
+/* Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — tô nền hàng
+   (sắc đỏ đất nhạt, cùng tông với .home-urgent-card ở Trang chủ) để nổi
+   bật ngay trong Danh sách nhiệm vụ, không phải bấm chip cảnh báo mới
+   thấy. Cần set lại trên từng ô cột dính (nth-child 1-6, giống
+   .row-highlighted ở trên) vì position:sticky cần nền riêng của ô, không
+   kế thừa được nền của <tr> (nền mặc định var(--card-bg) đã set ở rule
+   #task-table td:nth-child phía trên). */
+#task-table tbody tr.task-row-urgent td:nth-child(1),
+#task-table tbody tr.task-row-urgent td:nth-child(2),
+#task-table tbody tr.task-row-urgent td:nth-child(3),
+#task-table tbody tr.task-row-urgent td:nth-child(4),
+#task-table tbody tr.task-row-urgent td:nth-child(5),
+#task-table tbody tr.task-row-urgent td:nth-child(6) { background: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
+#task-table tbody tr.task-row-urgent:hover td:nth-child(1),
+#task-table tbody tr.task-row-urgent:hover td:nth-child(2),
+#task-table tbody tr.task-row-urgent:hover td:nth-child(3),
+#task-table tbody tr.task-row-urgent:hover td:nth-child(4),
+#task-table tbody tr.task-row-urgent:hover td:nth-child(5),
+#task-table tbody tr.task-row-urgent:hover td:nth-child(6) { background: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
+#task-table tbody tr.task-row-urgent { background: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
+#task-table tbody tr.task-row-urgent:hover { background: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
 
 /* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
    hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service

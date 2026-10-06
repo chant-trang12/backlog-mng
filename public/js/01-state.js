@@ -24,7 +24,7 @@ const state = {
   tasks: [], // task sau khi áp bộ lọc (Tính chất / Team / Trạng thái)
   taskFilters: { nature: "", excludedFromScore: "", team: "", status: "", tag: "" },
   taskSearch: "",
-  taskWarningFilter: "", // "" | "no-score" | "overdue" | "upcoming" — bấm vào 1 cảnh báo để lọc nhanh
+  taskWarningFilter: "", // "" | "no-score" | "overdue" | "upcoming" | "urgent" — bấm vào 1 cảnh báo để lọc nhanh
   selectedTaskIds: new Set(),
   incidents: [],
   tickets: [],
@@ -136,6 +136,8 @@ const el = {
   warningCountOverdue: document.getElementById("warning-count-overdue"),
   warningChipUpcoming: document.getElementById("warning-chip-upcoming"),
   warningCountUpcoming: document.getElementById("warning-count-upcoming"),
+  warningChipUrgent: document.getElementById("warning-chip-urgent"),
+  warningCountUrgent: document.getElementById("warning-count-urgent"),
   taskSelectAll: document.getElementById("task-select-all"),
   bulkActions: document.getElementById("bulk-actions"),
   bulkActionsBtn: document.getElementById("bulk-actions-btn"),

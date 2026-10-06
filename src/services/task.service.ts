@@ -111,7 +111,7 @@ export async function listTasks(filter: {
   period_id: number;
   team?: string;
   department_id?: number | null;
-}): Promise<(Task & { member_count: number })[]> {
+}): Promise<(Task & { member_count: number; co_viec_xu_ly_gap: boolean })[]> {
   const query = db("tasks").where({ period_id: filter.period_id, is_deleted: false });
   if (filter.team) {
     query.where({ team: filter.team });
@@ -134,7 +134,24 @@ export async function listTasks(filter: {
   const countMap = new Map<number, number>(
     counts.map((r: any) => [Number(r.task_id), Number(r.c)]),
   );
-  return rows.map((t) => ({ ...t, member_count: countMap.get(t.id) ?? 0 }));
+
+  // Task có ít nhất 1 nhân sự đang bị đánh dấu "Việc cần xử lý gấp"
+  // (task_members.can_xu_ly_gap) -> hiển thị nổi bật ở Danh sách nhiệm vụ
+  // (tô nền hàng + chip cảnh báo riêng, xem renderTaskWarnings()/renderTasks()
+  // ở FE) để không bị lướt qua, cùng tinh thần 3 cảnh báo có sẵn (chưa chấm
+  // điểm/quá hạn/sắp đến hạn). Cùng 1 query count-theo-task_id, tránh N+1.
+  const urgentTaskIdsRows = await db("task_members")
+    .whereIn("task_id", rows.map((t) => t.id))
+    .where({ is_deleted: false, can_xu_ly_gap: true })
+    .groupBy("task_id")
+    .select("task_id");
+  const urgentTaskIds = new Set<number>(urgentTaskIdsRows.map((r: any) => Number(r.task_id)));
+
+  return rows.map((t) => ({
+    ...t,
+    member_count: countMap.get(t.id) ?? 0,
+    co_viec_xu_ly_gap: urgentTaskIds.has(t.id),
+  }));
 }
 
 export async function getTask(id: number): Promise<Task | undefined> {

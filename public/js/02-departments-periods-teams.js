@@ -385,20 +385,26 @@ function renderTaskWarnings() {
   const noScoreCount = tasks.filter(isTaskNotGraded).length;
   const overdueCount = tasks.filter(isTaskOverdue).length;
   const upcomingCount = tasks.filter(isTaskUpcomingDeadline).length;
+  // Task có ít nhất 1 nhân sự đang bị đánh dấu "Việc cần xử lý gấp" —
+  // co_viec_xu_ly_gap tính sẵn ở BE (listTasks(), task.service.ts).
+  const urgentCount = tasks.filter((t) => t.co_viec_xu_ly_gap).length;
 
   el.warningCountNoScore.textContent = String(noScoreCount);
   el.warningCountOverdue.textContent = String(overdueCount);
   el.warningCountUpcoming.textContent = String(upcomingCount);
+  el.warningCountUrgent.textContent = String(urgentCount);
 
   el.warningChipNoScore.hidden = noScoreCount === 0;
   el.warningChipOverdue.hidden = overdueCount === 0;
   el.warningChipUpcoming.hidden = upcomingCount === 0;
+  el.warningChipUrgent.hidden = urgentCount === 0;
 
-  el.taskWarningsCard.hidden = noScoreCount === 0 && overdueCount === 0 && upcomingCount === 0;
+  el.taskWarningsCard.hidden = noScoreCount === 0 && overdueCount === 0 && upcomingCount === 0 && urgentCount === 0;
 
   el.warningChipNoScore.classList.toggle("active", state.taskWarningFilter === "no-score");
   el.warningChipOverdue.classList.toggle("active", state.taskWarningFilter === "overdue");
   el.warningChipUpcoming.classList.toggle("active", state.taskWarningFilter === "upcoming");
+  el.warningChipUrgent.classList.toggle("active", state.taskWarningFilter === "urgent");
 }
 
 function toggleTaskWarningFilter(key) {
@@ -411,6 +417,7 @@ function toggleTaskWarningFilter(key) {
 el.warningChipNoScore.addEventListener("click", () => toggleTaskWarningFilter("no-score"));
 el.warningChipOverdue.addEventListener("click", () => toggleTaskWarningFilter("overdue"));
 el.warningChipUpcoming.addEventListener("click", () => toggleTaskWarningFilter("upcoming"));
+el.warningChipUrgent.addEventListener("click", () => toggleTaskWarningFilter("urgent"));
 
 // ---- Periods ----
 
@@ -822,6 +829,7 @@ function applyTaskFilters() {
     if (state.taskWarningFilter === "no-score" && !isTaskNotGraded(t)) return false;
     if (state.taskWarningFilter === "overdue" && !isTaskOverdue(t)) return false;
     if (state.taskWarningFilter === "upcoming" && !isTaskUpcomingDeadline(t)) return false;
+    if (state.taskWarningFilter === "urgent" && !t.co_viec_xu_ly_gap) return false;
     if (term) {
       const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
         .filter(Boolean)

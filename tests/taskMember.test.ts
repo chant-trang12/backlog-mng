@@ -162,6 +162,34 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(afterList.body.some((r: { id: number }) => r.id === created.body.id)).toBe(false);
   });
 
+  it("co_viec_xu_ly_gap ở Danh sách nhiệm vụ (GET /periods/:id/tasks): true khi có ≥1 nhân sự đang bị đánh dấu, tự tắt khi gỡ hết", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2007, 6);
+    const teamId = await makeTeam(app, "TM task-list urgent team", periodId);
+    const memberId = await makeMember(app, "Phạm Văn K", teamId, periodId, "Dev");
+    const taskId = await makeTask(app, periodId, "TM task-list urgent team", "Task list urgent");
+    const otherTaskId = await makeTask(app, periodId, "TM task-list urgent team", "Task list binh thuong");
+
+    const listBefore = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const beforeRow = listBefore.body.find((t: { id: number }) => t.id === taskId);
+    expect(beforeRow.co_viec_xu_ly_gap).toBe(false);
+
+    const created = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
+    await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ can_xu_ly_gap: true, can_xu_ly_gap_ly_do: "Trễ hạn" });
+
+    const listAfter = await request(app).get(`/api/periods/${periodId}/tasks`);
+    const afterRow = listAfter.body.find((t: { id: number }) => t.id === taskId);
+    const otherRow = listAfter.body.find((t: { id: number }) => t.id === otherTaskId);
+    expect(afterRow.co_viec_xu_ly_gap).toBe(true);
+    expect(otherRow.co_viec_xu_ly_gap).toBe(false); // task khác không bị ảnh hưởng
+
+    await request(app).put(`/api/task-members/${created.body.id}`).send({ can_xu_ly_gap: false });
+    const listCleared = await request(app).get(`/api/periods/${periodId}/tasks`);
+    expect(listCleared.body.find((t: { id: number }) => t.id === taskId).co_viec_xu_ly_gap).toBe(false);
+  });
+
   it("noi_dung_cong_viec: nhập lúc gán, hiển thị ở list, sửa được sau (độc lập với ghi_chu)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2007, 2);

@@ -182,8 +182,12 @@ function renderTasks() {
   el.taskTbody.innerHTML = pageItems
     .map((t) => {
       const statusClass = STATUS_CLASS[t.trang_thai] || "status-default";
+      // Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" -> tô nền
+      // hàng để nổi bật ngay trong danh sách, không cần bấm lọc ở banner
+      // cảnh báo phía trên mới thấy (user yêu cầu, kèm gợi ý màu nền).
+      const urgentRowClass = t.co_viec_xu_ly_gap ? " task-row-urgent" : "";
       return `
-    <tr data-id="${t.id}">
+    <tr data-id="${t.id}" class="${urgentRowClass.trim()}" title="${t.co_viec_xu_ly_gap ? "Có nhân sự đang bị đánh dấu Việc cần xử lý gấp" : ""}">
       <td><input type="checkbox" class="task-row-checkbox" ${state.selectedTaskIds.has(t.id) ? "checked" : ""} /></td>
       <td data-col="stt" ${colHidden("stt")}>${t.stt}</td>
       <td data-col="tag" ${colHidden("tag")}>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
