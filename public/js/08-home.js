@@ -146,12 +146,16 @@ async function renderHomeCanXuLyGap() {
     .join("");
 }
 
-// "Đã xử lý" ở card "Việc cần xử lý gấp" — tắt cờ can_xu_ly_gap, note lại
-// ngày xử lý vào Ghi chú (xem mark_can_xu_ly_gap_resolved,
-// taskMember.service.ts), rồi gỡ ngay dòng đó khỏi bảng Trang chủ.
+// "Đã xử lý" ở card "Việc cần xử lý gấp" — tắt cờ can_xu_ly_gap, ghi ngày
+// xử lý (da_xu_ly_gap_luc, xem mark_can_xu_ly_gap_resolved,
+// taskMember.service.ts), rồi gỡ ngay dòng đó khỏi bảng Trang chủ. Bắt
+// xác nhận trước vì bấm nhầm sẽ mất luôn việc khỏi danh sách đôn đốc.
 document.getElementById("home-can-xu-ly-gap-tbody")?.addEventListener("click", async (e) => {
   const btn = e.target.closest(".can-xu-ly-gap-resolve-btn");
   if (!btn) return;
+  if (!(await confirmDialog("Đánh dấu việc này là đã xử lý xong? Việc sẽ biến mất khỏi danh sách đôn đốc.", { danger: false, okText: "Đã xử lý" }))) {
+    return;
+  }
   btn.disabled = true;
   try {
     await api(`/api/task-members/${btn.dataset.id}`, {
