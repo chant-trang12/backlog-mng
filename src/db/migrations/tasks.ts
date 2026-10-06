@@ -199,6 +199,17 @@ export async function migrateTaskMembersTables(): Promise<void> {
     });
   }
 
+  // task_members.da_xu_ly_gap_luc — ngày bấm "Đã xử lý" ở card đôn đốc
+  // Trang chủ (mark_can_xu_ly_gap_resolved, xem taskMember.service.ts).
+  // Cột RIÊNG, không nhét vào ghi_chu — trước đây note vào ghi_chu khiến
+  // ô input 1 dòng bị tràn chữ, không đọc được (user phản hồi). Hiển thị
+  // thành badge riêng ở cột hành động, cạnh checkbox "Việc cần xử lý gấp".
+  if (!(await db.schema.hasColumn("task_members", "da_xu_ly_gap_luc"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.string("da_xu_ly_gap_luc", 10);
+    });
+  }
+
   // task_members.department_id — Quy tắc 9.2, suy trực tiếp từ department_id
   // của chính task (đáng tin cậy hơn suy qua team/member vì task luôn có
   // đúng 1 department_id cố định — xem departments.ts). Cần chạy sau

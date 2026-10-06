@@ -21,6 +21,7 @@ const SELECT_COLUMNS = [
   "task_members.can_xu_ly_gap",
   "task_members.can_xu_ly_gap_ly_do",
   "task_members.can_xu_ly_gap_tu_ngay",
+  "task_members.da_xu_ly_gap_luc",
   "task_members.created_at",
   "task_members.updated_at",
   "members.name as member_name",
@@ -80,14 +81,6 @@ function todayDateString(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-// "dd/mm/yyyy" hôm nay — dùng cho note "Việc đã được xử lý ngày ..." khi
-// bấm "Đã xử lý" (mark_can_xu_ly_gap_resolved).
-function todayDateDisplayVN(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 // undefined -> giữ nguyên giá trị cũ, null -> xóa (về "— Không —"), chuỗi
@@ -200,23 +193,24 @@ export async function updateTaskMember(
     ghi_chu: normalizeNullableText(input.ghi_chu, existing.ghi_chu),
     updated_at: db.fn.now(),
   };
-  // "Đã xử lý" (nút ở card đôn đốc Trang chủ) — tắt can_xu_ly_gap + note
-  // lại ngày xử lý vào Ghi chú để lưu vết, thắng mọi field can_xu_ly_gap*
-  // khác gửi kèm.
+  // "Đã xử lý" (nút ở card đôn đốc Trang chủ) — tắt can_xu_ly_gap, ghi
+  // da_xu_ly_gap_luc = hôm nay (CỘT RIÊNG, không nhét vào ghi_chu — trước
+  // đó note vào ghi_chu khiến ô input 1 dòng tràn chữ không đọc được,
+  // theo phản hồi của user). FE hiển thị badge riêng, xem renderTaskMemberBody
+  // ở 04-tasks.js. Thắng mọi field can_xu_ly_gap* khác gửi kèm.
   if (input.mark_can_xu_ly_gap_resolved) {
-    // Ghi chú ở popup Nhân sự hiện bằng <input> 1 dòng — nối bằng " | " thay
-    // vì xuống dòng để vẫn đọc được trọn vẹn trên 1 dòng.
-    const noteLine = `Việc đã được xử lý ngày ${todayDateDisplayVN()}`;
-    update.ghi_chu = existing.ghi_chu ? `${existing.ghi_chu} | ${noteLine}` : noteLine;
     update.can_xu_ly_gap = false;
     update.can_xu_ly_gap_ly_do = null;
     update.can_xu_ly_gap_tu_ngay = null;
+    update.da_xu_ly_gap_luc = todayDateString();
   } else if (input.can_xu_ly_gap === true) {
     // "Việc cần xử lý gấp" — cùng cơ chế Treo việc (task_items.treo_viec,
     // xem taskItem.service.ts): bắt buộc lý do, tự ghi/xóa ngày đánh dấu.
+    // Đánh dấu lại (1 vòng đời mới) -> gỡ badge "Đã xử lý" của vòng trước.
     update.can_xu_ly_gap = true;
     update.can_xu_ly_gap_ly_do = input.can_xu_ly_gap_ly_do!.trim();
     update.can_xu_ly_gap_tu_ngay = existing.can_xu_ly_gap ? existing.can_xu_ly_gap_tu_ngay : todayDateString();
+    update.da_xu_ly_gap_luc = null;
   } else if (input.can_xu_ly_gap === false) {
     update.can_xu_ly_gap = false;
     update.can_xu_ly_gap_ly_do = null;

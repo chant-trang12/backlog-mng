@@ -131,7 +131,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(unmarked.body.can_xu_ly_gap_tu_ngay).toBeNull();
   });
 
-  it('"Đã xử lý" (mark_can_xu_ly_gap_resolved): tắt can_xu_ly_gap + note ngày xử lý vào Ghi chú, biến mất khỏi danh sách đôn đốc', async () => {
+  it('"Đã xử lý" (mark_can_xu_ly_gap_resolved): tắt can_xu_ly_gap + ghi da_xu_ly_gap_luc (không đụng ghi_chu), biến mất khỏi danh sách đôn đốc', async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2007, 5);
     const teamId = await makeTeam(app, "TM resolve team", periodId);
@@ -155,7 +155,8 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(resolved.body.can_xu_ly_gap).toBe(false);
     expect(resolved.body.can_xu_ly_gap_ly_do).toBeNull();
     expect(resolved.body.can_xu_ly_gap_tu_ngay).toBeNull();
-    expect(resolved.body.ghi_chu).toMatch(/^Ghi chú cũ \| Việc đã được xử lý ngày \d{2}\/\d{2}\/\d{4}$/);
+    expect(resolved.body.da_xu_ly_gap_luc).toBeTruthy();
+    expect(resolved.body.ghi_chu).toBe("Ghi chú cũ"); // ghi_chu không bị đụng vào
 
     const afterList = await request(app).get(`/api/task-members/can-xu-ly-gap?period_id=${periodId}`);
     expect(afterList.body.some((r: { id: number }) => r.id === created.body.id)).toBe(false);

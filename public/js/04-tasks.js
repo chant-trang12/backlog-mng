@@ -1028,7 +1028,9 @@ function renderTaskMembers() {
           ${
             tm.can_xu_ly_gap
               ? `<span class="status-badge status-huy" style="font-size:0.72rem" title="${(tm.can_xu_ly_gap_ly_do ?? "").replace(/"/g, "&quot;")}">Gấp: ${tm.can_xu_ly_gap_ly_do ?? ""} (từ ${formatDateDisplay(tm.can_xu_ly_gap_tu_ngay)})</span>`
-              : ""
+              : tm.da_xu_ly_gap_luc
+                ? `<span class="status-badge status-hoan-thanh" style="font-size:0.72rem">Đã xử lý ngày ${formatDateDisplay(tm.da_xu_ly_gap_luc)}</span>`
+                : ""
           }
           <button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button>
         </div>

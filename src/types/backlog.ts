@@ -246,6 +246,9 @@ export interface TaskMember {
   can_xu_ly_gap: boolean;
   can_xu_ly_gap_ly_do: string | null;
   can_xu_ly_gap_tu_ngay: string | null;
+  // Ngày bấm "Đã xử lý" ở card đôn đốc Trang chủ (mark_can_xu_ly_gap_resolved)
+  // — cột riêng, KHÔNG nhét vào ghi_chu (tránh tràn chữ ô input 1 dòng).
+  da_xu_ly_gap_luc: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -282,9 +285,9 @@ export interface UpdateTaskMemberInput {
   // kèm can_xu_ly_gap_ly_do); set false -> service tự clear ly do/ngày.
   can_xu_ly_gap?: boolean;
   can_xu_ly_gap_ly_do?: string;
-  // true -> "Đã xử lý": tắt can_xu_ly_gap (gỡ lý do/ngày) + note thêm vào
-  // ghi_chu "Việc đã được xử lý ngày dd/mm/yyyy". Bỏ qua mọi field
-  // can_xu_ly_gap* khác gửi kèm (nếu có) — field này luôn thắng.
+  // true -> "Đã xử lý": tắt can_xu_ly_gap (gỡ lý do/ngày) + ghi
+  // da_xu_ly_gap_luc = hôm nay. Thắng mọi field can_xu_ly_gap* khác gửi
+  // kèm (nếu có).
   mark_can_xu_ly_gap_resolved?: boolean;
 }
 
