@@ -125,6 +125,27 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
     expect(updated.body.ghi_chu).toBe("Ghi chu rieng"); // không bị ảnh hưởng
   });
 
+  it("xóa nội dung Nội dung công việc/Ghi chú (gửi null — ô nhập trên bảng khi xóa trắng) phải lưu về rỗng, không lỗi", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2007, 3);
+    const teamId = await makeTeam(app, "TM xoa noi dung team", periodId);
+    const memberId = await makeMember(app, "Trần Văn F", teamId, periodId, "QA");
+    const taskId = await makeTask(app, periodId, "TM xoa noi dung team", "Task xoa noi dung");
+
+    const created = await request(app)
+      .post(`/api/tasks/${taskId}/members`)
+      .send({ member_id: memberId, noi_dung_cong_viec: "Có nội dung", ghi_chu: "Có ghi chú" });
+
+    // Ô input trên bảng khi xóa trắng rồi blur gửi value="" -> input.value.trim()
+    // || null -> null. Backend trước đây gọi .trim() thẳng lên null -> crash.
+    const cleared = await request(app)
+      .put(`/api/task-members/${created.body.id}`)
+      .send({ noi_dung_cong_viec: null, ghi_chu: null });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.noi_dung_cong_viec).toBeNull();
+    expect(cleared.body.ghi_chu).toBeNull();
+  });
+
   it("xóa task -> mất luôn các dòng gán nhân sự (CASCADE)", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2008, 1);
