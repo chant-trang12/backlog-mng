@@ -75,6 +75,7 @@ function renderHomeDashboard() {
   renderHomeRankingTab(rankingData, eligibleForRanking);
   renderHomeKpiTheoTaskTable();
   renderHomeTreoViec();
+  renderHomeCanXuLyGap();
 }
 
 // "Việc đang treo" — đôn đốc tới khi gỡ treo (đạt mục tiêu) hoặc Việc bị
@@ -106,6 +107,38 @@ async function renderHomeTreoViec() {
       <td>${r.assignee_names.join(", ") || "—"}</td>
       <td>${r.treo_viec_ly_do ?? ""}</td>
       <td><span class="status-badge status-huy">${r.so_ngay_treo} ngày</span></td>
+    </tr>`,
+    )
+    .join("");
+}
+
+// "Việc cần xử lý gấp" — nhân sự (task_members) bị đánh dấu ở bảng Nhân sự
+// tham gia, cùng tinh thần renderHomeTreoViec() ở trên.
+async function renderHomeCanXuLyGap() {
+  const card = document.getElementById("home-can-xu-ly-gap-card");
+  const tbody = document.getElementById("home-can-xu-ly-gap-tbody");
+  if (!card || !state.homePeriodId) {
+    if (card) card.hidden = true;
+    return;
+  }
+  let rows = [];
+  try {
+    rows = await api(`/api/task-members/can-xu-ly-gap?period_id=${state.homePeriodId}${deptParam()}`);
+  } catch {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = rows.length === 0;
+  if (rows.length === 0) return;
+  tbody.innerHTML = rows
+    .map(
+      (r) => `
+    <tr>
+      <td>${r.member_name}</td>
+      <td>${r.task_nhiem_vu}</td>
+      <td><span class="status-badge ${homeTeamColorClass(r.team)}">${r.team}</span></td>
+      <td>${r.can_xu_ly_gap_ly_do ?? ""}</td>
+      <td><span class="status-badge status-huy">${r.so_ngay} ngày</span></td>
     </tr>`,
     )
     .join("");

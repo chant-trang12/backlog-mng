@@ -104,6 +104,28 @@
             </div>
           </section>
 
+          <!-- "Việc cần xử lý gấp" — nhân sự (task_members) bị đánh dấu ở
+               bảng Nhân sự tham gia, cùng tinh thần card "Việc đang treo" ở
+               trên. Chỉ hiện khi có dữ liệu — xem renderHomeCanXuLyGap(),
+               08-home.js. -->
+          <section class="card" id="home-can-xu-ly-gap-card" hidden style="margin-bottom:20px">
+            <h2 style="margin:0 0 12px">Việc cần xử lý gấp — cần đôn đốc</h2>
+            <div class="table-wrap">
+              <table id="home-can-xu-ly-gap-table">
+                <thead>
+                  <tr>
+                    <th>Nhân sự</th>
+                    <th>Nhiệm vụ</th>
+                    <th>Team</th>
+                    <th>Lý do</th>
+                    <th style="width:120px">Đánh dấu</th>
+                  </tr>
+                </thead>
+                <tbody id="home-can-xu-ly-gap-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+
           <div class="tab-panel-group">
           <div class="chrome-tabs" id="home-subnav">
             <span class="pill active" data-tab="ranking">Ranking</span>

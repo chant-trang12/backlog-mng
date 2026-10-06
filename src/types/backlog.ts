@@ -416,3 +416,16 @@ export interface TreoViecRow {
   team: string;
   assignee_names: string[];
 }
+
+// Danh sách Nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — cho card ở
+// Trang chủ (đôn đốc, cùng tinh thần TreoViecRow ở trên).
+export interface CanXuLyGapRow {
+  id: number; // task_members.id
+  member_name: string;
+  can_xu_ly_gap_ly_do: string | null;
+  can_xu_ly_gap_tu_ngay: string | null;
+  so_ngay: number;
+  task_id: number;
+  task_nhiem_vu: string;
+  team: string;
+}

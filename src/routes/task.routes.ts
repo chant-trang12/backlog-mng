@@ -19,6 +19,7 @@ import {
 import {
   createTaskMemberHandler,
   deleteTaskMemberHandler,
+  listCanXuLyGapHandler,
   listKpiTheoTaskHandler,
   listTaskMembersHandler,
   updateTaskMemberHandler,
@@ -55,6 +56,9 @@ router.delete("/tasks/:id", deleteTaskHandler);
 // Nhân sự tham gia task (VD 1 task dự án phần mềm có SM, PO, Dev, QA...).
 router.get("/tasks/:taskId/members", listTaskMembersHandler);
 router.post("/tasks/:taskId/members", createTaskMemberHandler);
+// Đặt trước "/task-members/:id" (không khớp pattern :id vì có "/" sau nên
+// không xung đột thật, nhưng đặt trước cho dễ đọc).
+router.get("/task-members/can-xu-ly-gap", listCanXuLyGapHandler);
 router.put("/task-members/:id", updateTaskMemberHandler);
 router.delete("/task-members/:id", deleteTaskMemberHandler);
 

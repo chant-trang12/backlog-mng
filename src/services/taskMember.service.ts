@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type {
+  CanXuLyGapRow,
   CreateTaskMemberInput,
   KpiTheoTaskRow,
   TaskMemberWithName,
@@ -305,4 +306,44 @@ export async function listKpiTheoTask(
   }
 
   return Array.from(byMember.values()).sort((a, b) => b.tong_diem - a.tong_diem);
+}
+
+// Danh sách Nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — cho card đôn
+// đốc ở Trang chủ, cùng tinh thần listTreoViec() ở taskItem.service.ts.
+export async function listCanXuLyGap(periodId: number, departmentId?: number | null): Promise<CanXuLyGapRow[]> {
+  const query = db("task_members as tm")
+    .join("tasks as t", "tm.task_id", "t.id")
+    .join("members as m", "tm.member_id", "m.id")
+    .where("tm.is_deleted", false)
+    .where("tm.can_xu_ly_gap", true)
+    .where("t.is_deleted", false)
+    .where("t.period_id", periodId);
+  if (departmentId != null) query.where("t.department_id", departmentId);
+
+  const rows = await query.select(
+    "tm.id",
+    "m.name as member_name",
+    "tm.can_xu_ly_gap_ly_do",
+    "tm.can_xu_ly_gap_tu_ngay",
+    "tm.task_id",
+    "t.nhiem_vu as task_nhiem_vu",
+    "t.team as team",
+  );
+
+  const today = Date.now();
+  return (rows as any[])
+    .map((r) => {
+      const tuNgay = r.can_xu_ly_gap_tu_ngay ? new Date(r.can_xu_ly_gap_tu_ngay).getTime() : today;
+      return {
+        id: r.id,
+        member_name: r.member_name,
+        can_xu_ly_gap_ly_do: r.can_xu_ly_gap_ly_do,
+        can_xu_ly_gap_tu_ngay: r.can_xu_ly_gap_tu_ngay,
+        so_ngay: Math.max(0, Math.round((today - tuNgay) / 86_400_000)),
+        task_id: r.task_id,
+        task_nhiem_vu: r.task_nhiem_vu,
+        team: r.team,
+      } as CanXuLyGapRow;
+    })
+    .sort((a, b) => b.so_ngay - a.so_ngay);
 }

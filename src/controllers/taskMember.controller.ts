@@ -3,6 +3,7 @@ import { getTask } from "../services/task.service.js";
 import {
   createTaskMember,
   deleteTaskMember,
+  listCanXuLyGap,
   listKpiTheoTask,
   listTaskMembers,
   updateTaskMember,
@@ -122,4 +123,16 @@ export async function listKpiTheoTaskHandler(req: Request, res: Response) {
   const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
   if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listKpiTheoTask(periodId, departmentId));
+}
+
+// GET /api/task-members/can-xu-ly-gap?period_id=X — danh sách nhân sự đang
+// bị đánh dấu "Việc cần xử lý gấp", cho card đôn đốc ở Trang chủ.
+export async function listCanXuLyGapHandler(req: Request, res: Response) {
+  const periodId = Number(req.query.period_id);
+  if (!Number.isInteger(periodId) || periodId <= 0) {
+    return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
+  }
+  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listCanXuLyGap(periodId, departmentId));
 }
