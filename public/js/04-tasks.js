@@ -894,11 +894,6 @@ async function openTaskMemberDialog(task) {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
   el.taskMemberDialogTeam.textContent = `Team ${task.team}`;
-  // Mặc định luôn ĐÓNG khung "Thêm nhân sự" mỗi lần mở dialog — phần lớn
-  // lượt mở popup này là để XEM danh sách đã gán, chỉ cần mở khung khi
-  // thật sự muốn thêm người mới.
-  document.getElementById("tm-add-frame-toggle").setAttribute("aria-expanded", "false");
-  document.getElementById("tm-add-frame-body").hidden = true;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
@@ -908,17 +903,10 @@ async function openTaskMemberDialog(task) {
   // tính KPI theo team để tránh nhầm đơn vị).
   const scale5Option = document.getElementById("tm-score-unit-scale5");
   if (scale5Option) scale5Option.hidden = true;
-  fillTaskMemberCategorySelect();
   renderTaskMemberThead();
   await loadTaskMembers();
   await loadAndRenderTaskItems(task);
   el.taskMemberDialog.showModal();
-}
-
-function fillTaskMemberCategorySelect() {
-  el.tmCategory.innerHTML =
-    `<option value="">— Không —</option>` +
-    state.memberParticipationOptions.map((p) => `<option value="${p.ten_phan_loai}">${p.ten_phan_loai}</option>`).join("");
 }
 
 function renderTaskMemberThead() {
@@ -938,71 +926,16 @@ function renderTaskMemberThead() {
   </tr>`;
 }
 
-// Chọn nhân sự từ danh sách nhân sự đã khai báo của tháng đang xem (giống
-// nguồn dữ liệu ở trang Team & Nhân sự) — bớt các nhân sự đã gán vào task
-// này rồi (1 người chỉ tham gia 1 lần / task, "vai trò" hiển thị ở bảng bên
-// trên lấy thẳng theo Chức vụ có sẵn của người đó, không chọn riêng ở đây).
-// Gợi ý gõ tìm tự vẽ bằng div (không dùng <input list> + <datalist>) vì bên
-// trong <dialog>, Chrome định vị popup gợi ý của datalist sai chỗ (bung ra
-// góc màn hình thay vì ngay dưới ô nhập) — lỗi UI gốc trình duyệt, không
-// sửa được bằng CSS.
-function fillTaskMemberSelect() {
-  const assignedIds = new Set(state.taskMembers.map((tm) => tm.member_id));
-  state.taskMemberAvailable = state.members.filter((m) => !assignedIds.has(m.id));
-  state.taskMemberSelectedId = null;
-  el.tmMember.value = "";
-  el.tmMember.disabled = state.taskMemberAvailable.length === 0;
-  el.tmMember.placeholder = state.taskMemberAvailable.length > 0 ? "Gõ tên để tìm..." : "Đã gán hết nhân sự";
-  hideTaskMemberSuggestions();
-}
-
-function taskMemberLabel(m) {
-  return `${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}`;
-}
-
-function hideTaskMemberSuggestions() {
-  el.tmMemberSuggestions.hidden = true;
-}
-
-function renderTaskMemberSuggestions() {
-  const q = el.tmMember.value.trim().toLowerCase();
-  const matches = state.taskMemberAvailable.filter((m) => !q || taskMemberLabel(m).toLowerCase().includes(q));
-  el.tmMemberSuggestions.innerHTML = matches.length
-    ? matches
-        .slice(0, 30)
-        .map((m) => `<div class="tm-suggest-item" data-id="${m.id}">${taskMemberLabel(m)}</div>`)
-        .join("")
-    : `<div class="tm-suggest-empty">Không tìm thấy nhân sự phù hợp.</div>`;
-  el.tmMemberSuggestions.hidden = false;
-
-  el.tmMemberSuggestions.querySelectorAll(".tm-suggest-item").forEach((item) => {
-    // mousedown (không phải click) để chạy TRƯỚC sự kiện blur của input —
-    // giữ được lựa chọn thay vì bị ẩn gợi ý mất trước khi kịp xử lý.
-    item.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      const id = Number(item.dataset.id);
-      const m = state.taskMemberAvailable.find((x) => x.id === id);
-      el.tmMember.value = m ? taskMemberLabel(m) : "";
-      state.taskMemberSelectedId = id;
-      hideTaskMemberSuggestions();
-    });
-  });
-}
-
-el.tmMember.addEventListener("input", () => {
-  state.taskMemberSelectedId = null; // sửa lại chữ thì phải chọn lại từ gợi ý
-  if (!el.tmMember.disabled) renderTaskMemberSuggestions();
-});
-el.tmMember.addEventListener("focus", () => {
-  if (!el.tmMember.disabled) renderTaskMemberSuggestions();
-});
-el.tmMember.addEventListener("blur", () => hideTaskMemberSuggestions());
+// Không còn bước "Thêm nhân sự tham gia" riêng — gán 1 người vào 1 Việc cụ
+// thể (phần "Chi tiết công việc" bên dưới) tự động thêm luôn người đó vào
+// "Nhân sự tham gia" (xem addTaskItemMember, taskItem.service.ts), nên
+// bảng này chỉ còn hiển thị + sửa trực tiếp (Phân loại/Tỷ lệ đóng góp/Điểm
+// cá nhân/Nội dung công việc/Ghi chú), không cần chọn/thêm người ở đây nữa.
 
 async function loadTaskMembers() {
   if (!state.taskMemberTaskId) return;
   state.taskMembers = await api(`/api/tasks/${state.taskMemberTaskId}/members`);
   renderTaskMembers();
-  fillTaskMemberSelect();
   // Danh sách Nhân sự tham gia vừa đổi -> nguồn gán vào từng Việc (phần
   // "Chi tiết công việc" gộp chung dialog này) cũng cần vẽ lại.
   if (typeof renderTaskItemList === "function" && state.taskItems) renderTaskItemList();
@@ -1273,41 +1206,6 @@ el.tmSplitEvenBtn.addEventListener("click", async () => {
   }
 });
 
-document.getElementById("tm-add-frame-toggle").addEventListener("click", () => {
-  const toggle = document.getElementById("tm-add-frame-toggle");
-  const body = document.getElementById("tm-add-frame-body");
-  const expanded = toggle.getAttribute("aria-expanded") !== "false";
-  toggle.setAttribute("aria-expanded", String(!expanded));
-  body.hidden = expanded;
-});
-
-el.tmAddBtn.addEventListener("click", async () => {
-  const memberId = state.taskMemberSelectedId;
-  if (!memberId) {
-    showToast("Gõ tên và chọn đúng 1 nhân sự trong danh sách gợi ý.");
-    return;
-  }
-  try {
-    await api(`/api/tasks/${state.taskMemberTaskId}/members`, {
-      method: "POST",
-      body: JSON.stringify({
-        member_id: memberId,
-        phan_loai: el.tmCategory.value || undefined,
-        noi_dung_cong_viec: el.tmWorkContent.value.trim() || undefined,
-        ghi_chu: el.tmNote.value.trim() || undefined,
-      }),
-    });
-    el.tmWorkContent.value = "";
-    el.tmNote.value = "";
-    el.tmCategory.value = "";
-    await loadTaskMembers();
-    await loadTasks();
-    showToast("Đã thêm nhân sự.", "success");
-  } catch (err) {
-    showToast(err.message);
-  }
-});
-
 el.taskMemberCloseBtn.addEventListener("click", () => el.taskMemberDialog.close());
 
 // ---- "Chi tiết công việc" (task_items) — tách 1 Nhiệm vụ thành từng đầu
@@ -1348,7 +1246,11 @@ function renderTaskItemList() {
   wrap.innerHTML = state.taskItems
     .map((it) => {
       const assigneeIds = new Set(it.assignees.map((a) => a.member_id));
-      const availableToAdd = state.taskMembers.filter((m) => !assigneeIds.has(m.member_id));
+      // Nguồn chọn người = TOÀN BỘ nhân sự tháng đang xem (state.members,
+      // giống trang Team & Nhân sự) — không còn yêu cầu phải "Thêm nhân sự
+      // tham gia" trước nữa; gán vào Việc TỰ ĐỘNG thêm luôn vào "Nhân sự
+      // tham gia" (xem addTaskItemMember, taskItem.service.ts).
+      const availableToAdd = state.members.filter((m) => !assigneeIds.has(m.id));
       return `
     <div class="tm-add-frame" data-item-id="${it.id}" style="gap:10px">
       <div class="field-row" style="align-items:flex-end">
@@ -1397,7 +1299,7 @@ function renderTaskItemList() {
         <div style="flex:1">
           <label>Thêm nhân sự phụ trách</label>
           <select class="ti-assignee-select" data-id="${it.id}">
-            ${availableToAdd.map((m) => `<option value="${m.member_id}">${m.member_name}</option>`).join("")}
+            ${availableToAdd.map((m) => `<option value="${m.id}">${m.name}${m.team_name ? " (" + m.team_name + ")" : ""}</option>`).join("")}
           </select>
         </div>
         <div style="width:110px">
@@ -1406,7 +1308,7 @@ function renderTaskItemList() {
         </div>
         <button type="button" class="small btn-exclude ti-assignee-add-btn" data-id="${it.id}">+ Gán</button>
       </div>`
-          : `<p class="muted" style="margin:0;font-size:0.82rem">Đã gán hết nhân sự tham gia task này — thêm người ở nút "Nhân sự" trước.</p>`
+          : `<p class="muted" style="margin:0;font-size:0.82rem">Đã gán hết nhân sự tháng này vào Việc đây.</p>`
       }
     </div>`;
     })
@@ -1472,7 +1374,11 @@ function renderTaskItemList() {
             gio_cong: hoursInput.value.trim() === "" ? undefined : Number(hoursInput.value),
           }),
         });
+        // Gán người mới có thể vừa tự thêm họ vào "Nhân sự tham gia" (nếu
+        // chưa có trước đó) -> nạp lại cả 2 để bảng Nhân sự tham gia cũng
+        // cập nhật đúng (loadTaskMembers() tự vẽ lại task-item-list ở cuối).
         await reloadTaskItems();
+        await loadTaskMembers();
       } catch (err) {
         showToast(err.message);
       }

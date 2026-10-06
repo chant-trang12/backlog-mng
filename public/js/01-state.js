@@ -51,9 +51,7 @@ const state = {
   taskMemberTaskId: null, // task đang mở dialog "Nhân sự tham gia"
   taskMemberTaskScore: null, // % Đánh giá của task đó (null nếu chưa chấm điểm)
   taskMembers: [], // danh sách nhân sự của task đang mở dialog
-  taskMemberAvailable: [], // nhân sự chưa gán, để gõ tìm/gợi ý
   taskItems: [], // danh sách Việc (task_items) của task đang mở dialog "Chi tiết công việc"
-  taskMemberSelectedId: null, // member_id đã chọn từ gợi ý (bấm "+ Thêm" cần có)
   taskMemberScoreUnit: "percent", // đơn vị hiển thị/nhập cột Điểm cá nhân: "percent" | "scale5"
   roadmapItems: [],
   roadmapYear: new Date().getFullYear(),
@@ -256,12 +254,6 @@ const el = {
   taskMemberTbody: document.getElementById("task-member-tbody"),
   taskMemberEmpty: document.getElementById("task-member-empty"),
   taskMemberCloseBtn: document.getElementById("task-member-close-btn"),
-  tmMember: document.getElementById("tm-member"),
-  tmMemberSuggestions: document.getElementById("tm-member-suggestions"),
-  tmCategory: document.getElementById("tm-phan-loai"),
-  tmWorkContent: document.getElementById("tm-noi-dung-cong-viec"),
-  tmNote: document.getElementById("tm-ghi-chu"),
-  tmAddBtn: document.getElementById("tm-add-btn"),
   roadmapSearch: document.getElementById("roadmap-search"),
   roadmapYearValue: document.getElementById("roadmap-year-value"),
   roadmapYearPrev: document.getElementById("roadmap-year-prev"),

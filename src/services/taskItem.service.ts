@@ -10,6 +10,7 @@ import type {
 } from "../types/backlog.js";
 import { assertDepartmentInScope, departmentIdFromTaskId, type DataScope } from "./scope.util.js";
 import { softDeleteWhere } from "./softDelete.util.js";
+import { createTaskMember } from "./taskMember.service.js";
 
 const GIO_MOT_MD = 8;
 
@@ -180,6 +181,12 @@ export async function addTaskItemMember(
   if (!item) return undefined;
   const departmentId = await departmentIdFromTaskId(item.task_id);
   assertDepartmentInScope(scope, departmentId);
+
+  // UI không còn bước "Thêm nhân sự tham gia" riêng nữa (gộp vào "Thêm
+  // việc"/gán nhân sự cho Việc luôn) — tự đảm bảo người này cũng có mặt ở
+  // "Nhân sự tham gia" (task_members), idempotent sẵn (createTaskMember
+  // trả về dòng cũ nếu đã có, không tạo trùng).
+  await createTaskMember(item.task_id, { member_id: input.member_id }, scope);
 
   const existing = await db("task_item_members")
     .where({ task_item_id: taskItemId, member_id: input.member_id, is_deleted: false })

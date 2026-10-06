@@ -2345,42 +2345,6 @@
         </select>
       </div>
 
-      <!-- Khung nền riêng để tách phần thêm nhân sự khỏi bảng danh sách bên
-           dưới — mở/đóng được trực tiếp (tm-add-frame-toggle) để đỡ chiếm
-           chỗ khi không cần thêm nữa, xem 04-tasks.js. -->
-      <div class="tm-add-frame">
-        <button type="button" id="tm-add-frame-toggle" class="tm-add-frame-toggle" aria-expanded="false">
-          <span>Thêm nhân sự</span>
-          <span class="caret" aria-hidden="true">▾</span>
-        </button>
-        <div id="tm-add-frame-body" hidden>
-          <div class="field-row" style="align-items:flex-end">
-            <div style="position:relative;flex:1">
-              <label for="tm-member">Nhân sự</label>
-              <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />
-              <div id="tm-member-suggestions" class="tm-suggest-list" hidden></div>
-            </div>
-            <div style="flex:1">
-              <label for="tm-phan-loai">Phân loại</label>
-              <select id="tm-phan-loai"></select>
-            </div>
-          </div>
-          <div class="field-row">
-            <div style="flex:1">
-              <label for="tm-noi-dung-cong-viec">Nội dung công việc</label>
-              <textarea id="tm-noi-dung-cong-viec" placeholder="Không bắt buộc" style="min-height:70px"></textarea>
-            </div>
-            <div style="flex:1">
-              <label for="tm-ghi-chu">Ghi chú</label>
-              <textarea id="tm-ghi-chu" placeholder="Không bắt buộc" style="min-height:70px"></textarea>
-            </div>
-          </div>
-          <div class="row" style="justify-content:flex-end">
-            <button type="button" id="tm-add-btn" class="write-action primary">+ Thêm</button>
-          </div>
-        </div>
-      </div>
-
       <div class="row" id="task-member-total-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <span id="task-member-total-badge" class="status-badge status-default"></span>
         <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
