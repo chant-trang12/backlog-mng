@@ -2321,11 +2321,11 @@
            dưới — mở/đóng được trực tiếp (tm-add-frame-toggle) để đỡ chiếm
            chỗ khi không cần thêm nữa, xem 04-tasks.js. -->
       <div class="tm-add-frame">
-        <button type="button" id="tm-add-frame-toggle" class="tm-add-frame-toggle" aria-expanded="true">
+        <button type="button" id="tm-add-frame-toggle" class="tm-add-frame-toggle" aria-expanded="false">
           <span>Thêm nhân sự</span>
           <span class="caret" aria-hidden="true">▾</span>
         </button>
-        <div id="tm-add-frame-body">
+        <div id="tm-add-frame-body" hidden>
           <div style="position:relative">
             <label for="tm-member">Nhân sự</label>
             <input id="tm-member" placeholder="Gõ tên để tìm..." autocomplete="off" />

@@ -881,10 +881,11 @@ async function openTaskMemberDialog(task) {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberDialogTitle.textContent = `Nhân sự tham gia: ${task.nhiem_vu}`;
   el.taskMemberDialogTeam.textContent = `Team ${task.team}`;
-  // Luôn mở khung "Thêm nhân sự" mỗi lần mở dialog — trạng thái đóng chỉ
-  // là tiện ích tạm thời trong phiên xem hiện tại, không nhớ lại.
-  document.getElementById("tm-add-frame-toggle").setAttribute("aria-expanded", "true");
-  document.getElementById("tm-add-frame-body").hidden = false;
+  // Mặc định luôn ĐÓNG khung "Thêm nhân sự" mỗi lần mở dialog — phần lớn
+  // lượt mở popup này là để XEM danh sách đã gán, chỉ cần mở khung khi
+  // thật sự muốn thêm người mới.
+  document.getElementById("tm-add-frame-toggle").setAttribute("aria-expanded", "false");
+  document.getElementById("tm-add-frame-body").hidden = true;
   el.taskMemberScoreRow.hidden = !graded;
   el.taskMemberScoreBadge.textContent = graded ? `% Đánh giá: ${state.taskMemberTaskScore}%` : "";
   state.taskMemberScoreUnit = "percent";
