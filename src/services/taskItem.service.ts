@@ -186,7 +186,16 @@ export async function addTaskItemMember(
   // việc"/gán nhân sự cho Việc luôn) — tự đảm bảo người này cũng có mặt ở
   // "Nhân sự tham gia" (task_members), idempotent sẵn (createTaskMember
   // trả về dòng cũ nếu đã có, không tạo trùng).
-  await createTaskMember(item.task_id, { member_id: input.member_id, phan_loai: input.phan_loai }, scope);
+  await createTaskMember(
+    item.task_id,
+    {
+      member_id: input.member_id,
+      phan_loai: input.phan_loai,
+      noi_dung_cong_viec: input.noi_dung_cong_viec,
+      ghi_chu: input.ghi_chu,
+    },
+    scope,
+  );
 
   const existing = await db("task_item_members")
     .where({ task_item_id: taskItemId, member_id: input.member_id, is_deleted: false })

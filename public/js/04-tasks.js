@@ -1225,6 +1225,8 @@ function resetTaskItemAddForm() {
   document.getElementById("ti-new-trangthai").value = "Chưa thực hiện";
   document.getElementById("ti-new-gio-cong").value = "";
   document.getElementById("ti-new-md-display").textContent = "0 MD";
+  document.getElementById("ti-new-noi-dung-cong-viec").value = "";
+  document.getElementById("ti-new-ghi-chu").value = "";
   const memberSelect = document.getElementById("ti-new-member");
   memberSelect.innerHTML =
     `<option value="">— Không gán ngay —</option>` +
@@ -1480,13 +1482,16 @@ document.getElementById("ti-add-btn").addEventListener("click", async () => {
   const memberId = document.getElementById("ti-new-member").value;
   const gioCong = document.getElementById("ti-new-gio-cong").value.trim();
   const phanLoai = document.getElementById("ti-new-phan-loai").value;
+  const noiDungCongViec = document.getElementById("ti-new-noi-dung-cong-viec").value.trim();
+  const ghiChu = document.getElementById("ti-new-ghi-chu").value.trim();
   try {
     const created = await api(`/api/tasks/${taskItemDialogTask.id}/items`, {
       method: "POST",
       body: JSON.stringify({ ten_viec: tenViec, trang_thai: trangThai }),
     });
     // Chọn sẵn Nhân sự ngay lúc tạo -> gán luôn (tự thêm người này vào
-    // "Nhân sự tham gia" nếu chưa có — xem addTaskItemMember, taskItem.service.ts).
+    // "Nhân sự tham gia" nếu chưa có, kèm Phân loại/Nội dung công việc/Ghi
+    // chú — xem addTaskItemMember, taskItem.service.ts).
     if (memberId) {
       await api(`/api/task-items/${created.id}/members`, {
         method: "POST",
@@ -1494,6 +1499,8 @@ document.getElementById("ti-add-btn").addEventListener("click", async () => {
           member_id: Number(memberId),
           gio_cong: gioCong === "" ? undefined : Number(gioCong),
           phan_loai: phanLoai || undefined,
+          noi_dung_cong_viec: noiDungCongViec || undefined,
+          ghi_chu: ghiChu || undefined,
         }),
       });
     }

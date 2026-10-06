@@ -75,7 +75,13 @@ export async function addTaskItemMemberHandler(req: Request, res: Response) {
   try {
     const row = await addTaskItemMember(
       taskItemId,
-      { member_id: memberId, gio_cong: req.body?.gio_cong, ghi_chu: req.body?.ghi_chu, phan_loai: req.body?.phan_loai },
+      {
+        member_id: memberId,
+        gio_cong: req.body?.gio_cong,
+        ghi_chu: req.body?.ghi_chu,
+        phan_loai: req.body?.phan_loai,
+        noi_dung_cong_viec: req.body?.noi_dung_cong_viec,
+      },
       scopeOf(req),
     );
     if (!row) return res.status(404).json({ error: "Không tìm thấy Việc" });
