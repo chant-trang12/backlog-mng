@@ -2394,32 +2394,24 @@
         <p class="muted" id="task-member-empty" hidden style="padding:16px;text-align:center">Chưa có nhân sự nào tham gia task này.</p>
       </div>
 
-      <div class="actions">
-        <button type="button" id="task-member-close-btn">Đóng</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- "Chi tiết công việc" — tách 1 Nhiệm vụ thành từng đầu việc cụ thể
-       (Việc), mỗi Việc phân công 1-nhiều nhân sự (lấy từ danh sách "Nhân
-       sự tham gia" của chính task) kèm giờ công, có thể chấm điểm riêng
-       (% Đánh giá của Task tự = trung bình các Việc đã chấm — xem
-       recomputeTaskScoreFromItems, taskItem.service.ts) và đánh dấu "Treo
-       việc" (đôn đốc ở Trang chủ). Render động hoàn toàn bằng JS (danh
-       sách Việc đổi liên tục) — xem renderTaskItemList(), 04-tasks.js. -->
-  <dialog id="task-item-dialog" style="max-width:900px; width:92vw">
-    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-      <h2 id="task-item-dialog-title" style="margin:0">Chi tiết công việc</h2>
+      <!-- "Chi tiết công việc" — GỘP vào dialog "Nhân sự tham gia" (không
+           còn nút/dialog riêng theo yêu cầu) — tách Nhiệm vụ thành từng đầu
+           việc cụ thể (Việc), mỗi Việc phân công 1-nhiều nhân sự (lấy từ
+           danh sách Nhân sự tham gia phía trên) kèm giờ công. % Đánh giá
+           của Task tự = trung bình các Việc đã chấm — xem
+           recomputeTaskScoreFromItems, taskItem.service.ts. Render động
+           hoàn toàn bằng JS — xem renderTaskItemList(), 04-tasks.js. -->
+      <h2 style="margin:8px 0 0;font-size:1.05rem">Chi tiết công việc</h2>
       <div class="row">
         <input id="ti-new-ten-viec" placeholder="Tên việc mới (VD: Xây dựng nghiệp vụ...)..." style="flex:1" />
         <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
       </div>
       <div id="task-item-list"></div>
+
       <div class="actions">
-        <button type="button" id="task-item-close-btn">Đóng</button>
+        <button type="button" id="task-member-close-btn">Đóng</button>
       </div>
-    </div>
+    </form>
   </dialog>
 
   <dialog id="roadmap-dialog">

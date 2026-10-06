@@ -226,8 +226,7 @@ function renderTasks() {
         <button class="small btn-delete delete-btn">Xóa</button>
         <button class="small btn-grade grade-write-action grade-btn">Chấm điểm</button>
         <button class="small btn-progress progress-btn">Cập nhật tiến độ</button>
-        <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
-        <button class="small btn-progress task-item-btn" title="Chi tiết công việc — tách Nhiệm vụ thành từng đầu việc cụ thể"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg>Việc</button>
+        <button class="small btn-member member-btn" title="Quản lý nhân sự tham gia + chi tiết công việc của task này"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg>Nhân sự${t.member_count ? ` (${t.member_count})` : ""}</button>
       </div></td>
     </tr>`;
     })
@@ -266,12 +265,6 @@ function renderTasks() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openTaskMemberDialog(state.tasks.find((t) => t.id === id));
-    });
-  });
-  el.taskTbody.querySelectorAll(".task-item-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const id = Number(e.target.closest("tr").dataset.id);
-      openTaskItemDialog(state.tasks.find((t) => t.id === id));
     });
   });
   el.taskTbody.querySelectorAll(".grade-hist-toggle").forEach((btn) => {
@@ -918,6 +911,7 @@ async function openTaskMemberDialog(task) {
   fillTaskMemberCategorySelect();
   renderTaskMemberThead();
   await loadTaskMembers();
+  await loadAndRenderTaskItems(task);
   el.taskMemberDialog.showModal();
 }
 
@@ -1009,6 +1003,9 @@ async function loadTaskMembers() {
   state.taskMembers = await api(`/api/tasks/${state.taskMemberTaskId}/members`);
   renderTaskMembers();
   fillTaskMemberSelect();
+  // Danh sách Nhân sự tham gia vừa đổi -> nguồn gán vào từng Việc (phần
+  // "Chi tiết công việc" gộp chung dialog này) cũng cần vẽ lại.
+  if (typeof renderTaskItemList === "function" && state.taskItems) renderTaskItemList();
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -1320,28 +1317,22 @@ el.taskMemberCloseBtn.addEventListener("click", () => el.taskMemberDialog.close(
 // recomputeTaskScoreFromItems, taskItem.service.ts) — không tính ở đây.
 
 let taskItemDialogTask = null;
-let taskItemAssignablePeople = []; // Nhân sự tham gia task này (từ task_members) — nguồn để gán vào từng Việc.
 
-async function openTaskItemDialog(task) {
+// Phần "Chi tiết công việc" GỘP vào dialog "Nhân sự tham gia" (không còn
+// dialog/nút riêng) — gọi từ openTaskMemberDialog(), dùng lại CHÍNH
+// state.taskMembers đã load ở đó làm nguồn nhân sự gán vào từng Việc
+// (danh sách phải tham gia task trước mới gán được việc cụ thể).
+async function loadAndRenderTaskItems(task) {
   if (!task) return;
   taskItemDialogTask = task;
-  document.getElementById("task-item-dialog-title").textContent = `Chi tiết công việc: ${task.nhiem_vu}`;
   document.getElementById("ti-new-ten-viec").value = "";
-  const taskItemDialog = document.getElementById("task-item-dialog");
   try {
-    const [items, members] = await Promise.all([
-      api(`/api/tasks/${task.id}/items`),
-      api(`/api/tasks/${task.id}/members`),
-    ]);
-    state.taskItems = items;
-    taskItemAssignablePeople = members;
+    state.taskItems = await api(`/api/tasks/${task.id}/items`);
   } catch (err) {
     showToast(err.message);
     state.taskItems = [];
-    taskItemAssignablePeople = [];
   }
   renderTaskItemList();
-  taskItemDialog.showModal();
 }
 
 function taskItemMdLabel(it) {
@@ -1357,7 +1348,7 @@ function renderTaskItemList() {
   wrap.innerHTML = state.taskItems
     .map((it) => {
       const assigneeIds = new Set(it.assignees.map((a) => a.member_id));
-      const availableToAdd = taskItemAssignablePeople.filter((m) => !assigneeIds.has(m.member_id));
+      const availableToAdd = state.taskMembers.filter((m) => !assigneeIds.has(m.member_id));
       return `
     <div class="tm-add-frame" data-item-id="${it.id}" style="gap:10px">
       <div class="field-row" style="align-items:flex-end">
@@ -1536,10 +1527,6 @@ document.getElementById("ti-add-btn").addEventListener("click", async () => {
   } catch (err) {
     showToast(err.message);
   }
-});
-
-document.getElementById("task-item-close-btn").addEventListener("click", () => {
-  document.getElementById("task-item-dialog").close();
 });
 
 // ---- Export ----
