@@ -1681,8 +1681,13 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
   display: block;
   margin: 0 auto;
 }
+/* justify-content: flex-start (KHÔNG phải center) — nếu canh giữa cả cụm
+   input+nhãn thì vị trí số trong ô bị XÔ LỆCH theo chiều rộng khác nhau
+   của phần đuôi (icon "↺" hẹp vs chữ "(tự tính)" rộng), khiến số ở các
+   dòng không thẳng hàng với nhau (xem anh chụp user gửi). Căn trái giữ
+   input luôn ở đúng 1 vị trí cố định bất kể phần đuôi dài ngắn. */
 #task-member-table td:nth-child(5) .row {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem teamColorClass trong app.js). */
