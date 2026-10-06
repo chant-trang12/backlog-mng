@@ -390,7 +390,7 @@ main {
    tiêu đề có icon cảnh báo), để không bị lướt qua như 1 bảng dữ liệu
    bình thường. */
 .home-urgent-card {
-  background: var(--delete-light);
+  background: var(--cream);
   border: 2px solid var(--delete);
   box-shadow: 0 4px 14px rgba(179, 69, 47, 0.18);
 }
