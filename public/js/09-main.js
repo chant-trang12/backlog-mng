@@ -19,6 +19,10 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     Object.entries(pages).forEach(([key, section]) => {
       section.hidden = key !== btn.dataset.page;
     });
+    // Trang chủ — tải lại mỗi lần vào trang để thấy ngay thay đổi vừa làm ở
+    // trang khác cho cùng tháng đang xem (VD: tick "Việc cần xử lý gấp"/
+    // Treo việc ở popup Nhân sự bên Backlog) — tránh phải F5 mới thấy.
+    if (btn.dataset.page === "home") refreshHomeForPeriod(state.homePeriodId).catch((err) => showToast(err.message));
     if (btn.dataset.page === "roadmap") loadRoadmap().catch((err) => showToast(err.message));
     // Tải lại Nhân sự (kèm KPI theo task) mỗi lần vào lại trang Team & Nhân
     // sự — tránh hiển thị dữ liệu cũ nếu vừa sửa Phân loại/Tỷ lệ đóng góp ở

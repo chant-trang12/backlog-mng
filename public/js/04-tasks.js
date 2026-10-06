@@ -941,6 +941,11 @@ async function loadTaskMembers() {
   // Danh sách Nhân sự tham gia vừa đổi -> nguồn gán vào từng Việc (phần
   // "Chi tiết công việc" gộp chung dialog này) cũng cần vẽ lại.
   if (typeof renderTaskItemList === "function" && state.taskItems) renderTaskItemList();
+  // Mọi thay đổi ở popup này (tick "Việc cần xử lý gấp", Treo việc, sửa
+  // Ghi chú/Nội dung công việc...) cần phản ánh ngay ở các card đôn đốc
+  // Trang chủ — nếu không, phải F5 mới thấy (user phản hồi). Hàm này tự bỏ
+  // qua nếu Home đang xem period khác với period đang sửa.
+  syncHomeFromCurrentIfNeeded();
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;

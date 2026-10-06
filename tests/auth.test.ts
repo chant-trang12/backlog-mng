@@ -132,6 +132,13 @@ describe("Authentication & SSO Integration", () => {
       expect(req.appUser).toBeDefined();
       expect(req.appUser.sso_sub).toBe("user-123");
       expect(["admin", "viewer"]).toContain(req.appUser.role); // admin nếu là user đầu tiên, viewer nếu không
+
+      // Dọn user vừa tạo — test file này chạy TRƯỚC user.test.ts theo thứ tự
+      // bảng chữ cái (fileParallelism: false, chung 1 DB test cho cả đợt
+      // chạy). Không dọn sẽ làm "người đầu tiên đăng nhập tự thành admin"
+      // ở user.test.ts bị sai (users đã có sẵn 1 dòng từ đây).
+      const { db } = await import("../src/db/database.js");
+      await db("users").where({ sso_sub: "user-123" }).del();
     });
   });
 
