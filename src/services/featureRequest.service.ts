@@ -69,6 +69,19 @@ export async function createFeatureRequest(input: CreateFeatureRequestInput): Pr
       nguoi_de_xuat: input.nguoi_de_xuat?.trim() || null,
       do_uu_tien: input.do_uu_tien ?? "Trung bình",
       trang_thai: "Chờ duyệt",
+      // Nhóm trường biểu mẫu "Quy trình số hóa" (import Excel + bảng mới).
+      linh_vuc: input.linh_vuc?.trim() || null,
+      mang: input.mang?.trim() || null,
+      hoat_dong_nghiep_vu: input.hoat_dong_nghiep_vu?.trim() || null,
+      quy_trinh_so_hoa: input.quy_trinh_so_hoa?.trim() || null,
+      ma_quy_trinh: input.ma_quy_trinh?.trim() || null,
+      buoc_so_hoa: input.buoc_so_hoa?.trim() || null,
+      van_de_ton_tai: input.van_de_ton_tai?.trim() || null,
+      de_xuat_quy_trinh: input.de_xuat_quy_trinh?.trim() || null,
+      hieu_qua_khi_thuc_hien: input.hieu_qua_khi_thuc_hien?.trim() || null,
+      quy_trinh_hien: input.quy_trinh_hien?.trim() || null,
+      ke_hoach_software: input.ke_hoach_software?.trim() || null,
+      ghi_chu_xu_ly: input.ghi_chu_xu_ly?.trim() || null,
     })
     .returning("id");
   const id = typeof created === "object" ? created.id : created;
@@ -102,6 +115,35 @@ export async function updateFeatureRequest(
       trang_thai: input.trang_thai !== undefined ? input.trang_thai : existing.trang_thai,
       ghi_chu_xu_ly:
         input.ghi_chu_xu_ly !== undefined ? input.ghi_chu_xu_ly.trim() || null : existing.ghi_chu_xu_ly,
+      // Nhóm trường biểu mẫu "Quy trình số hóa" — undefined nghĩa là "không
+      // đổi" (form nhập tay không gửi trường nào không có ô nhập tương ứng).
+      linh_vuc: input.linh_vuc !== undefined ? input.linh_vuc.trim() || null : existing.linh_vuc,
+      mang: input.mang !== undefined ? input.mang.trim() || null : existing.mang,
+      hoat_dong_nghiep_vu:
+        input.hoat_dong_nghiep_vu !== undefined
+          ? input.hoat_dong_nghiep_vu.trim() || null
+          : existing.hoat_dong_nghiep_vu,
+      quy_trinh_so_hoa:
+        input.quy_trinh_so_hoa !== undefined ? input.quy_trinh_so_hoa.trim() || null : existing.quy_trinh_so_hoa,
+      ma_quy_trinh:
+        input.ma_quy_trinh !== undefined ? input.ma_quy_trinh.trim() || null : existing.ma_quy_trinh,
+      buoc_so_hoa: input.buoc_so_hoa !== undefined ? input.buoc_so_hoa.trim() || null : existing.buoc_so_hoa,
+      van_de_ton_tai:
+        input.van_de_ton_tai !== undefined ? input.van_de_ton_tai.trim() || null : existing.van_de_ton_tai,
+      de_xuat_quy_trinh:
+        input.de_xuat_quy_trinh !== undefined
+          ? input.de_xuat_quy_trinh.trim() || null
+          : existing.de_xuat_quy_trinh,
+      hieu_qua_khi_thuc_hien:
+        input.hieu_qua_khi_thuc_hien !== undefined
+          ? input.hieu_qua_khi_thuc_hien.trim() || null
+          : existing.hieu_qua_khi_thuc_hien,
+      quy_trinh_hien:
+        input.quy_trinh_hien !== undefined ? input.quy_trinh_hien.trim() || null : existing.quy_trinh_hien,
+      ke_hoach_software:
+        input.ke_hoach_software !== undefined
+          ? input.ke_hoach_software.trim() || null
+          : existing.ke_hoach_software,
       updated_at: db.fn.now(),
     });
   return getFeatureRequest(id);
@@ -202,6 +244,28 @@ export async function rejectFeatureRequest(
     .update({
       trang_thai: "Từ chối",
       ghi_chu_xu_ly: ghiChu?.trim() || existing.ghi_chu_xu_ly,
+      updated_at: db.fn.now(),
+    });
+  return getFeatureRequest(id);
+}
+
+// Chuyển đơn vị thực hiện — đổi phòng đích (target_department_id) sang phòng
+// khác: yêu cầu sẽ hiển thị ở hộp thư của phòng MỚI thay vì phòng cũ (hộp
+// thư hiển thị với phòng đề xuất hoặc phòng đích). Chỉ khi còn "Chờ duyệt"
+// (đã Duyệt/Từ chối thì khoá nội dung, khớp luật khoá của Sửa/Xóa). Trả
+// undefined khi không tìm thấy / sai trạng thái / phòng mới trùng phòng
+// hiện tại (server chặn lại dù popup đã loại sẵn).
+export async function transferFeatureRequest(
+  id: number,
+  newTargetDepartmentId: number,
+): Promise<FeatureRequestWithDept | undefined> {
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
+  if (!existing || existing.trang_thai !== "Chờ duyệt") return undefined;
+  if (existing.target_department_id === newTargetDepartmentId) return undefined;
+  await db("feature_requests")
+    .where({ id })
+    .update({
+      target_department_id: newTargetDepartmentId,
       updated_at: db.fn.now(),
     });
   return getFeatureRequest(id);

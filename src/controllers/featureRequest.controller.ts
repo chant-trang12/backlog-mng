@@ -13,11 +13,19 @@ import {
   listLoaiYeuCau,
   rejectFeatureRequest,
   setFeatureRequestAttachment,
+  transferFeatureRequest,
   updateFeatureRequest,
 } from "../services/featureRequest.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { listDepartments } from "../services/department.service.js";
+import { listHeThong } from "../services/hethong.service.js";
+import {
+  buildFeatureRequestImportTemplate,
+  importFeatureRequestsFromWorkbook,
+} from "../services/featureRequest-import.service.js";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 
 // [DEMO 3002 - v2] Chỉ trả yêu cầu mà phòng đang xem (?department_id=X) là
 // bên đề xuất HOẶC bên đích — phòng khác không thấy, kể cả biết ID.
@@ -213,6 +221,36 @@ export async function rejectFeatureRequestHandler(req: Request, res: Response) {
   res.json(updated);
 }
 
+// Chuyển đơn vị thực hiện — đổi phòng đích sang phòng khác, yêu cầu hiển thị
+// tại hộp thư của phòng MỚI thay vì phòng cũ. Được gọi từ CẢ 2 phía (đề xuất
+// hoặc đích — cùng luật isInScope với Sửa), chỉ khi còn "Chờ duyệt". Phòng
+// mới phải khác phòng đích hiện tại (popup đã loại sẵn, chặn lại ở server)
+// và phải tồn tại trong danh mục phòng ban.
+export async function transferFeatureRequestHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const existing = await getFeatureRequest(id);
+  if (!existing || !isInScope(existing, departmentId)) {
+    return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
+  }
+  const { department_id: newTargetRaw } = req.body ?? {};
+  const newTargetId = Number(newTargetRaw);
+  if (!Number.isFinite(newTargetId)) {
+    return res.status(400).json({ error: "Trường 'department_id' (Đơn vị thực hiện mới) là bắt buộc" });
+  }
+  if (existing.target_department_id === newTargetId) {
+    return res.status(400).json({ error: "Đơn vị thực hiện mới phải khác đơn vị hiện tại" });
+  }
+  const departments = await listDepartments();
+  if (!departments.some((d) => d.id === newTargetId)) {
+    return res.status(400).json({ error: "Đơn vị thực hiện mới không có trong danh mục phòng ban" });
+  }
+  const updated = await transferFeatureRequest(id, newTargetId);
+  if (!updated) return res.status(400).json({ error: "Yêu cầu không ở trạng thái Chờ duyệt" });
+  res.json(updated);
+}
+
 export async function linkFeatureRequestToBacklogHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
@@ -247,4 +285,48 @@ export async function linkFeatureRequestToRoadmapHandler(req: Request, res: Resp
     return res.status(400).json({ error: "Yêu cầu chưa Duyệt hoặc đã đưa vào Roadmap trước đó" });
   }
   res.json(updated);
+}
+
+// ---- Import Excel theo biểu mẫu Quy trình số hóa ----
+
+// GET /api/feature-requests/import-template — file .xlsx mẫu (18 cột đúng
+// biểu mẫu), có dropdown chọn Hệ thống cần cải tiến (danh mục Cấu hình >
+// Hệ thống), Ưu tiên + Đơn vị đề xuất (danh mục phòng ban).
+export async function downloadFeatureRequestTemplateHandler(_req: Request, res: Response) {
+  const [departments, heThong] = await Promise.all([listDepartments(), listHeThong()]);
+  const buffer = await buildFeatureRequestImportTemplate({
+    departments: departments.map((d) => d.name),
+    heThong: heThong.map((h) => h.ten_he_thong),
+  });
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="mau-yeu-cau-tinh-nang.xlsx"`);
+  res.send(Buffer.from(buffer));
+}
+
+// POST /api/feature-requests/import — body là bytes thô file .xlsx (client
+// gửi File trực tiếp, express.raw() gắn ở route). Mỗi dòng = 1 yêu cầu mới
+// ("Chờ duyệt", phòng đề xuất lấy từ cột "Đơn vị đề xuất" — không tự tạo
+// phòng ban mới, dòng không khớp bị bỏ qua kèm lý do). Phòng ban đích lấy
+// theo cột "Phòng ban thực hiện" trong file (= Phòng ban đích của form,
+// khớp theo tên/mã phòng); dòng trống cột này thì fallback về phòng đang
+// xem (?department_id=X) — giữ logic "phòng import = phòng đích" cho file
+// cũ không có cột này.
+export async function importFeatureRequestsHandler(req: Request, res: Response) {
+  const buffer = req.body;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    return res.status(400).json({ error: "Không nhận được nội dung file" });
+  }
+  if (buffer.length > MAX_IMPORT_BYTES) {
+    return res.status(400).json({ error: "File vượt quá 20MB" });
+  }
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  try {
+    const result = await importFeatureRequestsFromWorkbook(buffer, Number.isFinite(departmentId) ? departmentId : null);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });
+  }
 }

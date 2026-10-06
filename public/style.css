@@ -630,9 +630,11 @@ button.btn-delete:hover { background: var(--delete-light-hover); }
    tắc 9.1 chỉ admin được xóa) — dùng cho nút "Từ chối" yêu cầu tính năng,
    vốn chỉ là đổi trạng thái (editor thuộc phòng đích vẫn được làm), tách
    riêng để không bị ẩn nhầm với editor bởi CSS chọn theo .btn-delete bên
-   dưới (xem VIEWER_ALLOWED_WRITES / requireTargetScope). */
-button.btn-reject { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
-button.btn-reject:hover { background: var(--delete-light-hover); }
+   dưới (xem VIEWER_ALLOWED_WRITES / requireTargetScope). Nền ĐỎ ĐẬM chữ
+   trắng — khác rõ với .btn-delete đỏ nhạt (nút "Xóa" trong cùng cột Thao
+   tác của bảng Yêu cầu tính năng, các nút cần khác màu nhau dễ đọc). */
+button.btn-reject { background: var(--delete); border-color: var(--delete); color: #fff; }
+button.btn-reject:hover { background: #993a27; border-color: #993a27; }
 button.btn-grade { background: #dce8d2; border-color: #c3d7b3; color: #3e5a30; }
 button.btn-grade:hover { background: #c3d7b3; }
 button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80; }
@@ -696,8 +698,8 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
    của bảng Danh sách nhiệm vụ, dùng lại đúng khung .bulk-menu/.bulk-menu-sep
    ở trên, chỉ khác nội dung là danh sách checkbox thay vì nút hành động. */
 .col-menu-wrap { position: relative; display: inline-block; }
-#task-col-menu-btn { display: inline-flex; align-items: center; gap: 6px; }
-#task-col-menu-btn .caret { font-size: 0.7em; line-height: 1; }
+#task-col-menu-btn, #fr-col-menu-btn { display: inline-flex; align-items: center; gap: 6px; }
+#task-col-menu-btn .caret, #fr-col-menu-btn .caret { font-size: 0.7em; line-height: 1; }
 
 .col-menu {
   position: absolute;
@@ -936,7 +938,19 @@ th {
   z-index: 2;
 }
 
-.table-wrap { overflow-x: auto; margin-top: 14px; max-width: 100%; }
+.table-wrap {
+  overflow: auto;
+  margin-top: 14px;
+  max-width: 100%;
+  /* Khung bảng có cuộn dọc RIÊNG, cao tối đa bằng phần viewport còn lại —
+     để th { position: sticky; top: 0 } phía trên ghim được dòng tiêu đề khi
+     cuộn xuống: sticky chỉ "bám" vào scroll container GẦN NHẤT, mà
+     overflow-x: auto (trước đây) biến .table-wrap thành scroll container
+     không bao giờ cuộn dọc → tiêu đề trôi theo trang, sticky vô hiệu (đã
+     kiểm chứng thực nghiệm bằng headless Chrome). Không đặt max-height thì
+     khung cao bằng nội dung, dọc vẫn do trang cuộn → tiêu đề vẫn trôi. */
+  max-height: calc(100vh - 240px);
+}
 
 /* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
    thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
@@ -1062,25 +1076,43 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
 
-/* Bảng Yêu cầu tính năng — đã rút gọn chỉ còn cột cần thiết để lướt danh
-   sách (checkbox/STT/Hệ thống/Tiêu đề/Phòng ban/Ưu tiên/Trạng thái/Ngày
-   tạo/Thao tác), đầy đủ thông tin xem ở dialog chi tiết (bấm vào dòng —
-   xem openFrDetailDialog() ở 10-feature-requests.js). Cột checkbox/STT/Hệ
-   thống/Ưu tiên/Ngày tạo (vị trí 1/2/3/6/8, ô/số/badge/ngày ngắn) căn thêm
-   chiều ngang; Tiêu đề/Phòng ban/Trạng thái giữ căn trái. Cả dòng bấm được
-   (trỏ mở dialog chi tiết) trừ khi bấm đúng checkbox/nút/link thao tác —
-   xem .fr-row-clickable bên dưới. */
-#fr-table th { text-align: center; }
-#fr-table td { vertical-align: middle; }
-#fr-table td:nth-child(1),
-#fr-table td:nth-child(2),
-#fr-table td:nth-child(3),
-#fr-table td:nth-child(6),
-#fr-table td:nth-child(8) {
-  text-align: center;
-}
+/* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
+   hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service
+   .ts): checkbox/STT/Lĩnh vực/Mảng/Hoạt động-nghiệp vụ/Quy trình số hóa/Mã
+   quy trình/Bước số hóa/Mô tả/Vấn đề tồn tại/Hệ thống/Đề xuất/Hiệu quả/Quy
+   trình hiện/Kế hoạch software/Ưu tiên/Đơn vị đề xuất/Nhân sự đầu mối/Ghi
+   chú/Trạng thái/Thao tác. Bảng rất rộng nên cuộn ngang qua .table-wrap; ô
+   text dài cắt tối đa 3 dòng (.fr-clamp), bấm dòng xem chi tiết ở dialog.
+    Cột ngắn (checkbox/STT/Quy trình số hóa/Mã quy trình/Bước số hóa/Hệ
+    thống/Ưu tiên/Trạng thái) căn giữa. Dùng [data-col=...] thay vì
+    nth-child vì bảng cho ẩn cột tuỳ ý (menu "Cột hiển thị") — vị trí
+    nth-child lệch đi khi có cột bị ẩn giữa bảng, còn data-col đứng yên. */
+ #fr-table th { text-align: center; }
+ #fr-table td { vertical-align: middle; }
+ #fr-table td[data-col="stt"],
+ #fr-table td[data-col="quy_trinh_so_hoa"],
+ #fr-table td[data-col="ma_quy_trinh"],
+ #fr-table td[data-col="buoc_so_hoa"],
+ #fr-table td[data-col="he_thong"],
+ #fr-table td[data-col="thoi_gian"],
+ #fr-table td[data-col="quy"],
+ #fr-table td[data-col="do_uu_tien"],
+ #fr-table td[data-col="trang_thai"] {
+   text-align: center;
+ }
 #fr-table tbody tr.fr-row-clickable { cursor: pointer; }
 #fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
+
+/* Ô text dài trong bảng Yêu cầu tính năng — giới hạn 3 dòng, tràn thì hiện
+   "…" (title attr ở từng ô cho xem đầy đủ khi rê chuột). */
+.fr-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+}
 
 /* Dialog xem chi tiết 1 yêu cầu tính năng — 3 khối rõ ràng: đầu trang (hệ
    thống/tiêu đề/trạng thái, có viền dưới tách khỏi phần thân), khối "thông

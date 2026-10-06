@@ -940,12 +940,8 @@
         <!-- ---- Trang Yêu cầu tính năng ---- -->
         <div id="page-feature-requests" hidden>
           <section class="card">
-            <h2>Tìm kiếm</h2>
+            <h2>Bộ lọc</h2>
             <div class="row">
-              <div>
-                <label for="fr-filter-search">Tìm kiếm</label>
-                <input type="text" id="fr-filter-search" placeholder="Tiêu đề, hệ thống, người đề xuất..." style="min-width:240px" />
-              </div>
               <div>
                 <label for="fr-filter-status">Trạng thái</label>
                 <select id="fr-filter-status">
@@ -972,33 +968,83 @@
 
           <section class="card">
             <div class="row" style="justify-content:space-between;align-items:flex-start">
-              <div>
+              <!-- Khối tiêu đề flex:1 1 0 — luôn chiếm phần rộng còn lại sau
+                   nhóm nút, để khi nút "Xóa đã chọn (N)" hiện ra (tick
+                   checkbox) tổng chiều rộng dòng không vượt container, nhóm
+                   nút không bị đẩy (wrap) xuống dòng mới gây nhảy layout. -->
+              <div style="flex:1 1 0">
                 <h2 style="margin:0">Yêu cầu tính năng</h2>
-                <p class="muted" style="margin:6px 0 0">Hộp thư yêu cầu — đề xuất thêm/nâng cấp tính năng cho hệ thống.</p>
               </div>
-              <div class="row">
+              <div class="row" style="flex:0 0 auto">
                 <!-- Chọn nhiều để xóa — CHỈ admin (Quy tắc 9.1: editor/viewer
                      không được xóa). class="delete-action" đã ẩn sẵn với cả
                      viewer lẫn editor qua CSS (xem cuối style.css), khớp
                      đúng luật chặn thật ở server (requireAdmin, scope theo
                      tiền tố "/api/feature-requests/delete-selected" — app.ts). -->
                 <button id="delete-selected-fr-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-fr-count">0</span>)</button>
+                <!-- Tùy chọn ẩn/hiện cột — giống bảng Nhiệm vụ (task-col-menu):
+                     bảng có 19 cột dữ liệu nên cho người dùng tự tắt cột không
+                     cần xem, lưu localStorage theo máy (10-feature-requests.js). -->
+                <div class="col-menu-wrap" id="fr-col-menu-wrap">
+                  <button type="button" id="fr-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
+                    <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
+                    <span class="caret" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="col-menu" id="fr-col-menu" role="menu" hidden>
+                    <div class="col-menu-list" id="fr-col-menu-list"></div>
+                    <div class="bulk-menu-sep"></div>
+                    <button type="button" class="bulk-menu-item" id="fr-col-menu-reset">Hiện tất cả</button>
+                  </div>
+                </div>
+                <button id="download-fr-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
+                <button id="import-fr-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
+                <input type="file" id="fr-import-input" accept=".xlsx,.xlsm" hidden />
                 <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
               </div>
             </div>
+            <!-- Ô tìm từ khoá — hàng riêng NGAY TRÊN bảng, nhãn đứng cạnh ô
+                 như menu Nhiệm vụ (task-search ở 02-departments-periods-teams.js:
+                 applyTaskFilters). Card "Bộ lọc" phía trên chỉ còn 3 select. -->
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="fr-filter-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="fr-filter-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
             <p class="muted" style="margin:0 0 8px">Bấm vào 1 dòng để xem đầy đủ chi tiết.</p>
-            <div class="table-wrap">
+            <!-- Thanh cuộn ngang PHÍA TRÊN bảng — giống bảng Nhiệm vụ
+                 (setupTaskScrollTopSync ở 04-tasks.js): bảng Yêu cầu tính năng
+                 có tới 19 cột dữ liệu, thanh cuộn mặc định nằm ở cuối bảng
+                 nên thêm 1 thanh giả ở đây, đồng bộ 2 chiều với .table-wrap
+                 thật bên dưới qua setupFrScrollTopSync() ở 10-feature-requests.js. -->
+            <div class="table-scroll-top" id="fr-table-scroll-top"><div id="fr-table-scroll-top-spacer"></div></div>
+            <div class="table-wrap" id="fr-table-wrap">
               <table id="fr-table">
                 <thead>
                   <tr>
                     <th style="width:36px"><input type="checkbox" id="fr-select-all" /></th>
-                    <th style="min-width:44px">STT</th>
-                    <th style="min-width:140px">Hệ thống</th>
-                    <th style="min-width:260px">Tiêu đề</th>
-                    <th style="min-width:200px">Phòng ban</th>
-                    <th style="min-width:100px">Ưu tiên</th>
-                    <th style="min-width:180px">Trạng thái</th>
-                    <th style="min-width:110px">Ngày tạo</th>
+                    <th style="min-width:44px" data-col="stt">STT</th>
+                    <!-- Cột "Tiêu đề" không cho ẩn (giống cột "Nhiệm vụ" ở bảng
+                         Nhiệm vụ) — cần luôn thấy để biết đang xem dòng nào. -->
+                    <th style="min-width:200px">Tiêu đề</th>
+                    <th style="min-width:90px" data-col="linh_vuc">Lĩnh vực</th>
+                    <th style="min-width:100px" data-col="mang">Mảng</th>
+                    <th style="min-width:170px" data-col="hoat_dong">Hoạt động/nghiệp vụ</th>
+                    <th style="min-width:100px" data-col="quy_trinh_so_hoa">Quy trình số hóa</th>
+                    <th style="min-width:90px" data-col="ma_quy_trinh">Mã quy trình</th>
+                    <th style="min-width:100px" data-col="buoc_so_hoa">Bước số hóa</th>
+                    <th style="min-width:220px" data-col="mo_ta">Mô tả từng bước đang thực hiện</th>
+                    <th style="min-width:180px" data-col="van_de_ton_tai">Vấn đề tồn tại</th>
+                    <th style="min-width:130px" data-col="he_thong">Hệ thống cần cải tiến (nếu có)</th>
+                    <th style="min-width:180px" data-col="de_xuat_quy_trinh">Đề xuất quy trình/nghiệp vụ</th>
+                    <th style="min-width:170px" data-col="hieu_qua">Hiệu quả khi thực hiện</th>
+                    <th style="min-width:130px" data-col="thoi_gian">Thời gian mong muốn thực hiện</th>
+                    <th style="min-width:110px" data-col="quy">Quý thực hiện</th>
+                    <th style="min-width:150px" data-col="ke_hoach_software">Kế hoạch software</th>
+                    <th style="min-width:200px" data-col="ket_qua">Kết quả mong muốn</th>
+                    <th style="min-width:90px" data-col="do_uu_tien">Ưu tiên</th>
+                    <th style="min-width:140px" data-col="don_vi_de_xuat">Đơn vị đề xuất</th>
+                    <th style="min-width:120px" data-col="nguoi_dau_moi">Nhân sự đầu mối</th>
+                    <th style="min-width:140px" data-col="ghi_chu">Ghi chú</th>
+                    <th style="min-width:140px" data-col="trang_thai">Trạng thái</th>
                     <th style="min-width:130px"></th>
                   </tr>
                 </thead>
@@ -1047,9 +1093,59 @@
               <label for="fr-tieu-de">Tiêu đề *</label>
               <input id="fr-tieu-de" required style="width:100%" />
             </div>
+            <div class="field-row">
+              <div>
+                <label for="fr-linh-vuc">Lĩnh vực</label>
+                <input id="fr-linh-vuc" style="width:100%" />
+              </div>
+              <div>
+                <label for="fr-mang">Mảng</label>
+                <input id="fr-mang" style="width:100%" />
+              </div>
+            </div>
             <div>
-              <label for="fr-mo-ta">Mô tả chi tiết</label>
-              <textarea id="fr-mo-ta" placeholder="Mô tả nghiệp vụ, lý do cần..." style="min-height:120px"></textarea>
+              <label for="fr-hoat-dong">Hoạt động/nghiệp vụ</label>
+              <input id="fr-hoat-dong" style="width:100%" />
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="fr-quy-trinh-so-hoa">Quy trình số hóa</label>
+                <input id="fr-quy-trinh-so-hoa" style="width:100%" placeholder="VD: Có / Một phần / Chưa" />
+              </div>
+              <div>
+                <label for="fr-ma-quy-trinh">Mã quy trình</label>
+                <input id="fr-ma-quy-trinh" style="width:100%" placeholder="VD: QT-HC-01" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="fr-buoc-so-hoa">Bước số hóa</label>
+                <input id="fr-buoc-so-hoa" style="width:100%" />
+              </div>
+              <div>
+                <label for="fr-quy-trinh-hien">Quy trình hiện</label>
+                <input id="fr-quy-trinh-hien" style="width:100%" placeholder="VD: Thủ công / Một phần / Tự động" />
+              </div>
+            </div>
+            <div>
+              <label for="fr-mo-ta">Mô tả từng bước đang thực hiện</label>
+              <textarea id="fr-mo-ta" placeholder="Mô tả từng bước nghiệp vụ đang làm hiện nay..." style="min-height:120px"></textarea>
+            </div>
+            <div>
+              <label for="fr-van-de-ton-tai">Vấn đề tồn tại</label>
+              <textarea id="fr-van-de-ton-tai" placeholder="Vướng mắc, bất cập của quy trình hiện tại..." style="min-height:80px"></textarea>
+            </div>
+            <div>
+              <label for="fr-de-xuat-quy-trinh">Đề xuất quy trình/nghiệp vụ</label>
+              <textarea id="fr-de-xuat-quy-trinh" placeholder="Đề xuất cách làm mới sau khi số hóa..." style="min-height:80px"></textarea>
+            </div>
+            <div>
+              <label for="fr-hieu-qua-khi-thuc-hien">Hiệu quả khi thực hiện</label>
+              <textarea id="fr-hieu-qua-khi-thuc-hien" placeholder="Lợi ích kỳ vọng khi áp dụng..." style="min-height:80px"></textarea>
+            </div>
+            <div>
+              <label for="fr-ke-hoach-software">Kế hoạch software</label>
+              <input id="fr-ke-hoach-software" style="width:100%" />
             </div>
             <div>
               <label for="fr-ket-qua-mong-muon">Kết quả mong muốn</label>
@@ -1057,7 +1153,7 @@
             </div>
             <div class="field-row">
               <div>
-                <label for="fr-nguoi-de-xuat">Người đề xuất</label>
+                <label for="fr-nguoi-de-xuat">Nhân sự đầu mối <span class="muted" style="font-weight:400">(người đề xuất)</span></label>
                 <input id="fr-nguoi-de-xuat" style="width:100%" />
               </div>
               <div>
@@ -1112,7 +1208,39 @@
                 <div id="fr-detail-uu-tien"></div>
               </div>
               <div class="fr-detail-field">
-                <div class="fr-detail-label">Từ phòng ban</div>
+                <div class="fr-detail-label">Lĩnh vực</div>
+                <div id="fr-detail-linh-vuc"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Mảng</div>
+                <div id="fr-detail-mang"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Hoạt động/nghiệp vụ</div>
+                <div id="fr-detail-hoat-dong"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Quy trình số hóa</div>
+                <div id="fr-detail-quy-trinh-so-hoa"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Mã quy trình</div>
+                <div id="fr-detail-ma-quy-trinh"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Bước số hóa</div>
+                <div id="fr-detail-buoc-so-hoa"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Quy trình hiện</div>
+                <div id="fr-detail-quy-trinh-hien"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Kế hoạch software</div>
+                <div id="fr-detail-ke-hoach-software"></div>
+              </div>
+              <div class="fr-detail-field">
+                <div class="fr-detail-label">Đơn vị đề xuất</div>
                 <div id="fr-detail-from-dept"></div>
               </div>
               <div class="fr-detail-field">
@@ -1120,7 +1248,7 @@
                 <div id="fr-detail-to-dept"></div>
               </div>
               <div class="fr-detail-field">
-                <div class="fr-detail-label">Người đề xuất</div>
+                <div class="fr-detail-label">Nhân sự đầu mối</div>
                 <div id="fr-detail-nguoi-de-xuat"></div>
               </div>
               <div class="fr-detail-field">
@@ -1137,8 +1265,20 @@
               </div>
             </div>
             <div class="fr-detail-block">
-              <div class="fr-detail-label">Mô tả yêu cầu</div>
+              <div class="fr-detail-label">Mô tả từng bước đang thực hiện</div>
               <p id="fr-detail-mo-ta" class="fr-detail-quote"></p>
+            </div>
+            <div class="fr-detail-block">
+              <div class="fr-detail-label">Vấn đề tồn tại</div>
+              <p id="fr-detail-van-de-ton-tai" class="fr-detail-quote"></p>
+            </div>
+            <div class="fr-detail-block">
+              <div class="fr-detail-label">Đề xuất quy trình/nghiệp vụ</div>
+              <p id="fr-detail-de-xuat-quy-trinh" class="fr-detail-quote"></p>
+            </div>
+            <div class="fr-detail-block">
+              <div class="fr-detail-label">Hiệu quả khi thực hiện</div>
+              <p id="fr-detail-hieu-qua-khi-thuc-hien" class="fr-detail-quote"></p>
             </div>
             <div class="fr-detail-block">
               <div class="fr-detail-label">Kết quả mong muốn</div>
@@ -1191,6 +1331,24 @@
           </form>
         </dialog>
 
+        <!-- Chuyển đơn vị thực hiện — chọn phòng đích MỚI cho yêu cầu còn
+             "Chờ duyệt". Danh sách LOẠI TRỪ phòng đích hiện tại (không cho
+             chọn lại chính nó), xem openFrTransferDialog ở 10-feature-requests.js. -->
+        <dialog id="fr-transfer-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="fr-transfer-form">
+            <h2 style="margin:0">Chuyển đơn vị thực hiện</h2>
+            <input type="hidden" id="fr-transfer-id" />
+            <div>
+              <label for="fr-transfer-dept">Đơn vị thực hiện mới *</label>
+              <select id="fr-transfer-dept" required></select>
+            </div>
+            <div class="actions">
+              <button type="button" id="fr-transfer-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Chuyển</button>
+            </div>
+          </form>
+        </dialog>
         <!-- Đưa yêu cầu đã Duyệt vào Roadmap năm — chọn năm + team. -->
         <dialog id="fr-roadmap-dialog">
           <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>

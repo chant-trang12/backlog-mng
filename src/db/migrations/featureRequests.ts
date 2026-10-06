@@ -146,4 +146,33 @@ export async function migrateFeatureRequestTables(): Promise<void> {
       table.dateTime("deleted_at");
     });
   }
+
+  // ===== Nhóm cột mới theo biểu mẫu Excel "Quy trình số hóa" (import +
+  // bảng hiển thị mới ở trang Yêu cầu tính năng — xem
+  // featureRequest-import.service.ts). Mapping với các cột cũ (trùng thì
+  // GỘP LẠI 1, không tạo cột mới): mo_ta = "Mô tả từng bước đang thực
+  // hiện", he_thong = "Hệ thống cần cải tiến (nếu có)", do_uu_tien =
+  // "Ưu tiên", department_id = "Đơn vị đề xuất", nguoi_de_xuat = "Nhân sự
+  // đầu mối", ghi_chu_xu_ly = "Ghi chú". Các cột dưới đây là trường hoàn
+  // toàn mới, đều tuỳ chọn (nullable):
+  const frQuyTrinhColumns = [
+    "linh_vuc",
+    "mang",
+    "hoat_dong_nghiep_vu",
+    "quy_trinh_so_hoa",
+    "ma_quy_trinh",
+    "buoc_so_hoa",
+    "van_de_ton_tai",
+    "de_xuat_quy_trinh",
+    "hieu_qua_khi_thuc_hien",
+    "quy_trinh_hien",
+    "ke_hoach_software",
+  ] as const;
+  for (const col of frQuyTrinhColumns) {
+    if (!(await db.schema.hasColumn("feature_requests", col))) {
+      await db.schema.alterTable("feature_requests", (table) => {
+        table.text(col);
+      });
+    }
+  }
 }
