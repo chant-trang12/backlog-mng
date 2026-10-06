@@ -1667,27 +1667,23 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 /* Bảng "Nhân sự tham gia" — toàn bộ tiêu đề cột căn giữa. */
 #task-member-table th { text-align: center; }
 
-/* Cột Tỷ lệ đóng góp/Điểm cá nhân căn giữa cả nội dung (số liệu, không
-   phải text dài) — 2 ô này chứa input/flex-row nên phải canh riêng (input
-   tự căn giữa + đưa vào chính giữa ô, .row bên trong ô Điểm cá nhân canh
-   giữa cả cụm input + nút/nhãn "(tự tính)"). */
-#task-member-table td:nth-child(4),
-#task-member-table td:nth-child(5) {
+/* Cột Tỷ lệ đóng góp căn giữa (chỉ có input, không có nội dung khác). */
+#task-member-table td:nth-child(4) {
   text-align: center;
 }
-#task-member-table td:nth-child(4) input,
-#task-member-table td:nth-child(5) input {
+#task-member-table td:nth-child(4) input {
   text-align: center;
   display: block;
   margin: 0 auto;
 }
-/* justify-content: flex-start (KHÔNG phải center) — nếu canh giữa cả cụm
-   input+nhãn thì vị trí số trong ô bị XÔ LỆCH theo chiều rộng khác nhau
-   của phần đuôi (icon "↺" hẹp vs chữ "(tự tính)" rộng), khiến số ở các
-   dòng không thẳng hàng với nhau (xem anh chụp user gửi). Căn trái giữ
-   input luôn ở đúng 1 vị trí cố định bất kể phần đuôi dài ngắn. */
-#task-member-table td:nth-child(5) .row {
-  justify-content: flex-start;
+/* Cột Điểm cá nhân — input nằm trong grid 2 cột CỐ ĐỊNH (xem JS,
+   04-tasks.js), KHÔNG dùng flex căn giữa/margin:auto nữa: margin:auto
+   trên 1 flex/grid item tự hút khoảng trống thừa theo bề rộng phần đuôi
+   (icon "↺" hẹp vs chữ "(tự tính)" rộng) khác nhau mỗi dòng, khiến số ở
+   các dòng không thẳng hàng (xem ảnh chụp user gửi) — grid cố định 64px
+   cho cột input đảm bảo vị trí luôn giống hệt nhau giữa các dòng. */
+#task-member-table td:nth-child(5) input {
+  text-align: center;
 }
 
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem teamColorClass trong app.js). */

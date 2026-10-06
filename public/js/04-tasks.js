@@ -1031,14 +1031,19 @@ function renderTaskMembers() {
           tm.phan_loai === HO_TRO_LABEL
             ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
             : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp";
+        // Dùng grid 2 cột CỐ ĐỊNH (không phải flex) — cột 1 luôn đúng 64px
+        // cho ô nhập, bất kể phần đuôi (icon "↺" hay chữ "(tự tính)") dài
+        // ngắn khác nhau — đảm bảo số luôn nằm cùng 1 vị trí giữa các dòng
+        // (flex justify-content trước đó vẫn bị lệch do rộng phần đuôi
+        // khác nhau ảnh hưởng tới layout tổng — xem ảnh chụp user gửi).
         scoreCell = `
       <td>
-        <div class="row" style="align-items:center;gap:4px;flex-wrap:nowrap">
+        <div style="display:grid;grid-template-columns:64px 1fr;align-items:center;gap:4px">
           <input type="number" class="inline-cell-input tm-score-input" data-id="${tm.id}" step="0.1" value="${displayScore}" placeholder="—" style="width:64px" />
           ${
             isManual
-              ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %">↺</span>`
-              : `<span class="muted" style="font-size:0.68rem;white-space:nowrap" title="${autoTitle}">(tự tính)</span>`
+              ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %" style="justify-self:start">↺</span>`
+              : `<span class="muted" style="font-size:0.68rem;white-space:nowrap;justify-self:start" title="${autoTitle}">(tự tính)</span>`
           }
         </div>
       </td>`;
