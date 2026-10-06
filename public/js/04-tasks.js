@@ -1055,8 +1055,8 @@ function renderTaskMembers() {
   el.taskMemberTbody.querySelectorAll(".tm-urgent-checkbox").forEach((cb) => {
     cb.addEventListener("change", async () => {
       if (cb.checked) {
-        const lyDo = window.prompt("Lý do cần xử lý gấp (bắt buộc):", "");
-        if (!lyDo || !lyDo.trim()) {
+        const lyDo = await promptDialog("Lý do cần đánh dấu Việc cần xử lý gấp:", { title: "Việc cần xử lý gấp" });
+        if (!lyDo) {
           cb.checked = false;
           return;
         }
@@ -1439,12 +1439,12 @@ function renderTaskItemCardsDetailed() {
   wrap.querySelectorAll(".ti-treo-checkbox").forEach((cb) => {
     cb.addEventListener("change", async () => {
       if (cb.checked) {
-        const lyDo = window.prompt("Lý do Treo việc (bắt buộc):", "");
-        if (!lyDo || !lyDo.trim()) {
+        const lyDo = await promptDialog("Lý do Treo việc:", { title: "Treo việc" });
+        if (!lyDo) {
           cb.checked = false;
           return;
         }
-        await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: true, treo_viec_ly_do: lyDo.trim() });
+        await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: true, treo_viec_ly_do: lyDo });
       } else {
         await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: false });
       }

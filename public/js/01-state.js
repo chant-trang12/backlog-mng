@@ -287,6 +287,13 @@ const el = {
   confirmDialogMessage: document.getElementById("confirm-dialog-message"),
   confirmOkBtn: document.getElementById("confirm-ok-btn"),
   confirmCancelBtn: document.getElementById("confirm-cancel-btn"),
+  promptDialogEl: document.getElementById("prompt-dialog"),
+  promptDialogForm: document.getElementById("prompt-dialog-form"),
+  promptDialogTitle: document.getElementById("prompt-dialog-title"),
+  promptDialogMessage: document.getElementById("prompt-dialog-message"),
+  promptDialogInput: document.getElementById("prompt-dialog-input"),
+  promptCancelBtn: document.getElementById("prompt-cancel-btn"),
+  promptOkBtn: document.getElementById("prompt-ok-btn"),
   positionConfigEmpty: document.getElementById("chucvu-config-empty"),
   importAttendanceBtn: document.getElementById("import-attendance-btn"),
   attendanceFileInput: document.getElementById("attendance-file-input"),
@@ -572,6 +579,44 @@ function confirmDialog(message, opts = {}) {
     el.confirmCancelBtn.addEventListener("click", onCancelClick);
     el.confirmDialogEl.addEventListener("close", onClose);
     el.confirmDialogEl.showModal();
+  });
+}
+
+// Popup nhập 1 dòng lý do (bắt buộc) dùng chung toàn hệ thống, thay cho
+// window.prompt() mặc định của trình duyệt (không theo được giao diện/theme
+// của trang) — dùng cho các chỗ bắt nhập lý do như Treo việc/"Việc cần xử
+// lý gấp" (04-tasks.js). Trả về Promise<string|null> — resolve(text đã
+// trim) khi bấm OK (input required nên luôn có nội dung), resolve(null)
+// khi Hủy/X/Esc.
+function promptDialog(message, opts = {}) {
+  const { title = "Nhập lý do", okText = "OK", cancelText = "Hủy", placeholder = "" } = opts;
+  return new Promise((resolve) => {
+    el.promptDialogTitle.textContent = title;
+    el.promptDialogMessage.textContent = message;
+    el.promptDialogInput.value = "";
+    el.promptDialogInput.placeholder = placeholder;
+    el.promptOkBtn.textContent = okText;
+    el.promptCancelBtn.textContent = cancelText;
+
+    let submittedValue = null;
+    const onSubmit = (e) => {
+      e.preventDefault();
+      submittedValue = el.promptDialogInput.value.trim();
+      el.promptDialogEl.close();
+    };
+    const onCancelClick = () => el.promptDialogEl.close();
+    const onClose = () => {
+      el.promptDialogForm.removeEventListener("submit", onSubmit);
+      el.promptCancelBtn.removeEventListener("click", onCancelClick);
+      el.promptDialogEl.removeEventListener("close", onClose);
+      resolve(submittedValue || null);
+    };
+
+    el.promptDialogForm.addEventListener("submit", onSubmit);
+    el.promptCancelBtn.addEventListener("click", onCancelClick);
+    el.promptDialogEl.addEventListener("close", onClose);
+    el.promptDialogEl.showModal();
+    el.promptDialogInput.focus();
   });
 }
 

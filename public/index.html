@@ -2556,6 +2556,22 @@
     </form>
   </dialog>
 
+  <!-- Popup nhập 1 dòng lý do (bắt buộc), dùng chung thay cho window.prompt()
+       mặc định của trình duyệt — mở/đóng qua hàm promptDialog() trong
+       01-state.js (giống hệt cơ chế confirmDialog() ở trên). -->
+  <dialog id="prompt-dialog" class="confirm-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="prompt-dialog-form">
+      <h2 id="prompt-dialog-title">Nhập lý do</h2>
+      <p id="prompt-dialog-message" class="muted" style="margin:0 0 10px"></p>
+      <input type="text" id="prompt-dialog-input" required style="width:100%" />
+      <div class="actions confirm-actions">
+        <button type="button" id="prompt-cancel-btn">Hủy</button>
+        <button type="submit" id="prompt-ok-btn" class="primary">OK</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Tách từ 1 file app.js (6570 dòng) thành nhiều file theo khu vực trang,
