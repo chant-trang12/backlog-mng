@@ -42,6 +42,7 @@ import {
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
+import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -82,6 +83,8 @@ export async function initDatabase(): Promise<void> {
     await migrateRoadmapTables();
     // 29-30: task_members + phan_loai_nhan_su_options.
     await migrateTaskMembersTables();
+    // 31-32: task_items + task_item_members ("Việc" con trong 1 Nhiệm vụ).
+    await migrateTaskItemsTables();
     // Seed dữ liệu cho catalogs (19-22) — chạy sau vì nhom_options backfill
     // từ dữ liệu tieu_chi_configs sẵn có.
     await seedCatalogData();

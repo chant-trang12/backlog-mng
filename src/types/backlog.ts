@@ -316,3 +316,79 @@ export interface CreateRoadmapDetailInput {
 }
 
 export type UpdateRoadmapDetailInput = Partial<CreateRoadmapDetailInput>;
+
+// ---- "Việc" — tách nhỏ 1 Nhiệm vụ thành từng đầu việc cụ thể ----
+
+export interface TaskItem {
+  id: number;
+  task_id: number;
+  ten_viec: string;
+  trang_thai: TaskStatus;
+  treo_viec: boolean;
+  treo_viec_ly_do: string | null;
+  treo_viec_tu_ngay: string | null;
+  diem_danh_gia: number | null;
+  ghi_chu: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskItemMember {
+  id: number;
+  task_item_id: number;
+  member_id: number;
+  gio_cong: number | null;
+  ghi_chu: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskItemMemberWithName extends TaskItemMember {
+  member_name: string;
+}
+
+// Tổng giờ/MD tính sẵn (SUM gio_cong các assignee còn sống) — MD = Hours/8
+// (cố định), xem taskItem.service.ts.
+export interface TaskItemWithAssignees extends TaskItem {
+  assignees: TaskItemMemberWithName[];
+  tong_gio_cong: number;
+  tong_md: number;
+}
+
+export interface CreateTaskItemInput {
+  ten_viec: string;
+  trang_thai?: TaskStatus;
+  ghi_chu?: string;
+}
+
+export type UpdateTaskItemInput = Partial<CreateTaskItemInput> & {
+  // set true -> service tự ghi treo_viec_tu_ngay = hôm nay; set false ->
+  // service tự clear treo_viec_tu_ngay/treo_viec_ly_do. FE không tự gửi ngày.
+  treo_viec?: boolean;
+  treo_viec_ly_do?: string;
+  diem_danh_gia?: number | null;
+};
+
+export interface CreateTaskItemMemberInput {
+  member_id: number;
+  gio_cong?: number | null;
+  ghi_chu?: string;
+}
+
+export interface UpdateTaskItemMemberInput {
+  gio_cong?: number | null;
+  ghi_chu?: string;
+}
+
+// Danh sách Việc đang Treo — cho card ở Trang chủ (đôn đốc).
+export interface TreoViecRow {
+  id: number;
+  ten_viec: string;
+  treo_viec_ly_do: string | null;
+  treo_viec_tu_ngay: string | null;
+  so_ngay_treo: number;
+  task_id: number;
+  task_nhiem_vu: string;
+  team: string;
+  assignee_names: string[];
+}

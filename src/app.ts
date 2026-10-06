@@ -11,6 +11,7 @@ import periodRoutes from "./routes/period.routes.js";
 import teamRoutes from "./routes/team.routes.js";
 import memberRoutes from "./routes/member.routes.js";
 import taskRoutes from "./routes/task.routes.js";
+import taskItemRoutes from "./routes/taskItem.routes.js";
 import cskhRoutes from "./routes/cskh.routes.js";
 import complianceRoutes from "./routes/compliance.routes.js";
 import trainingRoutes from "./routes/training.routes.js";
@@ -164,6 +165,7 @@ export function createApp() {
   app.use("/api", teamRoutes);
   app.use("/api", memberRoutes);
   app.use("/api", taskRoutes);
+  app.use("/api", taskItemRoutes);
   app.use("/api", cskhRoutes);
   app.use("/api", complianceRoutes);
   app.use("/api", trainingRoutes);
