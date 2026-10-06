@@ -952,6 +952,20 @@ const round2 = (n) => Math.round(n * 100) / 100;
 const percentToScale5 = (p) => round2(p / 20);
 const scale5ToPercent = (s) => round2(s * 20);
 
+// Escape để chèn an toàn vào NỘI DUNG (không phải thuộc tính) của
+// <textarea> — khác .replace(/"/g, "&quot;") hay dùng cho value="" của
+// input, ở đây cần escape cả & và < vì đứng giữa 2 thẻ.
+function escapeTextareaContent(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
+
+// Giãn chiều cao <textarea> vừa đủ nội dung (không cuộn trong ô, không cắt
+// chữ) — xem .tm-auto-textarea ở renderTaskMembers().
+function autoGrowTextarea(ta) {
+  ta.style.height = "auto";
+  ta.style.height = `${ta.scrollHeight}px`;
+}
+
 function renderTaskMembers() {
   const graded = state.taskMemberTaskScore != null;
   el.taskMemberEmpty.hidden = state.taskMembers.length > 0;
@@ -1022,8 +1036,8 @@ function renderTaskMembers() {
       ${scoreCell}
       <td style="text-align:center">${tm.tong_gio_cong ?? 0}h</td>
       <td style="text-align:center">${tm.tong_md ?? 0} MD</td>
-      <td><input type="text" class="inline-cell-input tm-work-content-input" data-id="${tm.id}" value="${(tm.noi_dung_cong_viec ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
-      <td><input type="text" class="inline-cell-input tm-note-input" data-id="${tm.id}" value="${(tm.ghi_chu ?? "").replace(/"/g, "&quot;")}" placeholder="—" style="width:100%;text-align:left" /></td>
+      <td><textarea class="inline-cell-input tm-auto-textarea tm-work-content-input" data-id="${tm.id}" placeholder="—" rows="1">${escapeTextareaContent(tm.noi_dung_cong_viec ?? "")}</textarea></td>
+      <td><textarea class="inline-cell-input tm-auto-textarea tm-note-input" data-id="${tm.id}" placeholder="—" rows="1">${escapeTextareaContent(tm.ghi_chu ?? "")}</textarea></td>
       <td>
         <div class="actions-cell" style="flex-direction:column;align-items:flex-start;gap:4px">
           <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;font-size:0.78rem;white-space:nowrap">
@@ -1148,6 +1162,15 @@ function renderTaskMembers() {
         await loadTaskMembers();
       }
     });
+  });
+
+  // Nội dung công việc/Ghi chú đổi từ <input> 1 dòng sang <textarea> tự
+  // giãn chiều cao theo nội dung — trước đây text dài bị cắt, không đọc
+  // được phần phía sau (user phản hồi kèm ảnh chụp). Giãn ngay lúc vẽ bảng
+  // + mỗi lần gõ (input) để luôn thấy trọn nội dung đang nhập.
+  el.taskMemberTbody.querySelectorAll(".tm-auto-textarea").forEach((ta) => {
+    autoGrowTextarea(ta);
+    ta.addEventListener("input", () => autoGrowTextarea(ta));
   });
 
   if (graded) {

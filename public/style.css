@@ -1504,6 +1504,21 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .inline-cell-input:hover { border-color: var(--border); }
 .inline-cell-input:focus { border-color: var(--primary); background: var(--card-bg); outline: none; }
 
+/* Nội dung công việc/Ghi chú ở bảng "Nhân sự tham gia" — <textarea> tự
+   giãn cao theo nội dung (autoGrowTextarea, 04-tasks.js) thay vì <input> 1
+   dòng cũ bị cắt chữ dài phía sau (user phản hồi). Chữ xuống dòng tự nhiên,
+   không cuộn ngang/dọc trong ô — autoGrowTextarea lo phần chiều cao. */
+.tm-auto-textarea {
+  text-align: left;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.4;
+}
+
 #tieuchi-table td, #ranking-table td { vertical-align: middle; }
 #tieuchi-table th, #ranking-table th { text-align: center; vertical-align: middle; }
 #tieuchi-table td:nth-child(1), /* Nhóm */
