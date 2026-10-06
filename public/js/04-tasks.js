@@ -1330,6 +1330,10 @@ function renderTaskItemList() {
           <label>Giờ công</label>
           <input type="number" class="ti-assignee-hours-input" data-id="${it.id}" min="0" step="0.5" placeholder="Hours" />
         </div>
+        <div style="width:110px">
+          <label>MD</label>
+          <p class="muted ti-assignee-md-display" data-id="${it.id}" style="margin:0;padding:8px 0">0 MD</p>
+        </div>
         <button type="button" class="small btn-exclude ti-assignee-add-btn" data-id="${it.id}">+ Gán</button>
       </div>`
           : `<p class="muted" style="margin:0;font-size:0.82rem">Đã gán hết nhân sự tháng này vào Việc đây.</p>`
@@ -1382,6 +1386,13 @@ function renderTaskItemList() {
       } else {
         await taskItemApiCall(`/api/task-items/${cb.dataset.id}`, "PUT", { treo_viec: false });
       }
+    });
+  });
+  wrap.querySelectorAll(".ti-assignee-hours-input").forEach((input) => {
+    input.addEventListener("input", (e) => {
+      const hours = Number(e.target.value) || 0;
+      const display = wrap.querySelector(`.ti-assignee-md-display[data-id="${input.dataset.id}"]`);
+      if (display) display.textContent = `${Math.round((hours / 8) * 100) / 100} MD`;
     });
   });
   wrap.querySelectorAll(".ti-assignee-add-btn").forEach((btn) => {
