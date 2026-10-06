@@ -1261,7 +1261,18 @@ function taskItemMdLabel(it) {
   return `${it.tong_gio_cong ?? 0}h (${it.tong_md ?? 0} MD)`;
 }
 
+// Theo yêu cầu user: bỏ hẳn khung hiển thị chi tiết từng Việc (Tên việc/
+// Trạng thái/% Đánh giá/Treo việc/Nhân sự phụ trách...) — chỉ còn tạo mới
+// được qua khung "Thêm việc" ở trên, không hiển thị/sửa lại Việc đã tạo ở
+// đây nữa. Toàn bộ logic render chi tiết (renderTaskItemCardsDetailed, đã
+// không còn gọi tới) vẫn giữ nguyên bên dưới phòng khi cần bật lại.
 function renderTaskItemList() {
+  const wrap = document.getElementById("task-item-list");
+  wrap.innerHTML = "";
+}
+
+// eslint-disable-next-line no-unused-vars
+function renderTaskItemCardsDetailed() {
   const wrap = document.getElementById("task-item-list");
   if (state.taskItems.length === 0) {
     wrap.innerHTML = `<p class="muted" style="text-align:center;padding:16px">Chưa có Việc nào — nhập tên ở ô trên để thêm.</p>`;
