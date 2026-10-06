@@ -918,7 +918,7 @@ function renderTaskMemberThead() {
     <th style="width:150px">Phân loại</th>
     <th style="width:120px">Tỷ lệ đóng góp (%)</th>
     ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
-    <th style="width:190px">Nội dung công việc</th>
+    <th style="width:570px">Nội dung công việc</th>
     <th style="width:190px">Ghi chú</th>
     <th style="width:56px"></th>
   </tr>`;
