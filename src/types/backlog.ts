@@ -422,6 +422,7 @@ export interface TreoViecRow {
 export interface CanXuLyGapRow {
   id: number; // task_members.id
   member_name: string;
+  noi_dung_cong_viec: string | null;
   can_xu_ly_gap_ly_do: string | null;
   can_xu_ly_gap_tu_ngay: string | null;
   so_ngay: number;

@@ -136,6 +136,7 @@ async function renderHomeCanXuLyGap() {
     <tr>
       <td>${r.member_name}</td>
       <td>${r.task_nhiem_vu}</td>
+      <td>${(r.noi_dung_cong_viec ?? "").replace(/\n/g, "<br/>") || "—"}</td>
       <td><span class="status-badge ${homeTeamColorClass(r.team)}">${r.team}</span></td>
       <td>${r.can_xu_ly_gap_ly_do ?? ""}</td>
       <td><span class="status-badge status-huy">${r.so_ngay} ngày</span></td>

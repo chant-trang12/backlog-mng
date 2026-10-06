@@ -323,6 +323,7 @@ export async function listCanXuLyGap(periodId: number, departmentId?: number | n
   const rows = await query.select(
     "tm.id",
     "m.name as member_name",
+    "tm.noi_dung_cong_viec",
     "tm.can_xu_ly_gap_ly_do",
     "tm.can_xu_ly_gap_tu_ngay",
     "tm.task_id",
@@ -337,6 +338,7 @@ export async function listCanXuLyGap(periodId: number, departmentId?: number | n
       return {
         id: r.id,
         member_name: r.member_name,
+        noi_dung_cong_viec: r.noi_dung_cong_viec,
         can_xu_ly_gap_ly_do: r.can_xu_ly_gap_ly_do,
         can_xu_ly_gap_tu_ngay: r.can_xu_ly_gap_tu_ngay,
         so_ngay: Math.max(0, Math.round((today - tuNgay) / 86_400_000)),
