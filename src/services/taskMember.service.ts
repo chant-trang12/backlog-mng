@@ -297,18 +297,21 @@ function defaultDiemSauTru(auto: number | null, truSoDiem: number): number | nul
 const AUTO_HA_KI_LY_DO = "Tự động trừ KI do điểm cá nhân <= 0";
 
 // Tự động Hạ KI nhân sự khi tổng "Điểm cá nhân (Tính theo task)" của người
-// đó trong 1 tháng backlog rơi <= 0 — do nút "Trừ điểm cá nhân" (chỉ chạy
-// đúng sau khi trừ, không chạy cho PUT sửa điểm thông thường). Cột "Điểm cá
-// nhân (Tính theo task)" ở Team & Nhân sự = trung bình điểm các task "Thực
-// hiện chính" (hoặc chưa phân loại) + cộng thẳng điểm các task "Hỗ trợ"
-// (memberAvgDiemTheoTask, 03-members.js) — tính đúng theo công thức đó.
+// đó trong 1 tháng backlog rơi <= 0 — do nút "Trừ điểm cá nhân" (ở Nhân sự
+// tham gia task HOẶC ở Sự cố — incidentMember.service.ts cũng gọi hàm này,
+// chỉ chạy đúng sau khi trừ, không chạy cho PUT sửa điểm thông thường). Cột
+// "Điểm cá nhân (Tính theo task)" ở Team & Nhân sự = trung bình điểm các
+// task "Thực hiện chính" (hoặc chưa phân loại) + cộng thẳng điểm các task
+// "Hỗ trợ", TRỪ ĐI tổng điểm trừ từ Sự cố (memberAvgDiemTheoTask,
+// 03-members.js / listKpiTheoTask ở dưới) — tính đúng theo công thức đó.
 // Trả về true nếu đã tự Hạ KI. Không làm gì khi:
-// - chưa có task nào có điểm (chưa đủ dữ liệu để kết luận),
+// - chưa có task nào có điểm VÀ chưa từng bị trừ điểm sự cố (chưa đủ dữ
+//   liệu để kết luận),
 // - tổng còn > 0,
 // - nhân sự đã đang Hạ KI (giữ nguyên lý do cũ, không ghi đè).
 // Bật ha_ki đồng thời tắt tang_ki (2 cờ loại trừ nhau — khớp updateMember,
 // member.service.ts).
-async function autoHaKiNeuDiemNhoHonBang0(memberId: number, periodId: number): Promise<boolean> {
+export async function autoHaKiNeuDiemNhoHonBang0(memberId: number, periodId: number): Promise<boolean> {
   const rows = await db("task_members as tm")
     .join("tasks as t", "tm.task_id", "t.id")
     .where("tm.member_id", memberId)
@@ -350,8 +353,20 @@ async function autoHaKiNeuDiemNhoHonBang0(memberId: number, periodId: number): P
       mainCount += 1;
     }
   }
-  if (mainCount === 0 && bonus === 0) return false;
-  const total = Math.round(((mainCount > 0 ? mainSum / mainCount : 0) + bonus) * 100) / 100;
+  // Khoản trừ từ Sự cố (CSKH) — ĐỘC LẬP với mọi task, áp SAU CÙNG (khớp
+  // đúng công thức ở listKpiTheoTask/memberAvgDiemTheoTask phía trên).
+  const incidentPenaltyRow = await db("incident_members as im")
+    .join("incidents as inc", "im.incident_id", "inc.id")
+    .where("im.member_id", memberId)
+    .where("inc.period_id", periodId)
+    .where("inc.is_deleted", false)
+    .whereNotNull("im.tru_diem_luc")
+    .sum({ tong: "im.tru_diem_so_diem" })
+    .first();
+  const truSuCo = Number((incidentPenaltyRow as any)?.tong ?? 0);
+
+  if (mainCount === 0 && bonus === 0 && truSuCo === 0) return false;
+  const total = Math.round(((mainCount > 0 ? mainSum / mainCount : 0) + bonus - truSuCo) * 100) / 100;
   if (total > 0) return false;
 
   const member = await db("members")

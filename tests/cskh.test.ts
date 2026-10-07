@@ -281,6 +281,42 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     expect(again.body.error).toContain("chỉ trừ được 1 lần");
   });
 
+  it('"Trừ điểm cá nhân" từ Sự cố kéo "Điểm cá nhân (Tính theo task)" <= 0 -> tự động Hạ KI (dùng chung logic autoHaKiNeuDiemNhoHonBang0 với Nhân sự tham gia task)', async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2042, 5);
+    const teamId = await makeTeam(app, "IM auto ha ki team", periodId);
+    const memberId = await makeMember(app, periodId, teamId, "Bui Van AutoHaKi");
+
+    // Điểm task: 40 (thẳng % Đánh giá, không nhân tỷ lệ — xem listKpiTheoTask).
+    const task = await request(app)
+      .post(`/api/periods/${periodId}/tasks`)
+      .send({ team: "IM auto ha ki team", nhiem_vu: "Task cho auto ha KI" });
+    await request(app).put(`/api/tasks/${task.body.id}`).send({ cpo_danh_gia: 40 });
+    await request(app).post(`/api/tasks/${task.body.id}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
+
+    const before = (await request(app).get(`/api/members?period_id=${periodId}`)).body.find(
+      (m: { id: number }) => m.id === memberId,
+    );
+    expect(before.ha_ki).toBe(false);
+
+    const incidentId = await makeIncident(app, periodId, teamId, "Su co keo diem am");
+    const im = await request(app).post(`/api/incidents/${incidentId}/members`).send({ member_id: memberId });
+    // Trừ lần 1: 40 - 50 = -10 -> đã <= 0, phải tự Hạ KI ngay (không cần đợi dòng trừ thứ 2).
+    const truDiem = await request(app).post(`/api/incident-members/${im.body.id}/tru-diem`);
+    expect(truDiem.body.member_ha_ki).toBe(true);
+
+    const after = (await request(app).get(`/api/members?period_id=${periodId}`)).body.find(
+      (m: { id: number }) => m.id === memberId,
+    );
+    expect(after.ha_ki).toBe(true);
+    expect(after.tang_ki).toBe(false);
+    expect(after.ki_ly_do).toBe("Tự động trừ KI do điểm cá nhân <= 0");
+
+    const kpi = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+    const row = kpi.body.find((r: { member_id: number }) => r.member_id === memberId);
+    expect(row.tong_diem).toBe(-10);
+  });
+
   it("rejects actions for a missing incident-member row", async () => {
     const app = createApp();
     for (const path of ["/api/incident-members/999999/ha-ki", "/api/incident-members/999999/tang-ki", "/api/incident-members/999999/tru-diem"]) {
