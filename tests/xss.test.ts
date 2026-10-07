@@ -209,4 +209,146 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
     const after = await db("members").where({ id: memberId }).first("name");
     expect(after.name).toBe(`Cũ${STRIPPED}`);
   });
+
+  it("Ma trận: mỗi router nghiệp vụ còn lại đều strip payload ở chức năng tạo/sửa", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2016, 9);
+    const teamId = await makeTeam(app, "XSS matrix team", periodId);
+    const member = await request(app)
+      .post("/api/members")
+      .send({ name: "Nhân sự matrix", team_id: teamId, period_id: periodId });
+    const memberId = member.body.id as number;
+    const dept = await request(app)
+      .post("/api/departments")
+      .send({ name: `Phòng FR${PAYLOAD}`, code: "FR" });
+    const deptId = dept.body.id as number;
+
+    const cases: { name: string; run: () => Promise<request.Response> }[] = [
+      {
+        name: "POST /api/teams (Team)",
+        run: () => request(app).post("/api/teams").send({ name: `Team${PAYLOAD}`, period_id: periodId }),
+      },
+      {
+        name: "POST /api/departments (Phòng ban)",
+        run: () => request(app).post("/api/departments").send({ name: `Phòng${PAYLOAD}`, code: PAYLOAD }),
+      },
+      {
+        name: "POST /api/support-records (Hỗ trợ)",
+        run: () =>
+          request(app).post("/api/support-records").send({
+            member_id: memberId,
+            team_nhan_ho_tro_id: teamId,
+            period_id: periodId,
+            noi_dung: PAYLOAD,
+            ngay_ho_tro: "2026-01-20",
+            nguoi_xac_nhan: PAYLOAD,
+          }),
+      },
+      {
+        name: "POST /api/training-records (Đào tạo)",
+        run: () =>
+          request(app).post("/api/training-records").send({
+            member_id: memberId,
+            period_id: periodId,
+            loai: "Đào tạo",
+            ngay_thuc_hien: "2026-01-21",
+            nguoi_xac_nhan: PAYLOAD,
+            noi_dung: PAYLOAD,
+          }),
+      },
+      {
+        name: "POST /api/compliance-records (Tuân thủ)",
+        run: () =>
+          request(app)
+            .post("/api/compliance-records")
+            .send({ member_id: memberId, period_id: periodId, vi_pham: 1, noi_dung: PAYLOAD }),
+      },
+      {
+        name: "POST /api/danh-gia-records/bulk (Đánh giá)",
+        run: () =>
+          request(app).post("/api/danh-gia-records/bulk").send({
+            period_id: periodId,
+            team_id: teamId,
+            entries: [{ member_id: memberId, so_thu_tu: 1, ghi_chu: PAYLOAD }],
+          }),
+      },
+      {
+        name: "POST /api/noiquy-overrides (Nội quy)",
+        run: () => request(app).post("/api/noiquy-overrides").send({ period_id: periodId, names: [PAYLOAD] }),
+      },
+      {
+        name: "POST /api/tags (Cấu hình - Tag)",
+        run: () => request(app).post("/api/tags").send({ ten_tag: PAYLOAD }),
+      },
+      {
+        name: "POST /api/phan-loai (Cấu hình - Phân loại)",
+        run: () => request(app).post("/api/phan-loai").send({ ten_phan_loai: PAYLOAD }),
+      },
+      {
+        name: "POST /api/nhom (Cấu hình - Nhóm)",
+        run: () => request(app).post("/api/nhom").send({ ten_nhom: PAYLOAD }),
+      },
+      {
+        name: "POST /api/chuc-vu (Cấu hình - Chức vụ)",
+        run: () => request(app).post("/api/chuc-vu").send({ ten_chuc_vu: PAYLOAD }),
+      },
+      {
+        name: "POST /api/he-thong (Cấu hình - Hệ thống)",
+        run: () => request(app).post("/api/he-thong").send({ ten_he_thong: PAYLOAD }),
+      },
+      {
+        name: "POST /api/muc-tieu (Cấu hình - Mục tiêu)",
+        run: () => request(app).post("/api/muc-tieu").send({ ten_muc_tieu: PAYLOAD }),
+      },
+      {
+        name: "POST /api/phan-loai-nhan-su (Cấu hình - Phân loại nhân sự)",
+        run: () => request(app).post("/api/phan-loai-nhan-su").send({ ten_phan_loai: PAYLOAD }),
+      },
+      {
+        name: "POST /api/ranking-config/columns (Ranking)",
+        run: () => request(app).post("/api/ranking-config/columns").send({ ten_cot: PAYLOAD }),
+      },
+      {
+        name: "POST /api/roadmap-items (Roadmap)",
+        run: () =>
+          request(app)
+            .post("/api/roadmap-items")
+            .send({ year: 2016, team: `Roadmap${PAYLOAD}`, nhiem_vu: PAYLOAD }),
+      },
+      {
+        name: "POST /api/tieu-chi (Tiêu chí)",
+        run: () =>
+          request(app).post("/api/tieu-chi").send({ nhom: `Nhóm${PAYLOAD}`, ten_tieu_chi: PAYLOAD }),
+      },
+      {
+        name: "POST /api/feature-requests (Yêu cầu tính năng)",
+        run: () =>
+          request(app)
+            .post("/api/feature-requests")
+            .send({ he_thong: PAYLOAD, tieu_de: `Yêu cầu${PAYLOAD}`, target_department_id: deptId }),
+      },
+      {
+        name: "POST /api/tasks/:id/items (Việc con)",
+        run: async () => {
+          const task = await request(app)
+            .post(`/api/periods/${periodId}/tasks`)
+            .send({ team: "XSS matrix team", nhiem_vu: "Task cho việc con" });
+          return request(app)
+            .post(`/api/tasks/${task.body.id}/items`)
+            .send({ ten_viec: PAYLOAD, trang_thai: PAYLOAD, ghi_chu: PAYLOAD });
+        },
+      },
+    ];
+
+    for (const c of cases) {
+      const res = await c.run();
+      expect(res.status, `${c.name} -> ${res.status} ${JSON.stringify(res.body).slice(0, 300)}`).toBeDefined();
+      expect([200, 201], `${c.name} -> HTTP ${res.status}: ${JSON.stringify(res.body).slice(0, 300)}`).toContain(
+        res.status,
+      );
+      // Payload là nguồn duy nhất chứa "<"/">" — toàn bộ response JSON phải sạch.
+      expect(`${c.name}: ${JSON.stringify(res.body)}`).not.toContain("<");
+      expect(`${c.name}: ${JSON.stringify(res.body)}`).not.toContain(">");
+    }
+  });
 });
