@@ -2,6 +2,7 @@ import { db } from "../db/database.js";
 import type { AuthUser } from "../types/auth.js";
 import type { AppRole, AppUser, UpdateAppUserInput } from "../types/user.js";
 import { softDeleteWhere } from "./softDelete.util.js";
+import { stripHtmlChars } from "../utils/sanitize.util.js";
 
 function toAppUser(row: any): AppUser {
   return { ...row, active: !!row.active };
@@ -37,6 +38,11 @@ export async function getUserBySsoSub(ssoSub: string): Promise<AppUser | undefin
 // sau đó mặc định "viewer" (quyền thấp nhất) — admin vào Quản lý User để
 // nâng quyền cho từng người.
 export async function upsertUserFromSso(authUser: AuthUser): Promise<AppUser> {
+  // ATTT (Stored XSS): username/name từ IdP cũng là dữ liệu render ở FE —
+  // strip ký tự tạo thẻ HTML như mọi đầu vào ghi khác (route /auth/* nằm
+  // ngoài middleware /api nên phải tự làm sạch tại đây).
+  const safeUsername = stripHtmlChars(String(authUser.username ?? ""));
+  const safeName = stripHtmlChars(String(authUser.name ?? ""));
   // is_deleted=false — tài khoản đã xóa mềm đăng nhập lại SSO sẽ tạo bản
   // ghi MỚI (không "hồi sinh" bản ghi cũ đã xóa — khớp filtered unique
   // index trên sso_sub, xem migrations/users.ts).
@@ -45,8 +51,8 @@ export async function upsertUserFromSso(authUser: AuthUser): Promise<AppUser> {
     await db("users")
       .where({ id: existing.id })
       .update({
-        username: authUser.username,
-        name: authUser.name,
+        username: safeUsername,
+        name: safeName,
         email: authUser.email ?? null,
         last_login_at: db.fn.now(),
         updated_at: db.fn.now(),
@@ -60,8 +66,8 @@ export async function upsertUserFromSso(authUser: AuthUser): Promise<AppUser> {
   const [created] = await db("users")
     .insert({
       sso_sub: authUser.id,
-      username: authUser.username,
-      name: authUser.name,
+      username: safeUsername,
+      name: safeName,
       email: authUser.email ?? null,
       role: isFirstUser ? "admin" : "viewer",
       active: true,

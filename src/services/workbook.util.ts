@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { stripHtmlChars } from "../utils/sanitize.util.js";
 
 const HEADER_FILL = "FF632423"; // đỏ mận đậm — đồng bộ với export Backlog
 const HEADER_FONT = "FFFFFFFF";
@@ -106,11 +107,13 @@ export function cellToText(cell: ExcelJS.Cell): string {
   }
   if (typeof value === "object") {
     const withResult = value as { result?: unknown; text?: unknown };
-    if (withResult.result !== undefined) return String(withResult.result);
-    if (withResult.text !== undefined) return String(withResult.text);
+    // ATTT (Stored XSS): nội dung ô Excel do người dùng upload — strip ký tự
+    // tạo thẻ HTML trước khi lưu xuống DB, giống request ghi trên /api.
+    if (withResult.result !== undefined) return stripHtmlChars(String(withResult.result));
+    if (withResult.text !== undefined) return stripHtmlChars(String(withResult.text));
     return "";
   }
-  return String(value);
+  return stripHtmlChars(String(value));
 }
 
 // Như cellToText nhưng Date giữ cả GIỜ:PHÚT ("dd/mm/yyyy hh:mm") — dùng cho

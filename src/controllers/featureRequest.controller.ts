@@ -201,7 +201,11 @@ export async function downloadFeatureRequestAttachmentHandler(req: Request, res:
   // (bản ASCII lược dấu, trình duyệt cũ không hiểu filename* sẽ dùng cái
   // này) và filename*=UTF-8''... (chuẩn RFC 5987, trình duyệt hiện đại ưu
   // tiên dùng, giữ đúng nguyên tên có dấu).
-  const asciiFallback = attachment.filename.replace(/[^\x20-\x7E]/g, "_");
+  // ...và escape dấu nháy/gạch chéo để không thoát ra khỏi filename="..."
+  // trong header (header injection).
+  const asciiFallback = attachment.filename
+    .replace(/[^\x20-\x7E]/g, "_")
+    .replace(/["\\]/g, "_");
   res.setHeader(
     "Content-Disposition",
     `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,

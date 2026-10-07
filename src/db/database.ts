@@ -43,6 +43,7 @@ import {
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
+import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -122,6 +123,10 @@ export async function initDatabase(): Promise<void> {
     // roadmap_items/roadmap_details và feature_requests tự thêm is_deleted
     // ngay trong migrateRoadmapTables()/migrateFeatureRequestTables() ở
     // trên (không có UNIQUE riêng nên không cần tách hàm riêng).
+
+    // ATTT (Stored XSS): làm sạch dữ liệu CŨ chứa ký tự tạo thẻ HTML — chạy
+    // sau cùng khi toàn bộ bảng/cột đã sẵn sàng (idempotent, xem xssScrub.ts).
+    await scrubLegacyHtmlChars();
   })();
 
   return initPromise;

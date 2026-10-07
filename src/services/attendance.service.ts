@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { db } from "../db/database.js";
 import type { AttendanceRecord, ImportAttendanceResult } from "../types/cskh.js";
 import { softDeleteWhere, softDeleteWhereIn } from "./softDelete.util.js";
+import { stripHtmlChars } from "../utils/sanitize.util.js";
 
 function cellToText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
@@ -11,11 +12,13 @@ function cellToText(value: ExcelJS.CellValue): string {
   if (typeof value === "object") {
     // Formula result / rich text — exceljs trả về { result, text, richText, ... }.
     const withResult = value as { result?: unknown; text?: unknown };
-    if (withResult.result !== undefined) return String(withResult.result);
-    if (withResult.text !== undefined) return String(withResult.text);
+    // ATTT (Stored XSS): nội dung ô Excel do người dùng upload — strip ký tự
+    // tạo thẻ HTML trước khi lưu xuống DB (đồng bộ cellToText ở workbook.util).
+    if (withResult.result !== undefined) return stripHtmlChars(String(withResult.result));
+    if (withResult.text !== undefined) return stripHtmlChars(String(withResult.text));
     return "";
   }
-  return String(value);
+  return stripHtmlChars(String(value));
 }
 
 // Đọc worksheet đầu tiên của file Excel tải lên — dòng 1 là tiêu đề cột

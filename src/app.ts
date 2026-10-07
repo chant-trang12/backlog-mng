@@ -28,6 +28,7 @@ import featureRequestRoutes from "./routes/featureRequest.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
+import { sanitizeWriteInput } from "./middleware/sanitize.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
@@ -135,6 +136,9 @@ export function createApp() {
   // request ghi (POST/PUT/PATCH/DELETE) trên TOÀN BỘ /api bên dưới; Quản lý
   // User riêng chỉ "admin" mới vào được (requireAdmin).
   app.use("/api", requireAuth);
+  // ATTT (Stored XSS): strip ký tự "<"/">" khỏi mọi request ghi trước khi vào
+  // bất kỳ handler nghiệp vụ nào — xem middleware/sanitize.middleware.ts.
+  app.use("/api", sanitizeWriteInput);
   app.use("/api", attachScope);
   app.use("/api", requireWrite);
   // Nhật ký hoạt động — đăng ký NGAY sau requireWrite (req.appUser đã có,
