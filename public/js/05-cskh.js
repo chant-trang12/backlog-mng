@@ -482,7 +482,12 @@ function incidentMemberStatusBadges(tm) {
   const badges = [];
   if (tm.member_ha_ki) badges.push(`<span class="status-badge status-huy" title="Nhân sự đang bị Hạ KI">Hạ KI</span>`);
   if (tm.member_tang_ki) badges.push(`<span class="status-badge status-hoan-thanh" title="Nhân sự đang được Tăng KI">Tăng KI</span>`);
-  if (tm.tru_diem_luc) badges.push(`<span class="status-badge status-tru-diem" title="Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm cá nhân ngày ${tm.tru_diem_luc} — mỗi dòng chỉ trừ được 1 lần.">Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm</span>`);
+  if (tm.tru_diem_luc) {
+    const lyDo = tm.tru_diem_ly_do ? ` — lý do: ${incidentEscape(tm.tru_diem_ly_do)}` : "";
+    badges.push(
+      `<span class="status-badge status-tru-diem" title="Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm cá nhân ngày ${tm.tru_diem_luc}${lyDo} — mỗi dòng chỉ trừ được 1 lần.">Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm</span>`,
+    );
+  }
   return badges.join(" ");
 }
 
@@ -503,7 +508,7 @@ function renderIncidentMembers() {
       <td><div class="actions-cell">
         ${tm.member_ha_ki ? "" : `<button class="small btn-reject im-ha-ki-btn" title='Hạ KI — lý do: "Hạ KI do gây ra sự cố"'>Hạ KI</button>`}
         ${tm.member_tang_ki ? "" : `<button class="small btn-restore im-tang-ki-btn" title='Tăng KI — lý do: "Tăng KI do xử lý sự cố"'>Tăng KI</button>`}
-        ${tm.tru_diem_luc ? "" : `<button class="small btn-exclude im-tru-diem-btn" style="white-space:nowrap" title="Trừ 50 điểm cá nhân — mỗi dòng chỉ trừ 1 lần">Trừ điểm cá nhân</button>`}
+        ${tm.tru_diem_luc ? "" : `<button class="small btn-exclude im-tru-diem-btn" style="white-space:nowrap" title='Trừ 50 điểm cá nhân — lý do: "Trừ điểm cá nhân do sự cố" — mỗi dòng chỉ trừ 1 lần'>Trừ điểm cá nhân</button>`}
         <button class="small btn-delete im-remove-btn" title="Bỏ nhân sự này khỏi sự cố">×</button>
       </div></td>
     </tr>`,
@@ -530,7 +535,8 @@ function renderIncidentMembers() {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       const tm = state.incidentMembers.find((m) => m.id === id);
-      if (!await confirmDialog(`Tăng KI của ${tm.member_name}?`, { title: "Tăng KI", danger: false })) return;
+      const incident = state.incidents.find((i) => i.id === state.incidentMemberIncidentId);
+      if (!await confirmDialog(`Tăng KI của ${tm.member_name}? Lý do: Tăng KI do xử lý sự cố "${incident?.ten_su_co ?? ""}"`, { title: "Tăng KI", danger: false })) return;
       try {
         const updated = await api(`/api/incident-members/${id}/tang-ki`, { method: "POST" });
         state.incidentMembers = state.incidentMembers.map((m) => (m.id === id ? updated : m));
@@ -545,7 +551,14 @@ function renderIncidentMembers() {
     btn.addEventListener("click", async (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       const tm = state.incidentMembers.find((m) => m.id === id);
-      if (!await confirmDialog(`Trừ 50 điểm cá nhân của ${tm.member_name}? Mỗi dòng chỉ được trừ 1 lần.`, { title: "Trừ điểm cá nhân" })) return;
+      const incident = state.incidents.find((i) => i.id === state.incidentMemberIncidentId);
+      if (
+        !(await confirmDialog(
+          `Trừ 50 điểm cá nhân của ${tm.member_name}? Lý do: Trừ điểm cá nhân do sự cố "${incident?.ten_su_co ?? ""}". Mỗi dòng chỉ được trừ 1 lần.`,
+          { title: "Trừ điểm cá nhân" },
+        ))
+      )
+        return;
       try {
         const updated = await api(`/api/incident-members/${id}/tru-diem`, { method: "POST" });
         state.incidentMembers = state.incidentMembers.map((m) => (m.id === id ? updated : m));

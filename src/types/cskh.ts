@@ -81,6 +81,7 @@ export interface IncidentMember {
   nguyen_nhan: string | null;
   tru_diem_luc: string | null;
   tru_diem_so_diem: number | null;
+  tru_diem_ly_do: string | null;
   created_at: string;
   updated_at: string;
   member_name: string;

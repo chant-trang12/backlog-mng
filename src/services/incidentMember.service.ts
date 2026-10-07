@@ -125,11 +125,16 @@ export async function truDiemIncidentMember(id: number, scope: DataScope): Promi
   if (existing.tru_diem_luc) {
     throw new Error("Dòng này đã trừ điểm cá nhân rồi — mỗi dòng chỉ trừ được 1 lần.");
   }
+  // Lý do tự sinh theo tên sự cố — cùng cơ chế Hạ KI/Tăng KI (xem
+  // haKiIncidentMember/tangKiIncidentMember phía trên), trước đây hành
+  // động này không ghi lý do gì.
+  const lyDo = `Trừ điểm cá nhân do sự cố "${incident?.ten_su_co ?? ""}"`;
   await db("incident_members")
     .where({ id })
     .update({
       tru_diem_luc: todayDateString(),
       tru_diem_so_diem: TRU_DIEM_SO_DIEM,
+      tru_diem_ly_do: lyDo,
       updated_at: db.fn.now(),
     });
   return getIncidentMemberRow(id);

@@ -456,6 +456,16 @@ export async function migrateSoftDeleteCskh(): Promise<void> {
       table.unique(["incident_id", "member_id"]);
     });
   }
+
+  // incident_members.tru_diem_ly_do — lý do tự sinh khi bấm "Trừ điểm cá
+  // nhân" (giống members.ki_ly_do đã có sẵn cho Hạ KI/Tăng KI) — trước đây
+  // hành động này không ghi lý do gì, không nhất quán với Hạ KI/Tăng KI
+  // (user phản hồi: "trừ điểm cá nhân cũng cần lý do giống hạ ki").
+  if (!(await db.schema.hasColumn("incident_members", "tru_diem_ly_do"))) {
+    await db.schema.alterTable("incident_members", (table) => {
+      table.text("tru_diem_ly_do");
+    });
+  }
 }
 
 // 8-13. Các bảng ở trang "Team & Nhân sự" (trừ Nhân sự đã ở migrateCoreTables):
