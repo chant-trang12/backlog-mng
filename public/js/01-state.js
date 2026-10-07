@@ -534,6 +534,20 @@ function formatDbDateTime(value) {
 
 const toastContainer = document.getElementById("toast-container");
 
+// Đưa toast lên "top layer" bằng Popover API (popover="manual" — không tự
+// đóng khi bấm ra ngoài, khác popover="auto") — nếu không, toast render
+// PHÍA SAU bất kỳ <dialog> nào đang showModal() (dialog modal luôn ở top
+// layer, đè lên mọi z-index thường bất kể cao thấp). Lỗi: bấm Lưu trong 1
+// popup (VD "Thêm nhân sự liên quan" ở Sự cố) mà submit thất bại thì toast
+// báo lỗi hiện ra NHƯNG BỊ DIALOG CHE MẤT, trông như bấm nút không phản
+// hồi gì — user tưởng là bug "không đóng popup". Trình duyệt không hỗ trợ
+// Popover API thì bỏ qua, giữ hành vi cũ (hiếm gặp, chỉ ảnh hưởng lúc có
+// dialog mở — phần lớn use-case toast vẫn hiện bình thường).
+if (typeof toastContainer.showPopover === "function") {
+  toastContainer.setAttribute("popover", "manual");
+  toastContainer.showPopover();
+}
+
 function showToast(message, type = "error") {
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;

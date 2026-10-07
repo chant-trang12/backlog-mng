@@ -2836,6 +2836,12 @@
     </form>
   </dialog>
 
+  <!-- popover="manual" (gán ở JS, xem toastContainer ở 01-state.js) đưa
+       container lên "top layer" của trình duyệt — không thì toast render
+       PHÍA SAU bất kỳ <dialog> nào đang showModal() (top layer luôn đè lên
+       mọi z-index thường, bất kể cao thấp), nên lỗi khi submit 1 form
+       trong dialog (VD "Thêm nhân sự liên quan") sẽ báo toast nhưng
+       KHÔNG AI THẤY ĐƯỢC — tưởng như bấm nút không có phản hồi gì. -->
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Tách từ 1 file app.js (6570 dòng) thành nhiều file theo khu vực trang,

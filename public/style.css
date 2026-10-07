@@ -2205,6 +2205,15 @@ dialog.confirm-dialog .confirm-actions button { flex: 1; min-width: 0; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Reset UA mặc định của [popover] (margin:auto;border:solid;padding;
+     background) — container gán popover="manual" ở JS (01-state.js) để
+     luôn hiện trên mọi <dialog> đang mở, không cần style riêng của
+     popover vì .toast-container đã tự định vị đủ. */
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  inset: auto 20px auto auto;
 }
 
 .toast {
