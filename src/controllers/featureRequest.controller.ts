@@ -17,6 +17,7 @@ import {
   updateFeatureRequest,
 } from "../services/featureRequest.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { detectAttachmentMime, validateAttachmentFile } from "../utils/fileValidation.js";
 import { listDepartments } from "../services/department.service.js";
 import { listHeThong } from "../services/hethong.service.js";
 import {
@@ -163,9 +164,17 @@ export async function uploadFeatureRequestAttachmentHandler(req: Request, res: R
     return res.status(413).json({ error: "File vượt quá 10MB — vui lòng chọn file nhỏ hơn" });
   }
 
+  // Fix ATTT "Upload tệp tin bất kỳ": WHITELIST phần mở rộng + xác minh nội
+  // dung thật (magic bytes) — không tin extension lẫn header Content-Type
+  // client gửi lên; MIME lưu DB do server tự suy ra (xem fileValidation.ts).
+  const validation = validateAttachmentFile(filename, data);
+  if (!validation.ok) {
+    return res.status(400).json({ error: validation.error });
+  }
+
   await setFeatureRequestAttachment(id, {
     filename,
-    mime: req.get("content-type") || "application/octet-stream",
+    mime: validation.mime,
     data,
   });
   res.json(await getFeatureRequest(id));
@@ -181,7 +190,13 @@ export async function downloadFeatureRequestAttachmentHandler(req: Request, res:
   }
   const attachment = await getFeatureRequestAttachment(id);
   if (!attachment) return res.status(404).json({ error: "Yêu cầu này chưa có file đính kèm" });
-  res.setHeader("Content-Type", attachment.mime || "application/octet-stream");
+  // Fix ATTT: Content-Type suy từ MAGIC BYTES của dữ liệu thật (không tin
+  // attachment.mime lưu DB — dòng cũ có thể chứa Content-Type do attacker
+  // chỉ), luôn kèm nosniff; Content-Disposition: attachment buộc trình duyệt
+  // TẢI VỀ thay vì render inline -> chặn XSS qua file html/svg/js (những
+  // định dạng này cũng đã bị chặn ngay từ khi upload).
+  res.setHeader("Content-Type", detectAttachmentMime(attachment.data));
+  res.setHeader("X-Content-Type-Options", "nosniff");
   // Tên file có dấu tiếng Việt -> cần cả 2 dạng trong header: filename=
   // (bản ASCII lược dấu, trình duyệt cũ không hiểu filename* sẽ dùng cái
   // này) và filename*=UTF-8''... (chuẩn RFC 5987, trình duyệt hiện đại ưu
