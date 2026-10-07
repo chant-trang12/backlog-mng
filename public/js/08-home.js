@@ -983,11 +983,18 @@ function renderHomeRankingTab(rankingData, eligible) {
         ki = homeLowerKiOneLevel(rawKi);
       } else if (member?.tang_ki) {
         const raised = homeRaiseKiOneLevel(rawKi);
-        // Đã ở KI cao nhất được cấu hình — KI hiển thị GIỮ NGUYÊN (không
-        // tăng được nữa), và tự tắt luôn cờ tang_ki (chặn hành động "Tăng
-        // KI" vì không còn tác dụng gì) — xem autoRevertTangKiAtCeiling().
-        ki = rawKi;
-        if (raised.atCeiling) autoRevertTangKiAtCeiling(member.id, m.member_name);
+        if (raised.atCeiling) {
+          // Đã ở KI cao nhất được cấu hình — KI hiển thị GIỮ NGUYÊN (không
+          // tăng được nữa), và tự tắt luôn cờ tang_ki (chặn hành động
+          // "Tăng KI" vì không còn tác dụng gì) — xem autoRevertTangKiAtCeiling().
+          ki = rawKi;
+          autoRevertTangKiAtCeiling(member.id, m.member_name);
+        } else {
+          // BUG đã sửa: trước đây luôn gán ki = rawKi ở đây, bỏ quên dùng
+          // raised.value -> badge "Tăng KI" hiện ra nhưng KI hiển thị
+          // không hề tăng (user phản hồi kèm ảnh chụp).
+          ki = raised.value;
+        }
       }
       return `
       <tr>
