@@ -88,6 +88,7 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
       can_xu_ly_gap,
       can_xu_ly_gap_ly_do,
       mark_can_xu_ly_gap_resolved,
+      tru_diem_ca_nhan,
     } = req.body ?? {};
     const row = await updateTaskMember(
       id,
@@ -98,6 +99,7 @@ export async function updateTaskMemberHandler(req: Request, res: Response) {
         can_xu_ly_gap,
         can_xu_ly_gap_ly_do,
         mark_can_xu_ly_gap_resolved,
+        tru_diem_ca_nhan: tru_diem_ca_nhan === true,
         ty_le_dong_gop: toNullableNumber(req.body?.ty_le_dong_gop),
         diem_ca_nhan: toNullableNumber(req.body?.diem_ca_nhan),
       },

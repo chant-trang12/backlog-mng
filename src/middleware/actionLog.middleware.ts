@@ -136,6 +136,9 @@ const FIELD_VERB_OVERRIDES: Record<string, (value: unknown) => { action: ActionL
   "tasks:cpo_danh_gia": () => ({ action: "cap_nhat", verb: "Chấm điểm" }),
   "tasks:cpo_comment": () => ({ action: "cap_nhat", verb: "Chấm điểm" }),
   "tasks:phan_tram_hoan_thanh": () => ({ action: "cap_nhat", verb: "Cập nhật tiến độ" }),
+  // Nút "Trừ điểm cá nhân" ở bảng "Nhân sự tham gia" (1 lần/dòng) — verb
+  // mô tả đúng thao tác thay vì "Cập nhật" chung chung.
+  "task-members:tru_diem_ca_nhan": (v) => ({ action: "cap_nhat", verb: v ? "Trừ điểm cá nhân" : "Cập nhật" }),
 };
 
 const isNumericSegment = (s: string | undefined): boolean => !!s && /^\d+$/.test(s);

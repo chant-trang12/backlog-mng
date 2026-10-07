@@ -1622,6 +1622,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
+/* Badge "Đã trừ điểm" (cột hành động bảng "Nhân sự tham gia", 04-tasks.js) —
+   màu cam đất RIÊNG để không trùng badge đỏ "Gấp: ..." đứng cùng cột (user
+   phản hồi 2 badge cùng màu đỏ khó phân biệt). */
+.status-tru-diem { background: #ffdfc0; color: #92400e; }
 
 /* Roadmap năm — dòng đã tự động đưa vào Backlog: badge nổi bật (nền xanh lá
    đậm, chữ trắng), ghim ở góc trên bên phải ô "Nhiệm vụ" (giống cách ghim

@@ -548,4 +548,157 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(rejected.status).toBe(400);
     });
   });
+
+  describe("Trừ điểm cá nhân (nút 1 lần/dòng) + tự động Hạ KI", () => {
+    it("trừ 10 điểm khỏi điểm đang hiển thị (tự tính 5 -> -5 như ảnh user gửi), ghi tru_diem_luc, chặn trừ lần 2", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1994, 1);
+      const teamId = await makeTeam(app, "Tru diem team", periodId);
+      const memberId = await makeMember(app, "Trần Văn Trừ Điểm", teamId, periodId, "Dev");
+
+      // Task "Thực hiện chính" (chưa phân loại) chấm 5 điểm — điểm tự tính = 5.
+      const taskId = await makeTask(app, periodId, "Tru diem team", "Task tru diem");
+      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 5 });
+      const tm = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
+      expect(tm.body.tru_diem_luc).toBeNull();
+
+      const deducted = await request(app)
+        .put(`/api/task-members/${tm.body.id}`)
+        .send({ tru_diem_ca_nhan: true });
+      expect(deducted.status).toBe(200);
+      expect(deducted.body.diem_ca_nhan).toBe(-5); // 5 - 10
+      expect(deducted.body.tru_diem_luc).toBeTruthy();
+      expect(deducted.body.tru_diem_so_diem).toBe(10);
+
+      // Bấm lần 2 -> bị chặn (mỗi dòng chỉ trừ 1 lần), điểm giữ nguyên.
+      const again = await request(app)
+        .put(`/api/task-members/${tm.body.id}`)
+        .send({ tru_diem_ca_nhan: true });
+      expect(again.status).toBe(400);
+      const list = await request(app).get(`/api/tasks/${taskId}/members`);
+      const row = list.body.find((r: { id: number }) => r.id === tm.body.id);
+      expect(row.diem_ca_nhan).toBe(-5);
+    });
+
+    it("↺ reset (diem_ca_nhan = null) chỉ về điểm mặc định (tự tính - điểm trừ), KHÔNG xóa được điểm trừ", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1994, 3);
+      const teamId = await makeTeam(app, "Tru diem reset team", periodId);
+      const memberId = await makeMember(app, "Trần Văn Không Reset", teamId, periodId, "Dev");
+
+      // Task chính 5 điểm — trừ 10 -> -5; ↺ reset -> điểm mặc định = 5 - 10 = -5
+      // (điểm trừ là lớp riêng tru_diem_so_diem, không bị ↺ xóa — yêu cầu user).
+      const taskId = await makeTask(app, periodId, "Tru diem reset team", "Task reset không xóa điểm trừ");
+      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 5 });
+      const tm = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
+      await request(app).put(`/api/task-members/${tm.body.id}`).send({ tru_diem_ca_nhan: true });
+      const reset = await request(app).put(`/api/task-members/${tm.body.id}`).send({ diem_ca_nhan: null });
+      expect(reset.status).toBe(200);
+      expect(reset.body.diem_ca_nhan).toBeNull();
+      expect(reset.body.tru_diem_luc).toBeTruthy(); // dấu "đã trừ" còn nguyên
+      expect(reset.body.tru_diem_so_diem).toBe(10); // điểm trừ KHÔNG bị xóa
+
+      // Điểm theo task (KPI) vẫn = 5 - 10 = -5 sau khi reset (không về 5).
+      const kpi = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const kpiRow = kpi.body.find((r: { member_id: number }) => r.member_id === memberId);
+      const entry = kpiRow.tasks.find((t: { task_id: number }) => t.task_id === taskId);
+      expect(entry.diem).toBe(-5);
+
+      // Đổi % Đánh giá của task lên 50 -> điểm mặc định mới = 50 - 10 = 40
+      // (điểm trừ vẫn áp dụng trên điểm tự tính hiện tại).
+      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 50 });
+      const kpi2 = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const entry2 = kpi2.body
+        .find((r: { member_id: number }) => r.member_id === memberId)
+        .tasks.find((t: { task_id: number }) => t.task_id === taskId);
+      expect(entry2.diem).toBe(40);
+    });
+
+    it("dòng đã ghi đè tay thì trừ trên giá trị tay (8 -> -2); task 'Hỗ trợ' trừ trên điểm tự tính theo tỷ lệ", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1994, 2);
+      const teamId = await makeTeam(app, "Tru diem tay team", periodId);
+      const m1 = await makeMember(app, "Nguyễn Văn Trừ Tay", teamId, periodId, "Dev");
+      const m2 = await makeMember(app, "Lê Thị Hỗ Trợ", teamId, periodId, "Dev");
+
+      const taskId = await makeTask(app, periodId, "Tru diem tay team", "Task trừ điểm hỗn hợp");
+      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 80 });
+
+      const tm1 = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: m1, diem_ca_nhan: 8 });
+      const deducted1 = await request(app).put(`/api/task-members/${tm1.body.id}`).send({ tru_diem_ca_nhan: true });
+      expect(deducted1.body.diem_ca_nhan).toBe(-2); // 8 - 10
+
+      // Hỗ trợ 50% x 80 = 40 (tự tính) -> trừ 10 còn 30.
+      const tm2 = await request(app)
+        .post(`/api/tasks/${taskId}/members`)
+        .send({ member_id: m2, ty_le_dong_gop: 50, phan_loai: "Hỗ trợ" });
+      const deducted2 = await request(app).put(`/api/task-members/${tm2.body.id}`).send({ tru_diem_ca_nhan: true });
+      expect(deducted2.body.diem_ca_nhan).toBe(30);
+    });
+
+    it("tổng 'Điểm cá nhân (Tính theo task)' <= 0 sau khi trừ -> tự động Hạ KI với lý do cố định; > 0 thì không hạ", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1993, 1);
+      const teamId = await makeTeam(app, "Tru diem ha ki team", periodId);
+      const mBad = await makeMember(app, "Nguyễn Văn Bị Hạ", teamId, periodId, "Dev");
+      const mOk = await makeMember(app, "Trần Thị Vẫn Đủ Điểm", teamId, periodId, "Dev");
+
+      // mBad: 1 task chính 5 điểm — trừ 10 -> -5 (điểm duy nhất = trung bình)
+      // -> tổng "Điểm cá nhân (Tính theo task)" <= 0 -> tự động Hạ KI.
+      const taskBad = await makeTask(app, periodId, "Tru diem ha ki team", "Task hạ KI");
+      await request(app).put(`/api/tasks/${taskBad}`).send({ cpo_danh_gia: 5 });
+      const tmBad = await request(app).post(`/api/tasks/${taskBad}/members`).send({ member_id: mBad });
+      const resBad = await request(app).put(`/api/task-members/${tmBad.body.id}`).send({ tru_diem_ca_nhan: true });
+      expect(resBad.body.diem_ca_nhan).toBe(-5);
+
+      // mOk: 1 task chính 80 điểm — trừ 10 còn 70 > 0 -> không bị Hạ KI.
+      const taskOk = await makeTask(app, periodId, "Tru diem ha ki team", "Task đủ điểm");
+      await request(app).put(`/api/tasks/${taskOk}`).send({ cpo_danh_gia: 80 });
+      const tmOk = await request(app).post(`/api/tasks/${taskOk}/members`).send({ member_id: mOk });
+      const resOk = await request(app).put(`/api/task-members/${tmOk.body.id}`).send({ tru_diem_ca_nhan: true });
+      expect(resOk.body.diem_ca_nhan).toBe(70);
+
+      const members = await request(app).get(`/api/members?period_id=${periodId}`);
+      const badAfter = members.body.find((m: { id: number }) => m.id === mBad);
+      const okAfter = members.body.find((m: { id: number }) => m.id === mOk);
+      expect(badAfter.ha_ki).toBe(true);
+      expect(badAfter.ki_ly_do).toBe("Tự động trừ KI do điểm cá nhân <= 0");
+      expect(okAfter.ha_ki).toBe(false);
+      expect(okAfter.ki_ly_do).toBeNull();
+    });
+
+    it("đã Hạ KI trước đó thì giữ nguyên lý do cũ; Hạ KI tự động cũng tắt Tăng KI đang bật", async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1993, 2);
+      const teamId = await makeTeam(app, "Tru diem ha ki cu team", periodId);
+      const m1 = await makeMember(app, "Bùi Văn Đã Hạ", teamId, periodId, "Dev");
+      const m2 = await makeMember(app, "Đỗ Thị Đang Tăng", teamId, periodId, "Dev");
+
+      // m1 đã Hạ KI tay với lý do riêng — trừ điểm không được ghi đè lý do.
+      await request(app).put(`/api/members/${m1}`).send({ ha_ki: true, ki_ly_do: "Vi phạm deadline" });
+      const task1 = await makeTask(app, periodId, "Tru diem ha ki cu team", "Task hạ sẵn");
+      await request(app).put(`/api/tasks/${task1}`).send({ cpo_danh_gia: 5 });
+      const tm1 = await request(app).post(`/api/tasks/${task1}/members`).send({ member_id: m1 });
+      await request(app).put(`/api/task-members/${tm1.body.id}`).send({ tru_diem_ca_nhan: true });
+
+      // m2 đang Tăng KI — tổng điểm rơi <= 0 -> tự động chuyển sang Hạ KI
+      // (2 cờ loại trừ nhau, khớp updateMember ở member.service.ts).
+      await request(app).put(`/api/members/${m2}`).send({ tang_ki: true, ki_ly_do: "Xuất sắc quý trước" });
+      const task2 = await makeTask(app, periodId, "Tru diem ha ki cu team", "Task tăng ki");
+      await request(app).put(`/api/tasks/${task2}`).send({ cpo_danh_gia: 5 });
+      const tm2 = await request(app).post(`/api/tasks/${task2}/members`).send({ member_id: m2 });
+      await request(app).put(`/api/task-members/${tm2.body.id}`).send({ tru_diem_ca_nhan: true });
+
+      const members = await request(app).get(`/api/members?period_id=${periodId}`);
+      const m1After = members.body.find((m: { id: number }) => m.id === m1);
+      const m2After = members.body.find((m: { id: number }) => m.id === m2);
+      expect(m1After.ha_ki).toBe(true);
+      expect(m1After.ki_ly_do).toBe("Vi phạm deadline");
+      expect(m2After.ha_ki).toBe(true);
+      expect(m2After.tang_ki).toBe(false);
+      expect(m2After.ki_ly_do).toBe("Tự động trừ KI do điểm cá nhân <= 0");
+    });
+  });
 });

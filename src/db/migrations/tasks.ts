@@ -210,6 +210,38 @@ export async function migrateTaskMembersTables(): Promise<void> {
     });
   }
 
+  // task_members.tru_diem_luc — ngày bấm nút "Trừ điểm cá nhân" ở cột hành
+  // động bảng "Nhân sự tham gia" (04-tasks.js). Mỗi dòng chỉ được trừ 1 lần:
+  // cột khác null = đã dùng lượt trừ của dòng đó (nút bị thay bằng badge
+  // "Đã trừ điểm"). Điểm bị trừ lưu thẳng vào diem_ca_nhan (ghi đè tay),
+  // cột này chỉ giữ dấu "đã dùng" + ngày dùng để hiển thị.
+  if (!(await db.schema.hasColumn("task_members", "tru_diem_luc"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.string("tru_diem_luc", 10);
+    });
+  }
+
+  // task_members.tru_diem_so_diem — số điểm đã trừ (hiện tại cố định 10) của
+  // lượt "Trừ điểm cá nhân". Tách RIÊNG khỏi diem_ca_nhan: ↺ reset chỉ xóa
+  // điểm nhập tay (diem_ca_nhan) về tự tính, KHÔNG xóa được điểm trừ — điểm
+  // mặc định sau khi trừ = tự tính - tru_diem_so_diem (yêu cầu user: "chỉ
+  // cho restart về điểm mặc định, còn điểm bị trừ do trừ điểm cá nhân không
+  // restart được"). diem_ca_nhan khác null vẫn ghi đè lên cả hai (người dùng
+  // chủ động nhập điểm cuối).
+  if (!(await db.schema.hasColumn("task_members", "tru_diem_so_diem"))) {
+    await db.schema.alterTable("task_members", (table) => {
+      table.decimal("tru_diem_so_diem", 5, 2);
+    });
+    // Backfill: dòng đã trừ trước đó (tru_diem_luc set) — ghi nhận đủ số
+    // điểm trừ. Với dòng mà diem_ca_nhan đang giữ giá trị SAU TRỪ (chưa bị
+    // ↺ xóa), giữ nguyên diem_ca_nhan — không trừ đôi; tru_diem_so_diem chỉ
+    // áp dụng lên nhánh "điểm mặc định" (diem_ca_nhan null).
+    await db("task_members")
+      .whereNotNull("tru_diem_luc")
+      .whereNull("tru_diem_so_diem")
+      .update({ tru_diem_so_diem: 10 });
+  }
+
   // task_members.department_id — Quy tắc 9.2, suy trực tiếp từ department_id
   // của chính task (đáng tin cậy hơn suy qua team/member vì task luôn có
   // đúng 1 department_id cố định — xem departments.ts). Cần chạy sau

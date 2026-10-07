@@ -249,6 +249,15 @@ export interface TaskMember {
   // Ngày bấm "Đã xử lý" ở card đôn đốc Trang chủ (mark_can_xu_ly_gap_resolved)
   // — cột riêng, KHÔNG nhét vào ghi_chu (tránh tràn chữ ô input 1 dòng).
   da_xu_ly_gap_luc: string | null;
+  // Ngày dùng lượt "Trừ điểm cá nhân" của dòng (nút 1 lần/dòng ở cột hành
+  // động bảng "Nhân sự tham gia") — khác null = đã trừ, nút bị thay bằng
+  // badge "Đã trừ điểm". Điểm bị trừ nằm trong diem_ca_nhan (ghi đè tay).
+  tru_diem_luc: string | null;
+  // Số điểm đã trừ của lượt "Trừ điểm cá nhân" (hiện cố định 10) — tách
+  // riêng khỏi diem_ca_nhan để ↺ reset chỉ xóa điểm nhập tay về tự tính,
+  // KHÔNG xóa được điểm trừ: điểm mặc định = tự tính - tru_diem_so_diem.
+  // diem_ca_nhan khác null vẫn ghi đè lên cả hai.
+  tru_diem_so_diem: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -289,6 +298,12 @@ export interface UpdateTaskMemberInput {
   // da_xu_ly_gap_luc = hôm nay. Thắng mọi field can_xu_ly_gap* khác gửi
   // kèm (nếu có).
   mark_can_xu_ly_gap_resolved?: boolean;
+  // true -> "Trừ điểm cá nhân" (nút 1 lần/dòng): trừ 10 điểm khỏi Điểm cá
+  // nhân đang hiển thị (tự tính hay ghi đè tay đều được — giá trị mới lưu
+  // vào diem_ca_nhan) + ghi tru_diem_luc. Chỉ được gọi khi dòng chưa trừ;
+  // backend tự Hạ KI nhân sự nếu tổng "Điểm cá nhân (Tính theo task)" của
+  // người đó trong tháng rơi <= 0 (xem taskMember.service.ts).
+  tru_diem_ca_nhan?: boolean;
 }
 
 // KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =

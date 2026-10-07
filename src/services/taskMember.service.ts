@@ -22,6 +22,8 @@ const SELECT_COLUMNS = [
   "task_members.can_xu_ly_gap_ly_do",
   "task_members.can_xu_ly_gap_tu_ngay",
   "task_members.da_xu_ly_gap_luc",
+  "task_members.tru_diem_luc",
+  "task_members.tru_diem_so_diem",
   "task_members.created_at",
   "task_members.updated_at",
   "members.name as member_name",
@@ -217,7 +219,52 @@ export async function updateTaskMember(
     update.can_xu_ly_gap_tu_ngay = null;
   }
 
+  // "Trừ điểm cá nhân" — nút 1 lần/dòng ở cột hành động bảng "Nhân sự tham
+  // gia": trừ thẳng 10 điểm khỏi Điểm cá nhân ĐANG HIỂN THỊ của dòng (đang
+  // tự tính theo % Đánh giá hay đã ghi đè tay đều được — giá trị mới lưu vào
+  // diem_ca_nhan thành điểm ghi đè). VD dòng tự tính 5 điểm (như ảnh user
+  // gửi) -> bấm 1 lần còn -5. tru_diem_luc giữ dấu "đã dùng lượt trừ" để
+  // chặn trừ lần 2 (bấm lại -> 400, FE thay nút bằng badge "Đã trừ điểm").
+  // Số điểm trừ ĐỒNG THỜI lưu vào tru_diem_so_diem (lớp riêng) — ↺ reset về
+  // sau chỉ xóa điểm nhập tay (diem_ca_nhan), KHÔNG xóa được điểm trừ:
+  // điểm mặc định của dòng = tự tính - tru_diem_so_diem (xem
+  // defaultDiemCaNhan ở dưới + renderTaskMembers, 04-tasks.js).
+  let truDiemPeriodId: number | null = null;
+  if (input.tru_diem_ca_nhan === true) {
+    if (existing.tru_diem_luc) {
+      throw new Error("Dòng này đã trừ điểm cá nhân rồi — mỗi dòng chỉ trừ được 1 lần.");
+    }
+    const task = await db("tasks")
+      .where({ id: existing.task_id })
+      .select("cpo_danh_gia", "period_id")
+      .first();
+    const cpo = task?.cpo_danh_gia != null ? Number(task.cpo_danh_gia) : null;
+    const tyLe = existing.ty_le_dong_gop != null ? Number(existing.ty_le_dong_gop) : null;
+    // Điểm đang hiển thị — cùng công thức tự tính ở renderTaskMembers
+    // (04-tasks.js) và listKpiTheoTask dưới đây: diem_ca_nhan ghi đè ưu
+    // tiên; "Hỗ trợ" nhân Tỷ lệ đóng góp, còn lại thẳng % Đánh giá.
+    const effective =
+      existing.diem_ca_nhan != null
+        ? Number(existing.diem_ca_nhan)
+        : existing.phan_loai === HO_TRO_LABEL
+          ? cpo != null && tyLe != null
+            ? Math.round(((cpo * tyLe) / 100) * 100) / 100
+            : null
+          : cpo;
+    update.diem_ca_nhan = Math.round(((effective ?? 0) - 10) * 100) / 100;
+    update.tru_diem_luc = todayDateString();
+    update.tru_diem_so_diem = 10;
+    truDiemPeriodId = (task?.period_id as number | undefined) ?? null;
+  }
+
   await db("task_members").where({ id }).update(update);
+  // Sau khi trừ, kiểm tra tổng "Điểm cá nhân (Tính theo task)" của nhân sự
+  // trong tháng của task — rơi <= 0 thì tự động Hạ KI (xem
+  // autoHaKiNeuDiemNhoHonBang0 bên dưới). Chỉ chạy đúng bấm "Trừ điểm cá
+  // nhân", không chạy cho các PUT sửa điểm/thay đổi khác.
+  if (truDiemPeriodId != null) {
+    await autoHaKiNeuDiemNhoHonBang0(existing.member_id, truDiemPeriodId);
+  }
   return getTaskMember(id);
 }
 
@@ -233,6 +280,92 @@ export async function deleteTaskMember(id: number, scope: DataScope): Promise<bo
 // HO_TRO_LABEL ở public/app.js (2 nơi định nghĩa độc lập, không có module
 // dùng chung giữa FE/BE trong repo này).
 const HO_TRO_LABEL = "Hỗ trợ";
+
+// Điểm MẶC ĐỊNH (diem_ca_nhan null) sau khi áp điểm trừ "Trừ điểm cá nhân":
+// tự tính - tru_diem_so_diem. Có điểm trừ mà tự tính null -> trừ trên 0
+// (= -tru_diem_so_diem); không có điểm trừ -> giữ nguyên tự tính (kể cả
+// null — task chưa chấm điểm thì không có điểm). ↺ reset chỉ xóa điểm nhập
+// tay về giá trị này, không xóa được điểm trừ (yêu cầu user).
+function defaultDiemSauTru(auto: number | null, truSoDiem: number): number | null {
+  if (truSoDiem === 0) return auto;
+  return Math.round(((auto ?? 0) - truSoDiem) * 100) / 100;
+}
+
+// Lý do cố định khi tự động Hạ KI sau khi trừ điểm cá nhân (đề nghị của
+// user) — hiển thị ở cột "Ghi chú" tab Nhân sự + cạnh badge Hạ KI ở Home >
+// Ranking > Ranking thành viên team (xem memberNoteCellContent, 03-members.js).
+const AUTO_HA_KI_LY_DO = "Tự động trừ KI do điểm cá nhân <= 0";
+
+// Tự động Hạ KI nhân sự khi tổng "Điểm cá nhân (Tính theo task)" của người
+// đó trong 1 tháng backlog rơi <= 0 — do nút "Trừ điểm cá nhân" (chỉ chạy
+// đúng sau khi trừ, không chạy cho PUT sửa điểm thông thường). Cột "Điểm cá
+// nhân (Tính theo task)" ở Team & Nhân sự = trung bình điểm các task "Thực
+// hiện chính" (hoặc chưa phân loại) + cộng thẳng điểm các task "Hỗ trợ"
+// (memberAvgDiemTheoTask, 03-members.js) — tính đúng theo công thức đó.
+// Trả về true nếu đã tự Hạ KI. Không làm gì khi:
+// - chưa có task nào có điểm (chưa đủ dữ liệu để kết luận),
+// - tổng còn > 0,
+// - nhân sự đã đang Hạ KI (giữ nguyên lý do cũ, không ghi đè).
+// Bật ha_ki đồng thời tắt tang_ki (2 cờ loại trừ nhau — khớp updateMember,
+// member.service.ts).
+async function autoHaKiNeuDiemNhoHonBang0(memberId: number, periodId: number): Promise<boolean> {
+  const rows = await db("task_members as tm")
+    .join("tasks as t", "tm.task_id", "t.id")
+    .where("tm.member_id", memberId)
+    .where("t.period_id", periodId)
+    .where("tm.is_deleted", false)
+    .where("t.is_deleted", false)
+    .select(
+      "tm.phan_loai as phan_loai",
+      "tm.ty_le_dong_gop as ty_le",
+      "tm.diem_ca_nhan as diem_ca_nhan",
+      "tm.tru_diem_so_diem as tru_so_diem",
+      "t.cpo_danh_gia as cpo",
+    );
+
+  let mainSum = 0;
+  let mainCount = 0;
+  let bonus = 0;
+  for (const r of rows as any[]) {
+    const diemCaNhan = r.diem_ca_nhan != null ? Number(r.diem_ca_nhan) : null;
+    const tyLe = r.ty_le != null ? Number(r.ty_le) : null;
+    const cpo = r.cpo != null ? Number(r.cpo) : null;
+    const truSoDiem = r.tru_so_diem != null ? Number(r.tru_so_diem) : 0;
+    // Cùng công thức điểm từng task với listKpiTheoTask dưới đây (gồm cả
+    // điểm trừ "Trừ điểm cá nhân" trên nhánh điểm mặc định).
+    const diem =
+      diemCaNhan !== null
+        ? diemCaNhan
+        : r.phan_loai === HO_TRO_LABEL
+          ? defaultDiemSauTru(
+              cpo !== null && tyLe !== null ? Math.round(((cpo * tyLe) / 100) * 100) / 100 : null,
+              truSoDiem,
+            )
+          : defaultDiemSauTru(cpo, truSoDiem);
+    if (diem === null) continue;
+    if (r.phan_loai === HO_TRO_LABEL) {
+      bonus += diem;
+    } else {
+      mainSum += diem;
+      mainCount += 1;
+    }
+  }
+  if (mainCount === 0 && bonus === 0) return false;
+  const total = Math.round(((mainCount > 0 ? mainSum / mainCount : 0) + bonus) * 100) / 100;
+  if (total > 0) return false;
+
+  const member = await db("members")
+    .where({ id: memberId, is_deleted: false })
+    .select("ha_ki", "tang_ki")
+    .first();
+  if (!member || member.ha_ki) return false;
+  await db("members").where({ id: memberId }).update({
+    ha_ki: true,
+    tang_ki: false,
+    ki_ly_do: AUTO_HA_KI_LY_DO,
+  });
+  return true;
+}
 
 // KPI nhân sự tính trực tiếp theo task (dùng cho phòng ban có
 // departments.cach_tinh_kpi = "theo_task", không chia theo team) — cộng dồn
@@ -275,6 +408,7 @@ export async function listKpiTheoTask(
     "task_members.phan_loai as phan_loai",
     "task_members.ty_le_dong_gop as ty_le_dong_gop",
     "task_members.diem_ca_nhan as diem_ca_nhan",
+    "task_members.tru_diem_so_diem as tru_diem_so_diem",
   );
 
   const byMember = new Map<number, KpiTheoTaskRow>();
@@ -282,16 +416,21 @@ export async function listKpiTheoTask(
     const diemCaNhan = r.diem_ca_nhan !== null && r.diem_ca_nhan !== undefined ? Number(r.diem_ca_nhan) : null;
     const tyLeDongGop = r.ty_le_dong_gop !== null && r.ty_le_dong_gop !== undefined ? Number(r.ty_le_dong_gop) : null;
     const cpoDanhGia = r.cpo_danh_gia !== null && r.cpo_danh_gia !== undefined ? Number(r.cpo_danh_gia) : null;
+    const truSoDiem = r.tru_diem_so_diem != null ? Number(r.tru_diem_so_diem) : 0;
     // diem_ca_nhan ghi đè luôn ưu tiên; không thì tùy phân loại — "Hỗ trợ"
-    // nhân tỷ lệ đóng góp, "Thực hiện chính"/chưa phân loại thì không.
+    // nhân tỷ lệ đóng góp, "Thực hiện chính"/chưa phân loại thì không —
+    // rồi trừ tiếp điểm trừ "Trừ điểm cá nhân" (không thể ↺ reset).
     const diem =
       diemCaNhan !== null
         ? diemCaNhan
         : r.phan_loai === HO_TRO_LABEL
-          ? cpoDanhGia !== null && tyLeDongGop !== null
-            ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
-            : null
-          : cpoDanhGia;
+          ? defaultDiemSauTru(
+              cpoDanhGia !== null && tyLeDongGop !== null
+                ? Math.round(((cpoDanhGia * tyLeDongGop) / 100) * 100) / 100
+                : null,
+              truSoDiem,
+            )
+          : defaultDiemSauTru(cpoDanhGia, truSoDiem);
 
     if (!byMember.has(r.member_id)) {
       byMember.set(r.member_id, {
