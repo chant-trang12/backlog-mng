@@ -801,8 +801,30 @@
                   <tr>
                     <th style="width:110px">Tháng</th>
                     <th style="width:120px">Team</th>
-                    <th>Sự cố</th>
-                    <th style="width:200px">Tính chất</th>
+                    <th>Tạo bởi</th>
+                    <th>Dịch vụ do IDC quản lý hoặc đối tác</th>
+                    <th>Tên sự cố</th>
+                    <th>Hiện tượng</th>
+                    <th>Phạm vi sự cố và ảnh hưởng dịch vụ KH</th>
+                    <th>Nguyên nhân</th>
+                    <th>Hành động</th>
+                    <th>Thời điểm ghi nhận sự cố</th>
+                    <th>Thời điểm hoàn thành xử lý sự cố</th>
+                    <th>Thời gian xử lý sự cố</th>
+                    <th>Gián đoạn dịch vụ KH</th>
+                    <th>Thời gian gián đoạn</th>
+                    <th>Lý do không gián đoạn</th>
+                    <th>Dịch Vụ</th>
+                    <th>Nhóm dịch vụ</th>
+                    <th>Đơn vị chịu trách nhiệm về sự cố</th>
+                    <th>BU/Site chịu trách nhiệm về sự cố</th>
+                    <th>Cấp độ theo phạm vi ảnh hưởng đến KH</th>
+                    <th>Tình trạng</th>
+                    <th>Link Ticket</th>
+                    <th>Link ITSM</th>
+                    <th>Đánh giá SLA sự cố</th>
+                    <th>Đánh giá nguyên nhân sự cố</th>
+                    <th>Diễn giải lý do vượt SLA</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1828,13 +1850,125 @@
           <select id="inc-team" required></select>
         </div>
       </div>
-      <div>
-        <label for="inc-su-co">Sự cố *</label>
-        <textarea id="inc-su-co" required></textarea>
+      <!-- Các trường chi tiết khớp cột bảng dữ liệu (data-key = tên cột DB, JS
+           fill/collect tự động qua [data-key], xem 05-cskh.js) -->
+      <div class="field-row">
+        <div>
+          <label for="inc-tao-boi">Tạo bởi</label>
+          <input id="inc-tao-boi" data-key="tao_boi" />
+        </div>
+        <div>
+          <label for="inc-dich-vu-idc">Dịch vụ do IDC quản lý hoặc đối tác</label>
+          <input id="inc-dich-vu-idc" data-key="dich_vu_idc" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-ten-su-co">Tên sự cố *</label>
+          <input id="inc-ten-su-co" data-key="ten_su_co" required />
+        </div>
+        <div>
+          <label for="inc-hien-tuong">Hiện tượng</label>
+          <input id="inc-hien-tuong" data-key="hien_tuong" />
+        </div>
       </div>
       <div>
-        <label for="inc-tinh-chat">Tính chất</label>
-        <input id="inc-tinh-chat" />
+        <label for="inc-pham-vi-anh-huong">Phạm vi sự cố và ảnh hưởng dịch vụ KH</label>
+        <input id="inc-pham-vi-anh-huong" data-key="pham_vi_anh_huong" />
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-nguyen-nhan">Nguyên nhân</label>
+          <input id="inc-nguyen-nhan" data-key="nguyen_nhan" />
+        </div>
+        <div>
+          <label for="inc-hanh-dong">Hành động</label>
+          <input id="inc-hanh-dong" data-key="hanh_dong" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-thoi-diem-ghi-nhan">Thời điểm ghi nhận sự cố</label>
+          <input type="datetime-local" id="inc-thoi-diem-ghi-nhan" data-key="thoi_diem_ghi_nhan" />
+        </div>
+        <div>
+          <label for="inc-thoi-diem-hoan-thanh">Thời điểm hoàn thành xử lý sự cố</label>
+          <input type="datetime-local" id="inc-thoi-diem-hoan-thanh" data-key="thoi_diem_hoan_thanh" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-thoi-gian-xu-ly">Thời gian xử lý sự cố</label>
+          <input id="inc-thoi-gian-xu-ly" data-key="thoi_gian_xu_ly" />
+        </div>
+        <div>
+          <label for="inc-gian-doan-dich-vu">Gián đoạn dịch vụ KH</label>
+          <input id="inc-gian-doan-dich-vu" data-key="gian_doad_dich_vu" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-thoi-gian-gian-doan">Thời gian gián đoạn</label>
+          <input id="inc-thoi-gian-gian-doan" data-key="thoi_gian_gian_doad" />
+        </div>
+        <div>
+          <label for="inc-ly-do-khong-gian-doan">Lý do không gián đoạn</label>
+          <input id="inc-ly-do-khong-gian-doan" data-key="ly_do_khong_gian_doad" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-dich-vu">Dịch Vụ</label>
+          <input id="inc-dich-vu" data-key="dich_vu" />
+        </div>
+        <div>
+          <label for="inc-nhom-dich-vu">Nhóm dịch vụ</label>
+          <input id="inc-nhom-dich-vu" data-key="nhom_dich_vu" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-don-vi-trach-nhiem">Đơn vị chịu trách nhiệm về sự cố</label>
+          <input id="inc-don-vi-trach-nhiem" data-key="don_vi_trach_nhiem" />
+        </div>
+        <div>
+          <label for="inc-bu-site-trach-nhiem">BU/Site chịu trách nhiệm về sự cố</label>
+          <input id="inc-bu-site-trach-nhiem" data-key="bu_site_trach_nhiem" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-cap-do-anh-huong">Cấp độ theo phạm vi ảnh hưởng đến KH</label>
+          <input id="inc-cap-do-anh-huong" data-key="cap_do_anh_huong" />
+        </div>
+        <div>
+          <label for="inc-tinh-trang">Tình trạng</label>
+          <input id="inc-tinh-trang" data-key="tinh_trang" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-link-ticket">Link Ticket</label>
+          <input id="inc-link-ticket" data-key="link_ticket" />
+        </div>
+        <div>
+          <label for="inc-link-itsm">Link ITSM</label>
+          <input id="inc-link-itsm" data-key="link_itsm" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <label for="inc-danh-gia-sla">Đánh giá SLA sự cố</label>
+          <input id="inc-danh-gia-sla" data-key="danh_gia_sla" />
+        </div>
+        <div>
+          <label for="inc-danh-gia-nguyen-nhan">Đánh giá nguyên nhân sự cố</label>
+          <input id="inc-danh-gia-nguyen-nhan" data-key="danh_gia_nguyen_nhan" />
+        </div>
+      </div>
+      <div>
+        <label for="inc-dien-giai-vuot-sla">Diễn giải lý do vượt SLA</label>
+        <input id="inc-dien-giai-vuot-sla" data-key="dien_giai_vuot_sla" />
       </div>
       <div class="actions">
         <button type="button" id="incident-cancel-btn">Hủy</button>

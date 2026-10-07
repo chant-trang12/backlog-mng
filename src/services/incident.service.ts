@@ -8,16 +8,55 @@ import type {
 import { assertDepartmentInScope, departmentIdFromTeamId, type DataScope } from "./scope.util.js";
 import { softDeleteWhere } from "./softDelete.util.js";
 
+// Bộ cột chi tiết của Sự cố (ngoài period_id/team_id) — KHỚP thứ tự cột
+// bảng dữ liệu trang Sự cố + các trường form "Thêm/Sửa sự cố" (xem
+// migrations/core.ts). datetime: 2 cột thời điểm lưu chuỗi
+// "YYYY-MM-DDTHH:mm" của <input type="datetime-local">, còn lại text tự do.
+export const INCIDENT_FIELDS: Array<{ key: keyof CreateIncidentInput; datetime?: boolean }> = [
+  { key: "tao_boi" },
+  { key: "dich_vu_idc" },
+  { key: "ten_su_co" },
+  { key: "hien_tuong" },
+  { key: "pham_vi_anh_huong" },
+  { key: "nguyen_nhan" },
+  { key: "hanh_dong" },
+  { key: "thoi_diem_ghi_nhan", datetime: true },
+  { key: "thoi_diem_hoan_thanh", datetime: true },
+  { key: "thoi_gian_xu_ly" },
+  { key: "gian_doad_dich_vu" },
+  { key: "thoi_gian_gian_doad" },
+  { key: "ly_do_khong_gian_doad" },
+  { key: "dich_vu" },
+  { key: "nhom_dich_vu" },
+  { key: "don_vi_trach_nhiem" },
+  { key: "bu_site_trach_nhiem" },
+  { key: "cap_do_anh_huong" },
+  { key: "tinh_trang" },
+  { key: "link_ticket" },
+  { key: "link_itsm" },
+  { key: "danh_gia_sla" },
+  { key: "danh_gia_nguyen_nhan" },
+  { key: "dien_giai_vuot_sla" },
+];
+
+// undefined -> bỏ qua (update: giữ nguyên), null/rỗng -> null, chuỗi -> trim.
+function textOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  return s || null;
+}
+
 export async function createIncident(input: CreateIncidentInput, scope: DataScope): Promise<Incident> {
   const departmentId = await departmentIdFromTeamId(input.team_id);
   assertDepartmentInScope(scope, departmentId);
+  const fields: Record<string, unknown> = {};
+  for (const f of INCIDENT_FIELDS) fields[f.key] = textOrNull(input[f.key]);
   const [created] = await db("incidents")
     .insert({
       period_id: input.period_id,
       team_id: input.team_id,
       department_id: departmentId,
-      su_co: input.su_co.trim(),
-      tinh_chat: input.tinh_chat?.trim() || null,
+      ...fields,
     })
     .returning("*");
   return created as Incident;
@@ -58,12 +97,14 @@ export async function updateIncident(
   if (!existing) return undefined;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
 
-  const merged = {
+  const merged: Record<string, unknown> = {
     period_id: input.period_id ?? existing.period_id,
     team_id: input.team_id ?? existing.team_id,
-    su_co: input.su_co?.trim() ?? existing.su_co,
-    tinh_chat: input.tinh_chat !== undefined ? input.tinh_chat.trim() || null : existing.tinh_chat,
   };
+  for (const f of INCIDENT_FIELDS) {
+    const value = input[f.key];
+    merged[f.key] = value === undefined ? (existing as any)[f.key] ?? null : textOrNull(value);
+  }
 
   const [updated] = await db("incidents")
     .where({ id })

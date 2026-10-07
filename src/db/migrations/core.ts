@@ -337,8 +337,6 @@ export async function migrateCskhTables(): Promise<void> {
       table.increments("id").primary();
       table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
       table.integer("team_id").notNullable().references("id").inTable("teams").onDelete("NO ACTION");
-      table.text("su_co").notNullable();
-      table.string("tinh_chat", 255);
       table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
       table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
     });
@@ -384,6 +382,58 @@ export async function migrateSoftDeleteCskh(): Promise<void> {
         table.dateTime("deleted_at");
       });
     }
+  }
+
+  // incidents — dựng lại bộ cột theo bảng dữ liệu mới của trang Sự cố
+  // (yêu cầu user: giữ Tháng + Team, bỏ 2 cột cũ "Sự cố"/"Tính chất", thay
+  // bằng 24 cột chi tiết như header file ITSM user gửi). 2 cột thời điểm
+  // lưu chuỗi "YYYY-MM-DDTHH:mm" của <input type="datetime-local"> (giờ
+  // local), còn lại là text tự do.
+  //
+  // LƯU Ý: bỏ 2 cột cũ bằng "ALTER TABLE ... DROP COLUMN" native (SQLite
+  // >= 3.35 / MSSQL đều chạy được) — KHÔNG dùng knex alterTable().dropColumn()
+  // vì knex với SQLite rebuild lại bảng trong transaction rồi chạy
+  // PRAGMA foreign_key_check toàn schema; DB dev có sẵn hàng chục nghìn
+  // dòng rác vi phạm FK (dữ liệu import thử cũ) khiến server chết khi khởi
+  // động ("Transaction concluded with N foreign key violations").
+  const INCIDENT_DROPPED_COLUMNS = ["su_co", "tinh_chat"];
+  for (const col of INCIDENT_DROPPED_COLUMNS) {
+    if (await db.schema.hasColumn("incidents", col)) {
+      await db.raw(`ALTER TABLE incidents DROP COLUMN ${col}`);
+    }
+  }
+  const incidentColumns: Array<{ key: string; datetime?: boolean }> = [
+    { key: "tao_boi" },
+    { key: "dich_vu_idc" },
+    { key: "ten_su_co" },
+    { key: "hien_tuong" },
+    { key: "pham_vi_anh_huong" },
+    { key: "nguyen_nhan" },
+    { key: "hanh_dong" },
+    { key: "thoi_diem_ghi_nhan", datetime: true },
+    { key: "thoi_diem_hoan_thanh", datetime: true },
+    { key: "thoi_gian_xu_ly" },
+    { key: "gian_doad_dich_vu" },
+    { key: "thoi_gian_gian_doad" },
+    { key: "ly_do_khong_gian_doad" },
+    { key: "dich_vu" },
+    { key: "nhom_dich_vu" },
+    { key: "don_vi_trach_nhiem" },
+    { key: "bu_site_trach_nhiem" },
+    { key: "cap_do_anh_huong" },
+    { key: "tinh_trang" },
+    { key: "link_ticket" },
+    { key: "link_itsm" },
+    { key: "danh_gia_sla" },
+    { key: "danh_gia_nguyen_nhan" },
+    { key: "dien_giai_vuot_sla" },
+  ];
+  for (const col of incidentColumns) {
+    if (await db.schema.hasColumn("incidents", col.key)) continue;
+    await db.schema.alterTable("incidents", (table) => {
+      if (col.datetime) table.string(col.key, 16);
+      else table.text(col.key);
+    });
   }
 }
 

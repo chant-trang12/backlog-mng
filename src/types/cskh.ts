@@ -1,11 +1,36 @@
 // Trang CSKH: 3 bảng CRUD theo team và theo tháng — Sự cố, Hỗ trợ ticket, Tỉ lệ khởi tạo.
 
+// Sự cố — bộ cột chi tiết theo bảng dữ liệu mới (xem migrations/core.ts):
+// giữ Tháng (period_id) + Team (team_id), 2 cột thời điểm lưu chuỗi
+// "YYYY-MM-DDTHH:mm" (datetime-local, giờ local), còn lại text tự do.
 export interface Incident {
   id: number;
   period_id: number;
   team_id: number;
-  su_co: string;
-  tinh_chat: string | null;
+  tao_boi: string | null;
+  dich_vu_idc: string | null;
+  ten_su_co: string;
+  hien_tuong: string | null;
+  pham_vi_anh_huong: string | null;
+  nguyen_nhan: string | null;
+  hanh_dong: string | null;
+  thoi_diem_ghi_nhan: string | null;
+  thoi_diem_hoan_thanh: string | null;
+  thoi_gian_xu_ly: string | null;
+  gian_doad_dich_vu: string | null;
+  thoi_gian_gian_doad: string | null;
+  ly_do_khong_gian_doad: string | null;
+  dich_vu: string | null;
+  nhom_dich_vu: string | null;
+  don_vi_trach_nhiem: string | null;
+  bu_site_trach_nhiem: string | null;
+  cap_do_anh_huong: string | null;
+  tinh_trang: string | null;
+  link_ticket: string | null;
+  link_itsm: string | null;
+  danh_gia_sla: string | null;
+  danh_gia_nguyen_nhan: string | null;
+  dien_giai_vuot_sla: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -18,8 +43,30 @@ export interface IncidentWithTeam extends Incident {
 export interface CreateIncidentInput {
   period_id: number;
   team_id: number;
-  su_co: string;
-  tinh_chat?: string;
+  ten_su_co: string;
+  tao_boi?: string | null;
+  dich_vu_idc?: string | null;
+  hien_tuong?: string | null;
+  pham_vi_anh_huong?: string | null;
+  nguyen_nhan?: string | null;
+  hanh_dong?: string | null;
+  thoi_diem_ghi_nhan?: string | null;
+  thoi_diem_hoan_thanh?: string | null;
+  thoi_gian_xu_ly?: string | null;
+  gian_doad_dich_vu?: string | null;
+  thoi_gian_gian_doad?: string | null;
+  ly_do_khong_gian_doad?: string | null;
+  dich_vu?: string | null;
+  nhom_dich_vu?: string | null;
+  don_vi_trach_nhiem?: string | null;
+  bu_site_trach_nhiem?: string | null;
+  cap_do_anh_huong?: string | null;
+  tinh_trang?: string | null;
+  link_ticket?: string | null;
+  link_itsm?: string | null;
+  danh_gia_sla?: string | null;
+  danh_gia_nguyen_nhan?: string | null;
+  dien_giai_vuot_sla?: string | null;
 }
 
 export type UpdateIncidentInput = Partial<CreateIncidentInput>;

@@ -38,7 +38,7 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "attendance-records": { module: "Team & Nhân sự", entity: "Chấm công" },
   "noiquy-overrides": { module: "Team & Nhân sự", entity: "Miễn trừ nội quy" },
   "danh-gia-records": { module: "Team & Nhân sự", entity: "Đánh giá" },
-  incidents: { module: "CSKH", entity: "Sự cố", table: "incidents", nameColumn: "su_co" },
+  incidents: { module: "CSKH", entity: "Sự cố", table: "incidents", nameColumn: "ten_su_co" },
   tickets: { module: "CSKH", entity: "Ticket hỗ trợ" },
   "creation-rates": { module: "CSKH", entity: "Tỷ lệ khởi tạo" },
   "support-records": { module: "CSKH", entity: "Hỗ trợ" },
@@ -106,7 +106,7 @@ const DEFAULT_VERB: Record<string, { action: ActionLogType; verb: string }> = {
 const NAME_FIELDS = [
   "nhiem_vu", "tieu_de", "ten_muc_tieu", "ten_he_thong", "ten_phan_loai",
   "ten_nhom", "ten_chuc_vu", "ten_tag", "muc_tieu", "he_thong", "team",
-  "name", "ten", "label", "title", "username", "su_co", "noi_dung",
+  "name", "ten", "ten_su_co", "label", "title", "username", "noi_dung",
 ];
 
 const USER_ROLE_LABEL: Record<string, string> = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };

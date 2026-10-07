@@ -56,6 +56,60 @@ document.querySelectorAll("#home-subnav .pill").forEach((pill) => {
 
 // -- Sự cố --
 
+// Bộ cột chi tiết bảng Sự cố — KHỚP thứ tự thead #incident-table (sau
+// Tháng/Team) và các trường form [data-key] (xem incident-dialog, index.html).
+// datetime: hiển thị "dd/mm/yyyy HH:MM" (giá trị lưu "YYYY-MM-DDTHH:mm").
+// link: render thẻ <a> khi giá trị bắt đầu bằng http.
+const INCIDENT_COLUMNS = [
+  { key: "tao_boi" },
+  { key: "dich_vu_idc" },
+  { key: "ten_su_co" },
+  { key: "hien_tuong" },
+  { key: "pham_vi_anh_huong" },
+  { key: "nguyen_nhan" },
+  { key: "hanh_dong" },
+  { key: "thoi_diem_ghi_nhan", datetime: true },
+  { key: "thoi_diem_hoan_thanh", datetime: true },
+  { key: "thoi_gian_xu_ly" },
+  { key: "gian_doad_dich_vu" },
+  { key: "thoi_gian_gian_doad" },
+  { key: "ly_do_khong_gian_doad" },
+  { key: "dich_vu" },
+  { key: "nhom_dich_vu" },
+  { key: "don_vi_trach_nhiem" },
+  { key: "bu_site_trach_nhiem" },
+  { key: "cap_do_anh_huong" },
+  { key: "tinh_trang" },
+  { key: "link_ticket", link: true },
+  { key: "link_itsm", link: true },
+  { key: "danh_gia_sla" },
+  { key: "danh_gia_nguyen_nhan" },
+  { key: "dien_giai_vuot_sla" },
+];
+
+function incidentEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// Ô dữ liệu của 1 cột: datetime -> "dd/mm/yyyy HH:MM"; link -> <a>; còn lại
+// text (escape, giữ xuống dòng).
+function incidentCellHtml(col, value) {
+  if (!value) return "";
+  if (col.datetime) {
+    const parts = formatDbDateTime(value);
+    return parts ? `${parts.date} ${parts.time}` : incidentEscape(value);
+  }
+  if (col.link && /^https?:\/\//i.test(String(value).trim())) {
+    const url = String(value).trim();
+    return `<a href="${incidentEscape(url)}" target="_blank" rel="noopener noreferrer">${incidentEscape(url)}</a>`;
+  }
+  return incidentEscape(value).replace(/\n/g, "<br/>");
+}
+
 async function loadIncidents() {
   state.incidents = await api("/api/incidents");
   renderIncidents();
@@ -70,8 +124,7 @@ function renderIncidents() {
     <tr data-id="${i.id}">
       <td>${i.period_label}</td>
       <td>${i.team_name}</td>
-      <td>${(i.su_co ?? "").replace(/\n/g, "<br/>")}</td>
-      <td>${i.tinh_chat ?? ""}</td>
+      ${INCIDENT_COLUMNS.map((col) => `<td>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
@@ -101,6 +154,13 @@ function renderIncidents() {
   });
 }
 
+// Các input/select trong form Sự cố mang data-key = tên cột DB — fill/collect
+// tự động theo danh sách, không phải liệt kê 24 id tay (thêm/bớt trường chỉ
+// cần sửa index.html).
+function incidentKeyInputs() {
+  return Array.from(el.incidentForm.querySelectorAll("[data-key]"));
+}
+
 function openIncidentDialog(incident) {
   el.incidentForm.reset();
   document.getElementById("inc-id").value = incident?.id ?? "";
@@ -111,8 +171,9 @@ function openIncidentDialog(incident) {
   const teamSelectEl = document.getElementById("inc-team");
   teamSelectEl.innerHTML = teamOptionsHtml();
   teamSelectEl.value = String(incident?.team_id ?? state.currentTeamId ?? state.teams[0]?.id ?? "");
-  document.getElementById("inc-su-co").value = incident?.su_co ?? "";
-  document.getElementById("inc-tinh-chat").value = incident?.tinh_chat ?? "";
+  incidentKeyInputs().forEach((input) => {
+    input.value = incident?.[input.dataset.key] ?? "";
+  });
   el.incidentDialog.showModal();
 }
 
@@ -134,9 +195,10 @@ el.incidentForm.addEventListener("submit", async (e) => {
   const payload = {
     period_id: Number(document.getElementById("inc-period").value),
     team_id: Number(document.getElementById("inc-team").value),
-    su_co: document.getElementById("inc-su-co").value.trim(),
-    tinh_chat: document.getElementById("inc-tinh-chat").value.trim() || undefined,
   };
+  incidentKeyInputs().forEach((input) => {
+    payload[input.dataset.key] = input.value.trim() || null;
+  });
   try {
     if (id) {
       await api(`/api/incidents/${id}`, { method: "PUT", body: JSON.stringify(payload) });
