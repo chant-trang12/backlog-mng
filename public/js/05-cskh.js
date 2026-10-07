@@ -449,6 +449,7 @@ function openIncidentMemberDialog(incident) {
   document.getElementById("incident-member-dialog-sub").textContent =
     `${incident.team_name} — ${incident.period_label}`;
   document.getElementById("incident-member-add-form").hidden = true;
+  document.getElementById("add-incident-member-btn").setAttribute("aria-expanded", "false");
   renderIncidentMemberMemberOptions(incident);
   loadIncidentMembers();
   document.getElementById("incident-member-dialog").showModal();
@@ -573,12 +574,16 @@ function renderIncidentMembers() {
 }
 
 document.getElementById("add-incident-member-btn")?.addEventListener("click", () => {
+  const toggle = document.getElementById("add-incident-member-btn");
   const form = document.getElementById("incident-member-add-form");
-  form.hidden = !form.hidden;
+  const expanded = toggle.getAttribute("aria-expanded") !== "false";
+  toggle.setAttribute("aria-expanded", String(!expanded));
+  form.hidden = expanded;
 });
 
 document.getElementById("incident-member-cancel-btn")?.addEventListener("click", () => {
   document.getElementById("incident-member-add-form").hidden = true;
+  document.getElementById("add-incident-member-btn").setAttribute("aria-expanded", "false");
 });
 
 document.getElementById("incident-member-add-form")?.addEventListener("submit", async (e) => {
@@ -597,6 +602,7 @@ document.getElementById("incident-member-add-form")?.addEventListener("submit", 
   try {
     await api(`/api/incidents/${incidentId}/members`, { method: "POST", body: JSON.stringify(payload) });
     document.getElementById("incident-member-add-form").hidden = true;
+    document.getElementById("add-incident-member-btn").setAttribute("aria-expanded", "false");
     document.getElementById("im-new-noi-dung").value = "";
     document.getElementById("im-new-nguyen-nhan").value = "";
     document.getElementById("incident-member-dialog").close();

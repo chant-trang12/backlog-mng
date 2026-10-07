@@ -2031,29 +2031,35 @@
     <div class="dialog-body">
       <h2 id="incident-member-dialog-title" style="margin:0">Nhân sự liên quan sự cố</h2>
       <p id="incident-member-dialog-sub" style="margin:2px 0 0;font-size:13px;color:#8a7f6a"></p>
-      <div class="row" style="justify-content:flex-end;margin:10px 0 6px">
-        <button type="button" id="add-incident-member-btn" class="write-action primary">+ Thêm nhân sự liên quan</button>
-      </div>
-      <form id="incident-member-add-form" style="padding:0" hidden>
-        <div class="field-row">
+
+      <!-- Khung đóng/mở được — cùng style "Thêm việc" ở dialog Nhân sự
+           tham gia (task-member-dialog) thay vì nút + form rời như trước. -->
+      <div class="tm-add-frame" style="margin-top:10px">
+        <button type="button" id="add-incident-member-btn" class="tm-add-frame-toggle" aria-expanded="false">
+          <span>Thêm nhân sự liên quan</span>
+          <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <form id="incident-member-add-form" style="padding:0;display:flex;flex-direction:column;gap:12px" hidden>
           <div>
             <label for="im-new-member">Tên nhân sự *</label>
             <select id="im-new-member" required></select>
           </div>
-        </div>
-        <div>
-          <label for="im-new-noi-dung">Nội dung công việc thực hiện</label>
-          <textarea id="im-new-noi-dung" rows="3"></textarea>
-        </div>
-        <div>
-          <label for="im-new-nguyen-nhan">Nguyên nhân gây nên sự cố</label>
-          <textarea id="im-new-nguyen-nhan" rows="3"></textarea>
-        </div>
-        <div class="actions">
-          <button type="button" id="incident-member-cancel-btn">Hủy</button>
-          <button type="submit" class="primary">Lưu</button>
-        </div>
-      </form>
+          <div class="field-row">
+            <div style="flex:1">
+              <label for="im-new-noi-dung">Nội dung công việc thực hiện</label>
+              <textarea id="im-new-noi-dung" rows="3" placeholder="Không bắt buộc"></textarea>
+            </div>
+            <div style="flex:1">
+              <label for="im-new-nguyen-nhan">Nguyên nhân gây nên sự cố</label>
+              <textarea id="im-new-nguyen-nhan" rows="3" placeholder="Không bắt buộc"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" id="incident-member-cancel-btn">Hủy</button>
+            <button type="submit" class="primary">+ Thêm nhân sự liên quan</button>
+          </div>
+        </form>
+      </div>
       <div class="table-wrap" style="max-height:50vh">
         <table id="incident-member-table">
           <thead>
