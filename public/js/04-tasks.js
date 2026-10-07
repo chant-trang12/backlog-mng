@@ -1065,17 +1065,18 @@ function renderTaskMembers() {
           ${
             // "Trừ điểm cá nhân" — nút 1 lần/dòng: trừ 10 điểm khỏi Điểm cá
             // nhân đang hiển thị (xem updateTaskMember, taskMember.service.ts).
-            // Sau khi trừ, nút thay bằng badge "Đã trừ điểm" (không trừ lại
-            // được). Backend tự Hạ KI nhân sự nếu tổng "Điểm cá nhân (Tính
-            // theo task)" của người đó trong tháng rơi <= 0. Nút × (bỏ khỏi
-            // task) xếp CÙNG DÒNG để đỡ dài cột hành động (user phản hồi).
-            graded
-              ? `<div style="display:flex;align-items:center;gap:4px">${
-                  tm.tru_diem_luc
-                    ? `<span class="status-badge status-tru-diem" style="font-size:0.72rem" title="Đã trừ 10 điểm cá nhân ngày ${formatDateDisplay(tm.tru_diem_luc)} — mỗi dòng chỉ trừ được 1 lần, ↺ reset không xóa được điểm trừ">Đã trừ điểm</span>`
-                    : `<button type="button" class="small btn-reject tm-tru-diem-btn" data-id="${tm.id}" style="white-space:nowrap" title="Trừ 10 điểm cá nhân của người này (mỗi dòng chỉ trừ được 1 lần)">Trừ điểm cá nhân</button>`
-                }<button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></div>`
-              : `<button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button>`
+            // HIỆN MỌI LÚC (kể cả task chưa chấm điểm — dòng chưa có điểm tự
+            // tính thì trừ trên 0, thành -10; backend taskMember.service.ts
+            // không chặn task chưa chấm). Sau khi trừ, nút thay bằng badge
+            // "Đã trừ điểm" (không trừ lại được). Backend tự Hạ KI nhân sự
+            // nếu tổng "Điểm cá nhân (Tính theo task)" của người đó trong
+            // tháng rơi <= 0. Nút × (bỏ khỏi task) xếp CÙNG DÒNG để đỡ dài
+            // cột hành động (user phản hồi).
+            `<div style="display:flex;align-items:center;gap:4px">${
+              tm.tru_diem_luc
+                ? `<span class="status-badge status-tru-diem" style="font-size:0.72rem" title="Đã trừ 10 điểm cá nhân ngày ${formatDateDisplay(tm.tru_diem_luc)} — mỗi dòng chỉ trừ được 1 lần, ↺ reset không xóa được điểm trừ">Đã trừ điểm</span>`
+                : `<button type="button" class="small btn-reject tm-tru-diem-btn" data-id="${tm.id}" style="white-space:nowrap" title="Trừ 10 điểm cá nhân của người này (mỗi dòng chỉ trừ được 1 lần)">Trừ điểm cá nhân</button>`
+            }<button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></div>`
           }
         </div>
       </td>
