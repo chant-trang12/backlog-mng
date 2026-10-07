@@ -266,7 +266,7 @@ function renderIncidents() {
       ${INCIDENT_COLUMNS.map((col) => `<td ${colHidden(col.key)}>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
-        <button class="small btn-edit write-action incident-member-btn" title="Nhân sự liên quan sự cố">Nhân sự liên quan</button>
+        <button class="small btn-col-menu write-action incident-member-btn" title="Nhân sự liên quan sự cố">Nhân sự liên quan</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
       </div></td>
     </tr>`,
