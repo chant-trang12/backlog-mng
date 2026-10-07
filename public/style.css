@@ -1708,6 +1708,15 @@ select.tm-phanloai-select {
   display: none;
 }
 
+/* CÙNG BUG như trên, nguồn khác: "dialog form" (bên dưới, padding/spacing
+   chuẩn cho mọi <form> trong <dialog>) đặt display:flex nên đè luôn
+   display:none của [hidden] trên #incident-member-add-form — khung "Thêm
+   nhân sự liên quan" (popup Sự cố) không đóng/mở được dù đã bỏ inline
+   display. Khai báo riêng để thắng "dialog form". */
+#incident-member-add-form[hidden] {
+  display: none;
+}
+
 /* Khung "Thêm nhân sự" trong dialog "Nhân sự tham gia" — nền khác màu để
    tách biệt khỏi bảng danh sách bên dưới. */
 .tm-add-frame {
