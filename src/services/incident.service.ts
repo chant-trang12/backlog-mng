@@ -84,8 +84,19 @@ export async function listIncidents(departmentId?: number | null): Promise<Incid
     .orderBy("periods.month", "desc")
     .orderBy("teams.name", "asc")
     .orderBy("incidents.id", "desc");
+  if (rows.length === 0) return [];
 
-  return rows as IncidentWithTeam[];
+  // Đếm số nhân sự liên quan mỗi sự cố (gộp theo incident_id) — 1 query
+  // duy nhất thay vì N+1, cùng kỹ thuật member_count ở listTasks()
+  // (task.service.ts) — hiện số lượng ở nút "Nhân sự liên quan" (FE).
+  const counts = await db("incident_members")
+    .whereIn("incident_id", rows.map((r: any) => r.id))
+    .groupBy("incident_id")
+    .select("incident_id")
+    .count({ c: "*" });
+  const countMap = new Map<number, number>(counts.map((r: any) => [Number(r.incident_id), Number(r.c)]));
+
+  return rows.map((r: any) => ({ ...r, member_count: countMap.get(r.id) ?? 0 })) as IncidentWithTeam[];
 }
 
 export async function updateIncident(

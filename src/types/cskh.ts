@@ -38,6 +38,7 @@ export interface Incident {
 export interface IncidentWithTeam extends Incident {
   team_name: string;
   period_label: string;
+  member_count: number;
 }
 
 export interface CreateIncidentInput {

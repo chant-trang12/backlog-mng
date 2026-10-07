@@ -266,7 +266,7 @@ function renderIncidents() {
       ${INCIDENT_COLUMNS.map((col) => `<td ${colHidden(col.key)}>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
-        <button class="small btn-col-menu write-action incident-member-btn" title="Nhân sự liên quan sự cố">Nhân sự liên quan</button>
+        <button class="small btn-col-menu write-action incident-member-btn" title="Nhân sự liên quan sự cố">Nhân sự liên quan${i.member_count ? ` (${i.member_count})` : ""}</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -577,6 +577,7 @@ function renderIncidentMembers() {
         await api(`/api/incident-members/${id}`, { method: "DELETE" });
         state.incidentMembers = state.incidentMembers.filter((m) => m.id !== id);
         renderIncidentMembers();
+        await loadIncidents(); // cập nhật số lượng ở nút "Nhân sự liên quan"
         showToast("Đã bỏ nhân sự khỏi sự cố.", "success");
       } catch (err) {
         showToast(err.message);
@@ -618,6 +619,7 @@ document.getElementById("incident-member-add-form")?.addEventListener("submit", 
     document.getElementById("im-new-noi-dung").value = "";
     document.getElementById("im-new-nguyen-nhan").value = "";
     document.getElementById("incident-member-dialog").close();
+    await loadIncidents(); // cập nhật số lượng ở nút "Nhân sự liên quan"
     showToast("Đã thêm nhân sự liên quan.", "success");
   } catch (err) {
     showToast(err.message);
