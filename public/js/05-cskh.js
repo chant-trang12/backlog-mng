@@ -599,7 +599,7 @@ document.getElementById("incident-member-add-form")?.addEventListener("submit", 
     document.getElementById("incident-member-add-form").hidden = true;
     document.getElementById("im-new-noi-dung").value = "";
     document.getElementById("im-new-nguyen-nhan").value = "";
-    await loadIncidentMembers();
+    document.getElementById("incident-member-dialog").close();
     showToast("Đã thêm nhân sự liên quan.", "success");
   } catch (err) {
     showToast(err.message);
