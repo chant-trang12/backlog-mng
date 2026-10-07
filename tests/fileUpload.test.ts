@@ -18,10 +18,17 @@ const EXE = Buffer.from([0x4d, 0x5a, 0x90, 0x00]); // MZ (Windows PE)
 const HTML = Buffer.from('<script>alert("xss")</script>', "latin1");
 const TEXT = Buffer.from("Spec: mô tả yêu cầu tính năng\n", "utf8");
 
+let frUniqueSeq = 0;
+
 async function createFeatureRequest(app: ReturnType<typeof createApp>): Promise<number> {
+  frUniqueSeq += 1;
   const created = await request(app)
     .post("/api/feature-requests")
-    .send({ he_thong: "CRM", tieu_de: "Test đính kèm ATTT", target_department_id: 1 });
+    .send({
+      he_thong: "CRM",
+      tieu_de: `Test đính kèm ATTT ${Date.now()}-${frUniqueSeq}`,
+      target_department_id: 1,
+    });
   expect(created.status).toBe(201);
   return created.body.id;
 }

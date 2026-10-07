@@ -55,6 +55,54 @@ export async function getFeatureRequest(id: number): Promise<FeatureRequestWithD
   return row ? (stripAttachmentData(row) as FeatureRequestWithDept) : undefined;
 }
 
+/**
+ * Chống trùng Tiêu đề (menu Yêu cầu tính năng): chuẩn hóa tiêu đề để so khớp
+ * — bỏ khoảng trắng thừa, không phân biệt hoa/thường. Dấu tiếng Việt vẫn có
+ * ý nghĩa ("Hội nghị" khác "Hoi nghi" là chủ đích).
+ */
+export function normalizeTieuDe(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Danh sách tiêu đề + phòng (đề xuất/đích) của các yêu cầu chưa bị xóa —
+ * dùng để kiểm tra trùng khi thêm mới/import. */
+export async function listActiveTieuDeIndex(): Promise<
+  { norm: string; departmentId: number | null; targetDepartmentId: number | null }[]
+> {
+  const rows = await db("feature_requests")
+    .where({ is_deleted: false })
+    .select("tieu_de", "department_id", "target_department_id");
+  return rows.map((r: any) => ({
+    norm: normalizeTieuDe(String(r.tieu_de ?? "")),
+    departmentId: r.department_id ?? null,
+    targetDepartmentId: r.target_department_id ?? null,
+  }));
+}
+
+/**
+ * Tiêu đề bị coi là TRÙNG khi đã có yêu cầu chưa xóa cùng tiêu đề (đã chuẩn
+ * hóa) và "cùng hộp thư hiển thị": bảng của phòng X hiển thị yêu cầu có
+ * department_id = X HOẶC target_department_id = X (xem listFeatureRequests)
+ * — nên 2 yêu cầu trùng tiêu đề chỉ nằm cùng 1 bảng khi phòng đề xuất hoặc
+ * phòng đích của yêu cầu mới trùng với phòng (đề xuất hoặc đích) của yêu cầu
+ * cũ. Khác hẳn phòng thì không cùng bảng hiển thị -> cho phép thêm.
+ */
+export function isDuplicateTieuDe(
+  index: { norm: string; departmentId: number | null; targetDepartmentId: number | null }[],
+  tieuDe: string,
+  opts: { departmentId: number | null; targetDepartmentId: number | null },
+): boolean {
+  const norm = normalizeTieuDe(tieuDe);
+  if (!norm) return false;
+  return index.some((r) => {
+    if (r.norm !== norm) return false;
+    const sameBox =
+      (opts.departmentId != null && (r.departmentId === opts.departmentId || r.targetDepartmentId === opts.departmentId)) ||
+      (opts.targetDepartmentId != null && (r.departmentId === opts.targetDepartmentId || r.targetDepartmentId === opts.targetDepartmentId));
+    return sameBox;
+  });
+}
+
 export async function createFeatureRequest(input: CreateFeatureRequestInput): Promise<FeatureRequestWithDept> {
   const [created] = await db("feature_requests")
     .insert({

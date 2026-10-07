@@ -1,5 +1,5 @@
 import type ExcelJS from "exceljs";
-import { createFeatureRequest } from "./featureRequest.service.js";
+import { createFeatureRequest, isDuplicateTieuDe, listActiveTieuDeIndex, normalizeTieuDe } from "./featureRequest.service.js";
 import { listDepartments } from "./department.service.js";
 import { buildTemplateWorkbook, normalizeHeader, parseDateToIso, parseFirstSheet, pickColumn } from "./workbook.util.js";
 import { isDepartmentInScope, type DataScope } from "./scope.util.js";
@@ -193,6 +193,11 @@ export async function importFeatureRequestsFromWorkbook(
   const result: ImportFeatureRequestsResult = { imported: 0, skipped: [] };
   const val = (row: Record<string, string>, c: string | undefined) => (c ? (row[c] ?? "").trim() : "");
 
+  // Chống trùng Tiêu đề: nạp các tiêu đề đang hiển thị (chưa xóa) 1 lần, và
+  // bổ sung dần tiêu đề của các dòng đã nhập trong lần import này — dòng
+  // trùng (kể cả trùng trong file) bị bỏ qua kèm lý do.
+  const titleIndex = await listActiveTieuDeIndex();
+
   for (let i = 0; i < rows.length; i++) {
     const rowNo = i + 2;
     const row = rows[i];
@@ -254,6 +259,27 @@ export async function importFeatureRequestsFromWorkbook(
 
     // Tiêu đề (bắt buộc ở DB) — lấy từ cột "Tiêu đề"; nếu trống tự lấy từ
     // Hoạt động/nghiệp vụ, fallback Đề xuất/Mô tả (cắt 200 ký tự).
+    const tieuDe = (val(row, col("tieu_de")) || hoatDong || deXuat || moTa).slice(0, 200);
+
+    // Trùng Tiêu đề (với yêu cầu đang có HOẶC với dòng đã nhập trước đó
+    // trong cùng file) -> bỏ qua dòng này, không thêm trùng.
+    if (isDuplicateTieuDe(titleIndex, tieuDe, {
+      departmentId: deptId ?? null,
+      targetDepartmentId: targetId ?? null,
+    })) {
+      result.skipped.push({
+        row: rowNo,
+        label,
+        reason: `Trùng Tiêu đề với yêu cầu đã có trong bảng dữ liệu`,
+      });
+      continue;
+    }
+    titleIndex.push({
+      norm: normalizeTieuDe(tieuDe),
+      departmentId: deptId ?? null,
+      targetDepartmentId: targetId ?? null,
+    });
+
     const rawPriority = val(row, col("uu_tien"));
     const priority = PRIORITIES.find((p) => p.toLowerCase() === rawPriority.toLowerCase());
 
@@ -261,7 +287,7 @@ export async function importFeatureRequestsFromWorkbook(
       // "Hệ thống cần cải tiến (nếu có)" — cột "(nếu có)" nên để trống được
       // ("" thỏa NOT NULL); hiển thị "—" ở bảng, gán sau qua Sửa nếu cần.
       he_thong: val(row, col("he_thong")),
-      tieu_de: (val(row, col("tieu_de")) || hoatDong || deXuat || moTa).slice(0, 200),
+      tieu_de: tieuDe,
       mo_ta: moTa || undefined,
       department_id: deptId,
       target_department_id: targetId,

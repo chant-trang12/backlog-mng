@@ -16,6 +16,8 @@ import {
   setFeatureRequestAttachment,
   transferFeatureRequest,
   updateFeatureRequest,
+  isDuplicateTieuDe,
+  listActiveTieuDeIndex,
 } from "../services/featureRequest.service.js";
 import { isNonEmptyText, parsePositiveInt, pickFields } from "../utils/validate.js";
 import { detectAttachmentMime, validateAttachmentFile } from "../utils/fileValidation.js";
@@ -115,6 +117,17 @@ export async function createFeatureRequestHandler(req: Request, res: Response) {
   const payload = pickFields(req.body, FEATURE_REQUEST_FIELDS) as unknown as CreateFeatureRequestInput;
   payload.target_department_id = targetDepartmentId;
   if (!scope.all) payload.department_id = scope.departmentId;
+  // Chống trùng Tiêu đề: đã có yêu cầu cùng tiêu đề đang hiển thị (cùng
+  // phòng đích/đề xuất) thì không thêm — báo lỗi để FE hiện toast.
+  const titleIndex = await listActiveTieuDeIndex();
+  if (isDuplicateTieuDe(titleIndex, payload.tieu_de ?? "", {
+    departmentId: payload.department_id ?? null,
+    targetDepartmentId: targetDepartmentId,
+  })) {
+    return res.status(400).json({
+      error: `Tiêu đề "${String(payload.tieu_de).trim()}" đã tồn tại trong danh sách Yêu cầu tính năng — không thêm trùng.`,
+    });
+  }
   const created = await createFeatureRequest(payload);
   res.status(201).json(created);
 }
