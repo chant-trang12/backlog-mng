@@ -1,7 +1,10 @@
 import { Router } from "express";
+import express from "express";
 import {
   createIncidentHandler,
   deleteIncidentHandler,
+  downloadIncidentTemplateHandler,
+  importIncidentsHandler,
   listIncidentsHandler,
   updateIncidentHandler,
 } from "../controllers/incident.controller.js";
@@ -20,6 +23,13 @@ import {
 
 const router = Router();
 
+// Route import đặt TRƯỚC "/incidents/:id" để không bị ":id" bắt hết
+router.get("/incidents/import-template", downloadIncidentTemplateHandler);
+router.post(
+  "/incidents/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importIncidentsHandler,
+);
 router.post("/incidents", createIncidentHandler);
 router.get("/incidents", listIncidentsHandler);
 router.put("/incidents/:id", updateIncidentHandler);

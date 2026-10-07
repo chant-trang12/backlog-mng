@@ -5,10 +5,16 @@ import {
   listIncidents,
   updateIncident,
 } from "../services/incident.service.js";
+import {
+  buildIncidentImportTemplate,
+  importIncidentsFromWorkbook,
+} from "../services/incident-import.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
 import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 
 function scopeOf(req: Request): DataScope {
   return req.dataScope ?? { all: true, departmentId: null };
@@ -77,4 +83,34 @@ export async function deleteIncidentHandler(req: Request, res: Response) {
   const ok = await deleteIncident(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy sự cố" });
   res.status(204).send();
+}
+
+export async function downloadIncidentTemplateHandler(_req: Request, res: Response) {
+  const buffer = await buildIncidentImportTemplate();
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="mau-su-co.xlsx"`);
+  res.send(Buffer.from(buffer));
+}
+
+export async function importIncidentsHandler(req: Request, res: Response) {
+  const buffer = req.body;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    return res.status(400).json({ error: "Không nhận được nội dung file" });
+  }
+  if (buffer.length > MAX_IMPORT_BYTES) {
+    return res.status(400).json({ error: "File vượt quá 20MB" });
+  }
+  const teamId = Number(req.query.team_id);
+  const team = await getTeam(teamId);
+  if (!team) return res.status(400).json({ error: "Hãy chọn team để nhập sự cố" });
+  const periodId = Number(req.query.period_id);
+  const period = await getPeriod(periodId);
+  if (!period) return res.status(400).json({ error: "Hãy chọn tháng để nhập sự cố" });
+
+  try {
+    const result = await importIncidentsFromWorkbook(buffer, periodId, teamId, scopeOf(req));
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi đọc file" });
+  }
 }

@@ -113,11 +113,28 @@ export function cellToText(cell: ExcelJS.Cell): string {
   return String(value);
 }
 
+// Như cellToText nhưng Date giữ cả GIỜ:PHÚT ("dd/mm/yyyy hh:mm") — dùng cho
+// các cột thời điểm (giờ/phút) khi import, ví dụ "Thời điểm ghi nhận sự cố".
+export function cellToDateTimeText(cell: ExcelJS.Cell): string {
+  const value = cell.value;
+  if (value instanceof Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const time = `${pad(value.getHours())}:${pad(value.getMinutes())}`;
+    const date = `${pad(value.getDate())}/${pad(value.getMonth() + 1)}/${value.getFullYear()}`;
+    return time === "00:00" ? date : `${date} ${time}`;
+  }
+  return cellToText(cell);
+}
+
 // Đọc worksheet đầu tiên: dòng 1 là tiêu đề cột, các dòng sau là dữ liệu.
 // Trả về mảng bản ghi keyed theo tiêu đề cột (đã trim). Dòng trống bị bỏ qua.
+// opts.dateWithTime: đọc ô kiểu Date kèm giờ:phút (cho cột thời điểm sự cố).
 export async function parseFirstSheet(
   buffer: Buffer,
+  opts: { dateWithTime?: boolean } = {},
 ): Promise<{ headers: string[]; rows: Record<string, string>[] }> {
+  const toText = (cell: ExcelJS.Cell) =>
+    opts.dateWithTime ? cellToDateTimeText(cell) : cellToText(cell);
   const workbook = new ExcelJS.Workbook();
   // exceljs khai báo tham số Buffer không khớp kiểu Buffer<ArrayBufferLike>
   // của @types/node hiện tại — tương thích lúc chạy, chỉ lệch kiểu tĩnh.
@@ -129,7 +146,7 @@ export async function parseFirstSheet(
   const headerRow = sheet.getRow(1);
   const headers: string[] = [];
   headerRow.eachCell({ includeEmpty: false }, (cell) => {
-    const text = cellToText(cell).trim();
+    const text = toText(cell).trim();
     if (text) headers.push(text);
   });
 
@@ -137,7 +154,7 @@ export async function parseFirstSheet(
   for (let r = 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     if (row.cellCount === 0) continue;
-    const isEmpty = headers.every((_, i) => cellToText(row.getCell(i + 1)).trim() === "");
+    const isEmpty = headers.every((_, i) => toText(row.getCell(i + 1)).trim() === "");
     if (isEmpty) continue;
 
     // Excel gộp ô theo chiều dọc (VD: cột Team/Nhiệm vụ gộp 3 dòng cho 1
@@ -151,7 +168,7 @@ export async function parseFirstSheet(
     // vi giữ nguyên như cũ (isMerged luôn false).
     let firstNonEmptyCol = -1;
     for (let i = 0; i < headers.length; i++) {
-      if (cellToText(row.getCell(i + 1)).trim() !== "") {
+      if (toText(row.getCell(i + 1)).trim() !== "") {
         firstNonEmptyCol = i;
         break;
       }
@@ -168,7 +185,7 @@ export async function parseFirstSheet(
         const cell = row.getCell(i + 1);
         const isFreshHere = !(cell.isMerged && Number(cell.master.row) < r);
         if (!isFreshHere) return; // kế thừa từ ô gộp — đã có sẵn ở dòng gốc
-        const val = cellToText(cell).trim();
+        const val = toText(cell).trim();
         if (!val || target[header] === val) return;
         target[header] = target[header] ? `${target[header]}\n${val}` : val;
       });
@@ -177,7 +194,7 @@ export async function parseFirstSheet(
 
     const rowData: Record<string, string> = {};
     headers.forEach((header, i) => {
-      rowData[header] = cellToText(row.getCell(i + 1));
+      rowData[header] = toText(row.getCell(i + 1));
     });
     rows.push(rowData);
   }

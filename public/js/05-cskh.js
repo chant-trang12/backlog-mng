@@ -216,6 +216,80 @@ el.incidentForm.addEventListener("submit", async (e) => {
   }
 });
 
+// -- Nhập sự cố từ Excel --
+
+// File mẫu: 24 cột khớp bảng dữ liệu (xem INCIDENT_IMPORT_HEADERS phía BE) —
+// trình duyệt tự tải nhờ header Content-Disposition của API.
+document.getElementById("download-incident-template-btn")?.addEventListener("click", () => {
+  window.location.href = "/api/incidents/import-template";
+});
+
+function openIncidentImportDialog() {
+  if (state.teams.length === 0) {
+    showToast("Hãy khai báo ít nhất một team trước.");
+    return;
+  }
+  if (state.periods.length === 0) {
+    showToast("Hãy tạo ít nhất một tháng backlog trước.");
+    return;
+  }
+  const periodSelectEl = document.getElementById("inc-import-period");
+  periodSelectEl.innerHTML = periodOptionsHtml();
+  periodSelectEl.value = String(state.currentPeriodId ?? state.periods[0]?.id ?? "");
+  const teamSelectEl = document.getElementById("inc-import-team");
+  teamSelectEl.innerHTML = teamOptionsHtml();
+  teamSelectEl.value = String(state.currentTeamId ?? state.teams[0]?.id ?? "");
+  document.getElementById("incident-import-dialog").showModal();
+}
+
+document.getElementById("import-incidents-btn")?.addEventListener("click", openIncidentImportDialog);
+document.getElementById("incident-import-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("incident-import-dialog").close();
+});
+document.getElementById("incident-import-file-btn")?.addEventListener("click", () => {
+  document.getElementById("incident-import-input").click();
+});
+
+// Body là bytes thô .xlsx — fetch() thẳng thay vì api() (api() ghim
+// Content-Type: application/json).
+document.getElementById("incident-import-input")?.addEventListener("change", async (e) => {
+  const input = e.target;
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  const periodId = Number(document.getElementById("inc-import-period").value);
+  const teamId = Number(document.getElementById("inc-import-team").value);
+  try {
+    const buffer = await file.arrayBuffer();
+    const res = await fetch(`/api/incidents/import?period_id=${periodId}&team_id=${teamId}`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Lỗi ${res.status}`);
+    }
+    const result = await res.json();
+    document.getElementById("incident-import-dialog").close();
+    await loadIncidents();
+    let msg = `Đã nhập ${result.imported} sự cố.`;
+    if (result.skipped?.length) {
+      const detail = result.skipped
+        .slice(0, 5)
+        .map((s) => `dòng ${s.row}${s.label ? ` (${s.label})` : ""}: ${s.reason}`)
+        .join("; ");
+      const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+      msg = `${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`;
+      showToast(msg, "error");
+    } else {
+      showToast(msg, "success");
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // -- Tuân thủ (trang Team & Nhân sự) --
 
 async function loadComplianceRecords() {

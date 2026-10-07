@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
+import ExcelJS from "exceljs";
 import { createApp } from "../src/app.js";
+
+// Sinh buffer .xlsx cho test import (giống pattern tests/roadmap.test.ts).
+async function xlsxBuffer(headers: string[], rows: (string | number)[][]): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const sheet = wb.addWorksheet("Sheet1");
+  sheet.addRow(headers);
+  rows.forEach((r) => sheet.addRow(r));
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+function binaryParser(res: request.Response, callback: (err: Error | null, body?: Buffer) => void) {
+  res.setEncoding("binary");
+  let data = "";
+  res.on("data", (c) => (data += c));
+  res.on("end", () => callback(null, Buffer.from(data, "binary")));
+}
 
 async function makePeriod(app: ReturnType<typeof createApp>, year: number, month: number) {
   const res = await request(app).post("/api/periods").send({ year, month });
@@ -93,6 +110,86 @@ describe("CSKH: Sự cố", () => {
       .post("/api/incidents")
       .send({ team_id: teamId, period_id: 999999, ten_su_co: "x" });
     expect(badPeriod.status).toBe(400);
+  });
+
+  it("serves an import template with the 24 data columns and imports rows from an Excel file", async () => {
+    const app = createApp();
+
+    // File mẫu: 200 + đúng 24 cột theo thứ tự bảng dữ liệu.
+    const tpl = await request(app)
+      .get("/api/incidents/import-template")
+      .buffer(true)
+      .parse(binaryParser);
+    expect(tpl.status).toBe(200);
+    expect(tpl.headers["content-type"]).toContain("spreadsheetml");
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(tpl.body as Buffer);
+    const headerRow = wb.worksheets[0].getRow(1);
+    const headerTexts: string[] = [];
+    headerRow.eachCell((cell) => headerTexts.push(String(cell.value)));
+    expect(headerTexts.length).toBe(24);
+    expect(headerTexts[0]).toBe("Tạo bởi");
+    expect(headerTexts[2]).toBe("Tên sự cố");
+    expect(headerTexts[7]).toBe("Thời Điểm Ghi Nhận Sự Cố");
+    expect(headerTexts[23]).toBe("Diễn giải lý do vượt SLA");
+
+    // Import: dòng 1 hợp lệ (kèm thời điểm dd/mm/yyyy hh:mm), dòng 2 thiếu
+    // Tên sự cố -> bị bỏ qua, dòng 3 hợp lệ.
+    const periodId = await makePeriod(app, 2041, 3);
+    const teamId = await makeTeam(app, "CSKH import team", periodId);
+    const buf = await xlsxBuffer(
+      ["Tạo bởi", "Tên sự cố", "Nguyên nhân", "Thời Điểm Ghi Nhận Sự Cố", "Link Ticket", "Tình trạng"],
+      [
+        ["QA A", "Su co import 1", "Loi he thong", "07/10/2026 08:30", "https://t.example/1", "Đang xử lý"],
+        ["QA B", "", "Thiếu tên", "07/10/2026 09:00", "", ""],
+        ["QA C", "Su co import 2", "", "2026-10-08 14:05", "", ""],
+      ],
+    );
+    const imported = await request(app)
+      .post(`/api/incidents/import?period_id=${periodId}&team_id=${teamId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(imported.status).toBe(201);
+    expect(imported.body.imported).toBe(2);
+    expect(imported.body.skipped).toHaveLength(1);
+    expect(imported.body.skipped[0].row).toBe(3);
+    expect(imported.body.skipped[0].reason).toContain("Tên sự cố");
+
+    const list = await request(app).get("/api/incidents");
+    const rows = list.body.filter((i: { team_id: number }) => i.team_id === teamId);
+    expect(rows).toHaveLength(2);
+    const first = rows.find((i: { ten_su_co: string }) => i.ten_su_co === "Su co import 1");
+    const second = rows.find((i: { ten_su_co: string }) => i.ten_su_co === "Su co import 2");
+    expect(first.tao_boi).toBe("QA A");
+    expect(first.thoi_diem_ghi_nhan).toBe("2026-10-07T08:30"); // dd/mm/yyyy hh:mm -> datetime-local
+    expect(first.link_ticket).toBe("https://t.example/1");
+    expect(second.thoi_diem_ghi_nhan).toBe("2026-10-08T14:05"); // yyyy-mm-dd hh:mm
+  });
+
+  it("rejects an incident import missing the 'Tên sự cố' column, or without team/period", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2041, 4);
+    const teamId = await makeTeam(app, "CSKH import invalid team", periodId);
+
+    const buf = await xlsxBuffer(["Tạo bởi", "Hiện tượng"], [["QA", "x"]]);
+    const res = await request(app)
+      .post(`/api/incidents/import?period_id=${periodId}&team_id=${teamId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("Tên sự cố");
+
+    const noTeam = await request(app)
+      .post(`/api/incidents/import?period_id=${periodId}&team_id=999999`)
+      .set("Content-Type", "application/octet-stream")
+      .send(buf);
+    expect(noTeam.status).toBe(400);
+
+    const badFile = await request(app)
+      .post(`/api/incidents/import?period_id=${periodId}&team_id=${teamId}`)
+      .set("Content-Type", "application/octet-stream")
+      .send("khong phai excel");
+    expect(badFile.status).toBe(400);
   });
 });
 

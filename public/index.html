@@ -793,7 +793,11 @@
           <section class="card" id="cskh-tab-incidents">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Sự cố</h2>
-              <button id="add-incident-btn" class="write-action primary">+ Thêm sự cố</button>
+              <div class="row" style="gap:8px">
+                <button id="download-incident-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
+                <button id="import-incidents-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
+                <button id="add-incident-btn" class="write-action primary">+ Thêm sự cố</button>
+              </div>
             </div>
             <div class="table-wrap">
               <table id="incident-table">
@@ -1979,6 +1983,31 @@
       </div>
     </form>
   </dialog>
+
+  <!-- Popup "Nhập Excel" Sự cố: chọn Tháng + Team gán cho toàn bộ dòng trong
+       file (file mẫu không có cột Tháng/Team), rồi bấm chọn file .xlsx -->
+  <dialog id="incident-import-dialog">
+    <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+    <form id="incident-import-form">
+      <h2 style="margin:0">Nhập sự cố từ Excel</h2>
+      <div class="field-row">
+        <div>
+          <label for="inc-import-period">Tháng *</label>
+          <select id="inc-import-period" required></select>
+        </div>
+        <div>
+          <label for="inc-import-team">Team *</label>
+          <select id="inc-import-team" required></select>
+        </div>
+      </div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--muted,#777)">Toàn bộ dòng trong file sẽ được gán cho Tháng + Team chọn ở trên. File cần đúng theo file mẫu: 1 dòng tiêu đề, mỗi dòng dưới là 1 sự cố, cột "Tên sự cố" là bắt buộc.</p>
+      <div class="actions">
+        <button type="button" id="incident-import-cancel-btn">Hủy</button>
+        <button type="button" id="incident-import-file-btn" class="primary">Chọn file Excel…</button>
+      </div>
+    </form>
+  </dialog>
+  <input type="file" id="incident-import-input" accept=".xlsx,.xlsm" hidden />
 
   <dialog id="compliance-dialog">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
