@@ -9,6 +9,14 @@ import {
   updateIncidentHandler,
 } from "../controllers/incident.controller.js";
 import {
+  addIncidentMemberHandler,
+  deleteIncidentMemberHandler,
+  haKiIncidentMemberHandler,
+  listIncidentMembersHandler,
+  tangKiIncidentMemberHandler,
+  truDiemIncidentMemberHandler,
+} from "../controllers/incident.controller.js";
+import {
   createTicketHandler,
   deleteTicketHandler,
   listTicketsHandler,
@@ -34,6 +42,14 @@ router.post("/incidents", createIncidentHandler);
 router.get("/incidents", listIncidentsHandler);
 router.put("/incidents/:id", updateIncidentHandler);
 router.delete("/incidents/:id", deleteIncidentHandler);
+
+// Nhân sự liên quan sự cố (popup "Nhân sự liên quan")
+router.get("/incidents/:id/members", listIncidentMembersHandler);
+router.post("/incidents/:id/members", addIncidentMemberHandler);
+router.delete("/incident-members/:id", deleteIncidentMemberHandler);
+router.post("/incident-members/:id/ha-ki", haKiIncidentMemberHandler);
+router.post("/incident-members/:id/tang-ki", tangKiIncidentMemberHandler);
+router.post("/incident-members/:id/tru-diem", truDiemIncidentMemberHandler);
 
 router.post("/tickets", createTicketHandler);
 router.get("/tickets", listTicketsHandler);

@@ -193,6 +193,102 @@ describe("CSKH: Sự cố", () => {
   });
 });
 
+describe("CSKH: Nhân sự liên quan sự cố", () => {
+  async function makeIncident(app: ReturnType<typeof createApp>, periodId: number, teamId: number, ten: string) {
+    const res = await request(app).post("/api/incidents").send({ team_id: teamId, period_id: periodId, ten_su_co: ten });
+    return res.body.id as number;
+  }
+  async function makeMember(app: ReturnType<typeof createApp>, periodId: number, teamId: number, name: string) {
+    const res = await request(app).post("/api/members").send({ name, period_id: periodId, team_id: teamId });
+    return res.body.id as number;
+  }
+
+  it("adds a related member, lists with member info, blocks duplicates, and removes", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2042, 1);
+    const teamId = await makeTeam(app, "IM team", periodId);
+    const incidentId = await makeIncident(app, periodId, teamId, "Su co IM 1");
+    const memberId = await makeMember(app, periodId, teamId, "Nguyen Van IM");
+
+    const created = await request(app)
+      .post(`/api/incidents/${incidentId}/members`)
+      .send({ member_id: memberId, noi_dung_cong_viec: "Vận hành hệ thống", nguyen_nhan: "Sơ suất vận hành" });
+    expect(created.status).toBe(201);
+    expect(created.body.member_name).toBe("Nguyen Van IM");
+    expect(created.body.noi_dung_cong_viec).toBe("Vận hành hệ thống");
+
+    const dup = await request(app)
+      .post(`/api/incidents/${incidentId}/members`)
+      .send({ member_id: memberId });
+    expect(dup.status).toBe(400);
+    expect(dup.body.error).toContain("đã có");
+
+    const badMember = await request(app)
+      .post(`/api/incidents/${incidentId}/members`)
+      .send({ member_id: 999999 });
+    expect(badMember.status).toBe(400);
+
+    const list = await request(app).get(`/api/incidents/${incidentId}/members`);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].member_name).toBe("Nguyen Van IM");
+
+    const del = await request(app).delete(`/api/incident-members/${created.body.id}`);
+    expect(del.status).toBe(204);
+    const listAfter = await request(app).get(`/api/incidents/${incidentId}/members`);
+    expect(listAfter.body).toHaveLength(0);
+  });
+
+  it("Hạ KI records the auto reason, Tăng KI flips the flags, Trừ điểm records 50 and blocks a second time", async () => {
+    const app = createApp();
+    const periodId = await makePeriod(app, 2042, 2);
+    const teamId = await makeTeam(app, "IM action team", periodId);
+    const incidentId = await makeIncident(app, periodId, teamId, "Su co han ki");
+    const memberId = await makeMember(app, periodId, teamId, "Tran Thi IM");
+    const row = await request(app)
+      .post(`/api/incidents/${incidentId}/members`)
+      .send({ member_id: memberId });
+    const rowId = row.body.id;
+
+    // Hạ KI — lý do tự sinh theo tên sự cố
+    const haKi = await request(app).post(`/api/incident-members/${rowId}/ha-ki`);
+    expect(haKi.status).toBe(200);
+    expect(haKi.body.member_ha_ki).toBe(true);
+    expect(haKi.body.member_tang_ki).toBe(false);
+    const memberAfterHaKi = (await request(app).get(`/api/members?period_id=${periodId}`)).body
+      .find((m: { id: number }) => m.id === memberId);
+    expect(memberAfterHaKi.ha_ki).toBe(true);
+    expect(memberAfterHaKi.ki_ly_do).toBe('Hạ KI do gây ra sự cố "Su co han ki"');
+
+    // Tăng KI — bật cờ tang_ki, tự tắt hạ_ki
+    const tangKi = await request(app).post(`/api/incident-members/${rowId}/tang-ki`);
+    expect(tangKi.status).toBe(200);
+    expect(tangKi.body.member_tang_ki).toBe(true);
+    expect(tangKi.body.member_ha_ki).toBe(false);
+    const memberAfterTangKi = (await request(app).get(`/api/members?period_id=${periodId}`)).body
+      .find((m: { id: number }) => m.id === memberId);
+    expect(memberAfterTangKi.tang_ki).toBe(true);
+    expect(memberAfterTangKi.ha_ki).toBe(false);
+    expect(memberAfterTangKi.ki_ly_do).toBe('Tăng KI do xử lý sự cố "Su co han ki"');
+
+    // Trừ điểm cá nhân — 50 điểm, mỗi dòng 1 lần
+    const truDiem = await request(app).post(`/api/incident-members/${rowId}/tru-diem`);
+    expect(truDiem.status).toBe(200);
+    expect(truDiem.body.tru_diem_so_diem).toBe(50);
+    expect(truDiem.body.tru_diem_luc).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const again = await request(app).post(`/api/incident-members/${rowId}/tru-diem`);
+    expect(again.status).toBe(400);
+    expect(again.body.error).toContain("chỉ trừ được 1 lần");
+  });
+
+  it("rejects actions for a missing incident-member row", async () => {
+    const app = createApp();
+    for (const path of ["/api/incident-members/999999/ha-ki", "/api/incident-members/999999/tang-ki", "/api/incident-members/999999/tru-diem"]) {
+      const res = await request(app).post(path);
+      expect(res.status).toBe(404);
+    }
+  });
+});
+
 describe("CSKH: Hỗ trợ ticket", () => {
   it("computes ty_le = dung_han / tong_ticket", async () => {
     const app = createApp();

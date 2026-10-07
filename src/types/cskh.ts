@@ -71,6 +71,30 @@ export interface CreateIncidentInput {
 
 export type UpdateIncidentInput = Partial<CreateIncidentInput>;
 
+// Nhân sự liên quan sự cố (popup "Nhân sự liên quan" trang Sự cố) — join
+// thêm cột members để hiển thị tên/chức vụ + trạng thái KI hiện tại.
+export interface IncidentMember {
+  id: number;
+  incident_id: number;
+  member_id: number;
+  noi_dung_cong_viec: string | null;
+  nguyen_nhan: string | null;
+  tru_diem_luc: string | null;
+  tru_diem_so_diem: number | null;
+  created_at: string;
+  updated_at: string;
+  member_name: string;
+  member_chuc_vu: string | null;
+  member_ha_ki: boolean;
+  member_tang_ki: boolean;
+}
+
+export interface CreateIncidentMemberInput {
+  member_id: number;
+  noi_dung_cong_viec?: string | null;
+  nguyen_nhan?: string | null;
+}
+
 export interface Ticket {
   id: number;
   period_id: number;

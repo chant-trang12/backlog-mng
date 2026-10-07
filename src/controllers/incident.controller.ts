@@ -9,6 +9,14 @@ import {
   buildIncidentImportTemplate,
   importIncidentsFromWorkbook,
 } from "../services/incident-import.service.js";
+import {
+  addIncidentMember,
+  haKiIncidentMember,
+  listIncidentMembers,
+  removeIncidentMember,
+  tangKiIncidentMember,
+  truDiemIncidentMember,
+} from "../services/incidentMember.service.js";
 import { getTeam } from "../services/team.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
@@ -112,5 +120,94 @@ export async function importIncidentsHandler(req: Request, res: Response) {
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi đọc file" });
+  }
+}
+
+// ---- Nhân sự liên quan sự cố ----
+
+export async function listIncidentMembersHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  res.json(await listIncidentMembers(id));
+}
+
+export async function addIncidentMemberHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const body = req.body ?? {};
+  const memberId = Number(body.member_id);
+  if (!Number.isFinite(memberId)) {
+    return res.status(400).json({ error: "Trường 'member_id' không hợp lệ" });
+  }
+  try {
+    const member = await addIncidentMember(
+      id,
+      {
+        member_id: memberId,
+        noi_dung_cong_viec: body.noi_dung_cong_viec,
+        nguyen_nhan: body.nguyen_nhan,
+      },
+      scopeOf(req),
+    );
+    res.status(201).json(member);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi thêm nhân sự" });
+  }
+}
+
+export async function deleteIncidentMemberHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    const ok = await removeIncidentMember(id, scopeOf(req));
+    if (!ok) return res.status(404).json({ error: "Không tìm thấy dòng nhân sự liên quan" });
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi xóa nhân sự" });
+  }
+}
+
+function requireId(req: Request, res: Response): number | null {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "id không hợp lệ" });
+    return null;
+  }
+  return id;
+}
+
+export async function haKiIncidentMemberHandler(req: Request, res: Response) {
+  const id = requireId(req, res);
+  if (id === null) return;
+  try {
+    const member = await haKiIncidentMember(id, scopeOf(req));
+    if (!member) return res.status(404).json({ error: "Không tìm thấy dòng nhân sự liên quan" });
+    res.json(member);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi hạ KI" });
+  }
+}
+
+export async function tangKiIncidentMemberHandler(req: Request, res: Response) {
+  const id = requireId(req, res);
+  if (id === null) return;
+  try {
+    const member = await tangKiIncidentMember(id, scopeOf(req));
+    if (!member) return res.status(404).json({ error: "Không tìm thấy dòng nhân sự liên quan" });
+    res.json(member);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi tăng KI" });
+  }
+}
+
+export async function truDiemIncidentMemberHandler(req: Request, res: Response) {
+  const id = requireId(req, res);
+  if (id === null) return;
+  try {
+    const member = await truDiemIncidentMember(id, scopeOf(req));
+    if (!member) return res.status(404).json({ error: "Không tìm thấy dòng nhân sự liên quan" });
+    res.json(member);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Lỗi trừ điểm" });
   }
 }

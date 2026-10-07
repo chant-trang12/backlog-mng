@@ -39,6 +39,7 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "noiquy-overrides": { module: "Team & Nhân sự", entity: "Miễn trừ nội quy" },
   "danh-gia-records": { module: "Team & Nhân sự", entity: "Đánh giá" },
   incidents: { module: "CSKH", entity: "Sự cố", table: "incidents", nameColumn: "ten_su_co" },
+  "incident-members": { module: "CSKH", entity: "Nhân sự liên quan sự cố" },
   tickets: { module: "CSKH", entity: "Ticket hỗ trợ" },
   "creation-rates": { module: "CSKH", entity: "Tỷ lệ khởi tạo" },
   "support-records": { module: "CSKH", entity: "Hỗ trợ" },
@@ -67,6 +68,7 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
 const SUB_RESOURCE_LABELS: Record<string, { module: string; entity: string }> = {
   "tasks/members": { module: "Backlog", entity: "Nhân sự tham gia task" },
   "roadmap-items/details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
+  "incidents/members": { module: "CSKH", entity: "Nhân sự liên quan sự cố" },
 };
 
 // Segment CUỐI (khi KHÔNG phải số, VD "approve"/"delete-selected") -> hành
@@ -92,6 +94,9 @@ const VERB_LABELS: Record<string, { action: ActionLogType; verb: string }> = {
   cells: { action: "cap_nhat", verb: "Sửa" }, // PUT /ranking-config/cells
   rows: { action: "tao_moi", verb: "Thêm dòng" },
   columns: { action: "tao_moi", verb: "Thêm cột" },
+  "ha-ki": { action: "cap_nhat", verb: "Hạ KI" }, // POST /incident-members/:id/ha-ki
+  "tang-ki": { action: "cap_nhat", verb: "Tăng KI" },
+  "tru-diem": { action: "cap_nhat", verb: "Trừ điểm cá nhân" },
 };
 
 const DEFAULT_VERB: Record<string, { action: ActionLogType; verb: string }> = {

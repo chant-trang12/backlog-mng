@@ -435,6 +435,27 @@ export async function migrateSoftDeleteCskh(): Promise<void> {
       else table.text(col.key);
     });
   }
+
+  // 5b. incident_members — nhân sự liên quan sự cố (popup "Nhân sự liên quan"
+  // trang Sự cố, tương tự "Nhân sự tham gia" của Nhiệm vụ). Xóa bằng cách bỏ
+  // khỏi sự cố = xóa hẳn dòng (không cần soft delete). unique(incident_id,
+  // member_id): 1 nhân sự chỉ xuất hiện 1 lần trong 1 sự cố.
+  const hasIncidentMembers = await db.schema.hasTable("incident_members");
+  if (!hasIncidentMembers) {
+    await db.schema.createTable("incident_members", (table) => {
+      table.increments("id").primary();
+      table.integer("incident_id").notNullable().references("id").inTable("incidents").onDelete("CASCADE");
+      table.integer("member_id").notNullable().references("id").inTable("members").onDelete("NO ACTION");
+      table.text("noi_dung_cong_viec"); // Nội dung công việc thực hiện
+      table.text("nguyen_nhan"); // Nguyên nhân gây nên sự cố
+      // Trừ điểm cá nhân (action "Trừ điểm cá nhân" — trừ 50, mỗi dòng 1 lần):
+      table.string("tru_diem_luc", 10); // ngày thực hiện "YYYY-MM-DD"
+      table.float("tru_diem_so_diem"); // số điểm đã trừ (50)
+      table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      table.unique(["incident_id", "member_id"]);
+    });
+  }
 }
 
 // 8-13. Các bảng ở trang "Team & Nhân sự" (trừ Nhân sự đã ở migrateCoreTables):

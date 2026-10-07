@@ -266,6 +266,7 @@ function renderIncidents() {
       ${INCIDENT_COLUMNS.map((col) => `<td ${colHidden(col.key)}>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
+        <button class="small btn-edit write-action incident-member-btn" title="Nhân sự liên quan sự cố">Nhân sự liên quan</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
       </div></td>
     </tr>`,
@@ -276,6 +277,12 @@ function renderIncidents() {
     btn.addEventListener("click", (e) => {
       const id = Number(e.target.closest("tr").dataset.id);
       openIncidentDialog(state.incidents.find((i) => i.id === id));
+    });
+  });
+  el.incidentTbody.querySelectorAll(".incident-member-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      openIncidentMemberDialog(state.incidents.find((i) => i.id === id));
     });
   });
   el.incidentTbody.querySelectorAll(".delete-incident-btn").forEach((btn) => {
@@ -424,6 +431,176 @@ document.getElementById("incident-import-input")?.addEventListener("change", asy
     } else {
       showToast(msg, "success");
     }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// -- Nhân sự liên quan sự cố --
+
+// Popup gắn với 1 sự cố (bấm nút "Nhân sự liên quan" ở cột Thao tác).
+// 3 action xử lý theo logic hệ thống: Hạ KI / Tăng KI (bật cờ members,
+// lý do tự sinh theo tên sự cố) và Trừ điểm cá nhân trừ 50 (mỗi dòng 1 lần).
+function openIncidentMemberDialog(incident) {
+  if (!incident) return;
+  state.incidentMemberIncidentId = incident.id;
+  document.getElementById("incident-member-dialog-title").textContent =
+    `Nhân sự liên quan sự cố: ${incident.ten_su_co}`;
+  document.getElementById("incident-member-dialog-sub").textContent =
+    `${incident.team_name} — ${incident.period_label}`;
+  document.getElementById("incident-member-add-form").hidden = true;
+  renderIncidentMemberMemberOptions(incident);
+  loadIncidentMembers();
+  document.getElementById("incident-member-dialog").showModal();
+}
+
+// Select nhân sự: nhân sự trong THÁNG của sự cố (không giới hạn team — nhân
+// sự liên quan có thể thuộc team khác; team hiện trong nhãn option).
+async function renderIncidentMemberMemberOptions(incident) {
+  let members = [];
+  try {
+    members = await api(`/api/members?period_id=${incident.period_id}${deptParam()}`);
+  } catch (err) {
+    showToast(err.message);
+  }
+  const select = document.getElementById("im-new-member");
+  select.innerHTML = members
+    .map((m) => `<option value="${m.id}">${incidentEscape(m.name)}${m.team_name ? ` (${incidentEscape(m.team_name)})` : ""}</option>`)
+    .join("");
+}
+
+async function loadIncidentMembers() {
+  const incidentId = state.incidentMemberIncidentId;
+  state.incidentMembers = await api(`/api/incidents/${incidentId}/members`);
+  renderIncidentMembers();
+}
+
+// Badge trạng thái: Hạ KI (đỏ) / Tăng KI (xanh) từ cờ hiện tại của members;
+// "Đã trừ 50 điểm" (cam) từ tru_diem_luc của dòng liên quan.
+function incidentMemberStatusBadges(tm) {
+  const badges = [];
+  if (tm.member_ha_ki) badges.push(`<span class="status-badge status-huy" title="Nhân sự đang bị Hạ KI">Hạ KI</span>`);
+  if (tm.member_tang_ki) badges.push(`<span class="status-badge status-hoan-thanh" title="Nhân sự đang được Tăng KI">Tăng KI</span>`);
+  if (tm.tru_diem_luc) badges.push(`<span class="status-badge status-tru-diem" title="Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm cá nhân ngày ${tm.tru_diem_luc} — mỗi dòng chỉ trừ được 1 lần.">Đã trừ ${tm.tru_diem_so_diem ?? 50} điểm</span>`);
+  return badges.join(" ");
+}
+
+function renderIncidentMembers() {
+  const tbody = document.getElementById("incident-member-tbody");
+  const empty = document.getElementById("incident-member-empty");
+  const rows = state.incidentMembers ?? [];
+  empty.hidden = rows.length > 0;
+  tbody.innerHTML = rows
+    .map(
+      (tm) => `
+    <tr data-id="${tm.id}">
+      <td>${incidentEscape(tm.member_name)}${tm.member_chuc_vu ? `<br/><span style="color:#8a7f6a;font-size:12px">${incidentEscape(tm.member_chuc_vu)}</span>` : ""}</td>
+      <td>${incidentEscape(tm.noi_dung_cong_viec).replace(/\n/g, "<br/>")}</td>
+      <td>${incidentEscape(tm.nguyen_nhan).replace(/\n/g, "<br/>")}</td>
+      <td>${incidentMemberStatusBadges(tm) || ""}</td>
+      <td><div class="actions-cell">
+        ${tm.member_ha_ki ? "" : `<button class="small btn-reject im-ha-ki-btn" title='Hạ KI — lý do: "Hạ KI do gây ra sự cố"'>Hạ KI</button>`}
+        ${tm.member_tang_ki ? "" : `<button class="small im-tang-ki-btn" title='Tăng KI — lý do: "Tăng KI do xử lý sự cố"'>Tăng KI</button>`}
+        ${tm.tru_diem_luc ? "" : `<button class="small btn-reject im-tru-diem-btn" style="white-space:nowrap" title="Trừ 50 điểm cá nhân — mỗi dòng chỉ trừ 1 lần">Trừ điểm cá nhân</button>`}
+      </div></td>
+      <td><div class="actions-cell">
+        <button class="small btn-delete im-remove-btn" title="Bỏ nhân sự này khỏi sự cố">×</button>
+      </div></td>
+    </tr>`,
+    )
+    .join("");
+
+  tbody.querySelectorAll(".im-ha-ki-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      const tm = state.incidentMembers.find((m) => m.id === id);
+      const incident = state.incidents.find((i) => i.id === state.incidentMemberIncidentId);
+      if (!await confirmDialog(`Hạ KI của ${tm.member_name}? Lý do: Hạ KI do gây ra sự cố "${incident?.ten_su_co ?? ""}"`, { title: "Hạ KI", danger: true })) return;
+      try {
+        const updated = await api(`/api/incident-members/${id}/ha-ki`, { method: "POST" });
+        state.incidentMembers = state.incidentMembers.map((m) => (m.id === id ? updated : m));
+        renderIncidentMembers();
+        showToast("Đã hạ KI nhân sự.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  tbody.querySelectorAll(".im-tang-ki-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      const tm = state.incidentMembers.find((m) => m.id === id);
+      if (!await confirmDialog(`Tăng KI của ${tm.member_name}?`, { title: "Tăng KI", danger: false })) return;
+      try {
+        const updated = await api(`/api/incident-members/${id}/tang-ki`, { method: "POST" });
+        state.incidentMembers = state.incidentMembers.map((m) => (m.id === id ? updated : m));
+        renderIncidentMembers();
+        showToast("Đã tăng KI nhân sự.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  tbody.querySelectorAll(".im-tru-diem-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      const tm = state.incidentMembers.find((m) => m.id === id);
+      if (!await confirmDialog(`Trừ 50 điểm cá nhân của ${tm.member_name}? Mỗi dòng chỉ được trừ 1 lần.`, { title: "Trừ điểm cá nhân" })) return;
+      try {
+        const updated = await api(`/api/incident-members/${id}/tru-diem`, { method: "POST" });
+        state.incidentMembers = state.incidentMembers.map((m) => (m.id === id ? updated : m));
+        renderIncidentMembers();
+        showToast("Đã trừ 50 điểm cá nhân.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  tbody.querySelectorAll(".im-remove-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (!await confirmDialog("Bỏ nhân sự này khỏi sự cố?", { danger: false })) return;
+      try {
+        await api(`/api/incident-members/${id}`, { method: "DELETE" });
+        state.incidentMembers = state.incidentMembers.filter((m) => m.id !== id);
+        renderIncidentMembers();
+        showToast("Đã bỏ nhân sự khỏi sự cố.", "success");
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+}
+
+document.getElementById("add-incident-member-btn")?.addEventListener("click", () => {
+  const form = document.getElementById("incident-member-add-form");
+  form.hidden = !form.hidden;
+});
+
+document.getElementById("incident-member-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("incident-member-add-form").hidden = true;
+});
+
+document.getElementById("incident-member-add-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const incidentId = state.incidentMemberIncidentId;
+  const memberId = Number(document.getElementById("im-new-member").value);
+  if (!Number.isFinite(memberId) || memberId <= 0) {
+    showToast("Hãy chọn nhân sự.");
+    return;
+  }
+  const payload = {
+    member_id: memberId,
+    noi_dung_cong_viec: document.getElementById("im-new-noi-dung").value.trim() || null,
+    nguyen_nhan: document.getElementById("im-new-nguyen-nhan").value.trim() || null,
+  };
+  try {
+    await api(`/api/incidents/${incidentId}/members`, { method: "POST", body: JSON.stringify(payload) });
+    document.getElementById("incident-member-add-form").hidden = true;
+    document.getElementById("im-new-noi-dung").value = "";
+    document.getElementById("im-new-nguyen-nhan").value = "";
+    await loadIncidentMembers();
+    showToast("Đã thêm nhân sự liên quan.", "success");
   } catch (err) {
     showToast(err.message);
   }
