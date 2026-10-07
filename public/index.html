@@ -794,6 +794,20 @@
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Sự cố</h2>
               <div class="row" style="gap:8px">
+                <!-- Tuỳ chọn ẩn/hiện cột — giống bảng Nhiệm vụ (task-col-menu):
+                     bảng 26 cột nên cho người dùng tự tắt cột không cần xem, lưu
+                     localStorage theo máy (05-cskh.js). -->
+                <div class="col-menu-wrap" id="incident-col-menu-wrap">
+                  <button type="button" id="incident-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
+                    <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
+                    <span class="caret" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="col-menu" id="incident-col-menu" role="menu" hidden>
+                    <div class="col-menu-list" id="incident-col-menu-list"></div>
+                    <div class="bulk-menu-sep"></div>
+                    <button type="button" class="bulk-menu-item" id="incident-col-menu-reset">Hiện tất cả</button>
+                  </div>
+                </div>
                 <button id="download-incident-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <button id="import-incidents-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <button id="add-incident-btn" class="write-action primary">+ Thêm sự cố</button>
@@ -806,32 +820,32 @@
                        dài rộng hơn, cột giá trị ngắn hẹp hơn; header xuống tối
                        đa ~2-3 dòng (xem 05-cskh.js INCIDENT_COLUMNS cùng thứ tự) -->
                   <tr>
-                    <th style="min-width:110px">Tháng</th>
-                    <th style="min-width:110px">Team</th>
-                    <th style="min-width:90px">Tạo bởi</th>
-                    <th style="min-width:140px">Dịch vụ do IDC quản lý hoặc đối tác</th>
-                    <th style="min-width:160px">Tên sự cố</th>
-                    <th style="min-width:320px">Hiện tượng</th>
-                    <th style="min-width:190px">Phạm vi sự cố và ảnh hưởng dịch vụ KH</th>
-                    <th style="min-width:140px">Nguyên nhân</th>
-                    <th style="min-width:420px">Hành động</th>
-                    <th style="min-width:140px">Thời điểm ghi nhận sự cố</th>
-                    <th style="min-width:150px">Thời điểm hoàn thành xử lý sự cố</th>
-                    <th style="min-width:110px">Thời gian xử lý sự cố</th>
-                    <th style="min-width:110px">Gián đoạn dịch vụ KH</th>
-                    <th style="min-width:100px">Thời gian gián đoạn</th>
-                    <th style="min-width:140px">Lý do không gián đoạn</th>
-                    <th style="min-width:110px">Dịch Vụ</th>
-                    <th style="min-width:110px">Nhóm dịch vụ</th>
-                    <th style="min-width:160px">Đơn vị chịu trách nhiệm về sự cố</th>
-                    <th style="min-width:150px">BU/Site chịu trách nhiệm về sự cố</th>
-                    <th style="min-width:150px">Cấp độ theo phạm vi ảnh hưởng đến KH</th>
-                    <th style="min-width:100px">Tình trạng</th>
-                    <th style="min-width:140px">Link Ticket</th>
-                    <th style="min-width:140px">Link ITSM</th>
-                    <th style="min-width:120px">Đánh giá SLA sự cố</th>
-                    <th style="min-width:150px">Đánh giá nguyên nhân sự cố</th>
-                    <th style="min-width:170px">Diễn giải lý do vượt SLA</th>
+                    <th style="min-width:110px" data-col="thang">Tháng</th>
+                    <th style="min-width:110px" data-col="team">Team</th>
+                    <th style="min-width:90px" data-col="tao_boi">Tạo bởi</th>
+                    <th style="min-width:140px" data-col="dich_vu_idc">Dịch vụ do IDC quản lý hoặc đối tác</th>
+                    <th style="min-width:160px" data-col="ten_su_co">Tên sự cố</th>
+                    <th style="min-width:320px" data-col="hien_tuong">Hiện tượng</th>
+                    <th style="min-width:190px" data-col="pham_vi_anh_huong">Phạm vi sự cố và ảnh hưởng dịch vụ KH</th>
+                    <th style="min-width:140px" data-col="nguyen_nhan">Nguyên nhân</th>
+                    <th style="min-width:420px" data-col="hanh_dong">Hành động</th>
+                    <th style="min-width:140px" data-col="thoi_diem_ghi_nhan">Thời điểm ghi nhận sự cố</th>
+                    <th style="min-width:150px" data-col="thoi_diem_hoan_thanh">Thời điểm hoàn thành xử lý sự cố</th>
+                    <th style="min-width:110px" data-col="thoi_gian_xu_ly">Thời gian xử lý sự cố</th>
+                    <th style="min-width:110px" data-col="gian_doad_dich_vu">Gián đoạn dịch vụ KH</th>
+                    <th style="min-width:100px" data-col="thoi_gian_gian_doad">Thời gian gián đoạn</th>
+                    <th style="min-width:140px" data-col="ly_do_khong_gian_doad">Lý do không gián đoạn</th>
+                    <th style="min-width:110px" data-col="dich_vu">Dịch Vụ</th>
+                    <th style="min-width:110px" data-col="nhom_dich_vu">Nhóm dịch vụ</th>
+                    <th style="min-width:160px" data-col="don_vi_trach_nhiem">Đơn vị chịu trách nhiệm về sự cố</th>
+                    <th style="min-width:150px" data-col="bu_site_trach_nhiem">BU/Site chịu trách nhiệm về sự cố</th>
+                    <th style="min-width:150px" data-col="cap_do_anh_huong">Cấp độ theo phạm vi ảnh hưởng đến KH</th>
+                    <th style="min-width:100px" data-col="tinh_trang">Tình trạng</th>
+                    <th style="min-width:140px" data-col="link_ticket">Link Ticket</th>
+                    <th style="min-width:140px" data-col="link_itsm">Link ITSM</th>
+                    <th style="min-width:120px" data-col="danh_gia_sla">Đánh giá SLA sự cố</th>
+                    <th style="min-width:150px" data-col="danh_gia_nguyen_nhan">Đánh giá nguyên nhân sự cố</th>
+                    <th style="min-width:170px" data-col="dien_giai_vuot_sla">Diễn giải lý do vượt SLA</th>
                     <th style="min-width:120px"></th>
                   </tr>
                 </thead>

@@ -95,6 +95,139 @@ function incidentEscape(value) {
     .replace(/"/g, "&quot;");
 }
 
+// ---- Cấu hình cột hiển thị bảng Sự cố (giống fr-col-menu của Yêu cầu tính
+// năng, xem 10-feature-requests.js): 26 cột cho phép ẩn (trừ cột Thao tác),
+// lưu localStorage theo máy. data-col trên <th> khớp key ở đây ("thang",
+// "team" + 24 key cột dữ liệu trong INCIDENT_COLUMNS).
+const INCIDENT_TOGGLEABLE_COLUMNS = [
+  { key: "thang", label: "Tháng" },
+  { key: "team", label: "Team" },
+  ...INCIDENT_COLUMNS.map((col) => {
+    const labels = {
+      tao_boi: "Tạo bởi",
+      dich_vu_idc: "Dịch vụ do IDC quản lý hoặc đối tác",
+      ten_su_co: "Tên sự cố",
+      hien_tuong: "Hiện tượng",
+      pham_vi_anh_huong: "Phạm vi sự cố và ảnh hưởng dịch vụ KH",
+      nguyen_nhan: "Nguyên nhân",
+      hanh_dong: "Hành động",
+      thoi_diem_ghi_nhan: "Thời điểm ghi nhận sự cố",
+      thoi_diem_hoan_thanh: "Thời điểm hoàn thành xử lý sự cố",
+      thoi_gian_xu_ly: "Thời gian xử lý sự cố",
+      gian_doad_dich_vu: "Gián đoạn dịch vụ KH",
+      thoi_gian_gian_doad: "Thời gian gián đoạn",
+      ly_do_khong_gian_doad: "Lý do không gián đoạn",
+      dich_vu: "Dịch Vụ",
+      nhom_dich_vu: "Nhóm dịch vụ",
+      don_vi_trach_nhiem: "Đơn vị chịu trách nhiệm về sự cố",
+      bu_site_trach_nhiem: "BU/Site chịu trách nhiệm về sự cố",
+      cap_do_anh_huong: "Cấp độ theo phạm vi ảnh hưởng đến KH",
+      tinh_trang: "Tình trạng",
+      link_ticket: "Link Ticket",
+      link_itsm: "Link ITSM",
+      danh_gia_sla: "Đánh giá SLA sự cố",
+      danh_gia_nguyen_nhan: "Đánh giá nguyên nhân sự cố",
+      dien_giai_vuot_sla: "Diễn giải lý do vượt SLA",
+    };
+    return { key: col.key, label: labels[col.key] ?? col.key };
+  }),
+];
+const INCIDENT_COL_LS_KEY = "backlog.incidentColumns.hiddenV1";
+
+function loadHiddenIncidentColumns() {
+  try {
+    const raw = localStorage.getItem(INCIDENT_COL_LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    // localStorage có thể bị chặn — bỏ qua, chỉ mất tuỳ chọn đã lưu trên máy.
+    return new Set();
+  }
+}
+
+function saveHiddenIncidentColumns() {
+  try {
+    localStorage.setItem(INCIDENT_COL_LS_KEY, JSON.stringify([...state.hiddenIncidentColumns]));
+  } catch {
+    // Không lưu được thì tuỳ chọn vẫn áp dụng cho phiên hiện tại.
+  }
+}
+
+function isIncidentColHidden(key) {
+  return state.hiddenIncidentColumns.has(key);
+}
+
+// Đồng bộ thuộc tính hidden của các <th> tĩnh theo tuỳ chọn đã lưu — gọi khi
+// khởi động và mỗi lần vẽ lại bảng.
+function applyIncidentColumnHeaderVisibility() {
+  INCIDENT_TOGGLEABLE_COLUMNS.forEach(({ key }) => {
+    const th = document.querySelector(`#incident-table thead [data-col="${key}"]`);
+    if (!th) return;
+    th.hidden = isIncidentColHidden(key);
+  });
+}
+
+function renderIncidentColMenu() {
+  const list = document.getElementById("incident-col-menu-list");
+  list.innerHTML = INCIDENT_TOGGLEABLE_COLUMNS.map(
+    ({ key, label }) => `
+    <label class="col-menu-item">
+      <input type="checkbox" class="incident-col-checkbox" data-col-key="${key}" ${isIncidentColHidden(key) ? "" : "checked"} />
+      ${label}
+    </label>`,
+  ).join("");
+  list.querySelectorAll(".incident-col-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const key = e.target.dataset.colKey;
+      if (e.target.checked) state.hiddenIncidentColumns.delete(key);
+      else state.hiddenIncidentColumns.add(key);
+      saveHiddenIncidentColumns();
+      renderIncidents();
+    });
+  });
+}
+
+function openIncidentColMenu() {
+  renderIncidentColMenu();
+  document.getElementById("incident-col-menu").hidden = false;
+  document.getElementById("incident-col-menu-btn").setAttribute("aria-expanded", "true");
+}
+
+function closeIncidentColMenu() {
+  document.getElementById("incident-col-menu").hidden = true;
+  document.getElementById("incident-col-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function initIncidentColumnMenu() {
+  state.hiddenIncidentColumns = loadHiddenIncidentColumns();
+  applyIncidentColumnHeaderVisibility();
+
+  const menuWrap = document.getElementById("incident-col-menu-wrap");
+  const menuBtn = document.getElementById("incident-col-menu-btn");
+  const menu = document.getElementById("incident-col-menu");
+  if (!menuWrap || !menuBtn || !menu) return;
+
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.hidden) openIncidentColMenu();
+    else closeIncidentColMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menuWrap.contains(e.target)) closeIncidentColMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeIncidentColMenu();
+  });
+  document.getElementById("incident-col-menu-reset").addEventListener("click", () => {
+    state.hiddenIncidentColumns.clear();
+    saveHiddenIncidentColumns();
+    applyIncidentColumnHeaderVisibility();
+    renderIncidentColMenu();
+    renderIncidents();
+  });
+}
+initIncidentColumnMenu();
+
 // Ô dữ liệu của 1 cột: datetime -> "dd/mm/yyyy HH:MM"; link -> <a>; còn lại
 // text (escape, giữ xuống dòng).
 function incidentCellHtml(col, value) {
@@ -116,15 +249,21 @@ async function loadIncidents() {
 }
 
 function renderIncidents() {
+  // Header là markup tĩnh — đồng bộ hidden mỗi lần vẽ (menu "Cột hiển thị"
+  // đổi tuỳ chọn rồi gọi renderIncidents, xem applyIncidentColumnHeader
+  // Visibility). Các cột đang ẩn (isIncidentColHidden) phải ẩn ĐỒNG BỘ ở cả
+  // th lẫn td — ô thiếu 1 trong 2 làm lệch số cột của dòng.
+  applyIncidentColumnHeaderVisibility();
   el.incidentEmpty.hidden = state.incidents.length > 0;
   const pageItems = incidentPagination.slice(state.incidents);
+  const colHidden = (key) => (isIncidentColHidden(key) ? "hidden" : "");
   el.incidentTbody.innerHTML = pageItems
     .map(
       (i) => `
     <tr data-id="${i.id}">
-      <td>${i.period_label}</td>
-      <td>${i.team_name}</td>
-      ${INCIDENT_COLUMNS.map((col) => `<td>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
+      <td ${colHidden("thang")}>${i.period_label}</td>
+      <td ${colHidden("team")}>${i.team_name}</td>
+      ${INCIDENT_COLUMNS.map((col) => `<td ${colHidden(col.key)}>${incidentCellHtml(col, i[col.key])}</td>`).join("")}
       <td><div class="actions-cell">
         <button class="small btn-edit write-action edit-incident-btn">Sửa</button>
         <button class="small btn-delete delete-incident-btn">Xóa</button>
