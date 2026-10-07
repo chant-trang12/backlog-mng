@@ -2,6 +2,7 @@ import type ExcelJS from "exceljs";
 import { createFeatureRequest } from "./featureRequest.service.js";
 import { listDepartments } from "./department.service.js";
 import { buildTemplateWorkbook, normalizeHeader, parseDateToIso, parseFirstSheet, pickColumn } from "./workbook.util.js";
+import { isDepartmentInScope, type DataScope } from "./scope.util.js";
 
 // ===== Import Excel "Yêu cầu tính năng" theo biểu mẫu Quy trình số hóa =====
 // 20 cột (kể cả STT — chỉ để đánh số, bỏ qua khi import).
@@ -156,6 +157,11 @@ export function buildFeatureRequestImportTemplate(opts?: {
 export async function importFeatureRequestsFromWorkbook(
   buffer: Buffer,
   targetDepartmentId: number | null | undefined,
+  // Quy tắc 9.2 — phạm vi của người import (fix IDOR: từng dòng chỉ được
+  // ghi vào hộp thư của phòng nằm trong phạm vi; "Đơn vị đề xuất" của tài
+  // khoản bị giới hạn cũng bị ép về đúng phòng của họ, không tin cột trong
+  // file). Mặc định UNRESTRICTED cho caller cũ không truyền (test...).
+  scope: DataScope = { all: true, departmentId: null },
 ): Promise<ImportFeatureRequestsResult> {
   let parsed: Awaited<ReturnType<typeof parseFirstSheet>>;
   try {
@@ -196,7 +202,7 @@ export async function importFeatureRequestsFromWorkbook(
     const label = hoatDong || deXuat || moTa.slice(0, 60);
 
     const donVi = val(row, donViCol);
-    const deptId = donVi ? deptByKey.get(normalizeHeader(donVi)) : undefined;
+    let deptId = donVi ? deptByKey.get(normalizeHeader(donVi)) : undefined;
     if (!deptId) {
       result.skipped.push({
         row: rowNo,
@@ -207,6 +213,10 @@ export async function importFeatureRequestsFromWorkbook(
       });
       continue;
     }
+
+    // Fix IDOR: tài khoản bị giới hạn 1 phòng luôn là "Đơn vị đề xuất" của
+    // chính mình — bỏ qua giá trị trong file (không thể giả mạo phòng khác).
+    if (!scope.all) deptId = scope.departmentId ?? undefined;
 
     // "Phòng ban thực hiện" = Phòng ban đích (target_department_id): dòng có
     // điền thì khớp theo tên/mã phòng (sai thì bỏ qua kèm lý do — giống Đơn
@@ -226,6 +236,16 @@ export async function importFeatureRequestsFromWorkbook(
         continue;
       }
       targetId = matchedTarget;
+    }
+    // Fix IDOR: dòng chỉ ra phòng đích ngoài phạm vi của người import thì
+    // bỏ qua — không ghi yêu cầu vào hộp thư của phòng khác.
+    if (!isDepartmentInScope(scope, targetId)) {
+      result.skipped.push({
+        row: rowNo,
+        label,
+        reason: `Phòng ban thực hiện không nằm trong phạm vi phòng ban của bạn`,
+      });
+      continue;
     }
     if (!label) {
       result.skipped.push({ row: rowNo, label: "", reason: "Thiếu Hoạt động/nghiệp vụ, Mô tả và Đề xuất" });

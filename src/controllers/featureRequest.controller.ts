@@ -23,15 +23,39 @@ import {
   buildFeatureRequestImportTemplate,
   importFeatureRequestsFromWorkbook,
 } from "../services/featureRequest-import.service.js";
+import {
+  isDepartmentInScope,
+  isFeatureRequestInScope,
+  resolveListDepartmentId,
+  SCOPE_EMPTY,
+  type DataScope,
+} from "../services/scope.util.js";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2) — đã tính ở attachScope ngay
+// sau requireAuth. Fallback ALL chỉ dùng khi req.dataScope chưa được gắn (VD
+// gọi handler trực tiếp trong test) — khớp hành vi "SSO tắt = không giới hạn".
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
+
 // [DEMO 3002 - v2] Chỉ trả yêu cầu mà phòng đang xem (?department_id=X) là
 // bên đề xuất HOẶC bên đích — phòng khác không thấy, kể cả biết ID.
+//
+// Fix IDOR (ATTT): ?department_id= client gửi lên KHÔNG còn là chìa khóa
+// phân quyền — với tài khoản bị giới hạn 1 phòng, server luôn ép về đúng
+// phòng của chính người gọi (req.dataScope), tham số client chỉ còn ý nghĩa
+// "bộ lọc xem" đối với scope.all (admin/phòng full-access).
 export async function listFeatureRequestsHandler(req: Request, res: Response) {
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
-  res.json(await listFeatureRequests(Number.isFinite(departmentId as number) ? departmentId : null));
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(
+    scopeOf(req),
+    Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
+  );
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
+  res.json(await listFeatureRequests(departmentId));
 }
 
 export async function createFeatureRequestHandler(req: Request, res: Response) {
@@ -43,24 +67,29 @@ export async function createFeatureRequestHandler(req: Request, res: Response) {
   if (!Number.isFinite(targetDepartmentId) || targetDepartmentId <= 0) {
     return res.status(400).json({ error: "Trường 'target_department_id' (Phòng ban đích) là bắt buộc" });
   }
-  const created = await createFeatureRequest({ ...req.body, target_department_id: targetDepartmentId });
+  // Fix IDOR (ATTT) — "Never trust client data": nhãn "Đơn vị đề xuất" không
+  // nhận từ client với tài khoản bị giới hạn 1 phòng, luôn ghi bằng đúng
+  // phòng ban của người gửi (req.dataScope) — không thể giả mạo phòng khác
+  // đề xuất. scope.all (admin/phòng full-access) giữ nguyên giá trị client
+  // gửi (switcher chọn hộ phòng khác là hành vi hợp lệ). target_department_id
+  // thì có thể khác phòng của người gửi — đó là bản chất "gửi yêu cầu tới
+  // phòng ban đích" của tính năng này.
+  const scope = scopeOf(req);
+  const payload = { ...req.body, target_department_id: targetDepartmentId };
+  if (!scope.all) payload.department_id = scope.departmentId;
+  const created = await createFeatureRequest(payload);
   res.status(201).json(created);
 }
 
-// Phòng đang thao tác (?department_id=X, FE luôn gửi kèm qua deptParam())
-// phải là bên đề xuất hoặc bên đích thì mới được xem/sửa/xóa — chặn cả
-// việc đoán ID để truy cập yêu cầu của phòng khác, không chỉ ẩn ở list.
-function isInScope(item: { department_id: number | null; target_department_id: number | null }, departmentId: number | null): boolean {
-  if (departmentId == null) return false;
-  return item.department_id === departmentId || item.target_department_id === departmentId;
-}
-
+// Quyền xem/sửa/xóa 1 yêu cầu: phòng của người gọi (req.dataScope — KHÔNG
+// phải ?department_id= client, có thể bị giả mạo — IDOR) phải là bên đề
+// xuất hoặc bên đích; chặn cả việc đoán ID để truy cập yêu cầu của phòng
+// khác, không chỉ ẩn ở list. scope.all (admin/full-access) qua hết.
 export async function updateFeatureRequestHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   const updated = await updateFeatureRequest(id, req.body ?? {});
@@ -87,9 +116,8 @@ export async function deleteSelectedFeatureRequestsHandler(req: Request, res: Re
 export async function deleteFeatureRequestHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   const ok = await deleteFeatureRequest(id);
@@ -100,18 +128,17 @@ export async function deleteFeatureRequestHandler(req: Request, res: Response) {
 export async function getFeatureRequestHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const item = await getFeatureRequest(id);
-  if (!item || !isInScope(item, departmentId)) {
+  if (!item || !isFeatureRequestInScope(scopeOf(req), item)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   res.json(item);
 }
 
-// ---- File đính kèm — cùng phạm vi xem/sửa với isInScope() ở trên (bên đề
-// xuất hoặc bên đích), khác Duyệt/Từ chối/Đưa vào Backlog-Roadmap (chỉ
-// phòng đích) vì đính kèm tài liệu bổ sung là việc cả 2 bên đều có thể cần
-// làm trong lúc trao đổi. ----
+// ---- File đính kèm — cùng phạm vi xem/sửa với isFeatureRequestInScope() ở
+// trên (bên đề xuất hoặc bên đích), khác Duyệt/Từ chối/Đưa vào Backlog-
+// Roadmap (chỉ phòng đích) vì đính kèm tài liệu bổ sung là việc cả 2 bên đều
+// có thể cần làm trong lúc trao đổi. ----
 
 // POST /api/feature-requests/:id/attachment?department_id=X&filename=Y —
 // body là bytes thô của file (client gửi File object trực tiếp qua
@@ -121,9 +148,8 @@ export async function getFeatureRequestHandler(req: Request, res: Response) {
 export async function uploadFeatureRequestAttachmentHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
 
@@ -149,9 +175,8 @@ export async function uploadFeatureRequestAttachmentHandler(req: Request, res: R
 export async function downloadFeatureRequestAttachmentHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   const attachment = await getFeatureRequestAttachment(id);
@@ -172,9 +197,8 @@ export async function downloadFeatureRequestAttachmentHandler(req: Request, res:
 export async function deleteFeatureRequestAttachmentHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   await deleteFeatureRequestAttachment(id);
@@ -186,16 +210,17 @@ export async function listLoaiYeuCauHandler(_req: Request, res: Response) {
 }
 
 // ---- Luồng Duyệt/Từ chối/Đưa vào Backlog/Roadmap — CHỈ phòng ĐÍCH được
-// gọi (khác isInScope ở trên vốn cho cả 2 phía xem/sửa/xóa cơ bản). ----
+// gọi (khác isFeatureRequestInScope ở trên vốn cho cả 2 phía xem/sửa/xóa
+// cơ bản). Phòng đích đối chiếu với req.dataScope của người gọi — KHÔNG
+// tin ?department_id= client gửi lên (IDOR). ----
 
 async function requireTargetScope(
   req: Request,
   res: Response,
   id: number,
 ): Promise<Awaited<ReturnType<typeof getFeatureRequest>> | null> {
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const item = await getFeatureRequest(id);
-  if (!item || departmentId == null || item.target_department_id !== departmentId) {
+  if (!item || !isDepartmentInScope(scopeOf(req), item.target_department_id)) {
     res.status(404).json({ error: "Không tìm thấy yêu cầu" });
     return null;
   }
@@ -229,9 +254,8 @@ export async function rejectFeatureRequestHandler(req: Request, res: Response) {
 export async function transferFeatureRequestHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
   const existing = await getFeatureRequest(id);
-  if (!existing || !isInScope(existing, departmentId)) {
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
   const { department_id: newTargetRaw } = req.body ?? {};
@@ -314,6 +338,12 @@ export async function downloadFeatureRequestTemplateHandler(_req: Request, res: 
 // khớp theo tên/mã phòng); dòng trống cột này thì fallback về phòng đang
 // xem (?department_id=X) — giữ logic "phòng import = phòng đích" cho file
 // cũ không có cột này.
+//
+// Fix IDOR (ATTT): với tài khoản bị giới hạn 1 phòng, fallback phòng đích
+// được ép về đúng phòng của người gọi (resolveListDepartmentId), và từng
+// dòng có "Phòng ban thực hiện" chỉ ra phòng KHÁC phạm vi sẽ bị bỏ qua kèm
+// lý do (xem importFeatureRequestsFromWorkbook) — không thể dùng import để
+// ghi yêu cầu vào hộp thư của phòng khác.
 export async function importFeatureRequestsHandler(req: Request, res: Response) {
   const buffer = req.body;
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
@@ -322,9 +352,16 @@ export async function importFeatureRequestsHandler(req: Request, res: Response) 
   if (buffer.length > MAX_IMPORT_BYTES) {
     return res.status(400).json({ error: "File vượt quá 20MB" });
   }
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(
+    scopeOf(req),
+    Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
+  );
+  if (departmentId === SCOPE_EMPTY) {
+    return res.status(201).json({ imported: 0, skipped: [] });
+  }
   try {
-    const result = await importFeatureRequestsFromWorkbook(buffer, Number.isFinite(departmentId) ? departmentId : null);
+    const result = await importFeatureRequestsFromWorkbook(buffer, departmentId, scopeOf(req));
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "File không đúng định dạng" });

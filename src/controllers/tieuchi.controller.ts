@@ -8,6 +8,13 @@ import {
   updateTieuChiConfig,
 } from "../services/tieuchi.service.js";
 import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2) — fallback ALL khi
+// req.dataScope chưa được gắn (SSO tắt ở dev/test), khớp các controller khác.
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // undefined -> không đổi (chỉ dùng ở update), null/"" -> xóa (về null),
 // giá trị khác -> Number(). Number(null) === 0 nên PHẢI loại null ra trước,
@@ -51,8 +58,18 @@ export async function createTieuChiConfigHandler(req: Request, res: Response) {
 // GET /api/tieu-chi?department_id=X — trả tiêu chí "thấy được" của phòng X
 // (dùng chung, nếu phòng đó bật + tiêu chí riêng của phòng đó). Không truyền
 // department_id thì chỉ trả tiêu chí dùng chung.
+//
+// Fix IDOR (ATTT): ?department_id= client gửi lên không còn là chìa khóa —
+// tài khoản bị giới hạn 1 phòng luôn bị ép về đúng phòng của chính họ
+// (req.dataScope), tham số client chỉ còn ý nghĩa lọc xem với scope.all
+// (admin/phòng full-access). Chưa gán phòng ban (scope NONE) -> rỗng.
 export async function listTieuChiConfigsHandler(req: Request, res: Response) {
-  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(
+    scopeOf(req),
+    Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
+  );
+  if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listTieuChiConfigs(departmentId));
 }
 

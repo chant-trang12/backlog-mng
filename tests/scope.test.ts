@@ -3,6 +3,7 @@ import {
   assertDepartmentInScope,
   computeScope,
   isDepartmentInScope,
+  isFeatureRequestInScope,
   resolveListDepartmentId,
   ScopeForbiddenError,
   SCOPE_EMPTY,
@@ -75,6 +76,33 @@ describe("Quy tắc 9.2 — scope theo phòng ban", () => {
       const scope: DataScope = { all: false, departmentId: null };
       expect(resolveListDepartmentId(scope, null)).toBe(SCOPE_EMPTY);
       expect(resolveListDepartmentId(scope, 1)).toBe(SCOPE_EMPTY);
+    });
+  });
+
+  describe("isFeatureRequestInScope (Yêu cầu tính năng — fix IDOR ATTT)", () => {
+    const fr = { department_id: 6, target_department_id: 4 };
+
+    it("scope.all=true (admin/phòng full-access) thấy mọi yêu cầu, bất kể phòng nào", () => {
+      expect(isFeatureRequestInScope({ all: true, departmentId: null }, fr)).toBe(true);
+      expect(isFeatureRequestInScope({ all: true, departmentId: 6 }, { department_id: 99, target_department_id: null })).toBe(true);
+    });
+
+    it("scope giới hạn phòng A: là bên đề xuất hoặc bên đích -> trong phạm vi", () => {
+      expect(isFeatureRequestInScope({ all: false, departmentId: 6 }, fr)).toBe(true); // bên đề xuất
+      expect(isFeatureRequestInScope({ all: false, departmentId: 4 }, fr)).toBe(true); // bên đích
+    });
+
+    it("scope giới hạn phòng khác hoàn toàn -> ngoài phạm vi dù biết ID", () => {
+      expect(isFeatureRequestInScope({ all: false, departmentId: 2 }, fr)).toBe(false);
+    });
+
+    it("scope NONE (chưa gán phòng ban) -> không yêu cầu nào trong phạm vi", () => {
+      expect(isFeatureRequestInScope({ all: false, departmentId: null }, fr)).toBe(false);
+      expect(isFeatureRequestInScope({ all: false, departmentId: null }, { department_id: null, target_department_id: null })).toBe(false);
+    });
+
+    it("yêu cầu mồ côi (cả 2 phòng null) không thuộc phạm vi tài khoản bị giới hạn", () => {
+      expect(isFeatureRequestInScope({ all: false, departmentId: 6 }, { department_id: null, target_department_id: null })).toBe(false);
     });
   });
 

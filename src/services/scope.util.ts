@@ -95,3 +95,20 @@ export function assertDepartmentInScope(scope: DataScope, departmentId: number |
     throw new ScopeForbiddenError();
   }
 }
+
+// Yêu cầu tính năng (feature_requests): 1 yêu cầu "thuộc phạm vi" của người
+// dùng khi phòng ban của họ là bên đề xuất (department_id) HOẶC bên đích
+// (target_department_id) — [DEMO 3002 - v2]. scope.all (admin/phòng
+// full-access) thấy mọi yêu cầu.
+//
+// Lưu ý an toàn (IDOR): quyền phải suy từ req.dataScope (đã chứng thực ở
+// server), KHÔNG từ tham số ?department_id= client gửi lên — tham số đó có
+// thể bị sửa tự do (Burp) để xem/thao tác trái phép trên phòng khác.
+export function isFeatureRequestInScope(
+  scope: DataScope,
+  fr: { department_id: number | null; target_department_id: number | null },
+): boolean {
+  if (scope.all) return true;
+  if (scope.departmentId == null) return false;
+  return fr.department_id === scope.departmentId || fr.target_department_id === scope.departmentId;
+}
