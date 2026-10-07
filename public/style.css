@@ -1419,8 +1419,9 @@ th {
 #incident-table td:nth-child(2), /* Team */
 #incident-table td:last-child { /* Sửa/Xóa */
   text-align: center;
-  vertical-align: middle;
 }
+/* Tháng/Team căn đỉnh như các cột nội dung khác (không middle — nội dung
+   cột này trôi xuống giữa ô so với "Tạo bởi" của dòng khi ô cao). */
 
 #ticket-table td,
 #creation-rate-table td {
