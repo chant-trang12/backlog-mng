@@ -495,7 +495,8 @@ function renderIncidentMembers() {
     .map(
       (tm) => `
     <tr data-id="${tm.id}">
-      <td>${incidentEscape(tm.member_name)}${tm.member_chuc_vu ? `<br/><span style="color:#8a7f6a;font-size:12px">${incidentEscape(tm.member_chuc_vu)}</span>` : ""}</td>
+      <td>${incidentEscape(tm.member_name)}</td>
+      <td>${tm.member_chuc_vu ? incidentEscape(tm.member_chuc_vu) : ""}</td>
       <td>${incidentEscape(tm.noi_dung_cong_viec).replace(/\n/g, "<br/>")}</td>
       <td>${incidentEscape(tm.nguyen_nhan).replace(/\n/g, "<br/>")}</td>
       <td>${incidentMemberStatusBadges(tm) || ""}</td>
