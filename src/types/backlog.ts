@@ -330,6 +330,10 @@ export interface KpiTheoTaskRow {
   team_name: string | null;
   so_task: number;
   tong_diem: number;
+  // Tổng điểm bị trừ từ "Trừ điểm cá nhân" ở các Sự cố (CSKH) của nhân sự
+  // này trong tháng — khoản trừ ĐỘC LẬP, không gắn vào task nào, áp vào
+  // tong_diem SAU KHI đã tính xong (xem listKpiTheoTask). 0 nếu không có.
+  diem_tru_su_co: number;
   tasks: KpiTheoTaskTaskEntry[];
 }
 

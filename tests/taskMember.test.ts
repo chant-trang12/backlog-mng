@@ -517,6 +517,61 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(rowB.tong_diem).toBe(50);
     });
 
+    it('"Trừ điểm cá nhân" ở Sự cố (incident_members) trừ thẳng vào tong_diem — khoản trừ độc lập, không đụng điểm của bất kỳ task nào', async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1994, 1);
+      const teamId = await makeTeam(app, "KPI incident team", periodId);
+      const memberId = await makeMember(app, "Vũ Văn S", teamId, periodId, "Dev");
+
+      const taskId = await makeTask(app, periodId, "KPI incident team", "Task cho nhân sự bị trừ điểm sự cố");
+      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 90 });
+      await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
+
+      const before = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const rowBefore = before.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(rowBefore.tong_diem).toBe(90);
+      expect(rowBefore.diem_tru_su_co).toBe(0);
+      // Điểm từng task KHÔNG bị đụng vào bởi khoản trừ sự cố.
+      expect(rowBefore.tasks[0].diem).toBe(90);
+
+      const incident = await request(app)
+        .post("/api/incidents")
+        .send({ team_id: teamId, period_id: periodId, ten_su_co: "Su co KPI test" });
+      const im = await request(app)
+        .post(`/api/incidents/${incident.body.id}/members`)
+        .send({ member_id: memberId });
+      await request(app).post(`/api/incident-members/${im.body.id}/tru-diem`);
+
+      const after = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const rowAfter = after.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(rowAfter.tong_diem).toBe(40); // 90 - 50
+      expect(rowAfter.diem_tru_su_co).toBe(50);
+      expect(rowAfter.tasks[0].diem).toBe(90); // vẫn nguyên, không bị ghi đè
+    });
+
+    it('nhân sự có "Trừ điểm cá nhân" từ Sự cố nhưng KHÔNG tham gia task nào trong tháng vẫn xuất hiện với điểm âm', async () => {
+      const app = createApp();
+      const periodId = await makePeriod(app, 1994, 2);
+      const teamId = await makeTeam(app, "KPI incident only team", periodId);
+      const memberId = await makeMember(app, "Đặng Thị T", teamId, periodId, "BA");
+
+      const incident = await request(app)
+        .post("/api/incidents")
+        .send({ team_id: teamId, period_id: periodId, ten_su_co: "Su co khong co task" });
+      const im = await request(app)
+        .post(`/api/incidents/${incident.body.id}/members`)
+        .send({ member_id: memberId });
+      await request(app).post(`/api/incident-members/${im.body.id}/tru-diem`);
+
+      const res = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
+      const row = res.body.find((r: { member_id: number }) => r.member_id === memberId);
+      expect(row).toBeDefined();
+      expect(row.so_task).toBe(0);
+      expect(row.tong_diem).toBe(-50);
+      expect(row.diem_tru_su_co).toBe(50);
+      expect(row.member_name).toBe("Đặng Thị T");
+    });
+
     it("không có nhân sự nào tham gia task trong tháng -> trả mảng rỗng", async () => {
       const app = createApp();
       const periodId = await makePeriod(app, 1996, 1);

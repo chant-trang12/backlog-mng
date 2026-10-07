@@ -275,6 +275,7 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     expect(truDiem.status).toBe(200);
     expect(truDiem.body.tru_diem_so_diem).toBe(50);
     expect(truDiem.body.tru_diem_luc).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(truDiem.body.tru_diem_ly_do).toBe('Trừ điểm cá nhân do sự cố "Su co han ki"');
     const again = await request(app).post(`/api/incident-members/${rowId}/tru-diem`);
     expect(again.status).toBe(400);
     expect(again.body.error).toContain("chỉ trừ được 1 lần");

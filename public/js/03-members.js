@@ -107,13 +107,18 @@ function memberKpiTheoTaskRow(memberId) {
 function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
+  // Trừ điểm cá nhân ở Sự cố (CSKH) — khoản trừ độc lập, áp SAU khi đã
+  // tính xong trung bình + điểm Hỗ trợ (xem listKpiTheoTask,
+  // taskMember.service.ts). Nhân sự có sự cố nhưng không tham gia task
+  // nào tháng đó vẫn hiện điểm âm thay vì "—".
+  const truSuCo = row.diem_tru_su_co ?? 0;
   const scored = row.tasks.filter((t) => t.diem !== null);
   const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
   const bonusTasks = scored.filter((t) => t.phan_loai === HO_TRO_LABEL);
-  if (mainTasks.length === 0 && bonusTasks.length === 0) return null;
+  if (mainTasks.length === 0 && bonusTasks.length === 0 && truSuCo === 0) return null;
   const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
   const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
-  return Math.round((mainAvg + bonus) * 100) / 100;
+  return Math.round((mainAvg + bonus - truSuCo) * 100) / 100;
 }
 
 function openMemberTaskDetailDialog(member) {
@@ -122,7 +127,9 @@ function openMemberTaskDetailDialog(member) {
   document.getElementById("member-task-detail-name").textContent = member.name;
   const tbody = document.getElementById("member-task-detail-tbody");
   const empty = document.getElementById("member-task-detail-empty");
-  empty.hidden = tasks.length > 0;
+  // Có điểm trừ Sự cố dù 0 task thì vẫn hiện dòng trừ điểm (không phải
+  // "chưa có gì") — xem dòng "Trừ điểm cá nhân (Sự cố)" bên dưới.
+  empty.hidden = tasks.length > 0 || (row?.diem_tru_su_co ?? 0) > 0;
 
   // Phòng ban tính KPI theo task (không chia team) — cột Team ở bảng chi
   // tiết này không có ý nghĩa (mọi task đều cùng 1 team hoặc không chia
@@ -131,9 +138,12 @@ function openMemberTaskDetailDialog(member) {
   const teamTh = document.getElementById("member-task-detail-team-th");
   if (teamTh) teamTh.hidden = hideTeamColumn;
 
-  tbody.innerHTML = tasks
-    .map(
-      (t) => `
+  const truSuCo = row?.diem_tru_su_co ?? 0;
+  const colCount = hideTeamColumn ? 5 : 6;
+  tbody.innerHTML =
+    tasks
+      .map(
+        (t) => `
     <tr>
       <td>${t.nhiem_vu}</td>
       <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
@@ -142,8 +152,17 @@ function openMemberTaskDetailDialog(member) {
       <td>${t.cpo_danh_gia ?? "-"}</td>
       <td>${t.diem ?? "-"}</td>
     </tr>`,
-    )
-    .join("");
+      )
+      .join("") +
+    // Trừ điểm cá nhân từ Sự cố — khoản trừ độc lập, không gắn task nào
+    // (xem memberAvgDiemTheoTask/listKpiTheoTask), hiện dòng riêng cuối
+    // bảng để biết vì sao tổng thấp hơn tổng các task liệt kê ở trên.
+    (truSuCo > 0
+      ? `<tr>
+      <td colspan="${colCount - 1}" style="text-align:right;font-weight:600">Trừ điểm cá nhân (Sự cố):</td>
+      <td style="font-weight:600;color:var(--delete)">-${truSuCo}</td>
+    </tr>`
+      : "");
   document.getElementById("member-task-detail-dialog").showModal();
 }
 document.getElementById("member-task-detail-close-btn").addEventListener("click", () => {

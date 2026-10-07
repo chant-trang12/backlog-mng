@@ -440,6 +440,7 @@ export async function listKpiTheoTask(
         team_name: r.team_name,
         so_task: 0,
         tong_diem: 0,
+        diem_tru_su_co: 0,
         tasks: [],
       });
     }
@@ -455,6 +456,45 @@ export async function listKpiTheoTask(
       cpo_danh_gia: cpoDanhGia,
       diem,
     });
+  }
+
+  // "Trừ điểm cá nhân" ở Sự cố (incident_members.tru_diem_so_diem) — khoản
+  // trừ ĐỘC LẬP với mọi task, áp thẳng vào tong_diem SAU khi đã tính xong
+  // (không ghi đè diem_ca_nhan của bất kỳ task nào — khác cơ chế "Trừ điểm
+  // cá nhân" ở Nhân sự tham gia task, vì 1 Sự cố không gắn với task cụ
+  // thể nào của nhân sự). Nhân sự có sự cố nhưng KHÔNG tham gia task nào
+  // tháng đó vẫn cần xuất hiện ở đây để thấy điểm âm.
+  const incidentPenaltyQuery = db("incident_members as im")
+    .join("incidents as inc", "im.incident_id", "inc.id")
+    .join("members as m", "im.member_id", "m.id")
+    .leftJoin("teams as t", "m.team_id", "t.id")
+    .where("inc.period_id", periodId)
+    .where("inc.is_deleted", false)
+    .whereNotNull("im.tru_diem_luc");
+  if (departmentId != null) incidentPenaltyQuery.where("inc.department_id", departmentId);
+  const penaltyRows = await incidentPenaltyQuery
+    .groupBy("im.member_id", "m.name", "m.chuc_vu", "t.name")
+    .select("im.member_id", "m.name as member_name", "m.chuc_vu as member_chuc_vu", "t.name as team_name")
+    .sum({ tong_tru: "im.tru_diem_so_diem" });
+
+  for (const r of penaltyRows as any[]) {
+    const truSuCo = Math.round(Number(r.tong_tru ?? 0) * 100) / 100;
+    if (truSuCo === 0) continue;
+    if (!byMember.has(r.member_id)) {
+      byMember.set(r.member_id, {
+        member_id: r.member_id,
+        member_name: r.member_name,
+        member_chuc_vu: r.member_chuc_vu,
+        team_name: r.team_name,
+        so_task: 0,
+        tong_diem: 0,
+        diem_tru_su_co: 0,
+        tasks: [],
+      });
+    }
+    const entry = byMember.get(r.member_id)!;
+    entry.diem_tru_su_co = truSuCo;
+    entry.tong_diem = Math.round((entry.tong_diem - truSuCo) * 100) / 100;
   }
 
   return Array.from(byMember.values()).sort((a, b) => b.tong_diem - a.tong_diem);
