@@ -441,6 +441,7 @@ export async function listKpiTheoTask(
         so_task: 0,
         tong_diem: 0,
         diem_tru_su_co: 0,
+        su_co_tru_diem: [],
         tasks: [],
       });
     }
@@ -472,14 +473,22 @@ export async function listKpiTheoTask(
     .where("inc.is_deleted", false)
     .whereNotNull("im.tru_diem_luc");
   if (departmentId != null) incidentPenaltyQuery.where("inc.department_id", departmentId);
-  const penaltyRows = await incidentPenaltyQuery
-    .groupBy("im.member_id", "m.name", "m.chuc_vu", "t.name")
-    .select("im.member_id", "m.name as member_name", "m.chuc_vu as member_chuc_vu", "t.name as team_name")
-    .sum({ tong_tru: "im.tru_diem_so_diem" });
+  // KHÔNG groupBy — lấy từng dòng để dựng su_co_tru_diem (note ở cột Ghi
+  // chú bảng Nhân sự, xem memberNoteCellContent 03-members.js), gộp tổng
+  // ngay trong vòng lặp JS bên dưới (cùng kỹ thuật vòng lặp rows ở trên).
+  const penaltyRows = await incidentPenaltyQuery.select(
+    "im.member_id",
+    "m.name as member_name",
+    "m.chuc_vu as member_chuc_vu",
+    "t.name as team_name",
+    "inc.ten_su_co",
+    "im.tru_diem_so_diem",
+    "im.tru_diem_luc",
+  );
 
   for (const r of penaltyRows as any[]) {
-    const truSuCo = Math.round(Number(r.tong_tru ?? 0) * 100) / 100;
-    if (truSuCo === 0) continue;
+    const soDiem = Math.round(Number(r.tru_diem_so_diem ?? 0) * 100) / 100;
+    if (soDiem === 0) continue;
     if (!byMember.has(r.member_id)) {
       byMember.set(r.member_id, {
         member_id: r.member_id,
@@ -489,12 +498,14 @@ export async function listKpiTheoTask(
         so_task: 0,
         tong_diem: 0,
         diem_tru_su_co: 0,
+        su_co_tru_diem: [],
         tasks: [],
       });
     }
     const entry = byMember.get(r.member_id)!;
-    entry.diem_tru_su_co = truSuCo;
-    entry.tong_diem = Math.round((entry.tong_diem - truSuCo) * 100) / 100;
+    entry.diem_tru_su_co = Math.round((entry.diem_tru_su_co + soDiem) * 100) / 100;
+    entry.tong_diem = Math.round((entry.tong_diem - soDiem) * 100) / 100;
+    entry.su_co_tru_diem.push({ ten_su_co: r.ten_su_co, so_diem: soDiem, ngay: r.tru_diem_luc });
   }
 
   return Array.from(byMember.values()).sort((a, b) => b.tong_diem - a.tong_diem);

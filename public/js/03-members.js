@@ -180,6 +180,18 @@ function memberNoteCellContent(m) {
     const label = m.ha_ki ? "Lý do hạ KI" : "Lý do tăng KI";
     parts.push(`<div class="ki-reason-note"><strong>${label}:</strong> ${m.ki_ly_do.replace(/\n/g, "<br/>")}</div>`);
   }
+  // Bị "Trừ điểm cá nhân" từ (các) Sự cố trong tháng — khoản trừ ĐỘC LẬP
+  // với mọi task (xem diem_tru_su_co, listKpiTheoTask ở
+  // taskMember.service.ts) nên không hiện ở đâu khác ngoài tổng điểm; note
+  // lại đây để biết LÝ DO cụ thể vì sao điểm bị trừ, giống cách Hạ KI/Tăng
+  // KI note lý do ở trên.
+  const kpiRow = memberKpiTheoTaskRow(m.id);
+  if (kpiRow?.su_co_tru_diem?.length) {
+    const lines = kpiRow.su_co_tru_diem
+      .map((s) => `Trừ ${s.so_diem} điểm do sự cố "${s.ten_su_co}"${s.ngay ? ` (${s.ngay})` : ""}`)
+      .join("<br/>");
+    parts.push(`<div class="ki-reason-note"><strong>Trừ điểm cá nhân:</strong><br/>${lines}</div>`);
+  }
   return parts.join("");
 }
 

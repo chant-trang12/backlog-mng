@@ -547,6 +547,8 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(rowAfter.tong_diem).toBe(40); // 90 - 50
       expect(rowAfter.diem_tru_su_co).toBe(50);
       expect(rowAfter.tasks[0].diem).toBe(90); // vẫn nguyên, không bị ghi đè
+      expect(rowAfter.su_co_tru_diem).toHaveLength(1);
+      expect(rowAfter.su_co_tru_diem[0]).toMatchObject({ ten_su_co: "Su co KPI test", so_diem: 50 });
     });
 
     it('nhân sự có "Trừ điểm cá nhân" từ Sự cố nhưng KHÔNG tham gia task nào trong tháng vẫn xuất hiện với điểm âm', async () => {
@@ -570,6 +572,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       expect(row.tong_diem).toBe(-50);
       expect(row.diem_tru_su_co).toBe(50);
       expect(row.member_name).toBe("Đặng Thị T");
+      expect(row.su_co_tru_diem).toEqual([{ ten_su_co: "Su co khong co task", so_diem: 50, ngay: expect.any(String) }]);
     });
 
     it("không có nhân sự nào tham gia task trong tháng -> trả mảng rỗng", async () => {

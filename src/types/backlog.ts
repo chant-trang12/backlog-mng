@@ -334,6 +334,10 @@ export interface KpiTheoTaskRow {
   // này trong tháng — khoản trừ ĐỘC LẬP, không gắn vào task nào, áp vào
   // tong_diem SAU KHI đã tính xong (xem listKpiTheoTask). 0 nếu không có.
   diem_tru_su_co: number;
+  // Chi tiết từng lượt trừ (1 sự cố có thể trừ nhiều nhân sự, 1 nhân sự có
+  // thể dính nhiều sự cố trong tháng) — dùng để hiện note ở cột Ghi chú
+  // bảng Nhân sự (xem memberNoteCellContent, 03-members.js).
+  su_co_tru_diem: { ten_su_co: string; so_diem: number; ngay: string | null }[];
   tasks: KpiTheoTaskTaskEntry[];
 }
 
