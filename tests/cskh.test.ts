@@ -301,7 +301,7 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     const task = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "IM auto ha ki team", nhiem_vu: "Task cho auto ha KI" });
-    await request(app).put(`/api/tasks/${task.body.id}`).send({ cpo_danh_gia: 40 });
+    await request(app).put(`/api/tasks/${task.body.id}/grade`).send({ cpo_danh_gia: 40 });
     await request(app).post(`/api/tasks/${task.body.id}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
 
     const before = (await request(app).get(`/api/members?period_id=${periodId}`)).body.find(

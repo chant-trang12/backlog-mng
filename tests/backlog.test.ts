@@ -11,6 +11,15 @@ async function xlsxBuffer(headers: string[], rows: (string | number)[][]): Promi
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
+// ATTT Mass Assignment: giá trị Tính chất (tinh_chat) phải nằm trong danh
+// mục Phân loại — test seed trước khi tạo task (idempotent vì DB chung).
+async function seedPhanLoai(app: ReturnType<typeof createApp>, tenPhanLoai: string) {
+  const list = await request(app).get("/api/phan-loai");
+  if (!list.body.some((p: { ten_phan_loai: string }) => p.ten_phan_loai === tenPhanLoai)) {
+    await request(app).post("/api/phan-loai").send({ ten_phan_loai: tenPhanLoai });
+  }
+}
+
 describe("Backlog CRUD", () => {
   it("creates a period, adds tasks per team, updates progress, and exports Excel", async () => {
     const app = createApp();
@@ -22,6 +31,7 @@ describe("Backlog CRUD", () => {
     expect(period.body.label).toBe("Tháng 8/2031");
     const periodId = period.body.id;
 
+    await seedPhanLoai(app, "NV tồn");
     const task = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Xây dựng quy trình CI/CD", tinh_chat: "NV tồn" });
@@ -58,6 +68,7 @@ describe("Backlog CRUD", () => {
     // thật sự quá hạn, đúng căn cứ để gắn "Nhiệm vụ tồn" (không dùng task
     // thiếu deadline — thiếu deadline thì KHÔNG đánh dấu tồn, xem test
     // "only tags Nhiệm vụ tồn when Deadline's month is earlier...").
+    await seedPhanLoai(app, "NVKH");
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Task A", tinh_chat: "NVKH", deadline: "2033-06-15" });
@@ -209,6 +220,7 @@ describe("Backlog CRUD", () => {
     const period = await request(app).post("/api/periods").send({ year: 2037, month: 3 });
     const periodId = period.body.id;
 
+    await seedPhanLoai(app, "NVKH");
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Score task A", tinh_chat: "NVKH" });
@@ -267,6 +279,7 @@ describe("Backlog CRUD", () => {
     const period = await request(app).post("/api/periods").send({ year: 2044, month: 7 });
     const periodId = period.body.id;
 
+    await seedPhanLoai(app, "NVKH");
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Unmark A", tinh_chat: "NVKH" });
@@ -303,6 +316,7 @@ describe("Backlog CRUD", () => {
     const periodId = period.body.id;
 
     // t1 đã có sẵn 1 giá trị Tính chất -> "Nhiệm vụ tồn" được thêm vào, không ghi đè.
+    await seedPhanLoai(app, "NVKH");
     const t1 = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({ team: "CRM", nhiem_vu: "Tồn task A", tinh_chat: "NVKH" });
@@ -427,7 +441,7 @@ describe("Backlog CRUD", () => {
       .send({ team: "CRM", nhiem_vu: "Chấm rồi kéo" });
 
     const graded = await request(app)
-      .put(`/api/tasks/${task.body.id}`)
+      .put(`/api/tasks/${task.body.id}/grade`)
       .send({ cpo_danh_gia: 50, cpo_comment: "Ổn" });
     expect(graded.body.cpo_danh_gia).toBe(50);
     expect(graded.body.cpo_graded_at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
@@ -455,7 +469,7 @@ describe("Backlog CRUD", () => {
     expect(h1[0].period_label).toBe("Tháng 8/2047");
 
     // Chấm lại 80% ở tháng 2 rồi kéo sang tháng 3 -> lịch sử có 2 entry.
-    await request(app).put(`/api/tasks/${clone.id}`).send({ cpo_danh_gia: 80, cpo_comment: "lần 2" });
+    await request(app).put(`/api/tasks/${clone.id}/grade`).send({ cpo_danh_gia: 80, cpo_comment: "lần 2" });
     const move2 = await request(app)
       .post(`/api/periods/${move.body.targetPeriod.id}/tasks/move-to-next-month`)
       .send({ ids: [clone.id] });

@@ -17,6 +17,47 @@ async function filterTaskIdsInScope(ids: number[], scope: DataScope): Promise<nu
 const TINH_CHAT_TON = "Nhiệm vụ tồn";
 const KHONG_TINH_DIEM = "Không tính điểm";
 
+// ATTT Mass Assignment: giá trị Tính chất (Phân loại) là danh sách chọn từ
+// danh mục (checkbox ở FE lấy từ bảng phan_loai_options), cộng thêm tag hệ
+// thống "Nhiệm vụ tồn" do mark-ton gắn. Server phải từ chối giá trị ngoài
+// danh mục (vd payload sửa tay "IDC_TEST" qua Burp) thay vì lưu liều.
+export const TASK_TRANG_THAI = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"] as const;
+
+export async function validateTaskCatalogInput(input: {
+  tinh_chat?: string | null;
+  tag?: string | null;
+  trang_thai?: string | null;
+}): Promise<string | null> {
+  if (input.trang_thai !== undefined && input.trang_thai !== null && input.trang_thai !== "") {
+    if (!(TASK_TRANG_THAI as readonly string[]).includes(input.trang_thai)) {
+      return `Trường 'trang_thai' phải là 1 trong: ${TASK_TRANG_THAI.join(", ")}`;
+    }
+  }
+  if (typeof input.tag === "string" && input.tag.trim() !== "") {
+    const tags = await db("tags").pluck("ten_tag");
+    if (!tags.includes(input.tag.trim())) {
+      return `Tag '${input.tag.trim()}' không có trong danh mục Tag`;
+    }
+  }
+  if (typeof input.tinh_chat === "string" && input.tinh_chat.trim() !== "") {
+    const items = input.tinh_chat
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (items.length > 0) {
+      const allowed = new Set<string>([
+        ...(await db("phan_loai_options").pluck("ten_phan_loai")),
+        TINH_CHAT_TON,
+      ]);
+      const invalid = items.find((item) => !allowed.has(item));
+      if (invalid) {
+        return `Giá trị Phân loại '${invalid}' không có trong danh mục Phân loại`;
+      }
+    }
+  }
+  return null;
+}
+
 // Phạt điểm khi Hủy task theo % thời gian mục tiêu đã trôi qua (từ ngày 01
 // của tháng backlog chứa task tới Deadline) — hủy càng sát hạn càng bị trừ
 // nặng, để team không lạm dụng hủy task gần hết giờ. Trả về null nếu không

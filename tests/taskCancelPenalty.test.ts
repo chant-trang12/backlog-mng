@@ -184,8 +184,9 @@ describe("Xin Hủy nhiệm vụ — phạt điểm theo % thời gian mục ti�
     const cancelled = await request(app).put(`/api/tasks/${taskId}`).send({ trang_thai: "Hủy" });
     expect(cancelled.body.cpo_danh_gia).toBe(5);
 
-    // CPO sửa lại điểm tay sau khi hệ thống tự chấm.
-    await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 30 });
+    // CPO sửa lại điểm tay sau khi hệ thống tự chấm — qua route chấm điểm
+    // riêng (ATTT Mass Assignment: PUT thường không nhận cpo_*).
+    await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 30 });
 
     // Lưu lại tiến độ lần nữa trong lúc vẫn đang Hủy -> KHÔNG được ghi đè
     // lại % Đánh giá đã sửa (chỉ xử lý ở lần đầu chuyển vào Hủy).

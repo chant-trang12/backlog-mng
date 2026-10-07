@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { CreateFeatureRequestInput, UpdateFeatureRequestInput } from "../types/featureRequest.js";
 import {
   approveFeatureRequest,
   createFeatureRequest,
@@ -16,10 +17,40 @@ import {
   transferFeatureRequest,
   updateFeatureRequest,
 } from "../services/featureRequest.service.js";
-import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { isNonEmptyText, parsePositiveInt, pickFields } from "../utils/validate.js";
 import { detectAttachmentMime, validateAttachmentFile } from "../utils/fileValidation.js";
 import { listDepartments } from "../services/department.service.js";
 import { listHeThong } from "../services/hethong.service.js";
+
+// ATTT Mass Assignment: whitelist trường biểu mẫu của Yêu cầu tính năng
+// (khớp form FE + import) — KHÔNG gồm trang_thai/id/linked_* và các trường
+// phê duyệt: trạng thái chỉ đổi qua route nghiệp vụ riêng có kiểm soát
+// quyền (approve/reject/transfer/to-backlog/to-roadmap), người đề xuất là
+// trường hệ thống/server gán theo scope.
+const FEATURE_REQUEST_FIELDS = [
+  "he_thong",
+  "loai_yeu_cau",
+  "tieu_de",
+  "mo_ta",
+  "ket_qua_mong_muon",
+  "thoi_gian_mong_muon",
+  "department_id",
+  "target_department_id",
+  "nguoi_de_xuat",
+  "do_uu_tien",
+  "linh_vuc",
+  "mang",
+  "hoat_dong_nghiep_vu",
+  "quy_trinh_so_hoa",
+  "ma_quy_trinh",
+  "buoc_so_hoa",
+  "quy_trinh_hien",
+  "van_de_ton_tai",
+  "de_xuat_quy_trinh",
+  "hieu_qua_khi_thuc_hien",
+  "ke_hoach_software",
+  "ghi_chu_xu_ly",
+] as const;
 import {
   buildFeatureRequestImportTemplate,
   importFeatureRequestsFromWorkbook,
@@ -76,7 +107,13 @@ export async function createFeatureRequestHandler(req: Request, res: Response) {
   // thì có thể khác phòng của người gửi — đó là bản chất "gửi yêu cầu tới
   // phòng ban đích" của tính năng này.
   const scope = scopeOf(req);
-  const payload = { ...req.body, target_department_id: targetDepartmentId };
+  // ATTT Mass Assignment: whitelist trường biểu mẫu Yêu cầu tính năng —
+  // tham số lạ (id, trang_thai, linked_task_id, approve fields...) trong
+  // body bị bỏ qua hoàn toàn; trang_thai luôn do server gán ("Chờ duyệt")
+  // và chỉ đổi được qua các route nghiệp vụ riêng (approve/reject/transfer/
+  // to-backlog/to-roadmap).
+  const payload = pickFields(req.body, FEATURE_REQUEST_FIELDS) as unknown as CreateFeatureRequestInput;
+  payload.target_department_id = targetDepartmentId;
   if (!scope.all) payload.department_id = scope.departmentId;
   const created = await createFeatureRequest(payload);
   res.status(201).json(created);
@@ -93,7 +130,10 @@ export async function updateFeatureRequestHandler(req: Request, res: Response) {
   if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
-  const updated = await updateFeatureRequest(id, req.body ?? {});
+  const updated = await updateFeatureRequest(
+    id,
+    pickFields(req.body, FEATURE_REQUEST_FIELDS) as unknown as UpdateFeatureRequestInput,
+  );
   if (!updated) return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   res.json(updated);
 }

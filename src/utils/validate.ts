@@ -19,3 +19,21 @@ export function parsePositiveInt(value: string | string[] | undefined): number {
   if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return NaN;
   return n;
 }
+
+/**
+ * ATTT Mass Assignment: chỉ lấy đúng các trường trong whitelist từ body của
+ * request — mọi tham số lạ/không được phép bị bỏ qua hoàn toàn (không được
+ * gán giá trị vào payload truyền xuống service). Mỗi handler ghi dữ liệu
+ * gọi hàm này với danh sách trường của chức năng mình (DTO-style), thay vì
+ * truyền thẳng req.body.
+ */
+export function pickFields(body: unknown, keys: readonly string[]): Record<string, unknown> {
+  const source = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      out[key] = source[key];
+    }
+  }
+  return out;
+}

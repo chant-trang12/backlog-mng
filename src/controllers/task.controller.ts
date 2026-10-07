@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { CreateTaskInput, UpdateTaskInput } from "../types/backlog.js";
 import {
   createTask,
   deleteTask,
@@ -11,6 +12,7 @@ import {
   unmarkTasksTon,
   moveTasksToNextMonth,
   updateTask,
+  validateTaskCatalogInput,
 } from "../services/task.service.js";
 import { exportBacklogToExcel } from "../services/export.service.js";
 import { buildTaskImportTemplate, importTasksFromWorkbook } from "../services/task-import.service.js";
@@ -18,7 +20,7 @@ import { getPeriod } from "../services/period.service.js";
 import { listTeams } from "../services/team.service.js";
 import { listTags } from "../services/tag.service.js";
 import { listPhanLoai } from "../services/phanloai.service.js";
-import { isNonEmptyText, parsePositiveInt } from "../utils/validate.js";
+import { isNonEmptyText, parsePositiveInt, pickFields } from "../utils/validate.js";
 import {
   resolveListDepartmentId,
   isDepartmentInScope,
@@ -28,6 +30,28 @@ import {
 } from "../services/scope.util.js";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+// ATTT Mass Assignment: whitelist trường của chức năng tạo/sửa task. Mọi
+// tham số khác trong body (id, stt, period_id, cpo_danh_gia, cpo_comment,
+// cpo_graded_by, creator/approver...) bị bỏ qua hoàn toàn — trường chấm điểm
+// chỉ được sửa qua route riêng PUT /tasks/:id/grade (admin/BGĐ), các trường
+// hệ thống do server tự gán.
+const TASK_WRITE_FIELDS = [
+  "team",
+  "tinh_chat",
+  "tag",
+  "nhiem_vu",
+  "dod",
+  "ngay_thuc_hien",
+  "deadline",
+  "nvtt",
+  "dau_moi_phoi_hop",
+  "phan_tram_hoan_thanh",
+  "trang_thai",
+  "tien_do",
+] as const;
+const TASK_CREATE_FIELDS = [...TASK_WRITE_FIELDS, "department_id"] as const;
+const TASK_UPDATE_FIELDS = [...TASK_WRITE_FIELDS, "replacement_task"] as const;
 
 // Fallback chỉ dùng khi req.dataScope chưa được gắn (VD gọi handler trực
 // tiếp ngoài chuỗi middleware bình thường, như 1 số test) — coi như không
@@ -49,7 +73,11 @@ export async function createTaskHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'team' và 'nhiem_vu' là bắt buộc" });
   }
 
-  const task = await createTask(periodId, req.body ?? {}, scopeOf(req));
+  const payload = pickFields(req.body, TASK_CREATE_FIELDS) as unknown as CreateTaskInput;
+  const catalogError = await validateTaskCatalogInput(payload);
+  if (catalogError) return res.status(400).json({ error: catalogError });
+
+  const task = await createTask(periodId, payload, scopeOf(req));
   res.status(201).json(task);
 }
 
@@ -82,7 +110,13 @@ export async function updateTaskHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    const task = await updateTask(id, req.body ?? {}, scopeOf(req), req.appUser?.name ?? null);
+    // ATTT Mass Assignment: chỉ nhận đúng các trường được phép của chức năng
+    // sửa task — cpo_danh_gia/cpo_comment (chấm điểm) bị loại ở đây, chỉ đổi
+    // được qua route riêng /grade; tham số lạ khác bị bỏ qua.
+    const payload = pickFields(req.body, TASK_UPDATE_FIELDS) as unknown as UpdateTaskInput;
+    const catalogError = await validateTaskCatalogInput(payload);
+    if (catalogError) return res.status(400).json({ error: catalogError });
+    const task = await updateTask(id, payload, scopeOf(req), req.appUser?.name ?? null);
     if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
     res.json(task);
   } catch (err: any) {

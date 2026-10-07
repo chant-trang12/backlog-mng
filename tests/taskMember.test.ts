@@ -426,11 +426,11 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       const memberId = await makeMember(app, "Phan Văn P", teamId, periodId, "Dev");
 
       const task1 = await makeTask(app, periodId, "KPI task team", "Task 1 - tự tính theo %");
-      await request(app).put(`/api/tasks/${task1}`).send({ cpo_danh_gia: 80 });
+      await request(app).put(`/api/tasks/${task1}/grade`).send({ cpo_danh_gia: 80 });
       await request(app).post(`/api/tasks/${task1}/members`).send({ member_id: memberId, ty_le_dong_gop: 50 });
 
       const task2 = await makeTask(app, periodId, "KPI task team", "Task 2 - ghi đè điểm cá nhân");
-      await request(app).put(`/api/tasks/${task2}`).send({ cpo_danh_gia: 60 });
+      await request(app).put(`/api/tasks/${task2}/grade`).send({ cpo_danh_gia: 60 });
       const tm2 = await request(app)
         .post(`/api/tasks/${task2}/members`)
         .send({ member_id: memberId, ty_le_dong_gop: 100 });
@@ -461,13 +461,13 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       const memberId = await makeMember(app, "Hồ Thị R", teamId, periodId, "Dev");
 
       const mainTask = await makeTask(app, periodId, "KPI hotro team", "Task chính");
-      await request(app).put(`/api/tasks/${mainTask}`).send({ cpo_danh_gia: 80 });
+      await request(app).put(`/api/tasks/${mainTask}/grade`).send({ cpo_danh_gia: 80 });
       await request(app)
         .post(`/api/tasks/${mainTask}/members`)
         .send({ member_id: memberId, ty_le_dong_gop: 50, phan_loai: "Thực hiện chính" });
 
       const supportTask = await makeTask(app, periodId, "KPI hotro team", "Task hỗ trợ");
-      await request(app).put(`/api/tasks/${supportTask}`).send({ cpo_danh_gia: 80 });
+      await request(app).put(`/api/tasks/${supportTask}/grade`).send({ cpo_danh_gia: 80 });
       await request(app)
         .post(`/api/tasks/${supportTask}/members`)
         .send({ member_id: memberId, ty_le_dong_gop: 50, phan_loai: "Hỗ trợ" });
@@ -495,7 +495,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
           .post(`/api/periods/${periodId}/tasks`)
           .send({ team: "KPI dept team", nhiem_vu: "Task dept A", department_id: deptA })
       ).body.id;
-      await request(app).put(`/api/tasks/${taskA}`).send({ cpo_danh_gia: 100 });
+      await request(app).put(`/api/tasks/${taskA}/grade`).send({ cpo_danh_gia: 100 });
       await request(app).post(`/api/tasks/${taskA}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
 
       const taskB = (
@@ -503,7 +503,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
           .post(`/api/periods/${periodId}/tasks`)
           .send({ team: "KPI dept team", nhiem_vu: "Task dept B", department_id: deptB })
       ).body.id;
-      await request(app).put(`/api/tasks/${taskB}`).send({ cpo_danh_gia: 50 });
+      await request(app).put(`/api/tasks/${taskB}/grade`).send({ cpo_danh_gia: 50 });
       await request(app).post(`/api/tasks/${taskB}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
 
       const resA = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}&department_id=${deptA}`);
@@ -524,7 +524,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       const memberId = await makeMember(app, "Vũ Văn S", teamId, periodId, "Dev");
 
       const taskId = await makeTask(app, periodId, "KPI incident team", "Task cho nhân sự bị trừ điểm sự cố");
-      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 90 });
+      await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 90 });
       await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId, ty_le_dong_gop: 100 });
 
       const before = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
@@ -616,7 +616,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
 
       // Task "Thực hiện chính" (chưa phân loại) chấm 5 điểm — điểm tự tính = 5.
       const taskId = await makeTask(app, periodId, "Tru diem team", "Task tru diem");
-      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 5 });
+      await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 5 });
       const tm = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
       expect(tm.body.tru_diem_luc).toBeNull();
 
@@ -647,7 +647,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       // Task chính 5 điểm — trừ 10 -> -5; ↺ reset -> điểm mặc định = 5 - 10 = -5
       // (điểm trừ là lớp riêng tru_diem_so_diem, không bị ↺ xóa — yêu cầu user).
       const taskId = await makeTask(app, periodId, "Tru diem reset team", "Task reset không xóa điểm trừ");
-      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 5 });
+      await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 5 });
       const tm = await request(app).post(`/api/tasks/${taskId}/members`).send({ member_id: memberId });
       await request(app).put(`/api/task-members/${tm.body.id}`).send({ tru_diem_ca_nhan: true });
       const reset = await request(app).put(`/api/task-members/${tm.body.id}`).send({ diem_ca_nhan: null });
@@ -664,7 +664,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
 
       // Đổi % Đánh giá của task lên 50 -> điểm mặc định mới = 50 - 10 = 40
       // (điểm trừ vẫn áp dụng trên điểm tự tính hiện tại).
-      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 50 });
+      await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 50 });
       const kpi2 = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
       const entry2 = kpi2.body
         .find((r: { member_id: number }) => r.member_id === memberId)
@@ -680,7 +680,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       const m2 = await makeMember(app, "Lê Thị Hỗ Trợ", teamId, periodId, "Dev");
 
       const taskId = await makeTask(app, periodId, "Tru diem tay team", "Task trừ điểm hỗn hợp");
-      await request(app).put(`/api/tasks/${taskId}`).send({ cpo_danh_gia: 80 });
+      await request(app).put(`/api/tasks/${taskId}/grade`).send({ cpo_danh_gia: 80 });
 
       const tm1 = await request(app)
         .post(`/api/tasks/${taskId}/members`)
@@ -706,14 +706,14 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       // mBad: 1 task chính 5 điểm — trừ 10 -> -5 (điểm duy nhất = trung bình)
       // -> tổng "Điểm cá nhân (Tính theo task)" <= 0 -> tự động Hạ KI.
       const taskBad = await makeTask(app, periodId, "Tru diem ha ki team", "Task hạ KI");
-      await request(app).put(`/api/tasks/${taskBad}`).send({ cpo_danh_gia: 5 });
+      await request(app).put(`/api/tasks/${taskBad}/grade`).send({ cpo_danh_gia: 5 });
       const tmBad = await request(app).post(`/api/tasks/${taskBad}/members`).send({ member_id: mBad });
       const resBad = await request(app).put(`/api/task-members/${tmBad.body.id}`).send({ tru_diem_ca_nhan: true });
       expect(resBad.body.diem_ca_nhan).toBe(-5);
 
       // mOk: 1 task chính 80 điểm — trừ 10 còn 70 > 0 -> không bị Hạ KI.
       const taskOk = await makeTask(app, periodId, "Tru diem ha ki team", "Task đủ điểm");
-      await request(app).put(`/api/tasks/${taskOk}`).send({ cpo_danh_gia: 80 });
+      await request(app).put(`/api/tasks/${taskOk}/grade`).send({ cpo_danh_gia: 80 });
       const tmOk = await request(app).post(`/api/tasks/${taskOk}/members`).send({ member_id: mOk });
       const resOk = await request(app).put(`/api/task-members/${tmOk.body.id}`).send({ tru_diem_ca_nhan: true });
       expect(resOk.body.diem_ca_nhan).toBe(70);
@@ -737,7 +737,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       // m1 đã Hạ KI tay với lý do riêng — trừ điểm không được ghi đè lý do.
       await request(app).put(`/api/members/${m1}`).send({ ha_ki: true, ki_ly_do: "Vi phạm deadline" });
       const task1 = await makeTask(app, periodId, "Tru diem ha ki cu team", "Task hạ sẵn");
-      await request(app).put(`/api/tasks/${task1}`).send({ cpo_danh_gia: 5 });
+      await request(app).put(`/api/tasks/${task1}/grade`).send({ cpo_danh_gia: 5 });
       const tm1 = await request(app).post(`/api/tasks/${task1}/members`).send({ member_id: m1 });
       await request(app).put(`/api/task-members/${tm1.body.id}`).send({ tru_diem_ca_nhan: true });
 
@@ -745,7 +745,7 @@ describe("Nhân sự tham gia task (Backlog) — vai trò lấy theo Chức vụ
       // (2 cờ loại trừ nhau, khớp updateMember ở member.service.ts).
       await request(app).put(`/api/members/${m2}`).send({ tang_ki: true, ki_ly_do: "Xuất sắc quý trước" });
       const task2 = await makeTask(app, periodId, "Tru diem ha ki cu team", "Task tăng ki");
-      await request(app).put(`/api/tasks/${task2}`).send({ cpo_danh_gia: 5 });
+      await request(app).put(`/api/tasks/${task2}/grade`).send({ cpo_danh_gia: 5 });
       const tm2 = await request(app).post(`/api/tasks/${task2}/members`).send({ member_id: m2 });
       await request(app).put(`/api/task-members/${tm2.body.id}`).send({ tru_diem_ca_nhan: true });
 

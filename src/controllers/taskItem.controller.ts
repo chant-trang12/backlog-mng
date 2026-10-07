@@ -9,12 +9,22 @@ import {
   updateTaskItem,
   updateTaskItemMember,
 } from "../services/taskItem.service.js";
-import { getTask } from "../services/task.service.js";
+import { getTask, TASK_TRANG_THAI } from "../services/task.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
 import { resolveListDepartmentId, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
 
 function scopeOf(req: Request): DataScope {
   return req.dataScope ?? { all: true, departmentId: null };
+}
+
+// ATTT Mass Assignment: Trạng thái của Việc con là select cố định ở FE —
+// server từ chối giá trị ngoài danh sách thay vì nhận tuỳ ý.
+function validateTaskItemTrangThai(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || !(TASK_TRANG_THAI as readonly string[]).includes(value)) {
+    return `Trường 'trang_thai' phải là 1 trong: ${TASK_TRANG_THAI.join(", ")}`;
+  }
+  return null;
 }
 
 export async function listTaskItemsHandler(req: Request, res: Response) {
@@ -31,7 +41,12 @@ export async function createTaskItemHandler(req: Request, res: Response) {
   const task = await getTask(taskId);
   if (!task) return res.status(404).json({ error: "Không tìm thấy task" });
   try {
-    const { ten_viec, trang_thai, ghi_chu } = req.body ?? {};
+    // ATTT Mass Assignment: trang_thai phải thuộc danh sách cho phép (khớp
+    // select ở FE) — thay vì nhận giá trị tuỳ ý từ client.
+    const body = req.body ?? {};
+    const trangThaiError = validateTaskItemTrangThai(body?.trang_thai);
+    if (trangThaiError) return res.status(400).json({ error: trangThaiError });
+    const { ten_viec, trang_thai, ghi_chu } = body;
     const row = await createTaskItem(taskId, { ten_viec, trang_thai, ghi_chu }, scopeOf(req));
     res.status(201).json(row);
   } catch (err) {
@@ -43,7 +58,10 @@ export async function updateTaskItemHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    const { ten_viec, trang_thai, ghi_chu, treo_viec, treo_viec_ly_do, diem_danh_gia } = req.body ?? {};
+    const body = req.body ?? {};
+    const trangThaiError = validateTaskItemTrangThai(body?.trang_thai);
+    if (trangThaiError) return res.status(400).json({ error: trangThaiError });
+    const { ten_viec, trang_thai, ghi_chu, treo_viec, treo_viec_ly_do, diem_danh_gia } = body;
     const row = await updateTaskItem(
       id,
       { ten_viec, trang_thai, ghi_chu, treo_viec, treo_viec_ly_do, diem_danh_gia },

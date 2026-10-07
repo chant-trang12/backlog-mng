@@ -36,6 +36,13 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
     const periodId = await makePeriod(app, 2016, 1);
     await makeTeam(app, "XSS team", periodId);
 
+    // ATTT Mass Assignment: tinh_chat phải thuộc danh mục Phân loại — seed
+    // chính giá trị đã strip để vừa test strip vừa qua được validate.
+    const plList = await request(app).get("/api/phan-loai");
+    if (!plList.body.some((p: { ten_phan_loai: string }) => p.ten_phan_loai === STRIPPED)) {
+      await request(app).post("/api/phan-loai").send({ ten_phan_loai: STRIPPED });
+    }
+
     const res = await request(app)
       .post(`/api/periods/${periodId}/tasks`)
       .send({
@@ -54,7 +61,7 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
     expect(res.body.deadline).toBe("2016-01-31");
   });
 
-  it("PUT /api/tasks/:id — trang_thai, tien_do, cpo_comment và PUT /grade — cpo_comment", async () => {
+  it("PUT /api/tasks/:id — trang_thai, tien_do và PUT /grade — cpo_comment", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2016, 2);
     await makeTeam(app, "XSS update team", periodId);
@@ -63,13 +70,15 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
       .send({ team: "XSS update team", nhiem_vu: "Task gốc" });
     const taskId = created.body.id as number;
 
+    // ATTT Mass Assignment: trang_thai chỉ nhận enum hợp lệ (không thể nhét
+    // payload); cpo_comment không nhận qua PUT thường — chỉ qua /grade.
     const updated = await request(app)
       .put(`/api/tasks/${taskId}`)
-      .send({ trang_thai: `Đang làm${PAYLOAD}`, tien_do: `50%${PAYLOAD}`, cpo_comment: PAYLOAD });
+      .send({ trang_thai: "Đang thực hiện", tien_do: `50%${PAYLOAD}` });
     expect(updated.status).toBe(200);
-    for (const key of ["trang_thai", "tien_do", "cpo_comment"]) {
-      expectNoHtmlChars(updated.body[key]);
-    }
+    expect(updated.body.trang_thai).toBe("Đang thực hiện");
+    expectNoHtmlChars(updated.body.tien_do);
+    expect(updated.body.tien_do).toBe(`50%${STRIPPED}`);
 
     const graded = await request(app)
       .put(`/api/tasks/${taskId}/grade`)
@@ -335,7 +344,7 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
             .send({ team: "XSS matrix team", nhiem_vu: "Task cho việc con" });
           return request(app)
             .post(`/api/tasks/${task.body.id}/items`)
-            .send({ ten_viec: PAYLOAD, trang_thai: PAYLOAD, ghi_chu: PAYLOAD });
+            .send({ ten_viec: PAYLOAD, trang_thai: "Đang thực hiện", ghi_chu: PAYLOAD });
         },
       },
     ];
