@@ -2026,48 +2026,50 @@
   <!-- Popup "Nhân sự liên quan" của 1 sự cố (giống popup "Nhân sự tham gia"
        của Nhiệm vụ): nút + form thêm + bảng nhân sự với 3 action Hạ KI /
        Tăng KI / Trừ điểm cá nhân (xem 05-cskh.js) -->
-  <dialog id="incident-member-dialog" style="width:min(900px, 94vw)">
+  <dialog id="incident-member-dialog" style="max-width:900px;width:94vw;max-height:92vh;overflow-y:auto">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-    <h2 id="incident-member-dialog-title" style="margin:0">Nhân sự liên quan sự cố</h2>
-    <p id="incident-member-dialog-sub" style="margin:2px 0 0;font-size:13px;color:#8a7f6a"></p>
-    <div class="row" style="justify-content:flex-end;margin:10px 0 6px">
-      <button type="button" id="add-incident-member-btn" class="write-action primary">+ Thêm nhân sự liên quan</button>
-    </div>
-    <form id="incident-member-add-form" hidden>
-      <div class="field-row">
-        <div>
-          <label for="im-new-member">Tên nhân sự *</label>
-          <select id="im-new-member" required></select>
+    <div class="dialog-body">
+      <h2 id="incident-member-dialog-title" style="margin:0">Nhân sự liên quan sự cố</h2>
+      <p id="incident-member-dialog-sub" style="margin:2px 0 0;font-size:13px;color:#8a7f6a"></p>
+      <div class="row" style="justify-content:flex-end;margin:10px 0 6px">
+        <button type="button" id="add-incident-member-btn" class="write-action primary">+ Thêm nhân sự liên quan</button>
+      </div>
+      <form id="incident-member-add-form" style="padding:0" hidden>
+        <div class="field-row">
+          <div>
+            <label for="im-new-member">Tên nhân sự *</label>
+            <select id="im-new-member" required></select>
+          </div>
         </div>
+        <div>
+          <label for="im-new-noi-dung">Nội dung công việc thực hiện</label>
+          <textarea id="im-new-noi-dung" rows="3"></textarea>
+        </div>
+        <div>
+          <label for="im-new-nguyen-nhan">Nguyên nhân gây nên sự cố</label>
+          <textarea id="im-new-nguyen-nhan" rows="3"></textarea>
+        </div>
+        <div class="actions">
+          <button type="button" id="incident-member-cancel-btn">Hủy</button>
+          <button type="submit" class="primary">Lưu</button>
+        </div>
+      </form>
+      <div class="table-wrap" style="max-height:50vh">
+        <table id="incident-member-table">
+          <thead>
+            <tr>
+              <th style="width:190px">Nhân sự</th>
+              <th style="min-width:220px">Nội dung công việc thực hiện</th>
+              <th style="min-width:220px">Nguyên nhân gây nên sự cố</th>
+              <th style="width:150px">Trạng thái</th>
+              <th style="min-width:230px">Hành động</th>
+              <th style="width:50px"></th>
+            </tr>
+          </thead>
+          <tbody id="incident-member-tbody"></tbody>
+        </table>
+        <p id="incident-member-empty" style="text-align:center;color:#8a7f6a;padding:18px 0" hidden>Chưa có nhân sự liên quan — bấm "Thêm nhân sự liên quan" để bắt đầu.</p>
       </div>
-      <div>
-        <label for="im-new-noi-dung">Nội dung công việc thực hiện</label>
-        <textarea id="im-new-noi-dung" rows="3"></textarea>
-      </div>
-      <div>
-        <label for="im-new-nguyen-nhan">Nguyên nhân gây nên sự cố</label>
-        <textarea id="im-new-nguyen-nhan" rows="3"></textarea>
-      </div>
-      <div class="actions">
-        <button type="button" id="incident-member-cancel-btn">Hủy</button>
-        <button type="submit" class="primary">Lưu</button>
-      </div>
-    </form>
-    <div class="table-wrap" style="max-height:50vh">
-      <table id="incident-member-table">
-        <thead>
-          <tr>
-            <th style="width:190px">Nhân sự</th>
-            <th style="min-width:220px">Nội dung công việc thực hiện</th>
-            <th style="min-width:220px">Nguyên nhân gây nên sự cố</th>
-            <th style="width:150px">Trạng thái</th>
-            <th style="min-width:230px">Hành động</th>
-            <th style="width:50px"></th>
-          </tr>
-        </thead>
-        <tbody id="incident-member-tbody"></tbody>
-      </table>
-      <p id="incident-member-empty" style="text-align:center;color:#8a7f6a;padding:18px 0" hidden>Chưa có nhân sự liên quan — bấm "Thêm nhân sự liên quan" để bắt đầu.</p>
     </div>
   </dialog>
 
