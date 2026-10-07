@@ -1391,6 +1391,16 @@ th {
 #roadmap-table th {
   text-align: center;
 }
+/* Header bảng Sự cố dài (nhiều cột min-width, xuống 2-3 dòng) — căn giữa
+   dọc cho cân đối thay vì vertical-align: top mặc định. */
+#incident-table th {
+  vertical-align: middle;
+}
+/* Link Ticket/ITSM là URL dài không có khoảng trắng — nếu không cho ngắt
+   giữa ký tự thì cột bị nở quá rộng (auto layout phải chứa trọn URL). */
+#incident-table td a {
+  word-break: break-all;
+}
 #roadmap-table td { vertical-align: middle; }
 #roadmap-table tbody tr { cursor: pointer; }
 #roadmap-table tbody tr:hover { background: var(--bg); }

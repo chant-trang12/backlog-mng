@@ -798,34 +798,37 @@
             <div class="table-wrap">
               <table id="incident-table">
                 <thead>
+                  <!-- min-width từng cột: chia theo loại nội dung — cột mô tả
+                       dài rộng hơn, cột giá trị ngắn hẹp hơn; header xuống tối
+                       đa ~2-3 dòng (xem 05-cskh.js INCIDENT_COLUMNS cùng thứ tự) -->
                   <tr>
-                    <th style="width:110px">Tháng</th>
-                    <th style="width:120px">Team</th>
-                    <th>Tạo bởi</th>
-                    <th>Dịch vụ do IDC quản lý hoặc đối tác</th>
-                    <th>Tên sự cố</th>
-                    <th>Hiện tượng</th>
-                    <th>Phạm vi sự cố và ảnh hưởng dịch vụ KH</th>
-                    <th>Nguyên nhân</th>
-                    <th>Hành động</th>
-                    <th>Thời điểm ghi nhận sự cố</th>
-                    <th>Thời điểm hoàn thành xử lý sự cố</th>
-                    <th>Thời gian xử lý sự cố</th>
-                    <th>Gián đoạn dịch vụ KH</th>
-                    <th>Thời gian gián đoạn</th>
-                    <th>Lý do không gián đoạn</th>
-                    <th>Dịch Vụ</th>
-                    <th>Nhóm dịch vụ</th>
-                    <th>Đơn vị chịu trách nhiệm về sự cố</th>
-                    <th>BU/Site chịu trách nhiệm về sự cố</th>
-                    <th>Cấp độ theo phạm vi ảnh hưởng đến KH</th>
-                    <th>Tình trạng</th>
-                    <th>Link Ticket</th>
-                    <th>Link ITSM</th>
-                    <th>Đánh giá SLA sự cố</th>
-                    <th>Đánh giá nguyên nhân sự cố</th>
-                    <th>Diễn giải lý do vượt SLA</th>
-                    <th></th>
+                    <th style="min-width:110px">Tháng</th>
+                    <th style="min-width:110px">Team</th>
+                    <th style="min-width:90px">Tạo bởi</th>
+                    <th style="min-width:140px">Dịch vụ do IDC quản lý hoặc đối tác</th>
+                    <th style="min-width:160px">Tên sự cố</th>
+                    <th style="min-width:160px">Hiện tượng</th>
+                    <th style="min-width:190px">Phạm vi sự cố và ảnh hưởng dịch vụ KH</th>
+                    <th style="min-width:140px">Nguyên nhân</th>
+                    <th style="min-width:140px">Hành động</th>
+                    <th style="min-width:140px">Thời điểm ghi nhận sự cố</th>
+                    <th style="min-width:150px">Thời điểm hoàn thành xử lý sự cố</th>
+                    <th style="min-width:110px">Thời gian xử lý sự cố</th>
+                    <th style="min-width:110px">Gián đoạn dịch vụ KH</th>
+                    <th style="min-width:100px">Thời gian gián đoạn</th>
+                    <th style="min-width:140px">Lý do không gián đoạn</th>
+                    <th style="min-width:110px">Dịch Vụ</th>
+                    <th style="min-width:110px">Nhóm dịch vụ</th>
+                    <th style="min-width:160px">Đơn vị chịu trách nhiệm về sự cố</th>
+                    <th style="min-width:150px">BU/Site chịu trách nhiệm về sự cố</th>
+                    <th style="min-width:150px">Cấp độ theo phạm vi ảnh hưởng đến KH</th>
+                    <th style="min-width:100px">Tình trạng</th>
+                    <th style="min-width:140px">Link Ticket</th>
+                    <th style="min-width:140px">Link ITSM</th>
+                    <th style="min-width:120px">Đánh giá SLA sự cố</th>
+                    <th style="min-width:150px">Đánh giá nguyên nhân sự cố</th>
+                    <th style="min-width:170px">Diễn giải lý do vượt SLA</th>
+                    <th style="min-width:120px"></th>
                   </tr>
                 </thead>
                 <tbody id="incident-tbody"></tbody>
