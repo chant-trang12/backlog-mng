@@ -504,8 +504,6 @@ function renderIncidentMembers() {
         ${tm.member_ha_ki ? "" : `<button class="small btn-reject im-ha-ki-btn" title='Hạ KI — lý do: "Hạ KI do gây ra sự cố"'>Hạ KI</button>`}
         ${tm.member_tang_ki ? "" : `<button class="small im-tang-ki-btn" title='Tăng KI — lý do: "Tăng KI do xử lý sự cố"'>Tăng KI</button>`}
         ${tm.tru_diem_luc ? "" : `<button class="small btn-exclude im-tru-diem-btn" style="white-space:nowrap" title="Trừ 50 điểm cá nhân — mỗi dòng chỉ trừ 1 lần">Trừ điểm cá nhân</button>`}
-      </div></td>
-      <td><div class="actions-cell">
         <button class="small btn-delete im-remove-btn" title="Bỏ nhân sự này khỏi sự cố">×</button>
       </div></td>
     </tr>`,
