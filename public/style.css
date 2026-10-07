@@ -976,6 +976,11 @@ th {
      kiểm chứng thực nghiệm bằng headless Chrome). Không đặt max-height thì
      khung cao bằng nội dung, dọc vẫn do trang cuộn → tiêu đề vẫn trôi. */
   max-height: calc(100vh - 240px);
+  /* Chừa chỗ cho thanh cuộn ngang (xuất hiện khi bảng rộng hơn khung) —
+     không thì nó đè ngay lên dòng cuối cùng đang hiện, trông như chữ bị
+     cắt mất (VD cột Ghi chú nhiều dòng, user phản hồi kèm ảnh chụp) dù
+     thực ra chỉ cần cuộn xuống là thấy — chừa trước để khỏi gây hiểu lầm. */
+  padding-bottom: 16px;
 }
 
 /* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
