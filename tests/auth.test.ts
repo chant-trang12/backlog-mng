@@ -117,7 +117,14 @@ describe("Authentication & SSO Integration", () => {
       const req: any = {
         headers: {},
         originalUrl: "/api/periods",
-        session: { user: mockUser },
+        // ATTT Session: phiên giả phải có mốc loginAt/lastSeen còn hạn
+        // (fail-closed: thiếu mốc = hết hạn) và destroy() như session thật.
+        session: {
+          user: mockUser,
+          loginAt: Date.now(),
+          lastSeen: Date.now(),
+          destroy: (cb: () => void) => cb(),
+        },
       };
       const res: any = {
         status: () => res,

@@ -16,6 +16,11 @@ declare module "express-session" {
     codeVerifier?: string;
     state?: string;
     returnTo?: string;
+    // ATTT Session: mốc thời gian đăng nhập (loginAt — không bị hoạt động
+    // kéo dài, dùng cho absolute timeout) và lần tương tác gần nhất
+    // (lastSeen — trượt theo mỗi request, dùng cho idle timeout).
+    loginAt?: number;
+    lastSeen?: number;
   }
 }
 

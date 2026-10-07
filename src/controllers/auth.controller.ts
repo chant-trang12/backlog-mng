@@ -8,6 +8,7 @@ import {
 } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
+import { isSessionExpired } from "../session.config.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -85,6 +86,10 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
 
     if (req.session) {
       req.session.user = user;
+      // ATTT Session: ghi mốc đăng nhập — absolute timeout đo từ đây, idle
+      // timeout đo từ lastSeen (được requireAuth trượt theo mỗi request).
+      req.session.loginAt = Date.now();
+      req.session.lastSeen = req.session.loginAt;
       delete req.session.state;
       delete req.session.codeVerifier;
     }
@@ -102,7 +107,9 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
   const ssoEnabled = isSsoEnabled();
-  const user = req.session?.user ?? null;
+  // ATTT Session: phiên hết hạn (idle/absolute) -> báo chưa đăng nhập để FE
+  // hiển thị màn hình đăng nhập thay vì vẫn nhận diện user cũ.
+  const user = req.session?.user && !isSessionExpired(req.session) ? req.session.user : null;
 
   // role dùng để FE ẩn/hiện mục "Quản lý User" (admin) và tự vô hiệu hoá
   // thao tác ghi phía UI cho viewer — chặn thật sự vẫn ở requireWrite phía

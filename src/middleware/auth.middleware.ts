@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { isSsoEnabled } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
+import { isSessionExpired, touchSession } from "../session.config.js";
 
 /**
  * Middleware to require authentication when SSO is enabled.
@@ -15,6 +16,10 @@ import { computeScope } from "../services/scope.util.js";
  *   đăng nhập SSO thành công (không đủ để chặn tại IdP).
  * - API requests without a session return 401 Unauthorized with loginUrl.
  * - Browser navigation requests redirect to /auth/login.
+ * - ATTT Session: phiên hết hạn idle (SESSION_IDLE_MINUTES, mặc định 45
+ *   phút không tương tác) hoặc absolute (SESSION_ABSOLUTE_MINUTES, mặc định
+ *   8 giờ kể từ lúc đăng nhập) -> destroy phiên + trả 401/redirect như
+ *   chưa đăng nhập. Cookie đánh cắp được không dùng lại được sau các mốc này.
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!isSsoEnabled()) {
@@ -23,7 +28,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const user = req.session?.user;
   if (user) {
+    if (isSessionExpired(req.session)) {
+      req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+        respondUnauthenticated(req, res);
+      });
+      return;
+    }
     req.user = user;
+    // Trượt cửa sổ idle: mỗi request hợp lệ đều tính là tương tác mới.
+    touchSession(req);
     // Bình thường đã có sẵn (tạo ở callbackHandler lúc login) — upsert lại
     // ở đây chỉ là lớp phòng vệ, phòng trường hợp record bị mất/chưa kịp tạo.
     const appUser = (await getUserBySsoSub(user.id)) ?? (await upsertUserFromSso(user));
@@ -35,6 +49,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return next();
   }
 
+  respondUnauthenticated(req, res);
+}
+
+/** Trả 401 (API) hoặc redirect trang login (navigation) — dùng chung cho
+ * "chưa có phiên" và "phiên đã hết hạn". */
+function respondUnauthenticated(req: Request, res: Response): void {
   // If client accepts HTML and is not calling an /api endpoint, redirect to login
   const wantsHtml = req.headers.accept && req.headers.accept.includes("text/html");
   if (wantsHtml && !req.originalUrl.startsWith("/api")) {

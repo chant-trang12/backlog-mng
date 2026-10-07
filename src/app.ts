@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSessionOptions } from "./session.config.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
@@ -107,18 +108,14 @@ export function createApp() {
     app.use(morgan("combined"));
   }
 
-  // Session management
+  // Session management — ATTT Session: rolling + maxAge 45 phút (idle
+  // timeout, khuyến nghị 30-50 phút) + absolute timeout 8 giờ kiểm tra ở
+  // phía server (session.config.ts + requireAuth). Trước đây cookie chỉ có
+  // maxAge 24 giờ, không giới hạn idle/absolute ở server.
   app.use(
     session({
+      ...buildSessionOptions(),
       secret: process.env.SESSION_SECRET || "backlog-mng-default-dev-secret-key-32chars",
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: process.env.COOKIE_SECURE === "true",
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      },
     }),
   );
 
