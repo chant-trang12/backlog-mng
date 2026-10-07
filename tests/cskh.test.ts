@@ -29,6 +29,15 @@ async function makeTeam(app: ReturnType<typeof createApp>, name: string, periodI
   return res.body.id as number;
 }
 
+// Tên duy nhất theo lần chạy — các tháng (period) được dùng chung giữa các
+// file test và tháng mới tạo kế thừa team/nhân sự từ tháng "gần nhất" trên
+// toàn DB test, nên tên tĩnh có thể bị nhân bản làm sai lệch assert.
+let uniqueCounter = 0;
+function uniqueName(prefix: string): string {
+  uniqueCounter += 1;
+  return `${prefix} ${Date.now()}-${uniqueCounter}`;
+}
+
 describe("CSKH: Sự cố", () => {
   it("creates with the new detailed columns, lists (team name + period label), updates, clears to null, and deletes", async () => {
     const app = createApp();
@@ -208,13 +217,14 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     const periodId = await makePeriod(app, 2042, 1);
     const teamId = await makeTeam(app, "IM team", periodId);
     const incidentId = await makeIncident(app, periodId, teamId, "Su co IM 1");
-    const memberId = await makeMember(app, periodId, teamId, "Nguyen Van IM");
+    const memberName = uniqueName("Nguyen Van IM");
+    const memberId = await makeMember(app, periodId, teamId, memberName);
 
     const created = await request(app)
       .post(`/api/incidents/${incidentId}/members`)
       .send({ member_id: memberId, noi_dung_cong_viec: "Vận hành hệ thống", nguyen_nhan: "Sơ suất vận hành" });
     expect(created.status).toBe(201);
-    expect(created.body.member_name).toBe("Nguyen Van IM");
+    expect(created.body.member_name).toBe(memberName);
     expect(created.body.noi_dung_cong_viec).toBe("Vận hành hệ thống");
 
     const dup = await request(app)
@@ -230,7 +240,7 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
 
     const list = await request(app).get(`/api/incidents/${incidentId}/members`);
     expect(list.body).toHaveLength(1);
-    expect(list.body[0].member_name).toBe("Nguyen Van IM");
+    expect(list.body[0].member_name).toBe(memberName);
 
     const del = await request(app).delete(`/api/incident-members/${created.body.id}`);
     expect(del.status).toBe(204);

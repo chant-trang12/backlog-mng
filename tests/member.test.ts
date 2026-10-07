@@ -36,9 +36,18 @@ async function makeTeam(app: ReturnType<typeof createApp>, name: string, periodI
   return res.body.id as number;
 }
 
-// Tháng mới tạo kế thừa team/nhân sự từ tháng "gần nhất" trên TOÀN BỘ DB test
-// (dùng chung file với các test khác) — chọn năm chắc chắn lớn hơn mọi năm
-// khác đang có để đảm bảo period vừa tạo luôn là tháng gần nhất thật sự.
+// Tên duy nhất theo lần chạy — tháng mới tạo kế thừa team/nhân sự từ tháng
+// "gần nhất" trên TOÀN BỘ DB test dùng chung với các file test khác, nên tên
+// tĩnh ("Nguyễn Văn A"...) dễ bị nhân bản sang tháng của test này từ tháng
+// của test khác làm sai lệch assert đếm số lượng.
+let uniqueCounter = 0;
+function uniqueName(prefix: string): string {
+  uniqueCounter += 1;
+  return `${prefix} ${Date.now()}-${uniqueCounter}`;
+}
+
+// Chọn năm chắc chắn lớn hơn mọi năm khác đang có để đảm bảo period vừa tạo
+// luôn là tháng gần nhất thật sự.
 async function nextAvailableYear(app: ReturnType<typeof createApp>, baseline: number) {
   const periods = await request(app).get("/api/periods");
   const maxYear = Math.max(baseline, ...periods.body.map((p: { year: number }) => p.year));
@@ -246,15 +255,20 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
   it("imports members from an Excel file: creates missing teams, skips rows without a name/team, is additive", async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2053, 5);
-    await makeTeam(app, "CRM", periodId);
+    const teamCrm = uniqueName("CRM");
+    await makeTeam(app, teamCrm, periodId);
+    const nameA = uniqueName("Nguyễn Văn A");
+    const nameB = uniqueName("Trần Thị B");
+    const nameC = uniqueName("Lê Văn C");
+    const teamMoi = uniqueName("CSKH");
 
     const buf = await xlsxBuffer(
       ["Họ và Tên", "Chức vụ", "Team"],
       [
-        ["Nguyễn Văn A", "Trưởng nhóm", "CRM"], // team đã có
-        ["Trần Thị B", "", "CSKH"], // team mới -> tự tạo
-        ["", "Nhân viên", "CRM"], // thiếu tên -> bỏ qua
-        ["Lê Văn C", "Nhân viên", ""], // thiếu team -> bỏ qua
+        [nameA, "Trưởng nhóm", teamCrm], // team đã có
+        [nameB, "", teamMoi], // team mới -> tự tạo
+        ["", "Nhân viên", teamCrm], // thiếu tên -> bỏ qua
+        [nameC, "Nhân viên", ""], // thiếu team -> bỏ qua
       ],
     );
 
@@ -265,7 +279,7 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
 
     expect(res.status).toBe(201);
     expect(res.body.imported).toBe(2);
-    expect(res.body.teamsCreated).toEqual(["CSKH"]);
+    expect(res.body.teamsCreated).toEqual([teamMoi]);
     expect(res.body.skipped).toHaveLength(2);
     expect(res.body.skipped.map((s: { reason: string }) => s.reason).sort()).toEqual([
       "Thiếu Họ và Tên",
@@ -273,10 +287,10 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
     ]);
 
     const list = await request(app).get(`/api/members?period_id=${periodId}`);
-    const a = list.body.find((m: { name: string }) => m.name === "Nguyễn Văn A");
+    const a = list.body.find((m: { name: string }) => m.name === nameA);
     expect(a.chuc_vu).toBe("Trưởng nhóm");
-    expect(a.team_name).toBe("CRM");
-    expect(list.body.some((m: { name: string }) => m.name === "Trần Thị B")).toBe(true);
+    expect(a.team_name).toBe(teamCrm);
+    expect(list.body.some((m: { name: string }) => m.name === nameB)).toBe(true);
 
     // Nhập lại: idempotent theo (period, team, name) — không nhân đôi.
     const res2 = await request(app)
@@ -285,7 +299,7 @@ describe("Member declaration (CRUD table: STT / Họ và Tên / Chức vụ / Te
       .send(buf);
     expect(res2.status).toBe(201);
     const listAfter = await request(app).get(`/api/members?period_id=${periodId}`);
-    expect(listAfter.body.filter((m: { name: string }) => m.name === "Nguyễn Văn A")).toHaveLength(1);
+    expect(listAfter.body.filter((m: { name: string }) => m.name === nameA)).toHaveLength(1);
   });
 
   it("rejects an import file missing the Họ và Tên column", async () => {
