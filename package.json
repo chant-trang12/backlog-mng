@@ -17,7 +17,6 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
@@ -28,6 +27,9 @@
     "mssql": "^12.7.0",
     "openid-client": "^6.8.8",
     "undici": "^6.28.1"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
