@@ -5,6 +5,7 @@ import {
   deleteRoadmapDetail,
   deleteRoadmapItem,
   deleteRoadmapItems,
+  getRoadmapItem,
   listRoadmapDetails,
   listRoadmapItems,
   updateRoadmapDetail,
@@ -14,6 +15,7 @@ import {
   buildRoadmapImportTemplate,
   importRoadmapFromWorkbook,
 } from "../services/roadmap-import.service.js";
+import { validateTaskCatalogInput } from "../services/task.service.js";
 import { listTeams } from "../services/team.service.js";
 import { listHeThong } from "../services/hethong.service.js";
 import { listMucTieu } from "../services/muctieu.service.js";
@@ -69,6 +71,14 @@ export async function createRoadmapItemHandler(req: Request, res: Response) {
   if (!isNonEmptyText(body.team) || !isNonEmptyText(body.nhiem_vu)) {
     return res.status(400).json({ error: "Trường 'team' và 'nhiem_vu' là bắt buộc" });
   }
+  // ATTT Mass Assignment (vòng 2): Phân loại/Trạng thái phải thuộc danh mục
+  // hệ thống — cùng luật với task (phan_loai roadmap được đẩy sang Tính chất
+  // của task khi đồng bộ vào Backlog).
+  const catalogError = await validateTaskCatalogInput({
+    tinh_chat: typeof body.phan_loai === "string" ? body.phan_loai : undefined,
+    trang_thai: typeof body.trang_thai === "string" ? body.trang_thai : undefined,
+  });
+  if (catalogError) return res.status(400).json({ error: catalogError });
   const item = await createRoadmapItem(
     {
       ...body,
@@ -84,6 +94,15 @@ export async function updateRoadmapItemHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const body = req.body ?? {};
+  // Giữ nguyên giá trị Phân loại cũ của chính dòng này thì không bắt lại
+  // (dữ liệu cũ có thể mang phân loại đã bị xóa khỏi danh mục).
+  const current = await getRoadmapItem(id);
+  const phanLoaiChanged = typeof body.phan_loai === "string" && body.phan_loai !== current?.phan_loai;
+  const catalogError = await validateTaskCatalogInput({
+    tinh_chat: phanLoaiChanged ? body.phan_loai : undefined,
+    trang_thai: typeof body.trang_thai === "string" ? body.trang_thai : undefined,
+  });
+  if (catalogError) return res.status(400).json({ error: catalogError });
   const item = await updateRoadmapItem(
     id,
     {

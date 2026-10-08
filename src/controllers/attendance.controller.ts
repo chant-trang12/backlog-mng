@@ -9,6 +9,13 @@ import {
 } from "../services/attendance.service.js";
 import { getPeriod } from "../services/period.service.js";
 import { parsePositiveInt } from "../utils/validate.js";
+import { resolveListDepartmentId, ScopeForbiddenError, SCOPE_EMPTY, type DataScope } from "../services/scope.util.js";
+
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2) — fallback ALL khi
+// req.dataScope chưa được gắn (SSO tắt ở dev/test), khớp các controller khác.
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 
@@ -33,9 +40,18 @@ export async function importAttendanceHandler(req: Request, res: Response) {
     if (headers.length === 0) {
       return res.status(400).json({ error: "Không đọc được cột dữ liệu nào trong file — kiểm tra lại dòng tiêu đề (dòng 1)." });
     }
-    const inserted = await replaceAttendanceRecords(periodId, rows);
+    // Phòng ban đích do SERVER quyết định với tài khoản bị giới hạn (không
+    // tin ?department_id= client — IDOR); scope.all mới được chọn phòng (hoặc
+    // không chọn = thay toàn tháng, hành vi cũ).
+    const scope = scopeOf(req);
+    const requested = req.query.department_id != null ? Number(req.query.department_id) : null;
+    const departmentId = scope.all
+      ? Number.isFinite(requested as number) ? requested : null
+      : scope.departmentId;
+    const inserted = await replaceAttendanceRecords(periodId, rows, departmentId, scope);
     res.status(201).json({ headers, rows: inserted });
-  } catch {
+  } catch (err) {
+    if (err instanceof ScopeForbiddenError) throw err;
     res.status(400).json({ error: "File không đúng định dạng Excel (.xlsx)" });
   }
 }
@@ -47,13 +63,19 @@ export async function listAttendanceHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  res.json(await listAttendanceRecords(periodId));
+  const requested = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(
+    scopeOf(req),
+    Number.isFinite(requested as number) ? requested : null,
+  );
+  if (departmentId === SCOPE_EMPTY) return res.json({ headers: [], rows: [] });
+  res.json(await listAttendanceRecords(periodId, departmentId));
 }
 
 export async function deleteAttendanceHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  const ok = await deleteAttendanceRecord(id);
+  const ok = await deleteAttendanceRecord(id, scopeOf(req));
   if (!ok) return res.status(404).json({ error: "Không tìm thấy bản ghi" });
   res.status(204).send();
 }
@@ -63,7 +85,7 @@ export async function deleteSelectedAttendanceHandler(req: Request, res: Respons
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const deleted = await deleteAttendanceRecords(ids.map((id: unknown) => Number(id)));
+  const deleted = await deleteAttendanceRecords(ids.map((id: unknown) => Number(id)), scopeOf(req));
   res.json({ deleted });
 }
 
@@ -75,6 +97,6 @@ export async function markExcludedAttendanceHandler(req: Request, res: Response)
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
   }
-  const updated = await setAttendanceExcluded(ids.map((id: unknown) => Number(id)), excluded !== false);
+  const updated = await setAttendanceExcluded(ids.map((id: unknown) => Number(id)), excluded !== false, scopeOf(req));
   res.json({ updated });
 }

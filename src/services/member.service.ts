@@ -157,6 +157,15 @@ export async function updateMember(id: number, input: UpdateMemberInput, scope: 
   if (!existing) return undefined;
   assertDepartmentInScope(scope, (existing as any).department_id ?? null);
 
+  // ATTT (IDOR vòng 2): chuyển nhân sự sang team KHÁC thì team đích cũng phải
+  // nằm trong phạm vi của người gọi — không thì đẩy được nhân sự sang phòng
+  // khác. members.department_id vẫn "đóng băng" theo lúc tạo (không hồi tố
+  // khi đổi team — xem tests/scope.test.ts), nên chỉ kiểm tra, không đổi.
+  if (input.team_id !== undefined && input.team_id !== existing.team_id) {
+    const newTeam = await db("teams").where({ id: input.team_id, is_deleted: false }).first();
+    assertDepartmentInScope(scope, (newTeam as any)?.department_id ?? null);
+  }
+
   const merged = {
     team_id: input.team_id ?? existing.team_id,
     name: input.name?.trim() ?? existing.name,

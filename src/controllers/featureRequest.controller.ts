@@ -20,6 +20,7 @@ import {
   listActiveTieuDeIndex,
 } from "../services/featureRequest.service.js";
 import { isNonEmptyText, parsePositiveInt, pickFields } from "../utils/validate.js";
+import { PRIORITIES } from "../services/featureRequest-import.service.js";
 import { detectAttachmentMime, validateAttachmentFile } from "../utils/fileValidation.js";
 import { listDepartments } from "../services/department.service.js";
 import { listHeThong } from "../services/hethong.service.js";
@@ -64,6 +65,50 @@ import {
   SCOPE_EMPTY,
   type DataScope,
 } from "../services/scope.util.js";
+
+// Trường nhận chuỗi tự do (còn lại: id phòng ban, do_uu_tien, loai_yeu_cau
+// có kiểm tra riêng) — service gọi .trim() thẳng lên giá trị client gửi nên
+// kiểu khác chuỗi (số/object) sẽ gây 500; chặn ở đây bằng 400.
+const FEATURE_REQUEST_TEXT_FIELDS = FEATURE_REQUEST_FIELDS.filter(
+  (f) => !["department_id", "target_department_id", "do_uu_tien", "loai_yeu_cau"].includes(f),
+);
+
+// ATTT Mass Assignment (vòng 2): kiểm tra KIỂU và GIÁ TRỊ trong danh mục của
+// payload đã qua whitelist — Ưu tiên phải thuộc danh sách chuẩn, Loại yêu
+// cầu phải nằm trong danh mục (hoặc giữ nguyên giá trị cũ của chính dòng đó,
+// vì dữ liệu cũ có thể mang loại đã bị xóa khỏi danh mục), text là chuỗi,
+// id phòng ban là số nguyên dương. Trả thông báo lỗi hoặc null.
+async function validateFeatureRequestPayload(
+  payload: Record<string, unknown>,
+  existingLoai?: string | null,
+): Promise<string | null> {
+  for (const f of FEATURE_REQUEST_TEXT_FIELDS) {
+    if (payload[f] === undefined) continue;
+    if (payload[f] === null) {
+      payload[f] = "";
+      continue;
+    }
+    if (typeof payload[f] !== "string") return `Trường '${f}' phải là chuỗi`;
+  }
+  for (const f of ["department_id", "target_department_id"] as const) {
+    if (payload[f] === undefined || payload[f] === null) continue;
+    const n = Number(payload[f]);
+    if (!Number.isInteger(n) || n <= 0) return `Trường '${f}' không hợp lệ`;
+    payload[f] = n;
+  }
+  if (payload.do_uu_tien !== undefined && !PRIORITIES.includes(payload.do_uu_tien as string)) {
+    return `Trường 'do_uu_tien' phải là 1 trong: ${PRIORITIES.join(", ")}`;
+  }
+  const loai = payload.loai_yeu_cau;
+  if (loai !== undefined && loai !== null && loai !== "") {
+    if (typeof loai !== "string") return "Trường 'loai_yeu_cau' phải là chuỗi";
+    if (loai !== existingLoai) {
+      const options = (await listLoaiYeuCau()).map((o) => o.ten_loai);
+      if (!options.includes(loai)) return `Loại yêu cầu '${loai}' không có trong danh mục Loại yêu cầu`;
+    }
+  }
+  return null;
+}
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
@@ -115,6 +160,8 @@ export async function createFeatureRequestHandler(req: Request, res: Response) {
   // và chỉ đổi được qua các route nghiệp vụ riêng (approve/reject/transfer/
   // to-backlog/to-roadmap).
   const payload = pickFields(req.body, FEATURE_REQUEST_FIELDS) as unknown as CreateFeatureRequestInput;
+  const payloadError = await validateFeatureRequestPayload(payload as unknown as Record<string, unknown>);
+  if (payloadError) return res.status(400).json({ error: payloadError });
   payload.target_department_id = targetDepartmentId;
   if (!scope.all) payload.department_id = scope.departmentId;
   // Chống trùng Tiêu đề: đã có yêu cầu cùng tiêu đề đang hiển thị (cùng
@@ -143,10 +190,19 @@ export async function updateFeatureRequestHandler(req: Request, res: Response) {
   if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) {
     return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   }
-  const updated = await updateFeatureRequest(
-    id,
-    pickFields(req.body, FEATURE_REQUEST_FIELDS) as unknown as UpdateFeatureRequestInput,
-  );
+  const payload = pickFields(req.body, FEATURE_REQUEST_FIELDS);
+  // ATTT (IDOR/Mass Assignment vòng 2): "Đơn vị đề xuất" và "Phòng ban đích"
+  // KHÔNG đổi được qua PUT với tài khoản bị giới hạn phòng — nếu không, sửa
+  // 1 yêu cầu của mình có thể giả mạo đơn vị đề xuất hoặc đẩy yêu cầu sang
+  // phòng khác, đi vòng qua route /transfer (có kiểm soát). Đổi phòng đích
+  // chỉ qua /transfer; scope.all (admin/phòng full-access) giữ nguyên quyền.
+  if (!scopeOf(req).all) {
+    delete payload.department_id;
+    delete payload.target_department_id;
+  }
+  const payloadError = await validateFeatureRequestPayload(payload, existing.loai_yeu_cau);
+  if (payloadError) return res.status(400).json({ error: payloadError });
+  const updated = await updateFeatureRequest(id, payload as unknown as UpdateFeatureRequestInput);
   if (!updated) return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
   res.json(updated);
 }

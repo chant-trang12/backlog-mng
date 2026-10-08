@@ -55,7 +55,7 @@ export const FEATURE_REQUEST_IMPORT_HEADERS = [
   "Ghi chú",
 ] as const;
 
-const PRIORITIES = ["Thấp", "Trung bình", "Cao", "Khẩn cấp"];
+export const PRIORITIES = ["Thấp", "Trung bình", "Cao", "Khẩn cấp"];
 
 const KEYS = {
   tieu_de: ["tieu de"],

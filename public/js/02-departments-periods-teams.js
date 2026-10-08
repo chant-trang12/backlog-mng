@@ -514,7 +514,7 @@ async function refreshHomeForPeriod(periodId) {
       api(`/api/members?period_id=${periodId}${deptParam()}`),
       api(`/api/periods/${periodId}/tasks`),
       api(`/api/compliance-records?period_id=${periodId}`),
-      api(`/api/attendance-records?period_id=${periodId}`),
+      api(`/api/attendance-records?period_id=${periodId}${deptParam()}`),
       api(`/api/noiquy-overrides?period_id=${periodId}`),
       api(`/api/support-records?period_id=${periodId}`),
       api(`/api/training-records?period_id=${periodId}`),

@@ -1211,7 +1211,7 @@ async function loadAttendanceRecords() {
     return;
   }
   const [data] = await Promise.all([
-    api(`/api/attendance-records?period_id=${state.currentPeriodId}`),
+    api(`/api/attendance-records?period_id=${state.currentPeriodId}${deptParam()}`),
     loadWorkRuleOverrides(),
   ]);
   state.attendanceHeaders = data.headers;
@@ -1507,7 +1507,7 @@ el.attendanceFileInput.addEventListener("change", async () => {
   if (!file) return;
   try {
     const buffer = await file.arrayBuffer();
-    const res = await fetch(`/api/attendance-records/import?period_id=${state.currentPeriodId}`, {
+    const res = await fetch(`/api/attendance-records/import?period_id=${state.currentPeriodId}${deptParam()}`, {
       method: "POST",
       headers: { "Content-Type": file.type || "application/octet-stream" },
       body: buffer,

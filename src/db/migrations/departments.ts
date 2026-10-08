@@ -142,6 +142,17 @@ export async function migrateDepartments(): Promise<void> {
     }
   }
 
+  // attendance_records.department_id — ATTT (IDOR, báo cáo pentest "nhiều
+  // chức năng tương tự"): Chấm công trước đây chỉ lọc theo period_id nên mọi
+  // phòng thấy/ghi đè dữ liệu của nhau. Dòng cũ backfill về phòng đầu tiên
+  // (giống các bảng trên); import mới gắn đúng phòng của người tải lên.
+  if (!(await db.schema.hasColumn("attendance_records", "department_id"))) {
+    await db.schema.alterTable("attendance_records", (t) => {
+      t.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION").index();
+    });
+    await db("attendance_records").whereNull("department_id").update({ department_id: firstDeptId });
+  }
+
   // tieu_chi_configs.department_id — NULL = tiêu chí DÙNG CHUNG cho mọi
   // phòng (giữ nguyên hành vi cũ: toàn bộ tiêu chí có sẵn đều để NULL khi
   // thêm cột này, không phòng nào bị mất tiêu chí đang dùng); có giá trị =

@@ -380,6 +380,7 @@ export interface AttendanceRecord {
   row_index: number;
   row_data: Record<string, string>;
   excluded_from_late: boolean;
+  department_id?: number | null;
   created_at: string;
 }
 
