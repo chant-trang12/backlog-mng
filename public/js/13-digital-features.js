@@ -12,6 +12,14 @@ function dfClamp(text) {
   return `<div class="fr-clamp" title="${value.replace(/"/g, "&quot;")}">${value.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>`;
 }
 
+// Ô text hiển thị ĐẦY ĐỦ (không cắt "…") — dùng cho bảng màn hình trong
+// trang chi tiết vì các dòng này không có màn xem chi tiết riêng.
+function dfFull(text) {
+  const value = text ?? "";
+  if (!value) return `<span class="muted">—</span>`;
+  return `<div>${value.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>`;
+}
+
 // Bộ lọc hiện tại (select + tìm từ khóa) — áp trên state.digitalFeatures
 // (server trả toàn bộ danh sách chưa xóa, lọc thêm ở FE giống bảng Yêu cầu
 // tính năng).
@@ -699,21 +707,21 @@ function renderDigitalFeatureScreens() {
       <td><input type="checkbox" class="dfs-row-checkbox" ${state.selectedDfScreenIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
       <td data-col="ma_mh" ${colHidden("ma_mh")}>${r.ma_mh ? `<span class="pill" title="Mã màn hình">${r.ma_mh.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
-      <td data-col="tn" ${colHidden("tn")}>${dfClamp(r.tn)}</td>
-      <td>${dfClamp(r.ten_man_hinh)}</td>
-      <td data-col="loai" ${colHidden("loai")}>${dfClamp(r.loai)}</td>
-      <td data-col="thanh_phan_chinh" ${colHidden("thanh_phan_chinh")}>${dfClamp(r.thanh_phan_chinh)}</td>
-      <td data-col="hanh_dong" ${colHidden("hanh_dong")}>${dfClamp(r.hanh_dong)}</td>
-      <td data-col="quy_tac_nghiep_vu" ${colHidden("quy_tac_nghiep_vu")}>${dfClamp(r.quy_tac_nghiep_vu)}</td>
-      <td data-col="sales_am" ${colHidden("sales_am")}>${dfClamp(r.sales_am)}</td>
-      <td data-col="truong_dvkd" ${colHidden("truong_dvkd")}>${dfClamp(r.truong_dvkd)}</td>
-      <td data-col="presales_sp" ${colHidden("presales_sp")}>${dfClamp(r.presales_sp)}</td>
-      <td data-col="nv_bdkd" ${colHidden("nv_bdkd")}>${dfClamp(r.nv_bdkd)}</td>
-      <td data-col="ks_lanh_dao_bdkd" ${colHidden("ks_lanh_dao_bdkd")}>${dfClamp(r.ks_lanh_dao_bdkd)}</td>
-      <td data-col="phap_che" ${colHidden("phap_che")}>${dfClamp(r.phap_che)}</td>
-      <td data-col="tckt" ${colHidden("tckt")}>${dfClamp(r.tckt)}</td>
-      <td data-col="ban_lanh_dao" ${colHidden("ban_lanh_dao")}>${dfClamp(r.ban_lanh_dao)}</td>
-      <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfClamp(r.quan_tri_he_thong)}</td>
+      <td data-col="tn" ${colHidden("tn")}>${dfFull(r.tn)}</td>
+      <td>${dfFull(r.ten_man_hinh)}</td>
+      <td data-col="loai" ${colHidden("loai")}>${dfFull(r.loai)}</td>
+      <td data-col="thanh_phan_chinh" ${colHidden("thanh_phan_chinh")}>${dfFull(r.thanh_phan_chinh)}</td>
+      <td data-col="hanh_dong" ${colHidden("hanh_dong")}>${dfFull(r.hanh_dong)}</td>
+      <td data-col="quy_tac_nghiep_vu" ${colHidden("quy_tac_nghiep_vu")}>${dfFull(r.quy_tac_nghiep_vu)}</td>
+      <td data-col="sales_am" ${colHidden("sales_am")}>${dfFull(r.sales_am)}</td>
+      <td data-col="truong_dvkd" ${colHidden("truong_dvkd")}>${dfFull(r.truong_dvkd)}</td>
+      <td data-col="presales_sp" ${colHidden("presales_sp")}>${dfFull(r.presales_sp)}</td>
+      <td data-col="nv_bdkd" ${colHidden("nv_bdkd")}>${dfFull(r.nv_bdkd)}</td>
+      <td data-col="ks_lanh_dao_bdkd" ${colHidden("ks_lanh_dao_bdkd")}>${dfFull(r.ks_lanh_dao_bdkd)}</td>
+      <td data-col="phap_che" ${colHidden("phap_che")}>${dfFull(r.phap_che)}</td>
+      <td data-col="tckt" ${colHidden("tckt")}>${dfFull(r.tckt)}</td>
+      <td data-col="ban_lanh_dao" ${colHidden("ban_lanh_dao")}>${dfFull(r.ban_lanh_dao)}</td>
+      <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfFull(r.quan_tri_he_thong)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
           <button type="button" class="small btn-edit icon-btn dfs-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
