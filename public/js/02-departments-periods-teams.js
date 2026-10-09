@@ -141,17 +141,22 @@ function renderDeptSwitcher() {
   applyDeptModeSidebarNav();
 }
 
-// Menu "CSKH" (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — đều tính theo team) ẩn
-// đi với phòng ban tính KPI theo Task (không chia team, xem
-// homeCachTinhKpiTheoTask). Đang đứng ở trang CSKH mà đổi sang phòng loại
-// này thì tự chuyển về Home.
+// 3 tab CSKH (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — dữ liệu tính theo team,
+// xem 05-cskh.js) đã nhập vào Team & Nhân sự sau tab Chấm công. Phòng ban
+// tính KPI theo Task (không chia team) thì ẩn 3 tab này; đang đứng ở 1
+// trong 3 tab thì tự chuyển về tab Nhân sự.
 function applyDeptModeSidebarNav() {
-  const cskhNav = document.querySelector('.nav-item[data-page="cskh"]');
-  if (!cskhNav) return;
   const theoTask = homeCachTinhKpiTheoTask();
-  cskhNav.hidden = theoTask;
-  if (theoTask && cskhNav.classList.contains("active")) {
-    document.querySelector('.nav-item[data-page="home"]')?.click();
+  const cskhTabs = ["incidents", "tickets", "creation-rates"];
+  cskhTabs.forEach((tab) => {
+    const pill = document.querySelector(`#team-subnav .pill[data-tab="${tab}"]`);
+    if (pill) pill.hidden = theoTask;
+  });
+  if (theoTask) {
+    const activeCskh = document.querySelector(
+      cskhTabs.map((tab) => `#team-subnav .pill.active[data-tab="${tab}"]`).join(", "),
+    );
+    if (activeCskh) document.querySelector('#team-subnav .pill[data-tab="nhansu"]')?.click();
   }
 
   // Phòng ban tính KPI theo task (không chia team) — bỏ luôn bộ lọc Team

@@ -12,16 +12,6 @@ function formatPercent(value) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-document.querySelectorAll("#cskh-subnav .pill").forEach((pill) => {
-  pill.addEventListener("click", () => {
-    document.querySelectorAll("#cskh-subnav .pill").forEach((p) => p.classList.remove("active"));
-    pill.classList.add("active");
-    ["incidents", "tickets", "creation-rates"].forEach((tab) => {
-      document.getElementById(`cskh-tab-${tab}`).hidden = tab !== pill.dataset.tab;
-    });
-  });
-});
-
 document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#config-subnav .pill").forEach((p) => p.classList.remove("active"));
@@ -38,8 +28,15 @@ document.querySelectorAll("#team-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#team-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["nhansu", "tuanthu", "noiquy", "daotao", "hotro", "danhgia", "chamcong"].forEach((tab) => {
-      document.getElementById(`team-tab-${tab}`).hidden = tab !== pill.dataset.tab;
+    // Tab CSKH (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo) đã nhập chung vào Team &
+    // Nhân sự, xếp sau tab Chấm công — 3 section vẫn giữ id `cskh-tab-*`.
+    const tabs = ["nhansu", "tuanthu", "noiquy", "daotao", "hotro", "danhgia", "chamcong"];
+    const cskhTabs = ["incidents", "tickets", "creation-rates"];
+    [...tabs, ...cskhTabs].forEach((tab) => {
+      const el = document.getElementById(
+        cskhTabs.includes(tab) ? `cskh-tab-${tab}` : `team-tab-${tab}`,
+      );
+      if (el) el.hidden = tab !== pill.dataset.tab;
     });
   });
 });

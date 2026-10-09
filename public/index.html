@@ -29,7 +29,6 @@
         <button class="nav-item active" data-page="home"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg>Trang chủ</button>
         <button class="nav-item" data-page="backlog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg>Nhiệm vụ</button>
         <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Team &amp; Nhân sự</button>
-        <button class="nav-item" data-page="cskh"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-headset"/></svg>CSKH</button>
         <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg>Roadmap năm</button>
         <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
         <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Quản lý tính năng số hoá</button>
@@ -481,6 +480,9 @@
             <span class="pill" data-tab="hotro">Hỗ trợ</span>
             <span class="pill" data-tab="danhgia">Đánh giá</span>
             <span class="pill" data-tab="chamcong">Chấm công</span>
+            <span class="pill" data-tab="incidents">Sự cố</span>
+            <span class="pill" data-tab="tickets">Hỗ trợ ticket</span>
+            <span class="pill" data-tab="creation-rates">Tỉ lệ khởi tạo</span>
           </div>
 
           <div id="team-tab-nhansu">
@@ -779,19 +781,7 @@
               </div>
             </div>
           </section>
-          </div>
-        </div>
-
-        <!-- ---- Trang CSKH ---- -->
-        <div id="page-cskh" hidden>
-          <div class="tab-panel-group">
-          <div class="chrome-tabs" id="cskh-subnav">
-            <span class="pill active" data-tab="incidents">Sự cố</span>
-            <span class="pill" data-tab="tickets">Hỗ trợ ticket</span>
-            <span class="pill" data-tab="creation-rates">Tỉ lệ khởi tạo</span>
-          </div>
-
-          <section class="card" id="cskh-tab-incidents">
+          <section class="card" id="cskh-tab-incidents" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Sự cố</h2>
               <div class="row" style="gap:8px">

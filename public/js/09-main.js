@@ -4,7 +4,6 @@ const pages = {
   home: document.getElementById("page-home"),
   backlog: document.getElementById("page-backlog"),
   team: document.getElementById("page-team"),
-  cskh: document.getElementById("page-cskh"),
   roadmap: document.getElementById("page-roadmap"),
   "digital-features": document.getElementById("page-digital-features"),
   // Trang CHI TIẾT tính năng số hoá — không có mục ở menu trái (mở bằng
