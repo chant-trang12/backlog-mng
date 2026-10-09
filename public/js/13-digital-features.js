@@ -317,6 +317,17 @@ function openDigitalFeatureDetail(id) {
   document.getElementById("digital-feature-detail-dialog").showModal();
 }
 
+// Nút Hủy (form) / Đóng (chi tiết) — đóng popup không lưu, cùng cách các
+// dialog khác trong hệ thống gắn listener riêng theo id (xem
+// feature-request-cancel-btn ở 10-feature-requests.js). Nút X góc trên và
+// bấm ra backdrop đã có handler ủy quyền dùng chung (01-state.js).
+document.getElementById("digital-feature-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("digital-feature-dialog").close();
+});
+document.getElementById("digital-feature-detail-close-btn")?.addEventListener("click", () => {
+  document.getElementById("digital-feature-detail-dialog").close();
+});
+
 // ---- Bộ lọc + tìm kiếm ----
 
 for (const id of ["df-filter-module", "df-filter-giai-doan", "df-filter-tn-mh", "df-filter-don-vi"]) {
