@@ -1063,6 +1063,20 @@
                 <h2 style="margin:0">Tính năng số hoá</h2>
               </div>
               <div class="row" style="flex:0 0 auto">
+                <!-- Tùy chọn ẩn/hiện cột — giống bảng Nhiệm vụ / Yêu cầu tính
+                     năng: cho người dùng tự tắt cột không cần xem, lưu
+                     localStorage theo máy (13-digital-features.js). -->
+                <div class="col-menu-wrap" id="df-col-menu-wrap">
+                  <button type="button" id="df-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
+                    <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
+                    <span class="caret" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="col-menu" id="df-col-menu" role="menu" hidden>
+                    <div class="col-menu-list" id="df-col-menu-list"></div>
+                    <div class="bulk-menu-sep"></div>
+                    <button type="button" class="bulk-menu-item" id="df-col-menu-reset">Hiện tất cả</button>
+                  </div>
+                </div>
                 <button id="download-df-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải excel mẫu</button>
                 <button id="import-df-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                 <input type="file" id="df-import-input" accept=".xlsx,.xlsm" hidden />
@@ -1083,16 +1097,16 @@
                 <thead>
                   <tr>
                     <th style="min-width:48px">STT</th>
-                    <th style="min-width:90px">Mã</th>
+                    <th style="min-width:90px" data-col="ma">Mã</th>
                     <th style="min-width:170px">Module</th>
-                    <th style="min-width:170px">Đơn vị chủ trì (đề xuất)</th>
-                    <th style="min-width:170px">Đơn vị phối hợp</th>
-                    <th style="min-width:110px">Giai đoạn</th>
-                    <th style="min-width:80px">TN / MH</th>
-                    <th style="min-width:240px">Mục tiêu nghiệp vụ</th>
-                    <th style="min-width:170px">Vai trò P.BĐKD</th>
-                    <th style="min-width:170px">Nhận đầu vào từ</th>
-                    <th style="min-width:170px">Chuyển đầu ra tới</th>
+                    <th style="min-width:170px" data-col="don_vi_chu_tri">Đơn vị chủ trì (đề xuất)</th>
+                    <th style="min-width:170px" data-col="don_vi_phoi_hop">Đơn vị phối hợp</th>
+                    <th style="min-width:110px" data-col="giai_doan">Giai đoạn</th>
+                    <th style="min-width:80px" data-col="tn_mh">TN / MH</th>
+                    <th style="min-width:240px" data-col="muc_tieu_nghiep_vu">Mục tiêu nghiệp vụ</th>
+                    <th style="min-width:170px" data-col="vai_tro_pbdkd">Vai trò P.BĐKD</th>
+                    <th style="min-width:170px" data-col="nhan_dau_vao_tu">Nhận đầu vào từ</th>
+                    <th style="min-width:170px" data-col="chuyen_dau_ra_toi">Chuyển đầu ra tới</th>
                     <th style="min-width:110px">Action</th>
                   </tr>
                 </thead>
