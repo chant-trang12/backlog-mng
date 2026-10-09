@@ -113,7 +113,9 @@ async function renderHomeTreoViec() {
 }
 
 // "Việc cần xử lý gấp" — nhân sự (task_members) bị đánh dấu ở bảng Nhân sự
-// tham gia, cùng tinh thần renderHomeTreoViec() ở trên.
+// tham gia, cùng tinh thần renderHomeTreoViec() ở trên. Khác treo: bảng này
+// ĂN bộ lọc Team của khung Tìm kiếm (state.homeTeamFilter — phòng "theo_task"
+// ẩn bộ lọc Team nên luôn hiện tất cả, giống các bảng tính theo team bên dưới).
 async function renderHomeCanXuLyGap() {
   const card = document.getElementById("home-can-xu-ly-gap-card");
   const tbody = document.getElementById("home-can-xu-ly-gap-tbody");
@@ -130,7 +132,13 @@ async function renderHomeCanXuLyGap() {
   }
   card.hidden = rows.length === 0;
   if (rows.length === 0) return;
-  tbody.innerHTML = rows
+  const theoTask = homeCachTinhKpiTheoTask();
+  const filtered = !theoTask && state.homeTeamFilter ? rows.filter((r) => r.team === state.homeTeamFilter) : rows;
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:14px">Không có việc nào khớp bộ lọc Team.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered
     .map(
       (r) => `
     <tr>
