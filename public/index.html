@@ -1222,20 +1222,41 @@
 
             <section class="card" id="df-detail-tab-module-info">
               <!-- Thông tin Module — các trường lấy từ dòng dữ liệu đang xem
-                   trong danh sách (13-digital-features.js điền khi mở chi tiết) -->
-              <div class="table-wrap">
-                <table id="df-detail-info-table">
-                  <tbody>
-                    <tr><th scope="row">Đơn vị chủ trì (đề xuất)</th><td id="df-info-don-vi-chu-tri"></td></tr>
-                    <tr><th scope="row">Đơn vị phối hợp</th><td id="df-info-don-vi-phoi-hop"></td></tr>
-                    <tr><th scope="row">Vai trò P.BĐKD</th><td id="df-info-vai-tro-pbdkd"></td></tr>
-                    <tr><th scope="row">Giai đoạn</th><td id="df-info-giai-doan"></td></tr>
-                    <tr><th scope="row">Mục tiêu nghiệp vụ</th><td id="df-info-muc-tieu"></td></tr>
-                    <tr><th scope="row">Phạm vi mô tả (TN / MH)</th><td id="df-info-tn-mh"></td></tr>
-                    <tr><th scope="row">Nhận đầu vào từ</th><td id="df-info-nhan-dau-vao"></td></tr>
-                    <tr><th scope="row">Chuyển đầu ra tới</th><td id="df-info-chuyen-dau-ra"></td></tr>
-                  </tbody>
-                </table>
+                   trong danh sách; style tái dùng bộ fr-detail-* của trang
+                   chi tiết Yêu cầu tính năng (13-digital-features.js điền) -->
+              <div class="fr-detail-grid">
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Đơn vị chủ trì (đề xuất)</div>
+                  <div id="df-info-don-vi-chu-tri"></div>
+                </div>
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Đơn vị phối hợp</div>
+                  <div id="df-info-don-vi-phoi-hop"></div>
+                </div>
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Vai trò P.BĐKD</div>
+                  <div id="df-info-vai-tro-pbdkd"></div>
+                </div>
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Giai đoạn</div>
+                  <div id="df-info-giai-doan"></div>
+                </div>
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Nhận đầu vào từ</div>
+                  <div id="df-info-nhan-dau-vao"></div>
+                </div>
+                <div class="fr-detail-field">
+                  <div class="fr-detail-label">Chuyển đầu ra tới</div>
+                  <div id="df-info-chuyen-dau-ra"></div>
+                </div>
+              </div>
+              <div class="fr-detail-block" style="margin-top:14px">
+                <div class="fr-detail-label">Mục tiêu nghiệp vụ</div>
+                <p class="fr-detail-quote" id="df-info-muc-tieu"></p>
+              </div>
+              <div class="fr-detail-block" style="margin-top:14px">
+                <div class="fr-detail-label">Phạm vi mô tả (TN / MH)</div>
+                <p class="fr-detail-quote" id="df-info-tn-mh"></p>
               </div>
             </section>
 

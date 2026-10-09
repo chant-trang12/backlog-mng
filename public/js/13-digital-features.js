@@ -394,7 +394,7 @@ function resetDigitalFeatureDetailTabs() {
   });
 }
 
-// Điền 1 ô trong bảng "Thông tin Module" — ô rỗng hiển thị "—" mờ.
+// Điền 1 trường trong khối "Thông tin Module" — trống hiển thị "—" mờ.
 function setDfInfoCell(id, value) {
   const cell = document.getElementById(id);
   cell.textContent = value || "—";

@@ -937,13 +937,6 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
   text-align: center;
 }
 
-/* Bảng "Thông tin Module" (tab đầu màn hình chi tiết): bảng nhãn | giá trị —
-   th là nhãn hàng nên tắt sticky header của bảng dữ liệu chung. */
-#df-detail-info-table th {
-  position: static;
-  width: 230px;
-}
-
 .tab-panel-group #team-tab-nhansu > .card,
 .tab-panel-group #config-tab-users > .card:first-child,
 .tab-panel-group #config-tab-phongban > .card:first-child,
