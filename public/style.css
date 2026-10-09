@@ -925,6 +925,18 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
   font-weight: 600;
 }
 
+/* Tab màn hình chi tiết Tính năng số hoá: 5 tab bề ngang bằng nhau,
+   chia đều theo bề rộng khung (nhãn dài tự xuống dòng, căn giữa). */
+#df-detail-subnav {
+  gap: 8px;
+}
+
+#df-detail-subnav .pill {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
 .tab-panel-group #team-tab-nhansu > .card,
 .tab-panel-group #config-tab-users > .card:first-child,
 .tab-panel-group #config-tab-phongban > .card:first-child,
