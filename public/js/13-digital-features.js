@@ -41,7 +41,7 @@ function dfPermBadges(value) {
   const symbols = String(value).toUpperCase().match(/[VCEDAXS]/g);
   if (!symbols) return dfFull(value);
   return symbols
-    .map((s) => `<span class="perm-badge" title="${DFS_PERM_LEGEND[s] ?? s}">${s}</span>`)
+    .map((s) => `<span class="perm-badge perm-${s.toLowerCase()}" title="${DFS_PERM_LEGEND[s] ?? s}">${s}</span>`)
     .join("");
 }
 
