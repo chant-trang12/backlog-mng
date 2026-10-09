@@ -1163,6 +1163,18 @@ th {
 #fr-table tbody tr.fr-row-clickable { cursor: pointer; }
 #fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
 
+/* Bảng Tính năng số hoá (#df-table) — giống bảng Yêu cầu tính năng: tiêu
+   đề cột căn giữa, ô ngắn (STT/Mã/Giai đoạn/TN-MH) căn giữa; ô text dài
+   căn trái cho dễ đọc. Dùng [data-col=...] vì bảng cho ẩn cột tuỳ ý. */
+#df-table th { text-align: center; }
+#df-table td { vertical-align: middle; }
+#df-table td:first-child,
+#df-table td[data-col="ma"],
+#df-table td[data-col="giai_doan"],
+#df-table td[data-col="tn_mh"] {
+  text-align: center;
+}
+
 /* Ô text dài trong bảng Yêu cầu tính năng — giới hạn 3 dòng, tràn thì hiện
    "…" (title attr ở từng ô cho xem đầy đủ khi rê chuột). */
 .fr-clamp {
