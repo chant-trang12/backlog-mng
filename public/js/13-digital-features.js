@@ -368,8 +368,31 @@ document.getElementById("digital-feature-form")?.addEventListener("submit", asyn
 });
 
 // ---- Trang chi tiết (màn hình riêng) — mở bằng icon "Xem chi tiết" ở
-// bảng, quay lại bằng nút "← Quay lại". Nội dung tạm để trống (chờ mô tả
-// sau), hiện tại hiển thị tên tính năng + Mã để nhận diện dòng đang xem. ----
+// bảng, quay lại bằng nút "← Quay lại". Nội dung chia tab giống menu CSKH
+// (chrome-tabs + pill), hiện đang để placeholder chờ mô tả từng tab. ----
+
+const DF_DETAIL_TABS = ["module-info", "screens", "master-data", "data-lifecycle", "integration"];
+
+// Chuyển tab — cùng cách CSKH làm ở 05-cskh.js (bấm pill -> đổi active +
+// ẩn/hiện section theo id `df-detail-tab-<tab>`).
+document.querySelectorAll("#df-detail-subnav .pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    document.querySelectorAll("#df-detail-subnav .pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    DF_DETAIL_TABS.forEach((tab) => {
+      document.getElementById(`df-detail-tab-${tab}`).hidden = tab !== pill.dataset.tab;
+    });
+  });
+});
+
+// Luôn mở ở tab đầu ("Thông tin Module") bất kể lần trước đang ở tab nào.
+function resetDigitalFeatureDetailTabs() {
+  document.querySelectorAll("#df-detail-subnav .pill").forEach((p) => p.classList.remove("active"));
+  document.querySelector('#df-detail-subnav .pill[data-tab="module-info"]')?.classList.add("active");
+  DF_DETAIL_TABS.forEach((tab) => {
+    document.getElementById(`df-detail-tab-${tab}`).hidden = tab !== "module-info";
+  });
+}
 
 function openDigitalFeatureDetail(id) {
   const item = state.digitalFeatures.find((r) => r.id === id);
@@ -378,6 +401,7 @@ function openDigitalFeatureDetail(id) {
   const maBadge = document.getElementById("df-detail-page-ma");
   maBadge.textContent = item.ma ?? "";
   maBadge.hidden = !item.ma;
+  resetDigitalFeatureDetailTabs();
   // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
   // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
   document.getElementById("page-digital-features").hidden = true;

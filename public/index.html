@@ -1199,8 +1199,9 @@
 
         <!-- ---- Trang chi tiết Tính năng số hoá — MÀN HÌNH RIÊNG (không có
              mục ở menu trái): mở bằng icon "Xem chi tiết" ở bảng danh sách,
-             quay lại bằng nút "← Quay lại". Nội dung tạm để trống, chờ mô
-             tả yêu cầu cụ thể sau (13-digital-features.js). ---- -->
+             quay lại bằng nút "← Quay lại". Nội dung chia theo tab giống
+             menu CSKH (chrome-tabs + pill); nội dung cụ thể từng tab chờ mô
+             tả yêu cầu (13-digital-features.js). ---- -->
         <div id="page-digital-feature-detail" hidden>
           <section class="card">
             <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -1210,8 +1211,37 @@
               </div>
               <span class="pill" id="df-detail-page-ma" hidden></span>
             </div>
-            <p class="muted" style="text-align:center;padding:32px 0">Nội dung màn hình xem chi tiết sẽ được cập nhật sau.</p>
           </section>
+
+          <div class="tab-panel-group">
+            <div class="chrome-tabs" id="df-detail-subnav">
+              <span class="pill active" data-tab="module-info">Thông tin Module</span>
+              <span class="pill" data-tab="screens">Màn hình, Tính năng &amp; Phân quyền</span>
+              <span class="pill" data-tab="master-data">Danh mục (Master Data) của Module</span>
+              <span class="pill" data-tab="data-lifecycle">Đối tượng dữ liệu &amp; Vòng đời trạng thái</span>
+              <span class="pill" data-tab="integration">Tích hợp &amp; Sự kiện</span>
+            </div>
+
+            <section class="card" id="df-detail-tab-module-info">
+              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Thông tin Module" sẽ được cập nhật sau.</p>
+            </section>
+
+            <section class="card" id="df-detail-tab-screens" hidden>
+              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Màn hình, Tính năng &amp; Phân quyền" sẽ được cập nhật sau.</p>
+            </section>
+
+            <section class="card" id="df-detail-tab-master-data" hidden>
+              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Danh mục (Master Data) của Module" sẽ được cập nhật sau.</p>
+            </section>
+
+            <section class="card" id="df-detail-tab-data-lifecycle" hidden>
+              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Đối tượng dữ liệu &amp; Vòng đời trạng thái" sẽ được cập nhật sau.</p>
+            </section>
+
+            <section class="card" id="df-detail-tab-integration" hidden>
+              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Tích hợp &amp; Sự kiện" sẽ được cập nhật sau.</p>
+            </section>
+          </div>
         </div>
 
         <!-- ---- Trang Yêu cầu tính năng ---- -->
