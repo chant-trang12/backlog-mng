@@ -201,6 +201,38 @@ describe("Quản lý tính năng số hoá: excel mẫu / import / xuất", () =
     expect(list.body.find((r: { module: string }) => r.module === "Module trùng mã")).toBeUndefined();
   });
 
+  it("Import: dòng trùng nội dung (Module đã có — kể cả Mã trống hoặc Mã khác) bị bỏ qua", async () => {
+    const app = createApp();
+    await request(app).post("/api/digital-features").send({ ma: "TN-DUPC-01", module: "Module trùng nội dung" });
+
+    const buffer = await xlsxBuffer(HEADERS, [
+      // Trùng Module với dòng đã có nhưng Mã khác -> vẫn bỏ qua
+      [1, "TN-DUP-99", "Module trùng nội dung", "", "", "", "", "", "", "", ""],
+      // Trùng Module, Mã trống -> bỏ qua
+      [2, "", "Module trùng nội dung", "", "", "", "", "", "", "", ""],
+      // Hai dòng cùng Module trong cùng file: dòng đầu nhập, dòng sau bỏ qua
+      [3, "", "Module trùng trong file", "", "", "", "", "", "", "", ""],
+      [4, "", "Module trùng trong file", "", "", "", "", "", "", "", ""],
+    ]);
+    const res = await request(app)
+      .post("/api/digital-features/import")
+      .set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+      .send(buffer);
+    expect(res.status).toBe(201);
+    expect(res.body.imported).toBe(1);
+    expect(res.body.skipped).toHaveLength(3);
+    const reasons: string[] = res.body.skipped.map((s: { reason: string }) => s.reason);
+    expect(reasons.every((r) => r.includes("Trùng nội dung"))).toBe(true);
+
+    const list = await request(app).get("/api/digital-features");
+    expect(
+      list.body.filter((r: { module: string }) => r.module === "Module trùng nội dung"),
+    ).toHaveLength(1);
+    expect(
+      list.body.filter((r: { module: string }) => r.module === "Module trùng trong file"),
+    ).toHaveLength(1);
+  });
+
   it("Xuất Excel: trả file .xlsx chứa toàn bộ dòng đang hiển thị", async () => {
     const app = createApp();
     await request(app).post("/api/digital-features").send({ ma: "TN-EXP-01", module: "Module xuất 1" });

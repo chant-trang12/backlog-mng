@@ -93,12 +93,16 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
   }
 
   const result: DigitalFeatureImportResult = { imported: 0, skipped: [] };
-  // Mã đã dùng trong file này + Mã đang hiển thị trong hệ thống — để chặn
-  // trùng Mã (kể cả trùng nội bộ trong cùng file).
+  // Mã + Module đã dùng trong file này + đang hiển thị trong hệ thống — để
+  // chặn trùng: Mã trùng hoặc nội dung (Module) trùng với dòng đã có thì bỏ
+  // qua, kể cả trùng nội bộ trong cùng file (ví dụ import lại file cũ: dòng
+  // có Mã bị chặn theo Mã, dòng Mã trống bị chặn theo Module).
   const seenMa = new Set<string>();
+  const seenModule = new Set<string>();
   const existing = await listDigitalFeatures();
   for (const r of existing) {
     if (r.ma) seenMa.add(r.ma.trim().toLowerCase());
+    if (r.module) seenModule.add(r.module.trim().toLowerCase());
   }
 
   const val = (row: Record<string, string>, c: string | undefined) => (c ? (row[c] ?? "").trim() : "");
@@ -124,6 +128,12 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
       seenMa.add(key);
     }
 
+    const moduleKey = moduleValue.toLowerCase();
+    if (seenModule.has(moduleKey)) {
+      result.skipped.push({ row: rowNo, label, reason: `Trùng nội dung (Module "${moduleValue}") với tính năng đã có` });
+      continue;
+    }
+
     await createDigitalFeature({
       ma: ma || undefined, // trống -> tự sinh TNSH-xxx
       module: moduleValue,
@@ -137,6 +147,7 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
       chuyen_dau_ra_toi: val(row, col(KEYS.chuyen_dau_ra_toi)) || undefined,
     });
     result.imported += 1;
+    seenModule.add(moduleKey);
   }
 
   return result;
