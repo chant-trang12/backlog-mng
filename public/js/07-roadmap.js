@@ -143,12 +143,12 @@ function renderRoadmap() {
     .map((it, i) => {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
       const selCls = it.id === state.roadmapSelectedId ? " class=\"rm-row-selected\"" : "";
-      // Badge "Đã vào Backlog" cạnh Trạng thái — hiện ngay khi có tháng được
-      // tự động đưa vào backlog (sync theo chi tiết từng tháng hoặc kiểu cũ);
-      // tooltip liệt kê các tháng đã đưa.
+      // Badge "✓ Đã vào Backlog" — góc trên phải ô Nhiệm vụ (giống tính năng
+      // cũ), hiện khi có tháng được tự động đưa vào backlog (sync theo chi
+      // tiết từng tháng hoặc kiểu cũ); tooltip liệt kê các tháng đã đưa.
       const syncedMonths = it.synced_months ?? [];
       const backlogBadge = syncedMonths.length
-        ? `<span class="rm-backlog-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span>`
+        ? `<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span>`
         : "";
       return `<tr data-id="${it.id}"${selCls}>
       <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
@@ -156,14 +156,14 @@ function renderRoadmap() {
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${systemColorClass(it.he_thong)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${objectiveColorClass(it.muc_tieu)}"`)}</td>
-      <td class="rm-nv-cell${it.synced_task_id ? " has-sync-badge" : ""}">${it.synced_task_id ? '<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog theo tháng bắt đầu (kiểu cũ)">✓ Đã vào Backlog</span>' : ""}${nl2br(it.nhiem_vu)}</td>
+      <td class="rm-nv-cell${backlogBadge ? " has-sync-badge" : ""}">${backlogBadge}${nl2br(it.nhiem_vu)}</td>
       <td>${nl2br(it.dod)}</td>
       <td>${nl2br(it.dieu_kien_dam_bao)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, categoryBadgeAttrs(it.phan_loai))}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_bat_dau)}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_ket_thuc)}</td>
       <td style="text-align:center">${quyFromDate(it.thoi_gian_ket_thuc)}</td>
-      <td style="text-align:center">${backlogBadge}<span class="status-badge ${sc}">${it.trang_thai}</span></td>
+      <td style="text-align:center"><span class="status-badge ${sc}">${it.trang_thai}</span></td>
       <td>${nl2br(it.ghi_chu)}</td>
       <td>
         <div class="actions-cell">
