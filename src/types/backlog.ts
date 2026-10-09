@@ -349,6 +349,7 @@ export interface RoadmapDetail {
   noi_dung: string;
   trang_thai: TaskStatus;
   ghi_chu: string | null;
+  synced_task_id?: number | null;
   created_at: string;
   updated_at: string;
 }

@@ -346,8 +346,8 @@ describe("Roadmap năm", () => {
     expect(res.status).toBe(400);
   });
 
-  describe("Tự động đưa nhiệm vụ roadmap vào backlog theo tháng bắt đầu", () => {
-    it("đưa ngay vào backlog nếu tháng bắt đầu đã có period sẵn — chỉ Team/Nhiệm vụ/DOD/Phân loại/Deadline", async () => {
+  describe("Tự động đưa roadmap vào backlog", () => {
+    it("tạo dòng KHÔNG có chi tiết thì chưa đưa vào backlog (dù tháng đã quản lý) — thêm chi tiết mới đưa", async () => {
       const app = createApp();
       const periodId = await makePeriod(app, 2012, 9); // tháng 9/2012 đã quản lý sẵn
 
@@ -365,14 +365,22 @@ describe("Roadmap năm", () => {
         thoi_gian_ket_thuc: "2012-11-30",
       });
       expect(created.status).toBe(201);
-      expect(created.body.synced_task_id).toBeTruthy();
+      // Chưa có chi tiết theo tháng -> chưa đưa gì vào backlog (task sẽ sinh
+      // theo từng dòng chi tiết, không còn theo cả dòng).
+      expect(created.body.synced_task_id).toBeFalsy();
+
+      const detail = await request(app)
+        .post(`/api/roadmap-items/${created.body.id}/details`)
+        .send({ month: 9, noi_dung: "Việc tháng 9 của RM sync A" });
+      expect(detail.status).toBe(201);
+      expect(detail.body.synced_task_id).toBeTruthy();
 
       const tasks = await request(app).get(`/api/periods/${periodId}/tasks`);
-      const t = tasks.body.find((x: { id: number }) => x.id === created.body.synced_task_id);
+      const t = tasks.body.find((x: { id: number }) => x.id === detail.body.synced_task_id);
       expect(t).toBeTruthy();
       expect(t.team).toBe("CRM");
       expect(t.nhiem_vu).toBe("RM sync A");
-      expect(t.dod).toBe("Chạy trên prod");
+      expect(t.dod).toBe("Việc tháng 9 của RM sync A"); // DOD lấy từ Nội dung công việc của tháng
       expect(t.tinh_chat).toBe("NVKH, NV năm"); // Phân loại roadmap + tag hệ thống "NV năm"
       expect(t.deadline).toBe("2012-11-30"); // Ngày kết thúc roadmap -> Deadline task
     });
@@ -434,6 +442,154 @@ describe("Roadmap năm", () => {
       expect(t).toBeTruthy();
       expect(t.tinh_chat).toBe("NVPS, NV năm");
       expect(t.deadline).toBe("2014-06-20");
+    });
+  });
+
+  describe("Đưa CHI TIẾT công việc theo tháng vào backlog (logic mới)", () => {
+    async function makeItemWithDetails(
+      app: ReturnType<typeof createApp>,
+      overrides: Record<string, unknown>,
+      details: { month: number; noi_dung: string }[],
+    ) {
+      const created = await request(app)
+        .post("/api/roadmap-items")
+        .send({
+          year: 2012,
+          department_id: 1,
+          team: "CRM",
+          nhiem_vu: "RM chi tiết theo tháng",
+          dod: "DOD gốc của dòng",
+          phan_loai: "NVKH",
+          thoi_gian_bat_dau: "2012-09-03",
+          thoi_gian_ket_thuc: "2012-11-08",
+          ...overrides,
+        });
+      expect(created.status).toBe(201);
+      const itemId = created.body.id as number;
+      const detailIds: number[] = [];
+      for (const d of details) {
+        const res = await request(app).post(`/api/roadmap-items/${itemId}/details`).send(d);
+        expect(res.status).toBe(201);
+        detailIds.push(res.body.id as number);
+      }
+      return { itemId, detailIds };
+    }
+
+    it("mỗi tháng trong phạm vi Bắt đầu -> Kết thúc được đưa 1 task, DOD = Nội dung công việc của tháng đó", async () => {
+      const app = createApp();
+      const sepId = await makePeriod(app, 2021, 9);
+      const octId = await makePeriod(app, 2021, 10);
+      const novId = await makePeriod(app, 2021, 11);
+
+      const { itemId } = await makeItemWithDetails(
+        app,
+        { year: 2021, nhiem_vu: "RM multi tháng", thoi_gian_bat_dau: "2021-09-03", thoi_gian_ket_thuc: "2021-11-08" },
+        [
+          { month: 9, noi_dung: "Việc tháng 9" },
+          { month: 10, noi_dung: "Việc tháng 10" },
+          { month: 11, noi_dung: "Việc tháng 11" },
+        ],
+      );
+
+      // Dòng roadmap KHÔNG còn đánh dấu synced_task_id ở cấp dòng (đánh dấu
+      // chuyển xuống từng dòng chi tiết).
+      const item = (await request(app).get(`/api/roadmap-items?year=2021&department_id=1`)).body.find(
+        (r: { id: number }) => r.id === itemId,
+      );
+      expect(item.synced_task_id).toBeFalsy();
+
+      for (const [periodId, noiDung] of [
+        [sepId, "Việc tháng 9"],
+        [octId, "Việc tháng 10"],
+        [novId, "Việc tháng 11"],
+      ] as const) {
+        const tasks = (await request(app).get(`/api/periods/${periodId}/tasks`)).body;
+        const t = tasks.find((x: { nhiem_vu: string }) => x.nhiem_vu === "RM multi tháng");
+        expect(t).toBeTruthy();
+        expect(t.dod).toBe(noiDung); // DOD lấy từ Nội dung công việc của tháng
+        expect(t.team).toBe("CRM");
+        expect(t.tinh_chat).toBe("NVKH, NV năm");
+        expect(t.deadline).toBe("2021-11-08"); // Ngày kết thúc roadmap -> Deadline
+      }
+
+      // Từng dòng chi tiết được đánh dấu đã đưa (cột Backlog ở FE đọc cột này)
+      const details = (await request(app).get(`/api/roadmap-items/${itemId}/details`)).body;
+      expect(details.map((d: { synced_task_id: number | null }) => d.synced_task_id).filter(Boolean)).toHaveLength(3);
+    });
+
+    it("tháng chưa quản lý thì đưa sau khi thêm tháng; tháng ngoài phạm vi Bắt đầu -> Kết thúc không đưa", async () => {
+      const app = createApp();
+      await makePeriod(app, 2022, 9); // chỉ tháng 9 có sẵn
+
+      const { itemId } = await makeItemWithDetails(
+        app,
+        { year: 2022, thoi_gian_bat_dau: "2022-09-03", thoi_gian_ket_thuc: "2022-11-08" },
+        [
+          { month: 9, noi_dung: "Việc tháng 9" },
+          { month: 10, noi_dung: "Việc tháng 10" },
+          { month: 12, noi_dung: "Ngoài phạm vi" }, // dòng roadmap kết thúc 8/11
+        ],
+      );
+      const details = () => request(app).get(`/api/roadmap-items/${itemId}/details`);
+
+      // Tháng 9 đưa ngay; tháng 10 chưa có period -> chưa đưa; tháng 12 ngoài
+      // phạm vi (kết thúc 8/11) -> không bao giờ đưa.
+      let byMonth = Object.fromEntries((await details()).body.map((d: { month: number; synced_task_id: number | null }) => [d.month, d.synced_task_id]));
+      expect(byMonth[9]).toBeTruthy();
+      expect(byMonth[10]).toBeFalsy();
+      expect(byMonth[12]).toBeFalsy();
+
+      // Thêm tháng 10 -> dòng chi tiết tháng 10 tự động được đưa vào.
+      const octId = await makePeriod(app, 2022, 10);
+      byMonth = Object.fromEntries((await details()).body.map((d: { month: number; synced_task_id: number | null }) => [d.month, d.synced_task_id]));
+      expect(byMonth[10]).toBeTruthy();
+      const octTasks = (await request(app).get(`/api/periods/${octId}/tasks`)).body;
+      expect(octTasks.some((t: { dod: string }) => t.dod === "Việc tháng 10")).toBe(true);
+
+      // Thêm cả tháng 12 (có period) nhưng vẫn KHÔNG đưa — ngoài phạm vi.
+      await makePeriod(app, 2022, 12);
+      byMonth = Object.fromEntries((await details()).body.map((d: { month: number; synced_task_id: number | null }) => [d.month, d.synced_task_id]));
+      expect(byMonth[12]).toBeFalsy();
+    });
+
+    it("dòng đã sync kiểu cũ (import/thêm tháng sau): chi tiết tháng trùng nhận luôn task cũ (cập nhật DOD), tháng khác tạo task mới", async () => {
+      const app = createApp();
+      // Dòng tạo trước, THÁNG sau mới được thêm -> sync kiểu cũ (không chi tiết).
+      const created = await request(app).post("/api/roadmap-items").send({
+        year: 2023,
+        department_id: 1,
+        team: "CRM",
+        nhiem_vu: "RM legacy đã sync",
+        dod: "DOD gốc",
+        thoi_gian_bat_dau: "2023-09-03",
+        thoi_gian_ket_thuc: "2023-11-08",
+      });
+      expect(created.status).toBe(201);
+      const itemId = created.body.id as number;
+      const sepId = await makePeriod(app, 2023, 9);
+      const afterSep = (await request(app).get(`/api/roadmap-items?year=2023&department_id=1`)).body.find(
+        (r: { id: number }) => r.id === itemId,
+      );
+      expect(afterSep.synced_task_id).toBeTruthy(); // đã đưa kiểu cũ vào tháng 9
+
+      // Chi tiết tháng 9 (trùng tháng task cũ) -> nhận luôn task cũ, DOD cập nhật.
+      const sepDetail = await request(app)
+        .post(`/api/roadmap-items/${itemId}/details`)
+        .send({ month: 9, noi_dung: "Việc tháng 9 chi tiết" });
+      expect(sepDetail.status).toBe(201);
+      expect(sepDetail.body.synced_task_id).toBe(afterSep.synced_task_id);
+      const sepTasks = (await request(app).get(`/api/periods/${sepId}/tasks`)).body;
+      const sepTask = sepTasks.find((t: { id: number }) => t.id === afterSep.synced_task_id);
+      expect(sepTask.dod).toBe("Việc tháng 9 chi tiết"); // DOD gốc -> Nội dung công việc
+
+      // Chi tiết tháng khác -> tạo task mới như thường.
+      await makePeriod(app, 2023, 10);
+      const octDetail = await request(app)
+        .post(`/api/roadmap-items/${itemId}/details`)
+        .send({ month: 10, noi_dung: "Việc tháng 10 chi tiết" });
+      expect(octDetail.status).toBe(201);
+      expect(octDetail.body.synced_task_id).toBeTruthy();
+      expect(octDetail.body.synced_task_id).not.toBe(afterSep.synced_task_id);
     });
   });
 });

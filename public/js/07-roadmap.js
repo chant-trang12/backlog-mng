@@ -313,12 +313,13 @@ function renderRoadmapDetail() {
       const rows = state.roadmapDetails.filter((d) => d.month === m);
       const body = rows.length
         ? `<div class="table-wrap"><table class="rm-detail-table">
-            <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
+            <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="width:130px" title="Tự động đưa vào Backlog của tháng này khi tháng đã được quản lý">Backlog</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
             <tbody>${rows
               .map(
                 (d) => `<tr>
                   <td>${nl2br(d.noi_dung)}</td>
                   <td style="text-align:center"><span class="status-badge ${STATUS_CLASS[d.trang_thai] || "status-default"}">${d.trang_thai}</span></td>
+                  <td style="text-align:center">${d.synced_task_id ? '<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog của tháng này (DOD = Nội dung công việc)">✓ Đã vào Backlog</span>' : '<span class="muted">—</span>'}</td>
                   <td>${nl2br(d.ghi_chu)}</td>
                   <td><div class="actions-cell">
                     <button class="small btn-edit write-action rd-edit-btn" data-id="${d.id}">Sửa</button>
