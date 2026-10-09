@@ -38,6 +38,9 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // Yêu cầu tính năng — hộp thư dùng chung, tải lại mỗi lần vào trang để
     // thấy ngay yêu cầu mới từ phòng ban khác.
     if (btn.dataset.page === "feature-requests") loadFeatureRequests().catch((err) => showToast(err.message));
+    // Quản lý tính năng số hoá — tải lại mỗi lần vào trang để thấy ngay dữ
+    // liệu mới (import/xóa ở lần xem trước).
+    if (btn.dataset.page === "digital-features") loadDigitalFeatures().catch((err) => showToast(err.message));
     // Nhật ký hoạt động — tải danh mục lọc (module/user) + dữ liệu mỗi lần
     // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
     // Admin dùng, tránh gọi API thừa cho editor/viewer).

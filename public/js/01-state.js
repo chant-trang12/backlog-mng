@@ -43,6 +43,7 @@ const state = {
   objectiveOptions: [],
   memberParticipationOptions: [],
   featureRequests: [],
+  digitalFeatures: [], // danh sách tính năng số hoá (trang "Quản lý tính năng số hoá")
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
@@ -508,6 +509,7 @@ const attendancePagination = createPagination("attendance", () => renderAttendan
 const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
 const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable());
 const frPagination = createPagination("fr", () => renderFeatureRequestTable());
+const dfPagination = createPagination("df", () => renderDigitalFeatures());
 const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
 const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
 const actionLogPagination = createPagination("al", () => renderActionLogTable());

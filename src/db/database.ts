@@ -41,6 +41,7 @@ import {
   migrateSoftDeleteUsers,
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
+import { migrateDigitalFeatureTables } from "./migrations/digitalFeatures.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -105,6 +106,9 @@ export async function initDatabase(): Promise<void> {
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();
+    // digital_features (module "Quản lý tính năng số hoá") — bảng độc lập,
+    // không FK bảng khác.
+    await migrateDigitalFeatureTables();
     // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
     // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
     await migrateActionLogsTable();

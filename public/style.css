@@ -660,6 +660,13 @@ button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80
 button.btn-progress:hover { background: #b7d9ea; }
 button.btn-member { background: #e6dcf5; border-color: #cbb8e8; color: #5c3494; }
 button.btn-member:hover { background: #cbb8e8; }
+/* Nút icon "Xem chi tiết" trong cột Action của bảng Tính năng số hoá —
+   tông trung tính (không mang ý nghĩa sửa/xóa), icon mắt là chính. */
+button.btn-view { background: #eef1f4; border-color: #d3dbe3; color: #45566a; }
+button.btn-view:hover { background: #d3dbe3; }
+/* Cột Action chứa 3 nút icon (Xem/Sửa/Xoá) — nút vuông, icon giữa nút. */
+.actions-cell button.small.icon-btn { padding: 4px 6px; line-height: 0; }
+.actions-cell button.small.icon-btn .icon { width: 14px; height: 14px; }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }

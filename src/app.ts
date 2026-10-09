@@ -26,6 +26,7 @@ import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import featureRequestRoutes from "./routes/featureRequest.routes.js";
+import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
@@ -179,6 +180,7 @@ export function createApp() {
   app.use("/api", catalogRoutes);
   app.use("/api", roadmapRoutes);
   app.use("/api", featureRequestRoutes);
+  app.use("/api", digitalFeatureRoutes);
 
   app.use(notFound);
   // Global error handler — must be last, after notFound

@@ -1031,9 +1031,167 @@
           </section>
         </div>
 
-        <!-- ---- Trang Quản lý tính năng số hoá — ĐỂ TRỐNG, chờ user mô tả
-             yêu cầu cụ thể sau. ---- -->
-        <div id="page-digital-features" hidden></div>
+        <!-- ---- Trang Quản lý tính năng số hoá — danh sách các tính năng
+             cần quản lý: bộ lọc, thêm mới/sửa/xóa, import/export Excel,
+             bảng có scroll ngang + phân trang (13-digital-features.js). ---- -->
+        <div id="page-digital-features" hidden>
+          <section class="card">
+            <h2>Bộ lọc</h2>
+            <div class="row">
+              <div>
+                <label for="df-filter-module">Module</label>
+                <select id="df-filter-module"><option value="">Tất cả</option></select>
+              </div>
+              <div>
+                <label for="df-filter-giai-doan">Giai đoạn</label>
+                <select id="df-filter-giai-doan"><option value="">Tất cả</option></select>
+              </div>
+              <div>
+                <label for="df-filter-tn-mh">TN / MH</label>
+                <select id="df-filter-tn-mh"><option value="">Tất cả</option></select>
+              </div>
+              <div>
+                <label for="df-filter-don-vi">Đơn vị chủ trì</label>
+                <select id="df-filter-don-vi"><option value="">Tất cả</option></select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div style="flex:1 1 0">
+                <h2 style="margin:0">Tính năng số hoá</h2>
+              </div>
+              <div class="row" style="flex:0 0 auto">
+                <button id="download-df-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải excel mẫu</button>
+                <button id="import-df-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                <input type="file" id="df-import-input" accept=".xlsx,.xlsm" hidden />
+                <button id="export-df-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                <button id="add-digital-feature-btn" class="primary">+ Thêm mới</button>
+              </div>
+            </div>
+            <div class="row" style="margin-bottom:12px;align-items:center">
+              <label for="df-filter-search" style="margin:0">Tìm kiếm</label>
+              <input type="text" id="df-filter-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+            </div>
+            <!-- Thanh cuộn ngang PHÍA TRÊN bảng — bảng có 11 cột dữ liệu,
+                 đồng bộ 2 chiều với .table-wrap thật bên dưới (setupDfScroll
+                 TopSync ở 13-digital-features.js). -->
+            <div class="table-scroll-top" id="df-table-scroll-top"><div id="df-table-scroll-top-spacer"></div></div>
+            <div class="table-wrap" id="df-table-wrap">
+              <table id="df-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:48px">STT</th>
+                    <th style="min-width:90px">Mã</th>
+                    <th style="min-width:170px">Module</th>
+                    <th style="min-width:170px">Đơn vị chủ trì (đề xuất)</th>
+                    <th style="min-width:170px">Đơn vị phối hợp</th>
+                    <th style="min-width:110px">Giai đoạn</th>
+                    <th style="min-width:80px">TN / MH</th>
+                    <th style="min-width:240px">Mục tiêu nghiệp vụ</th>
+                    <th style="min-width:170px">Vai trò P.BĐKD</th>
+                    <th style="min-width:170px">Nhận đầu vào từ</th>
+                    <th style="min-width:170px">Chuyển đầu ra tới</th>
+                    <th style="min-width:110px">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="df-tbody"></tbody>
+              </table>
+              <p class="muted" id="df-empty" hidden style="padding:16px;text-align:center">Chưa có tính năng số hoá nào.</p>
+            </div>
+            <div class="pagination-bar" id="df-pagination">
+              <div class="row">
+                <label for="df-page-size" style="margin:0">Số dòng/trang</label>
+                <select id="df-page-size">
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div class="row">
+                <button type="button" id="df-page-prev" class="small">‹ Trước</button>
+                <span id="df-page-info" class="muted"></span>
+                <button type="button" id="df-page-next" class="small">Sau ›</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---- Dialog Thêm mới / Sửa tính năng số hoá ---- -->
+        <dialog id="digital-feature-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="digital-feature-form">
+            <h2 id="df-dialog-title" style="margin:0">Thêm tính năng số hoá</h2>
+            <input type="hidden" id="df-id" />
+            <div class="field-row">
+              <div>
+                <label for="df-ma">Mã <span class="muted" style="font-weight:400">(trống thì tự sinh TNSH-xxx)</span></label>
+                <input id="df-ma" style="width:100%" />
+              </div>
+              <div>
+                <label for="df-module">Module *</label>
+                <input id="df-module" required style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="df-don-vi-chu-tri">Đơn vị chủ trì (đề xuất)</label>
+                <input id="df-don-vi-chu-tri" style="width:100%" />
+              </div>
+              <div>
+                <label for="df-don-vi-phoi-hop">Đơn vị phối hợp</label>
+                <input id="df-don-vi-phoi-hop" style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="df-giai-doan">Giai đoạn</label>
+                <input id="df-giai-doan" style="width:100%" />
+              </div>
+              <div>
+                <label for="df-tn-mh">TN / MH</label>
+                <input id="df-tn-mh" style="width:100%" />
+              </div>
+            </div>
+            <div>
+              <label for="df-muc-tieu">Mục tiêu nghiệp vụ</label>
+              <textarea id="df-muc-tieu" rows="2" style="width:100%"></textarea>
+            </div>
+            <div>
+              <label for="df-vai-tro">Vai trò P.BĐKD</label>
+              <textarea id="df-vai-tro" rows="2" style="width:100%"></textarea>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="df-nhan-dau-vao">Nhận đầu vào từ</label>
+                <textarea id="df-nhan-dau-vao" rows="2" style="width:100%"></textarea>
+              </div>
+              <div>
+                <label for="df-chuyen-dau-ra">Chuyển đầu ra tới</label>
+                <textarea id="df-chuyen-dau-ra" rows="2" style="width:100%"></textarea>
+              </div>
+            </div>
+            <div class="row" style="justify-content:flex-end;margin-top:8px">
+              <button type="button" class="dialog-cancel">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- ---- Dialog Xem chi tiết — tạm để trống, chờ mô tả yêu cầu
+             cụ thể sau (chỉ hiển thị Mã + Module để nhận diện dòng). ---- -->
+        <dialog id="digital-feature-detail-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <h2 id="df-detail-title" style="margin:0">Chi tiết tính năng số hoá</h2>
+          <p class="muted" id="df-detail-subtitle" style="margin:4px 0 12px"></p>
+          <div id="df-detail-body">
+            <p class="muted" style="text-align:center;padding:24px 0">Nội dung màn hình xem chi tiết sẽ được cập nhật sau.</p>
+          </div>
+          <div class="row" style="justify-content:flex-end;margin-top:8px">
+            <button type="button" class="dialog-cancel">Đóng</button>
+          </div>
+        </dialog>
 
         <!-- ---- Trang Yêu cầu tính năng ---- -->
         <div id="page-feature-requests" hidden>
@@ -2865,6 +3023,7 @@
   <script src="js/08-home.js"></script>
   <script src="js/10-feature-requests.js"></script>
   <script src="js/11-action-logs.js"></script>
+  <script src="js/13-digital-features.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>
