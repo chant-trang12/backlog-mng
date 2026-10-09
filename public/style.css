@@ -1174,6 +1174,14 @@ th {
 #df-table td[data-col="tn_mh"] {
   text-align: center;
 }
+/* Ô Mã dạng pill — không cho xuống dòng trong pill (TNSH-026 bị bẻ 2 dòng
+   khi cột hẹp), padding gọn lại; pill này chỉ hiển thị, không bấm được. */
+#df-table td[data-col="ma"] .pill {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 2px 10px;
+  cursor: default;
+}
 
 /* Ô text dài trong bảng Yêu cầu tính năng — giới hạn 3 dòng, tràn thì hiện
    "…" (title attr ở từng ô cho xem đầy đủ khi rê chuột). */
