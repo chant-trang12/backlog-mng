@@ -1197,6 +1197,96 @@
           </form>
         </dialog>
 
+        <!-- Dialog Thêm/Sửa màn hình (tab "Màn hình, Tính năng & Phân quyền"
+             trong trang chi tiết) — cùng cấu trúc dialog tính năng số hoá. -->
+        <dialog id="digital-feature-screen-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="digital-feature-screen-form">
+            <h2 id="dfs-dialog-title" style="margin:0">Thêm màn hình / chức năng</h2>
+            <input type="hidden" id="dfs-id" />
+            <div class="field-row">
+              <div>
+                <label for="dfs-ma-mh">Mã MH <span class="muted" style="font-weight:400">(trống thì tự sinh MH-xxx)</span></label>
+                <input id="dfs-ma-mh" style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-tn">TN</label>
+                <input id="dfs-tn" style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dfs-ten-man-hinh">Tên màn hình / chức năng *</label>
+                <input id="dfs-ten-man-hinh" required style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-loai">Loại</label>
+                <input id="dfs-loai" style="width:100%" />
+              </div>
+            </div>
+            <div>
+              <label for="dfs-thanh-phan">Thành phần chính / trường dữ liệu</label>
+              <textarea id="dfs-thanh-phan" rows="2" style="width:100%"></textarea>
+            </div>
+            <div>
+              <label for="dfs-hanh-dong">Hành động (nút / thao tác)</label>
+              <textarea id="dfs-hanh-dong" rows="2" style="width:100%"></textarea>
+            </div>
+            <div>
+              <label for="dfs-quy-tac">Quy tắc nghiệp vụ &amp; kiểm tra</label>
+              <textarea id="dfs-quy-tac" rows="2" style="width:100%"></textarea>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dfs-sales-am">Sales / AM</label>
+                <input id="dfs-sales-am" style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-truong-dvkd">Trưởng đơn vị KD</label>
+                <input id="dfs-truong-dvkd" style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dfs-presales-sp">Presales / Sản phẩm</label>
+                <input id="dfs-presales-sp" style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-nv-bdkd">NV BĐKD (thực thi)</label>
+                <input id="dfs-nv-bdkd" style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dfs-ks-lanh-dao">Kiểm soát / Lãnh đạo BĐKD</label>
+                <input id="dfs-ks-lanh-dao" style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-phap-che">Pháp chế</label>
+                <input id="dfs-phap-che" style="width:100%" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dfs-tckt">TCKT</label>
+                <input id="dfs-tckt" style="width:100%" />
+              </div>
+              <div>
+                <label for="dfs-ban-lanh-dao">Ban lãnh đạo</label>
+                <input id="dfs-ban-lanh-dao" style="width:100%" />
+              </div>
+            </div>
+            <div>
+              <label for="dfs-quan-tri-he-thong">Quản trị hệ thống</label>
+              <input id="dfs-quan-tri-he-thong" style="width:100%" />
+            </div>
+            <div class="row" style="justify-content:flex-end;margin-top:16px">
+              <button type="button" id="digital-feature-screen-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
         <!-- ---- Trang chi tiết Tính năng số hoá — MÀN HÌNH RIÊNG (không có
              mục ở menu trái): mở bằng icon "Xem chi tiết" ở bảng danh sách,
              quay lại bằng nút "← Quay lại". Nội dung chia theo tab giống
@@ -1264,7 +1354,78 @@
             </section>
 
             <section class="card" id="df-detail-tab-screens" hidden>
-              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Màn hình, Tính năng &amp; Phân quyền" sẽ được cập nhật sau.</p>
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Màn hình, Tính năng &amp; Phân quyền</h2>
+                <!-- Cùng bộ nút với bảng Tính năng số hoá: Xóa đã chọn chỉ
+                     hiện với admin (class delete-action tự ẩn theo quyền qua
+                     CSS role — khớp luật chặn server ở app.ts). -->
+                <div class="row" style="flex:0 0 auto">
+                  <button id="delete-selected-dfs-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfs-count">0</span>)</button>
+                  <div class="col-menu-wrap" id="dfs-col-menu-wrap">
+                    <button type="button" id="dfs-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
+                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
+                      <span class="caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="col-menu" id="dfs-col-menu" role="menu" hidden>
+                      <div class="col-menu-list" id="dfs-col-menu-list"></div>
+                      <div class="bulk-menu-sep"></div>
+                      <button type="button" class="bulk-menu-item" id="dfs-col-menu-reset">Hiện tất cả</button>
+                    </div>
+                  </div>
+                  <button id="download-dfs-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
+                  <button id="import-dfs-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                  <input type="file" id="dfs-import-input" accept=".xlsx,.xlsm" hidden />
+                  <button id="export-dfs-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
+                  <button id="add-df-screen-btn" class="primary">+ Thêm mới</button>
+                </div>
+              </div>
+              <!-- Thanh cuộn ngang phía trên — bảng 16 cột dữ liệu rất rộng
+                   (nhân bản setupDfScrollTopSync cùng file). -->
+              <div class="table-scroll-top" id="dfs-table-scroll-top"><div id="dfs-table-scroll-top-spacer"></div></div>
+              <div class="table-wrap" id="dfs-table-wrap">
+                <table id="dfs-table">
+                  <thead>
+                    <tr>
+                      <th style="width:36px"><input type="checkbox" id="dfs-select-all" /></th>
+                      <th style="min-width:48px">STT</th>
+                      <th style="min-width:90px" data-col="ma_mh">Mã MH</th>
+                      <th style="min-width:80px" data-col="tn">TN</th>
+                      <th style="min-width:220px">Tên màn hình / chức năng</th>
+                      <th style="min-width:140px" data-col="loai">Loại</th>
+                      <th style="min-width:240px" data-col="thanh_phan_chinh">Thành phần chính / trường dữ liệu</th>
+                      <th style="min-width:200px" data-col="hanh_dong">Hành động (nút / thao tác)</th>
+                      <th style="min-width:240px" data-col="quy_tac_nghiep_vu">Quy tắc nghiệp vụ &amp; kiểm tra</th>
+                      <th style="min-width:110px" data-col="sales_am">Sales / AM</th>
+                      <th style="min-width:120px" data-col="truong_dvkd">Trưởng đơn vị KD</th>
+                      <th style="min-width:120px" data-col="presales_sp">Presales / Sản phẩm</th>
+                      <th style="min-width:130px" data-col="nv_bdkd">NV BĐKD (thực thi)</th>
+                      <th style="min-width:140px" data-col="ks_lanh_dao_bdkd">Kiểm soát / Lãnh đạo BĐKD</th>
+                      <th style="min-width:100px" data-col="phap_che">Pháp chế</th>
+                      <th style="min-width:90px" data-col="tckt">TCKT</th>
+                      <th style="min-width:110px" data-col="ban_lanh_dao">Ban lãnh đạo</th>
+                      <th style="min-width:120px" data-col="quan_tri_he_thong">Quản trị hệ thống</th>
+                      <th style="min-width:110px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dfs-tbody"></tbody>
+                </table>
+                <p class="muted" id="dfs-empty" hidden style="padding:16px;text-align:center">Chưa có màn hình / chức năng nào.</p>
+              </div>
+              <div class="pagination-bar" id="dfs-pagination">
+                <div class="row">
+                  <label for="dfs-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="dfs-page-size">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <button type="button" id="dfs-page-prev" class="small">‹ Trước</button>
+                  <span id="dfs-page-info" class="muted"></span>
+                  <button type="button" id="dfs-page-next" class="small">Sau ›</button>
+                </div>
+              </div>
             </section>
 
             <section class="card" id="df-detail-tab-master-data" hidden>

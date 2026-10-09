@@ -415,12 +415,14 @@ function renderDigitalFeatureInfo(item) {
 function openDigitalFeatureDetail(id) {
   const item = state.digitalFeatures.find((r) => r.id === id);
   if (!item) return;
+  state.currentDigitalFeatureId = id;
   document.getElementById("df-detail-page-title").textContent = item.module || "Chi tiết tính năng số hoá";
   const maBadge = document.getElementById("df-detail-page-ma");
   maBadge.textContent = item.ma ?? "";
   maBadge.hidden = !item.ma;
   renderDigitalFeatureInfo(item);
   resetDigitalFeatureDetailTabs();
+  loadDigitalFeatureScreens(id).catch((err) => showToast(err.message));
   // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
   // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
   document.getElementById("page-digital-features").hidden = true;
@@ -524,6 +526,385 @@ document.getElementById("df-import-input")?.addEventListener("change", async () 
   const fake = document.getElementById("df-table-scroll-top");
   const spacer = document.getElementById("df-table-scroll-top-spacer");
   const real = document.getElementById("df-table-wrap");
+  if (!fake || !spacer || !real) return;
+  const syncSpacer = () => {
+    spacer.style.width = `${real.scrollWidth}px`;
+  };
+  fake.addEventListener("scroll", () => {
+    real.scrollLeft = fake.scrollLeft;
+  });
+  real.addEventListener("scroll", () => {
+    fake.scrollLeft = real.scrollLeft;
+  });
+  new ResizeObserver(syncSpacer).observe(real);
+  syncSpacer();
+})();
+
+// ==================== Tab "Màn hình, Tính năng & Phân quyền" ====================
+// Bảng màn hình/chức năng của từng tính năng số hoá — CRUD riêng
+// (/api/digital-features/:id/screens + /api/digital-feature-screens/:id),
+// nhân bản cấu trúc bảng Tính năng số hoá ở trên.
+
+async function loadDigitalFeatureScreens(featureId) {
+  state.digitalFeatureScreens = await api(`/api/digital-features/${featureId}/screens`);
+  const ids = new Set(state.digitalFeatureScreens.map((r) => r.id));
+  state.selectedDfScreenIds.forEach((id) => {
+    if (!ids.has(id)) state.selectedDfScreenIds.delete(id);
+  });
+  dfsPagination.reset();
+  renderDigitalFeatureScreens();
+}
+
+// ---- Menu "Cấu hình cột" — nhân bản initDfColumnMenu ở trên. Cột "Tên màn
+// hình / chức năng" KHÔNG cho ẩn (nhận diện dòng); STT và Action luôn hiển thị.
+const DFS_TOGGLEABLE_COLUMNS = [
+  { key: "ma_mh", label: "Mã MH" },
+  { key: "tn", label: "TN" },
+  { key: "loai", label: "Loại" },
+  { key: "thanh_phan_chinh", label: "Thành phần chính / trường dữ liệu" },
+  { key: "hanh_dong", label: "Hành động (nút / thao tác)" },
+  { key: "quy_tac_nghiep_vu", label: "Quy tắc nghiệp vụ & kiểm tra" },
+  { key: "sales_am", label: "Sales / AM" },
+  { key: "truong_dvkd", label: "Trưởng đơn vị KD" },
+  { key: "presales_sp", label: "Presales / Sản phẩm" },
+  { key: "nv_bdkd", label: "NV BĐKD (thực thi)" },
+  { key: "ks_lanh_dao_bdkd", label: "Kiểm soát / Lãnh đạo BĐKD" },
+  { key: "phap_che", label: "Pháp chế" },
+  { key: "tckt", label: "TCKT" },
+  { key: "ban_lanh_dao", label: "Ban lãnh đạo" },
+  { key: "quan_tri_he_thong", label: "Quản trị hệ thống" },
+];
+const DFS_COL_LS_KEY = "backlog.dfScreenColumns.hiddenV1";
+
+function loadHiddenDfScreenColumns() {
+  try {
+    const raw = localStorage.getItem(DFS_COL_LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveHiddenDfScreenColumns() {
+  try {
+    localStorage.setItem(DFS_COL_LS_KEY, JSON.stringify([...state.hiddenDfScreenColumns]));
+  } catch {
+    // Không lưu được thì bỏ qua — tuỳ chọn vẫn áp dụng cho phiên hiện tại.
+  }
+}
+
+function isDfScreenColHidden(key) {
+  return state.hiddenDfScreenColumns.has(key);
+}
+
+function applyDfScreenColumnHeaderVisibility() {
+  DFS_TOGGLEABLE_COLUMNS.forEach(({ key }) => {
+    const th = document.querySelector(`#dfs-table thead [data-col="${key}"]`);
+    if (!th) return;
+    th.hidden = isDfScreenColHidden(key);
+  });
+}
+
+function renderDfScreenColMenu() {
+  const list = document.getElementById("dfs-col-menu-list");
+  list.innerHTML = DFS_TOGGLEABLE_COLUMNS.map(
+    ({ key, label }) => `
+    <label class="col-menu-item">
+      <input type="checkbox" class="dfs-col-checkbox" data-col-key="${key}" ${isDfScreenColHidden(key) ? "" : "checked"} />
+      ${label}
+    </label>`,
+  ).join("");
+  list.querySelectorAll(".dfs-col-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const key = e.target.dataset.colKey;
+      if (e.target.checked) state.hiddenDfScreenColumns.delete(key);
+      else state.hiddenDfScreenColumns.add(key);
+      saveHiddenDfScreenColumns();
+      renderDigitalFeatureScreens();
+    });
+  });
+}
+
+function openDfScreenColMenu() {
+  renderDfScreenColMenu();
+  document.getElementById("dfs-col-menu").hidden = false;
+  document.getElementById("dfs-col-menu-btn").setAttribute("aria-expanded", "true");
+}
+
+function closeDfScreenColMenu() {
+  document.getElementById("dfs-col-menu").hidden = true;
+  document.getElementById("dfs-col-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function initDfScreenColumnMenu() {
+  state.hiddenDfScreenColumns = loadHiddenDfScreenColumns();
+  applyDfScreenColumnHeaderVisibility();
+
+  const menuWrap = document.getElementById("dfs-col-menu-wrap");
+  const menuBtn = document.getElementById("dfs-col-menu-btn");
+  const menu = document.getElementById("dfs-col-menu");
+  if (!menuWrap || !menuBtn || !menu) return;
+
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.hidden) openDfScreenColMenu();
+    else closeDfScreenColMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menuWrap.contains(e.target)) closeDfScreenColMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDfScreenColMenu();
+  });
+  document.getElementById("dfs-col-menu-reset").addEventListener("click", () => {
+    state.hiddenDfScreenColumns.clear();
+    saveHiddenDfScreenColumns();
+    applyDfScreenColumnHeaderVisibility();
+    renderDigitalFeatureScreens();
+  });
+}
+initDfScreenColumnMenu();
+
+// Checkbox chọn nhiều + nút "Xóa đã chọn" — chỉ admin (class delete-action,
+// xem chú thích bảng Tính năng số hoá).
+function updateDfScreenSelectionUI() {
+  const visible = state.digitalFeatureScreens;
+  const visibleSelectedCount = visible.filter((r) => state.selectedDfScreenIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-dfs-btn");
+  const countEl = document.getElementById("selected-dfs-count");
+  const selectAll = document.getElementById("dfs-select-all");
+  if (btn) btn.hidden = state.selectedDfScreenIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedDfScreenIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
+function renderDigitalFeatureScreens() {
+  const tbody = document.getElementById("dfs-tbody");
+  const empty = document.getElementById("dfs-empty");
+  if (!tbody) return;
+  applyDfScreenColumnHeaderVisibility();
+  const colHidden = (key) => (isDfScreenColHidden(key) ? "hidden" : "");
+  const rows = state.digitalFeatureScreens;
+  empty.hidden = rows.length > 0;
+  const pageItems = dfsPagination.slice(rows);
+  const pageStart = (dfsPagination.page - 1) * dfsPagination.pageSize;
+
+  tbody.innerHTML = pageItems
+    .map((r, idx) => `
+    <tr data-id="${r.id}">
+      <td><input type="checkbox" class="dfs-row-checkbox" ${state.selectedDfScreenIds.has(r.id) ? "checked" : ""} /></td>
+      <td>${pageStart + idx + 1}</td>
+      <td data-col="ma_mh" ${colHidden("ma_mh")}>${r.ma_mh ? `<span class="pill" title="Mã màn hình">${r.ma_mh.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
+      <td data-col="tn" ${colHidden("tn")}>${dfClamp(r.tn)}</td>
+      <td>${dfClamp(r.ten_man_hinh)}</td>
+      <td data-col="loai" ${colHidden("loai")}>${dfClamp(r.loai)}</td>
+      <td data-col="thanh_phan_chinh" ${colHidden("thanh_phan_chinh")}>${dfClamp(r.thanh_phan_chinh)}</td>
+      <td data-col="hanh_dong" ${colHidden("hanh_dong")}>${dfClamp(r.hanh_dong)}</td>
+      <td data-col="quy_tac_nghiep_vu" ${colHidden("quy_tac_nghiep_vu")}>${dfClamp(r.quy_tac_nghiep_vu)}</td>
+      <td data-col="sales_am" ${colHidden("sales_am")}>${dfClamp(r.sales_am)}</td>
+      <td data-col="truong_dvkd" ${colHidden("truong_dvkd")}>${dfClamp(r.truong_dvkd)}</td>
+      <td data-col="presales_sp" ${colHidden("presales_sp")}>${dfClamp(r.presales_sp)}</td>
+      <td data-col="nv_bdkd" ${colHidden("nv_bdkd")}>${dfClamp(r.nv_bdkd)}</td>
+      <td data-col="ks_lanh_dao_bdkd" ${colHidden("ks_lanh_dao_bdkd")}>${dfClamp(r.ks_lanh_dao_bdkd)}</td>
+      <td data-col="phap_che" ${colHidden("phap_che")}>${dfClamp(r.phap_che)}</td>
+      <td data-col="tckt" ${colHidden("tckt")}>${dfClamp(r.tckt)}</td>
+      <td data-col="ban_lanh_dao" ${colHidden("ban_lanh_dao")}>${dfClamp(r.ban_lanh_dao)}</td>
+      <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfClamp(r.quan_tri_he_thong)}</td>
+      <td>
+        <div class="actions-cell" style="justify-content:flex-start;gap:2px">
+          <button type="button" class="small btn-edit icon-btn dfs-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
+          <button type="button" class="small btn-delete icon-btn dfs-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+        </div>
+      </td>
+    </tr>`)
+    .join("");
+
+  tbody.querySelectorAll(".dfs-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) state.selectedDfScreenIds.add(id);
+      else state.selectedDfScreenIds.delete(id);
+      updateDfScreenSelectionUI();
+    });
+  });
+  tbody.querySelectorAll(".dfs-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openDigitalFeatureScreenDialog(Number(btn.dataset.id)));
+  });
+  tbody.querySelectorAll(".dfs-del-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const item = state.digitalFeatureScreens.find((r) => r.id === Number(btn.dataset.id));
+      if (!(await confirmDialog(`Xoá màn hình${item?.ten_man_hinh ? ` "${item.ten_man_hinh}"` : ""}?`, { danger: true }))) return;
+      try {
+        await api(`/api/digital-feature-screens/${btn.dataset.id}`, { method: "DELETE" });
+        showToast("Đã xoá.", "success");
+        await loadDigitalFeatureScreens(state.currentDigitalFeatureId);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  updateDfScreenSelectionUI();
+}
+
+document.getElementById("dfs-select-all")?.addEventListener("change", (e) => {
+  if (e.target.checked) {
+    state.digitalFeatureScreens.forEach((r) => state.selectedDfScreenIds.add(r.id));
+  } else {
+    state.digitalFeatureScreens.forEach((r) => state.selectedDfScreenIds.delete(r.id));
+  }
+  renderDigitalFeatureScreens();
+});
+
+document.getElementById("delete-selected-dfs-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedDfScreenIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} màn hình đã chọn?`, { danger: true }))) return;
+  try {
+    const res = await api(`/api/digital-features/${state.currentDigitalFeatureId}/screens/delete-selected`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedDfScreenIds.clear();
+    await loadDigitalFeatureScreens(state.currentDigitalFeatureId);
+    showToast(`Đã xóa ${res?.deleted ?? 0} màn hình.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Dialog Thêm mới / Sửa màn hình ----
+
+function openDigitalFeatureScreenDialog(id) {
+  const item = id != null ? state.digitalFeatureScreens.find((r) => r.id === id) : null;
+  document.getElementById("dfs-dialog-title").textContent = item ? "Sửa màn hình / chức năng" : "Thêm màn hình / chức năng";
+  document.getElementById("dfs-id").value = item?.id ?? "";
+  document.getElementById("dfs-ma-mh").value = item?.ma_mh ?? "";
+  document.getElementById("dfs-tn").value = item?.tn ?? "";
+  document.getElementById("dfs-ten-man-hinh").value = item?.ten_man_hinh ?? "";
+  document.getElementById("dfs-loai").value = item?.loai ?? "";
+  document.getElementById("dfs-thanh-phan").value = item?.thanh_phan_chinh ?? "";
+  document.getElementById("dfs-hanh-dong").value = item?.hanh_dong ?? "";
+  document.getElementById("dfs-quy-tac").value = item?.quy_tac_nghiep_vu ?? "";
+  document.getElementById("dfs-sales-am").value = item?.sales_am ?? "";
+  document.getElementById("dfs-truong-dvkd").value = item?.truong_dvkd ?? "";
+  document.getElementById("dfs-presales-sp").value = item?.presales_sp ?? "";
+  document.getElementById("dfs-nv-bdkd").value = item?.nv_bdkd ?? "";
+  document.getElementById("dfs-ks-lanh-dao").value = item?.ks_lanh_dao_bdkd ?? "";
+  document.getElementById("dfs-phap-che").value = item?.phap_che ?? "";
+  document.getElementById("dfs-tckt").value = item?.tckt ?? "";
+  document.getElementById("dfs-ban-lanh-dao").value = item?.ban_lanh_dao ?? "";
+  document.getElementById("dfs-quan-tri-he-thong").value = item?.quan_tri_he_thong ?? "";
+  document.getElementById("digital-feature-screen-dialog").showModal();
+}
+
+document.getElementById("add-df-screen-btn")?.addEventListener("click", () => openDigitalFeatureScreenDialog(null));
+
+document.getElementById("digital-feature-screen-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("dfs-id").value;
+  const body = {
+    tn: document.getElementById("dfs-tn").value.trim() || undefined,
+    ten_man_hinh: document.getElementById("dfs-ten-man-hinh").value.trim(),
+    loai: document.getElementById("dfs-loai").value.trim() || undefined,
+    thanh_phan_chinh: document.getElementById("dfs-thanh-phan").value.trim() || undefined,
+    hanh_dong: document.getElementById("dfs-hanh-dong").value.trim() || undefined,
+    quy_tac_nghiep_vu: document.getElementById("dfs-quy-tac").value.trim() || undefined,
+    sales_am: document.getElementById("dfs-sales-am").value.trim() || undefined,
+    truong_dvkd: document.getElementById("dfs-truong-dvkd").value.trim() || undefined,
+    presales_sp: document.getElementById("dfs-presales-sp").value.trim() || undefined,
+    nv_bdkd: document.getElementById("dfs-nv-bdkd").value.trim() || undefined,
+    ks_lanh_dao_bdkd: document.getElementById("dfs-ks-lanh-dao").value.trim() || undefined,
+    phap_che: document.getElementById("dfs-phap-che").value.trim() || undefined,
+    tckt: document.getElementById("dfs-tckt").value.trim() || undefined,
+    ban_lanh_dao: document.getElementById("dfs-ban-lanh-dao").value.trim() || undefined,
+    quan_tri_he_thong: document.getElementById("dfs-quan-tri-he-thong").value.trim() || undefined,
+  };
+  try {
+    if (id) {
+      const maMh = document.getElementById("dfs-ma-mh").value.trim();
+      if (maMh) body.ma_mh = maMh;
+      await api(`/api/digital-feature-screens/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      showToast("Đã lưu thay đổi.", "success");
+    } else {
+      const maMh = document.getElementById("dfs-ma-mh").value.trim();
+      if (maMh) body.ma_mh = maMh;
+      await api(`/api/digital-features/${state.currentDigitalFeatureId}/screens`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      showToast("Đã thêm màn hình.", "success");
+    }
+    document.getElementById("digital-feature-screen-dialog").close();
+    await loadDigitalFeatureScreens(state.currentDigitalFeatureId);
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById("digital-feature-screen-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("digital-feature-screen-dialog").close();
+});
+
+// ---- File mẫu / Import Excel / Export Excel của tab màn hình ----
+
+document.getElementById("download-dfs-template-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/screens/import-template`;
+});
+
+document.getElementById("export-dfs-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/screens/export`;
+});
+
+document.getElementById("import-dfs-btn")?.addEventListener("click", () => {
+  document.getElementById("dfs-import-input").click();
+});
+
+document.getElementById("dfs-import-input")?.addEventListener("change", async () => {
+  const input = document.getElementById("dfs-import-input");
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    // Body là bytes thô .xlsx — fetch() thẳng thay vì api() vì Content-Type
+    // là kiểu file (giống import Tính năng số hoá ở trên).
+    const buffer = await file.arrayBuffer();
+    const res = await fetch(`/api/digital-features/${state.currentDigitalFeatureId}/screens/import`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Lỗi ${res.status}`);
+    }
+    const result = await res.json();
+    await loadDigitalFeatureScreens(state.currentDigitalFeatureId);
+
+    let msg = `Đã nhập ${result.imported} màn hình.`;
+    if (result.skipped?.length) {
+      const detail = result.skipped
+        .slice(0, 5)
+        .map((s) => `dòng ${s.row}${s.label ? ` (${s.label})` : ""}: ${s.reason}`)
+        .join("; ");
+      const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+      showToast(`${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`, "error");
+    } else {
+      showToast(msg, "success");
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Thanh cuộn ngang phía trên bảng màn hình (nhân bản setupDfScrollTopSync). ----
+(function setupDfsScrollTopSync() {
+  const fake = document.getElementById("dfs-table-scroll-top");
+  const spacer = document.getElementById("dfs-table-scroll-top-spacer");
+  const real = document.getElementById("dfs-table-wrap");
   if (!fake || !spacer || !real) return;
   const syncSpacer = () => {
     spacer.style.width = `${real.scrollWidth}px`;

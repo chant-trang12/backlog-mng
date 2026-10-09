@@ -10,6 +10,17 @@ import {
   listDigitalFeaturesHandler,
   updateDigitalFeatureHandler,
 } from "../controllers/digitalFeature.controller.js";
+import {
+  createDigitalFeatureScreenHandler,
+  deleteDigitalFeatureScreenHandler,
+  deleteSelectedDigitalFeatureScreensHandler,
+  downloadDigitalFeatureScreenTemplateHandler,
+  exportDigitalFeatureScreensHandler,
+  getDigitalFeatureScreenHandler,
+  importDigitalFeatureScreensHandler,
+  listDigitalFeatureScreensHandler,
+  updateDigitalFeatureScreenHandler,
+} from "../controllers/digitalFeatureScreen.controller.js";
 
 const router = Router();
 
@@ -29,6 +40,29 @@ router.post(
   importDigitalFeaturesHandler,
 );
 router.get("/digital-features/export", exportDigitalFeaturesHandler);
+
+// ===== Màn hình, Tính năng & Phân quyền (tab 2 trong chi tiết tính năng) =====
+// Các route "/digital-features/:id/screens" có 3 đoạn path nên không bị
+// route "/digital-features/:id" (2 đoạn) bắt — vẫn nhóm vào đây cho gọn.
+// Xóa nhiều (checkbox bảng) — admin chặn ở app.ts theo tiền tố path.
+router.post("/digital-features/:id/screens/delete-selected", deleteSelectedDigitalFeatureScreensHandler);
+// File mẫu .xlsx + import (body bytes thô express.raw) + export — đặt trước
+// "/:id" để không bị ":id" nuốt path "import-template"/"export".
+router.get("/digital-features/:id/screens/import-template", downloadDigitalFeatureScreenTemplateHandler);
+router.post(
+  "/digital-features/:id/screens/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importDigitalFeatureScreensHandler,
+);
+router.get("/digital-features/:id/screens/export", exportDigitalFeatureScreensHandler);
+router.get("/digital-features/:id/screens", listDigitalFeatureScreensHandler);
+router.post("/digital-features/:id/screens", createDigitalFeatureScreenHandler);
+
+// Route phẳng cho từng màn hình (sửa/xóa/xem 1 dòng).
+router.get("/digital-feature-screens/:id", getDigitalFeatureScreenHandler);
+router.put("/digital-feature-screens/:id", updateDigitalFeatureScreenHandler);
+router.delete("/digital-feature-screens/:id", deleteDigitalFeatureScreenHandler);
+
 router.get("/digital-features/:id", getDigitalFeatureHandler);
 router.put("/digital-features/:id", updateDigitalFeatureHandler);
 router.delete("/digital-features/:id", deleteDigitalFeatureHandler);

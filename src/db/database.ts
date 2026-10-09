@@ -42,6 +42,7 @@ import {
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
 import { migrateDigitalFeatureTables } from "./migrations/digitalFeatures.js";
+import { migrateDigitalFeatureScreenTables } from "./migrations/digitalFeatureScreens.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -113,6 +114,7 @@ export async function initDatabase(): Promise<void> {
     // không FK bảng khác; phần sửa nhãn log cũ phải chạy SAU khi action_logs
     // đã tồn tại (xem migrateDigitalFeatureTables).
     await migrateDigitalFeatureTables();
+    await migrateDigitalFeatureScreenTables();
 
     // Xóa mềm (is_deleted/deleted_at) cho dữ liệu nghiệp vụ chính — gắn cờ
     // thay vì DELETE thật để không mất dữ liệu khi có sự cố (vẫn backup/

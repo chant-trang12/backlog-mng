@@ -163,6 +163,9 @@ export function createApp() {
   // Xóa nhiều Tính năng số hoá (checkbox trên bảng) — chỉ Admin, scope
   // requireAdmin đúng tiền tố route, không đè lên toàn bộ /api/digital-features.
   app.use("/api/digital-features/delete-selected", requireAdmin);
+  // Xóa nhiều màn hình (tab "Màn hình, Tính năng & Phân quyền" trong chi
+  // tiết Tính năng số hoá) — chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/screens/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);
