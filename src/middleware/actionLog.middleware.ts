@@ -46,6 +46,7 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "roadmap-items": { module: "Roadmap năm", entity: "Dòng roadmap", table: "roadmap_items", nameColumn: "nhiem_vu" },
   "roadmap-details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
   "feature-requests": { module: "Yêu cầu tính năng", entity: "Yêu cầu tính năng", table: "feature_requests", nameColumn: "tieu_de" },
+  "digital-features": { module: "Quản lý tính năng số hoá", entity: "Tính năng số hoá", table: "digital_features", nameColumn: "module" },
   departments: { module: "Cấu hình", entity: "Phòng ban", table: "departments", nameColumn: "name" },
   users: { module: "Cấu hình", entity: "User", table: "users", nameColumn: "name" },
   tags: { module: "Cấu hình", entity: "Tag", table: "tags", nameColumn: "ten_tag" },
@@ -112,6 +113,7 @@ const NAME_FIELDS = [
   "nhiem_vu", "tieu_de", "ten_muc_tieu", "ten_he_thong", "ten_phan_loai",
   "ten_nhom", "ten_chuc_vu", "ten_tag", "muc_tieu", "he_thong", "team",
   "name", "ten", "ten_su_co", "label", "title", "username", "noi_dung",
+  "module", // Tính năng số hoá — "tên" của bản ghi là trường Module
 ];
 
 const USER_ROLE_LABEL: Record<string, string> = { admin: "Admin", editor: "Biên tập", viewer: "Chỉ xem" };

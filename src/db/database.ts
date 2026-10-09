@@ -106,12 +106,13 @@ export async function initDatabase(): Promise<void> {
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();
-    // digital_features (module "Quản lý tính năng số hoá") — bảng độc lập,
-    // không FK bảng khác.
-    await migrateDigitalFeatureTables();
     // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
     // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
     await migrateActionLogsTable();
+    // digital_features (module "Quản lý tính năng số hoá") — bảng độc lập,
+    // không FK bảng khác; phần sửa nhãn log cũ phải chạy SAU khi action_logs
+    // đã tồn tại (xem migrateDigitalFeatureTables).
+    await migrateDigitalFeatureTables();
 
     // Xóa mềm (is_deleted/deleted_at) cho dữ liệu nghiệp vụ chính — gắn cờ
     // thay vì DELETE thật để không mất dữ liệu khi có sự cố (vẫn backup/

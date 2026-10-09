@@ -35,4 +35,20 @@ export async function migrateDigitalFeatureTables(): Promise<void> {
       table.dateTime("deleted_at");
     });
   }
+
+  // Log hoạt động ghi TRƯỚC khi có mapping tiếng Việt ở actionLog.middleware
+  // còn dùng nguyên segment gốc ("digital-features", module rỗng) — quy về
+  // nhãn mới cho đồng bộ với log mới ("Tính năng số hoá"/module "Quản lý
+  // tính năng số hoá"). Idempotent (REPLACE không khớp thì không đổi gì).
+  await db("action_logs")
+    .whereLike("description", "%digital-features%")
+    .update({
+      description: db.raw("REPLACE(description, 'digital-features', 'Tính năng số hoá')"),
+    });
+  await db("action_logs")
+    .whereLike("path", "%digital-features%") // req.path trong middleware KHÔNG có tiền tố "/api"
+    .where((qb) => {
+      qb.where("module", "digital-features").orWhereNull("module");
+    })
+    .update({ module: "Quản lý tính năng số hoá" });
 }
