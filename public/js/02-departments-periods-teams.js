@@ -448,7 +448,17 @@ async function loadPeriods() {
   }
 
   if (!state.currentPeriodId || !state.periods.some((p) => p.id === state.currentPeriodId)) {
-    state.currentPeriodId = state.periods[0].id;
+    // Mặc định chọn theo THÁNG THỰC TẾ (hôm nay) nếu tháng đó đã được quản
+    // lý — VD đang quản lý 8-11/2026 và hôm nay là 10/10/2026 thì mở app
+    // mặc định ở tháng 10/2026 (Trang chủ + Nhiệm vụ hiển thị theo). Hôm
+    // nay rơi vào tháng chưa quản lý (hoặc trước tháng cũ nhất) thì giữ
+    // behavior cũ: chọn tháng mới nhất trong danh sách. User vẫn đổi được
+    // tay — mặc định chỉ áp khi chưa chọn hoặc tháng đã chọn bị xóa.
+    const now = new Date();
+    const currentReal = state.periods.find(
+      (p) => p.year === now.getFullYear() && p.month === now.getMonth() + 1,
+    );
+    state.currentPeriodId = (currentReal ?? state.periods[0]).id;
   }
   el.periodSelect.value = String(state.currentPeriodId);
   el.teamPeriodSelect.value = String(state.currentPeriodId);
