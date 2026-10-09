@@ -1196,11 +1196,17 @@ th {
 #dfdo-table th { text-align: center; }
 #dfdo-table td { vertical-align: middle; }
 /* Bảng Tích hợp & Sự kiện — nhãn cột căn giữa, ô dữ liệu dài căn trái;
-   cột STT và Hướng nội dung ngắn nên căn giữa. */
+   cột Hướng nội dung ngắn nên căn giữa. */
 #dfint-table th { text-align: center; }
 #dfint-table td { vertical-align: middle; }
-#dfint-table td:nth-child(2),
 #dfint-table td:nth-child(3) { text-align: center; }
+
+/* Cột STT (cột thứ 2, sau checkbox) căn giữa ở tất cả các bảng dữ liệu
+   trong mọi tab của trang chi tiết Tính năng số hoá. */
+#dfs-table td:nth-child(2),
+#dfmd-table td:nth-child(2),
+#dfdo-table td:nth-child(2),
+#dfint-table td:nth-child(2) { text-align: center; }
 /* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
    thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
    non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */
