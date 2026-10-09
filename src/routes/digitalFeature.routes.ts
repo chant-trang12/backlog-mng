@@ -32,6 +32,17 @@ import {
   listDigitalFeatureMasterDataHandler,
   updateDigitalFeatureMasterDataHandler,
 } from "../controllers/digitalFeatureMasterData.controller.js";
+import {
+  createDigitalFeatureDataObjectHandler,
+  deleteDigitalFeatureDataObjectHandler,
+  deleteSelectedDigitalFeatureDataObjectsHandler,
+  downloadDigitalFeatureDoTemplateHandler,
+  exportDigitalFeatureDataObjectsHandler,
+  getDigitalFeatureDataObjectHandler,
+  importDigitalFeatureDataObjectsHandler,
+  listDigitalFeatureDataObjectsHandler,
+  updateDigitalFeatureDataObjectHandler,
+} from "../controllers/digitalFeatureDataObject.controller.js";
 
 const router = Router();
 
@@ -92,6 +103,25 @@ router.post("/digital-features/:id/master-data", createDigitalFeatureMasterDataH
 router.get("/digital-feature-master-data/:id", getDigitalFeatureMasterDataHandler);
 router.put("/digital-feature-master-data/:id", updateDigitalFeatureMasterDataHandler);
 router.delete("/digital-feature-master-data/:id", deleteDigitalFeatureMasterDataHandler);
+
+// ===== Đối tượng dữ liệu & Vòng đời trạng thái (tab 4 trong chi tiết tính
+// năng) — cùng cấu trúc route với tab Danh mục ở trên. =====
+// Xóa nhiều (checkbox bảng) — admin chặn ở app.ts theo tiền tố path.
+router.post("/digital-features/:id/data-objects/delete-selected", deleteSelectedDigitalFeatureDataObjectsHandler);
+router.get("/digital-features/:id/data-objects/import-template", downloadDigitalFeatureDoTemplateHandler);
+router.post(
+  "/digital-features/:id/data-objects/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importDigitalFeatureDataObjectsHandler,
+);
+router.get("/digital-features/:id/data-objects/export", exportDigitalFeatureDataObjectsHandler);
+router.get("/digital-features/:id/data-objects", listDigitalFeatureDataObjectsHandler);
+router.post("/digital-features/:id/data-objects", createDigitalFeatureDataObjectHandler);
+
+// Route phẳng cho từng đối tượng (sửa/xóa/xem 1 dòng).
+router.get("/digital-feature-data-objects/:id", getDigitalFeatureDataObjectHandler);
+router.put("/digital-feature-data-objects/:id", updateDigitalFeatureDataObjectHandler);
+router.delete("/digital-feature-data-objects/:id", deleteDigitalFeatureDataObjectHandler);
 
 router.get("/digital-features/:id", getDigitalFeatureHandler);
 router.put("/digital-features/:id", updateDigitalFeatureHandler);

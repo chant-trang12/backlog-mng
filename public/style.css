@@ -1191,6 +1191,10 @@ th {
 #dfmd-table td { vertical-align: middle; }
 /* Cột "Quản trị bởi" — nội dung ngắn, căn giữa cho đồng bộ nhãn cột. */
 #dfmd-table td[data-col="quan_tri_boi"] { text-align: center; }
+/* Bảng Đối tượng dữ liệu & Vòng đời trạng thái — nhãn cột căn giữa, ô dữ
+   liệu dài căn trái. */
+#dfdo-table th { text-align: center; }
+#dfdo-table td { vertical-align: middle; }
 /* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
    thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
    non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */

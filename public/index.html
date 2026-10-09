@@ -1319,6 +1319,32 @@
           </form>
         </dialog>
 
+        <!-- Dialog Thêm/Sửa Đối tượng dữ liệu & Vòng đời — tab 4 trang chi
+             tiết, 3 trường: Đối tượng, Khóa & thuộc tính chính, Vòng đời. -->
+        <dialog id="digital-feature-do-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="digital-feature-do-form">
+            <h2 id="dfdo-dialog-title" style="margin:0">Thêm đối tượng dữ liệu</h2>
+            <input type="hidden" id="dfdo-id" />
+            <div>
+              <label for="dfdo-doi-tuong">Đối tượng *</label>
+              <input id="dfdo-doi-tuong" required style="width:100%" />
+            </div>
+            <div>
+              <label for="dfdo-khoa">Khóa &amp; thuộc tính chính</label>
+              <textarea id="dfdo-khoa" rows="3" style="width:100%"></textarea>
+            </div>
+            <div>
+              <label for="dfdo-vong-doi">Vòng đời trạng thái</label>
+              <textarea id="dfdo-vong-doi" rows="3" style="width:100%"></textarea>
+            </div>
+            <div class="row" style="justify-content:flex-end;margin-top:16px">
+              <button type="button" id="digital-feature-do-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
         <!-- ---- Trang chi tiết Tính năng số hoá — MÀN HÌNH RIÊNG (không có
              mục ở menu trái): mở bằng icon "Xem chi tiết" ở bảng danh sách,
              quay lại bằng nút "← Quay lại". Nội dung chia theo tab giống
@@ -1532,7 +1558,63 @@
             </section>
 
             <section class="card" id="df-detail-tab-data-lifecycle" hidden>
-              <p class="muted" style="text-align:center;padding:32px 0">Nội dung tab "Đối tượng dữ liệu &amp; Vòng đời trạng thái" sẽ được cập nhật sau.</p>
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Đối tượng dữ liệu &amp; Vòng đời trạng thái</h2>
+                <!-- Cùng bộ nút với tab Danh mục: Xóa đã chọn chỉ hiện với
+                     admin (class delete-action tự ẩn theo quyền qua CSS role
+                     — khớp luật chặn server ở app.ts). -->
+                <div class="row" style="flex:0 0 auto;margin-left:auto">
+                  <button id="delete-selected-dfdo-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfdo-count">0</span>)</button>
+                  <div class="col-menu-wrap" id="dfdo-col-menu-wrap">
+                    <button type="button" id="dfdo-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
+                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
+                      <span class="caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="col-menu" id="dfdo-col-menu" role="menu" hidden>
+                      <div class="col-menu-list" id="dfdo-col-menu-list"></div>
+                      <div class="bulk-menu-sep"></div>
+                      <button type="button" class="bulk-menu-item" id="dfdo-col-menu-reset">Hiện tất cả</button>
+                    </div>
+                  </div>
+                  <button id="download-dfdo-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
+                  <button id="import-dfdo-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                  <input type="file" id="dfdo-import-input" accept=".xlsx,.xlsm" hidden />
+                  <button id="export-dfdo-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
+                  <button id="add-df-do-btn" class="primary">+ Thêm mới</button>
+                </div>
+              </div>
+              <div class="table-scroll-top" id="dfdo-table-scroll-top"><div id="dfdo-table-scroll-top-spacer"></div></div>
+              <div class="table-wrap" id="dfdo-table-wrap">
+                <table id="dfdo-table">
+                  <thead>
+                    <tr>
+                      <th style="width:36px"><input type="checkbox" id="dfdo-select-all" /></th>
+                      <th style="min-width:48px">STT</th>
+                      <th style="min-width:200px">Đối tượng</th>
+                      <th style="min-width:340px" data-col="khoa_thuoc_tinh">Khóa &amp; thuộc tính chính</th>
+                      <th style="min-width:340px" data-col="vong_doi_trang_thai">Vòng đời trạng thái</th>
+                      <th style="min-width:110px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dfdo-tbody"></tbody>
+                </table>
+                <p class="muted" id="dfdo-empty" hidden style="padding:16px;text-align:center">Chưa có đối tượng dữ liệu nào.</p>
+              </div>
+              <div class="pagination-bar" id="dfdo-pagination">
+                <div class="row">
+                  <label for="dfdo-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="dfdo-page-size">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <button type="button" id="dfdo-page-prev" class="small">‹ Trước</button>
+                  <span id="dfdo-page-info" class="muted"></span>
+                  <button type="button" id="dfdo-page-next" class="small">Sau ›</button>
+                </div>
+              </div>
             </section>
 
             <section class="card" id="df-detail-tab-integration" hidden>

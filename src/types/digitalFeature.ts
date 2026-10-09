@@ -88,3 +88,26 @@ export type CreateDigitalFeatureMasterDataInput = Partial<
 export type UpdateDigitalFeatureMasterDataInput = Partial<
   Omit<DigitalFeatureMasterData, "id" | "digital_feature_id" | "created_at" | "updated_at">
 >;
+
+// ===== Đối tượng dữ liệu & Vòng đời trạng thái (tab 4 màn hình chi tiết) =====
+
+export interface DigitalFeatureDataObject {
+  id: number;
+  digital_feature_id: number;
+  ten_doi_tuong: string;
+  khoa_thuoc_tinh: string | null;
+  vong_doi_trang_thai: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CreateDigitalFeatureDataObjectInput = Partial<
+  Omit<DigitalFeatureDataObject, "id" | "digital_feature_id" | "created_at" | "updated_at">
+> & {
+  digital_feature_id: number;
+  ten_doi_tuong: string;
+};
+
+export type UpdateDigitalFeatureDataObjectInput = Partial<
+  Omit<DigitalFeatureDataObject, "id" | "digital_feature_id" | "created_at" | "updated_at">
+>;
