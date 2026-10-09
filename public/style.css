@@ -1542,6 +1542,7 @@ th {
 .rm-month-block { padding: 12px 0; border-top: 1px solid var(--border); }
 .rm-month-block:first-child { border-top: none; padding-top: 0; }
 .rm-detail-table { margin-top: 8px; }
+.rm-detail-table th { text-align: center; }
 .rm-detail-table td { vertical-align: middle; }
 
 #incident-table td:nth-child(1), /* Tháng */
