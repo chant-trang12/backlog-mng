@@ -1055,13 +1055,11 @@
 
           <section class="card">
             <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-              <div style="flex:1 1 0">
-                <!-- white-space:nowrap — khi nút "Xóa đã chọn (N)" hiện ra,
-                     không để tiêu đề bị bẻ chữ thành nhiều dòng (dúm lại);
-                     thiếu chỗ thì nhóm nút wrap xuống dòng dưới (.row mặc
-                     định flex-wrap:wrap). -->
-                <h2 style="margin:0;white-space:nowrap">Tính năng số hoá</h2>
-              </div>
+              <!-- Tiêu đề để flex:0 0 auto (không co/giãn, nowrap) — khi nút
+                   "Xóa đã chọn (N)" hiện ra, tiêu đề giữ nguyên 1 dòng, nhóm
+                   nút tự wrap xuống dòng dưới nếu thiếu chỗ (.row mặc định
+                   flex-wrap:wrap). -->
+              <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Tính năng số hoá</h2>
               <!-- Chọn nhiều để xóa — CHỈ admin (nút "Xóa đã chọn" mang class
                    "delete-action", tự ẩn với viewer/editor qua CSS role,
                    khớp luật chặn thật ở server — requireAdmin gắn riêng cho
