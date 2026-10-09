@@ -195,6 +195,10 @@ export interface RoadmapItem {
   trang_thai: TaskStatus;
   ghi_chu: string | null;
   synced_task_id: number | null;
+  // Các tháng đã được TỰ ĐỘNG đưa vào backlog (từ chi tiết đã sync + tháng
+  // bắt đầu nếu sync kiểu cũ; tháng có task đã bị xóa thì không tính) —
+  // badge cột Trạng thái ở FE đọc trường này.
+  synced_months?: number[];
   created_at: string;
   updated_at: string;
 }
@@ -350,6 +354,8 @@ export interface RoadmapDetail {
   trang_thai: TaskStatus;
   ghi_chu: string | null;
   synced_task_id?: number | null;
+  // task được trỏ tới đã bị xóa (xóa mềm) — FE hiển thị "Chưa vào Backlog".
+  task_deleted?: boolean;
   created_at: string;
   updated_at: string;
 }

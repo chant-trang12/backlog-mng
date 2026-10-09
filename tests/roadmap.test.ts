@@ -515,6 +515,23 @@ describe("Roadmap năm", () => {
       // Từng dòng chi tiết được đánh dấu đã đưa (cột Backlog ở FE đọc cột này)
       const details = (await request(app).get(`/api/roadmap-items/${itemId}/details`)).body;
       expect(details.map((d: { synced_task_id: number | null }) => d.synced_task_id).filter(Boolean)).toHaveLength(3);
+      expect(details.every((d: { task_deleted: boolean }) => d.task_deleted === false)).toBe(true);
+
+      // Badge cột Trạng thái ở bảng chính đọc synced_months — đủ 3 tháng.
+      expect(item.synced_months).toEqual([9, 10, 11]);
+
+      // Xóa task tháng 10 -> tình trạng thực tế: chi tiết tháng 10 thành
+      // "Chưa vào Backlog" (task_deleted) và tháng 10 rời synced_months.
+      const octDetailRow = details.find((d: { month: number }) => d.month === 10);
+      const delRes = await request(app).delete(`/api/tasks/${octDetailRow.synced_task_id}`);
+      expect([200, 204]).toContain(delRes.status);
+      const detailsAfterDel = (await request(app).get(`/api/roadmap-items/${itemId}/details`)).body;
+      expect(detailsAfterDel.find((d: { month: number }) => d.month === 10).task_deleted).toBe(true);
+      expect(detailsAfterDel.find((d: { month: number }) => d.month === 9).task_deleted).toBe(false);
+      const itemAfterDel = (await request(app).get(`/api/roadmap-items?year=2021&department_id=1`)).body.find(
+        (r: { id: number }) => r.id === itemId,
+      );
+      expect(itemAfterDel.synced_months).toEqual([9, 11]);
     });
 
     it("tháng chưa quản lý thì đưa sau khi thêm tháng; tháng ngoài phạm vi Bắt đầu -> Kết thúc không đưa", async () => {

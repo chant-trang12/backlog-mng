@@ -42,8 +42,37 @@ export async function listRoadmapItems(filter: {
 }): Promise<RoadmapItem[]> {
   const query = db("roadmap_items").where({ year: filter.year, is_deleted: false });
   if (filter.department_id != null) query.where({ department_id: filter.department_id });
-  const rows = await query.orderBy("thoi_gian_ket_thuc", "asc").orderBy("id", "asc");
-  return rows as RoadmapItem[];
+  const rows = (await query.orderBy("thoi_gian_ket_thuc", "asc").orderBy("id", "asc")) as RoadmapItem[];
+
+  // Gắn synced_months — danh sách tháng đã được TỰ ĐỘNG đưa vào backlog
+  // (badge cột Trạng thái ở FE): từ các chi tiết đã sync (task còn sống) và
+  // tháng bắt đầu nếu dòng được sync kiểu cũ. Tháng có task đã bị xóa mềm
+  // thì không tính — badge phản ánh tình trạng THỰC TẾ.
+  const ids = rows.map((r) => r.id);
+  const synced = ids.length
+    ? await db("roadmap_details as d")
+        .join("tasks as t", "t.id", "d.synced_task_id")
+        .whereIn("d.roadmap_item_id", ids)
+        .where({ "d.is_deleted": false, "t.is_deleted": false })
+        .whereNotNull("d.synced_task_id")
+        .select("d.roadmap_item_id", "d.month")
+    : [];
+  const monthsByItem = new Map<number, number[]>();
+  for (const s of synced) {
+    const itemId = Number(s.roadmap_item_id);
+    const months = monthsByItem.get(itemId) ?? [];
+    months.push(Number(s.month));
+    monthsByItem.set(itemId, months);
+  }
+  return rows.map((r) => {
+    const months = monthsByItem.get(r.id) ?? [];
+    if (months.length === 0 && r.synced_task_id && r.thoi_gian_bat_dau) {
+      // Sync kiểu cũ (không có chi tiết) — task ở đúng tháng bắt đầu.
+      const m = /^(\d{4})-(\d{2})/.exec(r.thoi_gian_bat_dau);
+      if (m) months.push(Number(m[2]));
+    }
+    return { ...r, synced_months: months.sort((a, b) => a - b) };
+  });
 }
 
 export async function getRoadmapItem(id: number): Promise<RoadmapItem | undefined> {
@@ -283,11 +312,18 @@ export async function deleteRoadmapItems(ids: number[], scope: DataScope): Promi
 // ---- Chi tiết công việc theo tháng ----
 
 export async function listRoadmapDetails(itemId: number): Promise<RoadmapDetail[]> {
-  const rows = await db("roadmap_details")
-    .where({ roadmap_item_id: itemId, is_deleted: false })
-    .orderBy("month", "asc")
-    .orderBy("id", "asc");
-  return rows as RoadmapDetail[];
+  const rows = await db("roadmap_details as d")
+    .leftJoin("tasks as t", "t.id", "d.synced_task_id")
+    .where({ "d.roadmap_item_id": itemId, "d.is_deleted": false })
+    .orderBy("d.month", "asc")
+    .orderBy("d.id", "asc")
+    .select("d.*", "t.is_deleted as __task_deleted");
+  // task_deleted: task được trỏ tới đã bị xóa (xóa mềm) — FE hiển thị
+  // "Chưa vào Backlog" thay vì "Đã vào Backlog" cho dòng đó.
+  return (rows as (RoadmapDetail & { __task_deleted: boolean | number | null })[]).map((r) => {
+    const { __task_deleted, ...rest } = r;
+    return { ...rest, task_deleted: Boolean(__task_deleted) };
+  });
 }
 
 export async function createRoadmapDetail(

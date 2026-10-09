@@ -1786,6 +1786,27 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   white-space: nowrap;
 }
 
+/* Badge trạng thái đưa vào Backlog (Roadmap năm) — inline, đứng cạnh badge
+   Trạng thái ở bảng chính và riêng 1 cột ở bảng chi tiết theo tháng. */
+.rm-backlog-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.5;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--success);
+  color: #fff;
+  white-space: nowrap;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.rm-backlog-badge.pending {
+  background: var(--border);
+  color: var(--muted);
+  margin-right: 0;
+}
+
 /* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân
    loại quản lý ở Cấu hình), giữ màu cố định riêng. Các phân loại khác lấy màu
    theo palette động ở app.js (TAG_PALETTE/PHAN_LOAI_PALETTE, áp qua style="..."). */
