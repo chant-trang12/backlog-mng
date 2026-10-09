@@ -306,26 +306,35 @@ document.getElementById("digital-feature-form")?.addEventListener("submit", asyn
   }
 });
 
-// ---- Dialog Xem chi tiết — tạm để trống (chờ mô tả sau), chỉ hiển thị
-// Mã + Module để nhận diện dòng đang xem ----
+// ---- Trang chi tiết (màn hình riêng) — mở bằng icon "Xem chi tiết" ở
+// bảng, quay lại bằng nút "← Quay lại". Nội dung tạm để trống (chờ mô tả
+// sau), hiện tại hiển thị tên tính năng + Mã để nhận diện dòng đang xem. ----
 
 function openDigitalFeatureDetail(id) {
   const item = state.digitalFeatures.find((r) => r.id === id);
   if (!item) return;
-  document.getElementById("df-detail-title").textContent = item.module || "Chi tiết tính năng số hoá";
-  document.getElementById("df-detail-subtitle").textContent = item.ma ? `Mã: ${item.ma}` : "";
-  document.getElementById("digital-feature-detail-dialog").showModal();
+  document.getElementById("df-detail-page-title").textContent = item.module || "Chi tiết tính năng số hoá";
+  const maBadge = document.getElementById("df-detail-page-ma");
+  maBadge.textContent = item.ma ?? "";
+  maBadge.hidden = !item.ma;
+  // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
+  // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
+  document.getElementById("page-digital-features").hidden = true;
+  document.getElementById("page-digital-feature-detail").hidden = false;
+  window.scrollTo(0, 0);
 }
 
-// Nút Hủy (form) / Đóng (chi tiết) — đóng popup không lưu, cùng cách các
-// dialog khác trong hệ thống gắn listener riêng theo id (xem
-// feature-request-cancel-btn ở 10-feature-requests.js). Nút X góc trên và
-// bấm ra backdrop đã có handler ủy quyền dùng chung (01-state.js).
+document.getElementById("df-detail-back-btn")?.addEventListener("click", () => {
+  document.getElementById("page-digital-feature-detail").hidden = true;
+  document.getElementById("page-digital-features").hidden = false;
+});
+
+// Nút Hủy (form) — đóng popup không lưu, cùng cách các dialog khác trong
+// hệ thống gắn listener riêng theo id (xem feature-request-cancel-btn ở
+// 10-feature-requests.js). Nút X góc trên và bấm ra backdrop đã có handler
+// ủy quyền dùng chung (01-state.js).
 document.getElementById("digital-feature-cancel-btn")?.addEventListener("click", () => {
   document.getElementById("digital-feature-dialog").close();
-});
-document.getElementById("digital-feature-detail-close-btn")?.addEventListener("click", () => {
-  document.getElementById("digital-feature-detail-dialog").close();
 });
 
 // ---- Bộ lọc + tìm kiếm ----

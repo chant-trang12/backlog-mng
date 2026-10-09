@@ -7,6 +7,10 @@ const pages = {
   cskh: document.getElementById("page-cskh"),
   roadmap: document.getElementById("page-roadmap"),
   "digital-features": document.getElementById("page-digital-features"),
+  // Trang CHI TIẾT tính năng số hoá — không có mục ở menu trái (mở bằng
+  // icon "Xem chi tiết" ở bảng danh sách, 13-digital-features.js). Nằm
+  // trong `pages` để khi user bấm sang mục menu khác, trang này tự ẩn.
+  "digital-feature-detail": document.getElementById("page-digital-feature-detail"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),

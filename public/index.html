@@ -1193,19 +1193,24 @@
           </form>
         </dialog>
 
-        <!-- ---- Dialog Xem chi tiết — tạm để trống, chờ mô tả yêu cầu
-             cụ thể sau (chỉ hiển thị Mã + Module để nhận diện dòng). ---- -->
-        <dialog id="digital-feature-detail-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <h2 id="df-detail-title" style="margin:0">Chi tiết tính năng số hoá</h2>
-          <p class="muted" id="df-detail-subtitle" style="margin:4px 0 12px"></p>
-          <div id="df-detail-body">
-            <p class="muted" style="text-align:center;padding:24px 0">Nội dung màn hình xem chi tiết sẽ được cập nhật sau.</p>
-          </div>
-          <div class="row" style="justify-content:flex-end;margin-top:8px">
-            <button type="button" id="digital-feature-detail-close-btn">Đóng</button>
-          </div>
-        </dialog>
+        <!-- ---- Trang chi tiết Tính năng số hoá — MÀN HÌNH RIÊNG (không có
+             mục ở menu trái): mở bằng icon "Xem chi tiết" ở bảng danh sách,
+             quay lại bằng nút "← Quay lại". Nội dung tạm để trống, chờ mô
+             tả yêu cầu cụ thể sau (13-digital-features.js). ---- -->
+        <div id="page-digital-feature-detail" hidden>
+          <section class="card">
+            <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div class="row" style="align-items:center;gap:10px;margin:0">
+                <button type="button" id="df-detail-back-btn" class="small">← Quay lại</button>
+                <h2 style="margin:0" id="df-detail-page-title">Chi tiết tính năng số hoá</h2>
+              </div>
+              <span class="pill" id="df-detail-page-ma" hidden></span>
+            </div>
+            <p class="muted" style="text-align:center;padding:32px 0">Nội dung màn hình xem chi tiết sẽ được cập nhật sau.</p>
+          </section>
+        </div>
+
+        <!-- ---- Trang Yêu cầu tính năng ---- -->
 
         <!-- ---- Trang Yêu cầu tính năng ---- -->
         <div id="page-feature-requests" hidden>
