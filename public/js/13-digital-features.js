@@ -394,6 +394,24 @@ function resetDigitalFeatureDetailTabs() {
   });
 }
 
+// Điền 1 ô trong bảng "Thông tin Module" — ô rỗng hiển thị "—" mờ.
+function setDfInfoCell(id, value) {
+  const cell = document.getElementById(id);
+  cell.textContent = value || "—";
+  cell.classList.toggle("muted", !value);
+}
+
+function renderDigitalFeatureInfo(item) {
+  setDfInfoCell("df-info-don-vi-chu-tri", item.don_vi_chu_tri);
+  setDfInfoCell("df-info-don-vi-phoi-hop", item.don_vi_phoi_hop);
+  setDfInfoCell("df-info-vai-tro-pbdkd", item.vai_tro_pbdkd);
+  setDfInfoCell("df-info-giai-doan", item.giai_doan);
+  setDfInfoCell("df-info-muc-tieu", item.muc_tieu_nghiep_vu);
+  setDfInfoCell("df-info-tn-mh", item.tn_mh);
+  setDfInfoCell("df-info-nhan-dau-vao", item.nhan_dau_vao_tu);
+  setDfInfoCell("df-info-chuyen-dau-ra", item.chuyen_dau_ra_toi);
+}
+
 function openDigitalFeatureDetail(id) {
   const item = state.digitalFeatures.find((r) => r.id === id);
   if (!item) return;
@@ -401,6 +419,7 @@ function openDigitalFeatureDetail(id) {
   const maBadge = document.getElementById("df-detail-page-ma");
   maBadge.textContent = item.ma ?? "";
   maBadge.hidden = !item.ma;
+  renderDigitalFeatureInfo(item);
   resetDigitalFeatureDetailTabs();
   // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
   // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
