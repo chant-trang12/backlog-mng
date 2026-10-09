@@ -386,7 +386,10 @@ function isTaskUpcomingDeadline(t) {
 }
 
 function renderTaskWarnings() {
-  const tasks = state.tasksAll;
+  // Đếm trên danh sách đã lọc theo khung Tìm kiếm (Team/Trạng thái/Tag/Phân
+  // loại/Tính chất/từ khóa) — KHÔNG theo chip nhắc việc đang bật (bấm chip
+  // chỉ lọc bảng bên dưới, không làm sai lệch số đếm của các chip khác).
+  const tasks = state.tasksAll.filter(taskMatchesSearchFilters);
   const noScoreCount = tasks.filter(isTaskNotGraded).length;
   const overdueCount = tasks.filter(isTaskOverdue).length;
   const upcomingCount = tasks.filter(isTaskUpcomingDeadline).length;
@@ -789,31 +792,37 @@ el.filterNature.addEventListener("change", () => {
   state.taskFilters.nature = el.filterNature.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterExcludedFromScore.addEventListener("change", () => {
   state.taskFilters.excludedFromScore = el.filterExcludedFromScore.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterTeam.addEventListener("change", () => {
   state.taskFilters.team = el.filterTeam.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterStatus.addEventListener("change", () => {
   state.taskFilters.status = el.filterStatus.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterTag.addEventListener("change", () => {
   state.taskFilters.tag = el.filterTag.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.taskSearch.addEventListener("input", () => {
   state.taskSearch = el.taskSearch.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 
 // Bấm vào 1 dòng (ngoài checkbox/nút/ô nhập) -> tô nổi bật dòng đó, giúp dễ
@@ -828,30 +837,38 @@ el.taskTbody.addEventListener("click", (e) => {
   if (!wasOn) tr.classList.add("row-highlighted");
 });
 
-function applyTaskFilters() {
+// Điều kiện lọc từ khung Tìm kiếm (Phân loại/Tính chất/Team/Trạng thái/Tag +
+// từ khóa) — dùng chung cho bảng task và 4 chip nhắc việc (số đếm trên chip
+// theo đúng bộ lọc đang chọn, KHÔNG gồm chính chip đang bật).
+function taskMatchesSearchFilters(t) {
   const { nature, excludedFromScore, team, status, tag } = state.taskFilters;
   const term = state.taskSearch.trim().toLowerCase();
+  if (team && t.team !== team) return false;
+  if (status && t.trang_thai !== status) return false;
+  if (tag && t.tag !== tag) return false;
+  if (excludedFromScore === "Đã chuyển" && !t.da_chuyen_thang) return false;
+  if (excludedFromScore === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
+  if (nature) {
+    const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
+    if (!items.includes(nature)) return false;
+  }
+  if (term) {
+    const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
+      .filter(Boolean)
+      .join(" \n ")
+      .toLowerCase();
+    if (!haystack.includes(term)) return false;
+  }
+  return true;
+}
+
+function applyTaskFilters() {
   state.tasks = state.tasksAll.filter((t) => {
-    if (team && t.team !== team) return false;
-    if (status && t.trang_thai !== status) return false;
-    if (tag && t.tag !== tag) return false;
-    if (excludedFromScore === "Đã chuyển" && !t.da_chuyen_thang) return false;
-    if (excludedFromScore === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
-    if (nature) {
-      const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
-      if (!items.includes(nature)) return false;
-    }
+    if (!taskMatchesSearchFilters(t)) return false;
     if (state.taskWarningFilter === "no-score" && !isTaskNotGraded(t)) return false;
     if (state.taskWarningFilter === "overdue" && !isTaskOverdue(t)) return false;
     if (state.taskWarningFilter === "upcoming" && !isTaskUpcomingDeadline(t)) return false;
     if (state.taskWarningFilter === "urgent" && !t.co_viec_xu_ly_gap) return false;
-    if (term) {
-      const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
-        .filter(Boolean)
-        .join(" \n ")
-        .toLowerCase();
-      if (!haystack.includes(term)) return false;
-    }
     return true;
   });
   taskPagination.reset();
