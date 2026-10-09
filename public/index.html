@@ -1359,7 +1359,9 @@
                 <!-- Cùng bộ nút với bảng Tính năng số hoá: Xóa đã chọn chỉ
                      hiện với admin (class delete-action tự ẩn theo quyền qua
                      CSS role — khớp luật chặn server ở app.ts). -->
-                <div class="row" style="flex:0 0 auto">
+                <!-- margin-left:auto: khi hàng nút dài quá bị wrap xuống
+                     dòng dưới vẫn bám cạnh phải, không dồn trái. -->
+                <div class="row" style="flex:0 0 auto;margin-left:auto">
                   <button id="delete-selected-dfs-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfs-count">0</span>)</button>
                   <div class="col-menu-wrap" id="dfs-col-menu-wrap">
                     <button type="button" id="dfs-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
