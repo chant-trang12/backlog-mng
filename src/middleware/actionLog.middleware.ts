@@ -47,6 +47,33 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "roadmap-details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
   "feature-requests": { module: "Yêu cầu tính năng", entity: "Yêu cầu tính năng", table: "feature_requests", nameColumn: "tieu_de" },
   "digital-features": { module: "Quản lý tính năng số hoá", entity: "Tính năng số hoá", table: "digital_features", nameColumn: "module" },
+  // 4 đối tượng con của Tính năng số hoá — route phẳng (sửa/xóa 1 dòng:
+  // /digital-feature-<tên>/:id). Không khai báo thì entity rơi về chính
+  // segment ("Xóa digital-feature-integrations" — không phải tiếng Việt).
+  "digital-feature-screens": {
+    module: "Quản lý tính năng số hoá",
+    entity: "Màn hình, Tính năng & Phân quyền",
+    table: "digital_feature_screens",
+    nameColumn: "ma_mh",
+  },
+  "digital-feature-master-data": {
+    module: "Quản lý tính năng số hoá",
+    entity: "Danh mục của Module",
+    table: "digital_feature_master_data",
+    nameColumn: "ten_danh_muc",
+  },
+  "digital-feature-data-objects": {
+    module: "Quản lý tính năng số hoá",
+    entity: "Đối tượng dữ liệu & Vòng đời trạng thái",
+    table: "digital_feature_data_objects",
+    nameColumn: "ten_doi_tuong",
+  },
+  "digital-feature-integrations": {
+    module: "Quản lý tính năng số hoá",
+    entity: "Tích hợp & Sự kiện",
+    table: "digital_feature_integrations",
+    nameColumn: "huong",
+  },
   departments: { module: "Cấu hình", entity: "Phòng ban", table: "departments", nameColumn: "name" },
   users: { module: "Cấu hình", entity: "User", table: "users", nameColumn: "name" },
   tags: { module: "Cấu hình", entity: "Tag", table: "tags", nameColumn: "ten_tag" },
@@ -70,6 +97,13 @@ const SUB_RESOURCE_LABELS: Record<string, { module: string; entity: string }> = 
   "tasks/members": { module: "Backlog", entity: "Nhân sự tham gia task" },
   "roadmap-items/details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
   "incidents/members": { module: "CSKH", entity: "Nhân sự liên quan sự cố" },
+  // 4 tab con trong chi tiết Tính năng số hoá — route lồng dạng
+  // /digital-features/:id/<sub>[/<hành động>] (tạo mới, xóa hàng loạt,
+  // nhập Excel). Sửa/xóa 1 dòng đi route phẳng — xem MODULE_LABELS ở trên.
+  "digital-features/screens": { module: "Quản lý tính năng số hoá", entity: "Màn hình, Tính năng & Phân quyền" },
+  "digital-features/master-data": { module: "Quản lý tính năng số hoá", entity: "Danh mục của Module" },
+  "digital-features/data-objects": { module: "Quản lý tính năng số hoá", entity: "Đối tượng dữ liệu & Vòng đời trạng thái" },
+  "digital-features/integrations": { module: "Quản lý tính năng số hoá", entity: "Tích hợp & Sự kiện" },
 };
 
 // Segment CUỐI (khi KHÔNG phải số, VD "approve"/"delete-selected") -> hành
@@ -113,6 +147,8 @@ const NAME_FIELDS = [
   "nhiem_vu", "tieu_de", "ten_muc_tieu", "ten_he_thong", "ten_phan_loai",
   "ten_nhom", "ten_chuc_vu", "ten_tag", "muc_tieu", "he_thong", "team",
   "name", "ten", "ten_su_co", "label", "title", "username", "noi_dung",
+  // Tính năng số hoá — tên gợi nhớ của 4 đối tượng con (tab trong chi tiết)
+  "ma_mh", "ten_danh_muc", "ma_danh_muc", "ten_doi_tuong", "huong",
   "module", // Tính năng số hoá — "tên" của bản ghi là trường Module
 ];
 
@@ -149,6 +185,30 @@ const FIELD_VERB_OVERRIDES: Record<string, (value: unknown) => { action: ActionL
 };
 
 const isNumericSegment = (s: string | undefined): boolean => !!s && /^\d+$/.test(s);
+
+// Route phẳng của 4 đối tượng con Tính năng số hoá (/digital-feature-<tên>/
+// :id — sửa/xóa 1 dòng): id trên URL là id bản ghi con, muốn biết "thuộc
+// tính năng nào" phải tra cột digital_feature_id rồi sang bảng cha.
+const DF_FLAT_ROOTS: Record<string, string> = {
+  "digital-feature-screens": "digital_feature_screens",
+  "digital-feature-master-data": "digital_feature_master_data",
+  "digital-feature-data-objects": "digital_feature_data_objects",
+  "digital-feature-integrations": "digital_feature_integrations",
+};
+
+async function resolveDfParentFromRow(table: string, rowId: string | undefined): Promise<string> {
+  if (!rowId) return "";
+  try {
+    const row = await db(table).where({ id: Number(rowId) }).first("digital_feature_id");
+    const featureId = row?.digital_feature_id;
+    if (featureId == null) return "";
+    const parent = await db("digital_features").where({ id: Number(featureId) }).first("module");
+    return typeof parent?.module === "string" && parent.module.trim() ? truncate(parent.module) : "";
+  } catch {
+    // im lặng bỏ qua — lỗi truy vấn không được làm hỏng request chính.
+  }
+  return "";
+}
 
 function pickNameSnippet(body: unknown): string {
   if (!body || typeof body !== "object" || Buffer.isBuffer(body) || Array.isArray(body)) return "";
@@ -261,9 +321,15 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
   const lastSegment = segments[segments.length - 1];
   const verbEntry = segments.length > 1 && !isNumericSegment(lastSegment) ? VERB_LABELS[lastSegment as string] : undefined;
 
-  // Route lồng "/<root>/:id/<subResource>" -> ưu tiên nhãn theo subResource
-  // (xem SUB_RESOURCE_LABELS), không dùng nhãn của root.
-  const subKey = segments.length === 3 && isNumericSegment(segments[1]) && !isNumericSegment(segments[2]) ? `${segments[0]}/${segments[2]}` : undefined;
+  // Route lồng "/<root>/:id/<subResource>[/<hành động>]" (VD
+  // /tasks/:id/members, /digital-features/:id/screens/delete-selected) ->
+  // ưu tiên nhãn theo subResource (xem SUB_RESOURCE_LABELS), không dùng
+  // nhãn của root. Từ >= 3 segments để bắt cả hành động đuôi dài
+  // (delete-selected/import sau subResource).
+  const subKey =
+    segments.length >= 3 && isNumericSegment(segments[1]) && !isNumericSegment(segments[2])
+      ? `${segments[0]}/${segments[2]}`
+      : undefined;
   const subBase = subKey ? SUB_RESOURCE_LABELS[subKey] : undefined;
   const base = subBase ?? MODULE_LABELS[root];
   const moduleLabel = base?.module ?? null;
@@ -282,6 +348,12 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
 
   const isTaskMemberRoute = (root === "tasks" && lastSegment === "members") || root === "task-members";
 
+  // Route lồng của Tính năng số hoá (/digital-features/:id/<sub>...) — id
+  // trên URL (segments[1]) là id TÍNH NĂNG CHA, không phải id bản ghi con.
+  // Mô tả cần đủ ngữ cảnh nên luôn ghép thêm " — Tính năng số hoá "<tên>"
+  // (trừ route import — tên cha đã là chi tiết chính của mô tả).
+  const isDfSubRoute = !!subKey && subKey.startsWith("digital-features/");
+
   // Body dạng {ids:[...]} (xóa/đánh dấu hàng loạt) -> hiện số lượng thay vì
   // tên; còn lại -> thử lấy tên gợi nhớ từ body, không có thì tra DB theo
   // id (bù cho các request chỉ gửi 1 field không phải tên, VD {ha_ki:true},
@@ -296,14 +368,33 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
     const { memberName, taskName } = await resolveTaskMemberNames(root, lastSegment, segments, idSegment, body);
     if (memberName) detail += ` "${memberName}"`;
     if (taskName) detail += ` — Nhiệm vụ "${taskName}"`;
+  } else if (isDfSubRoute && lastSegment === "import") {
+    // Nhập Excel cho 1 tab con — body là Buffer nhị phân, không có tên;
+    // id trên URL là id tính năng cha -> chính là tên chi tiết của mô tả.
+    const parent = await resolveEntityName("digital_features", "module", segments[1]);
+    if (parent) detail = ` — Tính năng số hoá "${parent}"`;
   } else {
     const snippet = req.method !== "DELETE" ? pickNameSnippet(body) : "";
     const resolved = snippet || (await resolveEntityName(nameLookup?.table, nameLookup?.nameColumn, idSegment));
     if (resolved) detail = ` "${resolved}"`;
   }
 
+  // Ghép tên tính năng cha để mô tả đủ ngữ cảnh:
+  // - Route lồng (/digital-features/:id/<sub>...): id cha nằm ngay segments[1]
+  //   (trừ import — tên cha đã ghép ở nhánh detail phía trên).
+  // - Route phẳng (/digital-feature-<sub>/:id): tra digital_feature_id của
+  //   bản ghi rồi sang bảng cha lấy tên Module.
+  let dfParentSuffix = "";
+  if (isDfSubRoute && lastSegment !== "import") {
+    const parent = await resolveEntityName("digital_features", "module", segments[1]);
+    if (parent) dfParentSuffix = ` — Tính năng số hoá "${parent}"`;
+  } else if (DF_FLAT_ROOTS[root]) {
+    const parent = await resolveDfParentFromRow(DF_FLAT_ROOTS[root], idSegment);
+    if (parent) dfParentSuffix = ` — Tính năng số hoá "${parent}"`;
+  }
+
   const teamSuffix = await resolveTeamSuffix(body);
-  const description = `${verb} ${entityLabel}${detail}${teamSuffix}`.trim();
+  const description = `${verb} ${entityLabel}${detail}${dfParentSuffix}${teamSuffix}`.trim();
   return { module: moduleLabel, action, description };
 }
 
