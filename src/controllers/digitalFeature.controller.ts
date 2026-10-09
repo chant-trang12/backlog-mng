@@ -3,6 +3,7 @@ import { parsePositiveInt, pickFields } from "../utils/validate.js";
 import {
   createDigitalFeature,
   deleteDigitalFeature,
+  deleteDigitalFeatures,
   DIGITAL_FEATURE_FIELDS,
   getDigitalFeature,
   listDigitalFeatures,
@@ -78,6 +79,19 @@ export async function deleteDigitalFeatureHandler(req: Request, res: Response) {
   const ok = await deleteDigitalFeature(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy tính năng" });
   res.status(204).send();
+}
+
+// Xóa nhiều tính năng đã chọn (checkbox trên bảng) — CHỈ admin gọi tới được
+// (chặn ở app.ts qua requireAdmin, scope đúng tiền tố route này — cùng cách
+// làm với /api/feature-requests/delete-selected).
+export async function deleteSelectedDigitalFeaturesHandler(req: Request, res: Response) {
+  const { ids } = req.body ?? {};
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "Trường 'ids' phải là mảng không rỗng" });
+  }
+  const numericIds = ids.map((id: unknown) => Number(id)).filter((id: number) => Number.isFinite(id));
+  const deleted = await deleteDigitalFeatures(numericIds);
+  res.json({ deleted });
 }
 
 export async function downloadDigitalFeatureTemplateHandler(_req: Request, res: Response) {

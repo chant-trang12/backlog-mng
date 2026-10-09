@@ -107,6 +107,41 @@ describe("Quản lý tính năng số hoá: CRUD + lọc", () => {
     expect(reuse.status).toBe(201);
   });
 
+  it("Xoá nhiều đã chọn (checkbox): body {ids:[]} — xóa hết các id hợp lệ, bỏ qua id đã xoá/lạ", async () => {
+    const app = createApp();
+    const a = await request(app).post("/api/digital-features").send({ module: "Module bulk A" });
+    const b = await request(app).post("/api/digital-features").send({ module: "Module bulk B" });
+    await request(app).post("/api/digital-features").send({ module: "Module bulk C" });
+
+    const del = await request(app)
+      .post("/api/digital-features/delete-selected")
+      .send({ ids: [a.body.id, b.body.id, 999999] });
+    expect(del.status).toBe(200);
+    expect(del.body.deleted).toBe(2);
+
+    const list = await request(app).get("/api/digital-features");
+    expect(list.body.find((r: { id: number }) => r.id === a.body.id)).toBeUndefined();
+    expect(list.body.find((r: { id: number }) => r.id === b.body.id)).toBeUndefined();
+    expect(list.body.find((r: { module: string }) => r.module === "Module bulk C")).toBeDefined();
+
+    // Xóa lần nữa (id đã xoá) -> 0, không lỗi
+    const again = await request(app)
+      .post("/api/digital-features/delete-selected")
+      .send({ ids: [a.body.id] });
+    expect(again.status).toBe(200);
+    expect(again.body.deleted).toBe(0);
+  });
+
+  it("Xoá nhiều: ids rỗng/không phải mảng -> 400", async () => {
+    const app = createApp();
+    const noIds = await request(app).post("/api/digital-features/delete-selected").send({});
+    expect(noIds.status).toBe(400);
+    const notArray = await request(app)
+      .post("/api/digital-features/delete-selected")
+      .send({ ids: "abc" });
+    expect(notArray.status).toBe(400);
+  });
+
   it("Lọc: search từ khóa + lọc chính xác theo Module", async () => {
     const app = createApp();
     await request(app).post("/api/digital-features").send({ module: "Trình ký điện tử", giai_doan: "Đề xuất" });

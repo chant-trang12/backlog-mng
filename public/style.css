@@ -1164,11 +1164,14 @@ th {
 #fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
 
 /* Bảng Tính năng số hoá (#df-table) — giống bảng Yêu cầu tính năng: tiêu
-   đề cột căn giữa, ô ngắn (STT/Mã/Giai đoạn/TN-MH) căn giữa; ô text dài
-   căn trái cho dễ đọc. Dùng [data-col=...] vì bảng cho ẩn cột tuỳ ý. */
+   đề cột căn giữa, ô ngắn (checkbox/STT/Mã/Giai đoạn/TN-MH) căn giữa; ô
+   text dài căn trái cho dễ đọc. Cột checkbox + STT đứng đầu bảng và KHÔNG
+   cho ẩn nên định vị bằng nth-child(1)/(2) ổn định; các cột còn lại dùng
+   [data-col=...] vì bảng cho ẩn cột tuỳ ý. */
 #df-table th { text-align: center; }
 #df-table td { vertical-align: middle; }
-#df-table td:first-child,
+#df-table td:nth-child(1),
+#df-table td:nth-child(2),
 #df-table td[data-col="ma"],
 #df-table td[data-col="giai_doan"],
 #df-table td[data-col="tn_mh"] {

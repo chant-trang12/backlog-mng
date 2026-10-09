@@ -1058,7 +1058,12 @@
               <div style="flex:1 1 0">
                 <h2 style="margin:0">Tính năng số hoá</h2>
               </div>
+              <!-- Chọn nhiều để xóa — CHỈ admin (nút "Xóa đã chọn" mang class
+                   "delete-action", tự ẩn với viewer/editor qua CSS role,
+                   khớp luật chặn thật ở server — requireAdmin gắn riêng cho
+                   path "delete-selected", xem app.ts). -->
               <div class="row" style="flex:0 0 auto">
+                <button id="delete-selected-df-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-df-count">0</span>)</button>
                 <!-- Tùy chọn ẩn/hiện cột — giống bảng Nhiệm vụ / Yêu cầu tính
                      năng: cho người dùng tự tắt cột không cần xem, lưu
                      localStorage theo máy (13-digital-features.js). -->
@@ -1092,6 +1097,7 @@
               <table id="df-table">
                 <thead>
                   <tr>
+                    <th style="width:36px"><input type="checkbox" id="df-select-all" /></th>
                     <th style="min-width:48px">STT</th>
                     <th style="min-width:90px" data-col="ma">Mã</th>
                     <th style="min-width:170px">Module</th>

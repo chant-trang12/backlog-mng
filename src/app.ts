@@ -160,6 +160,9 @@ export function createApp() {
   // ở trên (không đè lên toàn bộ /api/feature-requests — route xem/tạo/sửa/
   // Duyệt/Từ chối/xóa từng cái vẫn theo luật cũ, editor vẫn dùng được).
   app.use("/api/feature-requests/delete-selected", requireAdmin);
+  // Xóa nhiều Tính năng số hoá (checkbox trên bảng) — chỉ Admin, scope
+  // requireAdmin đúng tiền tố route, không đè lên toàn bộ /api/digital-features.
+  app.use("/api/digital-features/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);

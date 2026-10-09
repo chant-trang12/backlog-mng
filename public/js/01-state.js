@@ -44,6 +44,7 @@ const state = {
   memberParticipationOptions: [],
   featureRequests: [],
   digitalFeatures: [], // danh sách tính năng số hoá (trang "Quản lý tính năng số hoá")
+  selectedDigitalFeatureIds: new Set(), // checkbox "xóa nhiều" ở bảng tính năng số hoá
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)

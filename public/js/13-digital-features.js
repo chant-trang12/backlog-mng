@@ -69,6 +69,11 @@ function populateDfFilterOptions() {
 
 async function loadDigitalFeatures() {
   state.digitalFeatures = await api("/api/digital-features");
+  // Dọn lựa chọn trỏ tới dòng đã bị xóa (bởi mình hoặc phiên khác).
+  const dfIds = new Set(state.digitalFeatures.map((r) => r.id));
+  state.selectedDigitalFeatureIds.forEach((id) => {
+    if (!dfIds.has(id)) state.selectedDigitalFeatureIds.delete(id);
+  });
   populateDfFilterOptions();
   dfPagination.reset();
   renderDigitalFeatures();
@@ -187,6 +192,25 @@ function initDfColumnMenu() {
 }
 initDfColumnMenu();
 
+// Chọn nhiều để xóa hàng loạt — CHỈ admin (nút "Xóa đã chọn" mang class
+// "delete-action", tự ẩn với viewer/editor qua CSS role, khớp luật chặn
+// thật ở server — requireAdmin gắn riêng cho path "delete-selected", xem
+// app.ts). Checkbox từng dòng/chọn tất cả vẫn hiện với mọi quyền — chỉ nút
+// Xóa mới ẩn, không phải cả cột (giống bảng Yêu cầu tính năng).
+function updateDfSelectionUI() {
+  const visible = filteredDigitalFeatures();
+  const visibleSelectedCount = visible.filter((r) => state.selectedDigitalFeatureIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-df-btn");
+  const countEl = document.getElementById("selected-df-count");
+  const selectAll = document.getElementById("df-select-all");
+  if (btn) btn.hidden = state.selectedDigitalFeatureIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedDigitalFeatureIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
 function renderDigitalFeatures() {
   const tbody = document.getElementById("df-tbody");
   const empty = document.getElementById("df-empty");
@@ -204,6 +228,7 @@ function renderDigitalFeatures() {
     .map((r, idx) => {
       return `
     <tr data-id="${r.id}">
+      <td><input type="checkbox" class="df-row-checkbox" ${state.selectedDigitalFeatureIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
       <td data-col="ma" ${colHidden("ma")}>${r.ma ? `<span class="pill" title="Mã tính năng">${r.ma.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
       <td>${dfClamp(r.module)}</td>
@@ -229,6 +254,17 @@ function renderDigitalFeatures() {
   tbody.querySelectorAll(".df-view-btn").forEach((btn) => {
     btn.addEventListener("click", () => openDigitalFeatureDetail(Number(btn.dataset.id)));
   });
+  tbody.querySelectorAll(".df-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) {
+        state.selectedDigitalFeatureIds.add(id);
+      } else {
+        state.selectedDigitalFeatureIds.delete(id);
+      }
+      updateDfSelectionUI();
+    });
+  });
   tbody.querySelectorAll(".df-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => openDigitalFeatureDialog(Number(btn.dataset.id)));
   });
@@ -248,7 +284,35 @@ function renderDigitalFeatures() {
       }
     });
   });
+  updateDfSelectionUI();
 }
+
+document.getElementById("df-select-all")?.addEventListener("change", (e) => {
+  const visible = filteredDigitalFeatures();
+  if (e.target.checked) {
+    visible.forEach((r) => state.selectedDigitalFeatureIds.add(r.id));
+  } else {
+    visible.forEach((r) => state.selectedDigitalFeatureIds.delete(r.id));
+  }
+  renderDigitalFeatures();
+});
+
+document.getElementById("delete-selected-df-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedDigitalFeatureIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} tính năng số hoá đã chọn?`))) return;
+  try {
+    const res = await api("/api/digital-features/delete-selected", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedDigitalFeatureIds.clear();
+    await loadDigitalFeatures();
+    showToast(`Đã xóa ${res?.deleted ?? 0} tính năng.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 // ---- Dialog Thêm mới / Sửa ----
 

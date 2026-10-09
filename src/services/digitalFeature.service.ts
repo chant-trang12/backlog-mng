@@ -124,3 +124,16 @@ export async function deleteDigitalFeature(id: number): Promise<boolean> {
     .update({ is_deleted: true, deleted_at: db.fn.now() });
   return affected > 0;
 }
+
+// Xóa nhiều tính năng theo checkbox đã chọn trên bảng (chỉ admin — chặn ở
+// route qua requireAdmin, xem app.ts). Digital features dùng chung toàn hệ
+// thống nên không cần lọc phạm vi phòng ban như deleteFeatureRequests().
+export async function deleteDigitalFeatures(ids: number[]): Promise<number> {
+  const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
+  if (validIds.length === 0) return 0;
+  const count = await db("digital_features")
+    .whereIn("id", validIds)
+    .where({ is_deleted: false })
+    .update({ is_deleted: true, deleted_at: db.fn.now() });
+  return Number(count);
+}
