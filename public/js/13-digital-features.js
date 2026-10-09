@@ -1097,7 +1097,7 @@ function renderDigitalFeatureMasterData() {
     <tr data-id="${r.id}">
       <td><input type="checkbox" class="dfmd-row-checkbox" ${state.selectedDfMdIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
-      <td data-col="ma_danh_muc" ${colHidden("ma_danh_muc")}>${r.ma_danh_muc ? `<span class="pill" title="Mã danh mục">${r.ma_danh_muc.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
+      <td data-col="ma_danh_muc" ${colHidden("ma_danh_muc")}>${r.ma_danh_muc ? `<span class="pill" title="Mã danh mục">${r.ma_danh_muc.replace(/</g, "&lt;").replace(/-/g, "\u2011")}</span>` : `<span class="muted">—</span>`}</td>
       <td>${dfFull(r.ten_danh_muc)}</td>
       <td data-col="noi_dung_thuoc_tinh" ${colHidden("noi_dung_thuoc_tinh")}>${dfFull(r.noi_dung_thuoc_tinh)}</td>
       <td data-col="quan_tri_boi" ${colHidden("quan_tri_boi")}>${dfFull(r.quan_tri_boi)}</td>

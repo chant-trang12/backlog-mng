@@ -1189,10 +1189,16 @@ th {
 /* Bảng Danh mục (Master Data) — nhãn cột căn giữa, ô dữ liệu dài căn trái. */
 #dfmd-table th { text-align: center; }
 #dfmd-table td { vertical-align: middle; }
-/* Pill Mã danh mục — không bẻ 2 dòng khi cột hẹp (như pill Mã ở bảng khác). */
+/* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
+   thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
+   non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */
+#dfmd-table td[data-col="ma_danh_muc"] {
+  max-width: 200px;
+}
 #dfmd-table td[data-col="ma_danh_muc"] .pill {
   display: inline-block;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   padding: 2px 10px;
   cursor: default;
 }
