@@ -398,8 +398,17 @@ main {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0 0 12px;
   color: var(--delete);
 }
+/* Tiêu đề card đôn đốc là nút đóng/mở danh sách (thu gọn = ẩn .table-wrap,
+   mũi tên quay sang phải; trạng thái ghi nhớ qua localStorage, xem 08-home.js). */
+.home-urgent-card h2.urgency-toggle { cursor: pointer; user-select: none; }
+.home-urgent-card h2.urgency-toggle:focus-visible { outline: 2px solid var(--delete); outline-offset: 4px; border-radius: 4px; }
+.home-urgent-card h2 .chev { width: 1.1em; height: 1.1em; margin-left: auto; transition: transform 0.15s ease; }
+.home-urgent-card.collapsed h2 { margin-bottom: 0; }
+.home-urgent-card.collapsed h2 .chev { transform: rotate(-90deg); }
+.home-urgent-card.collapsed .table-wrap { display: none; }
 .home-urgent-card h2 .icon { width: 1.3em; height: 1.3em; }
 .home-urgent-card .table-wrap { background: var(--card-bg); border-radius: 8px; overflow: hidden; }
 .home-urgent-card thead th { background: var(--delete) !important; text-align: center; }
