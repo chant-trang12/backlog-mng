@@ -1786,10 +1786,12 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   white-space: nowrap;
 }
 
-/* Badge trạng thái đưa vào Backlog (Roadmap năm) — inline, đứng cạnh badge
-   Trạng thái ở bảng chính và riêng 1 cột ở bảng chi tiết theo tháng. */
+/* Badge trạng thái đưa vào Backlog (Roadmap năm) — hiển thị block xếp dọc
+   (không kéo cột Trạng thái giãn ngang): đứng TRÊN badge Trạng thái ở bảng
+   chính, riêng 1 cột ở bảng chi tiết theo tháng. */
 .rm-backlog-badge {
-  display: inline-block;
+  display: block;
+  width: fit-content;
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.5;
@@ -1798,13 +1800,15 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   background: var(--success);
   color: #fff;
   white-space: nowrap;
-  margin-right: 6px;
+  margin: 0 auto 4px;
   vertical-align: middle;
+}
+.rm-backlog-badge:last-child {
+  margin-bottom: 0;
 }
 .rm-backlog-badge.pending {
   background: var(--border);
   color: var(--muted);
-  margin-right: 0;
 }
 
 /* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân

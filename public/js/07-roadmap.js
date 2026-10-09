@@ -148,7 +148,7 @@ function renderRoadmap() {
       // tooltip liệt kê các tháng đã đưa.
       const syncedMonths = it.synced_months ?? [];
       const backlogBadge = syncedMonths.length
-        ? `<span class="rm-backlog-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span> `
+        ? `<span class="rm-backlog-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span>`
         : "";
       return `<tr data-id="${it.id}"${selCls}>
       <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
@@ -163,7 +163,7 @@ function renderRoadmap() {
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_bat_dau)}</td>
       <td style="text-align:center">${formatDateDisplay(it.thoi_gian_ket_thuc)}</td>
       <td style="text-align:center">${quyFromDate(it.thoi_gian_ket_thuc)}</td>
-      <td style="text-align:center;white-space:nowrap">${backlogBadge}<span class="status-badge ${sc}">${it.trang_thai}</span></td>
+      <td style="text-align:center">${backlogBadge}<span class="status-badge ${sc}">${it.trang_thai}</span></td>
       <td>${nl2br(it.ghi_chu)}</td>
       <td>
         <div class="actions-cell">
