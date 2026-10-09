@@ -49,6 +49,9 @@ const state = {
   digitalFeatureScreens: [], // màn hình của tính năng đang mở chi tiết (tab 2)
   selectedDfScreenIds: new Set(), // checkbox "xóa nhiều" ở bảng màn hình
   hiddenDfScreenColumns: new Set(), // cột bị ẩn trong menu "Cột hiển thị" của bảng màn hình
+  digitalFeatureMasterData: [], // danh mục master data của tính năng đang mở chi tiết (tab 3)
+  selectedDfMdIds: new Set(), // checkbox "xóa nhiều" ở bảng danh mục
+  hiddenDfMdColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng danh mục
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
@@ -516,6 +519,7 @@ const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable(
 const frPagination = createPagination("fr", () => renderFeatureRequestTable());
 const dfPagination = createPagination("df", () => renderDigitalFeatures());
 const dfsPagination = createPagination("dfs", () => renderDigitalFeatureScreens());
+const dfmdPagination = createPagination("dfmd", () => renderDigitalFeatureMasterData());
 const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
 const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
 const actionLogPagination = createPagination("al", () => renderActionLogTable());

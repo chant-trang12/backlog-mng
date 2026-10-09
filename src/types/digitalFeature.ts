@@ -64,3 +64,27 @@ export type CreateDigitalFeatureScreenInput = Partial<
 export type UpdateDigitalFeatureScreenInput = Partial<
   Omit<DigitalFeatureScreen, "id" | "digital_feature_id" | "created_at" | "updated_at">
 >;
+
+// ===== Danh mục (Master Data) của Module (tab 3 màn hình chi tiết) =====
+
+export interface DigitalFeatureMasterData {
+  id: number;
+  digital_feature_id: number;
+  ma_danh_muc: string | null;
+  ten_danh_muc: string;
+  noi_dung_thuoc_tinh: string | null;
+  quan_tri_boi: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CreateDigitalFeatureMasterDataInput = Partial<
+  Omit<DigitalFeatureMasterData, "id" | "digital_feature_id" | "created_at" | "updated_at">
+> & {
+  digital_feature_id: number;
+  ten_danh_muc: string;
+};
+
+export type UpdateDigitalFeatureMasterDataInput = Partial<
+  Omit<DigitalFeatureMasterData, "id" | "digital_feature_id" | "created_at" | "updated_at">
+>;

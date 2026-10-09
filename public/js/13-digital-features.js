@@ -456,6 +456,7 @@ function openDigitalFeatureDetail(id) {
   renderDigitalFeatureInfo(item);
   resetDigitalFeatureDetailTabs();
   loadDigitalFeatureScreens(id).catch((err) => showToast(err.message));
+  loadDigitalFeatureMasterData(id).catch((err) => showToast(err.message));
   // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
   // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
   document.getElementById("page-digital-features").hidden = true;
@@ -938,6 +939,333 @@ document.getElementById("dfs-import-input")?.addEventListener("change", async ()
   const fake = document.getElementById("dfs-table-scroll-top");
   const spacer = document.getElementById("dfs-table-scroll-top-spacer");
   const real = document.getElementById("dfs-table-wrap");
+  if (!fake || !spacer || !real) return;
+  const syncSpacer = () => {
+    spacer.style.width = `${real.scrollWidth}px`;
+  };
+  fake.addEventListener("scroll", () => {
+    real.scrollLeft = fake.scrollLeft;
+  });
+  real.addEventListener("scroll", () => {
+    fake.scrollLeft = real.scrollLeft;
+  });
+  new ResizeObserver(syncSpacer).observe(real);
+  syncSpacer();
+})();
+
+// ==================== Tab "Danh mục (Master Data) của Module" ====================
+// Nhân bản cấu trúc tab Màn hình ở trên với bảng 4 trường: Mã danh mục,
+// Tên danh mục, Nội dung/thuộc tính, Quản trị bởi.
+
+async function loadDigitalFeatureMasterData(featureId) {
+  state.digitalFeatureMasterData = await api(`/api/digital-features/${featureId}/master-data`);
+  const ids = new Set(state.digitalFeatureMasterData.map((r) => r.id));
+  state.selectedDfMdIds.forEach((id) => {
+    if (!ids.has(id)) state.selectedDfMdIds.delete(id);
+  });
+  dfmdPagination.reset();
+  renderDigitalFeatureMasterData();
+}
+
+// ---- Menu "Cấu hình cột" — cột "Tên danh mục" KHÔNG cho ẩn (nhận diện
+// dòng); STT và Action luôn hiển thị. Tuỳ chọn lưu localStorage theo máy.
+const DFMD_TOGGLEABLE_COLUMNS = [
+  { key: "ma_danh_muc", label: "Mã danh mục" },
+  { key: "noi_dung_thuoc_tinh", label: "Nội dung / thuộc tính" },
+  { key: "quan_tri_boi", label: "Quản trị bởi" },
+];
+const DFMD_COL_LS_KEY = "backlog.dfMdColumns.hiddenV1";
+
+function loadHiddenDfMdColumns() {
+  try {
+    const raw = localStorage.getItem(DFMD_COL_LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveHiddenDfMdColumns() {
+  try {
+    localStorage.setItem(DFMD_COL_LS_KEY, JSON.stringify([...state.hiddenDfMdColumns]));
+  } catch {
+    // Không lưu được thì bỏ qua — tuỳ chọn vẫn áp dụng cho phiên hiện tại.
+  }
+}
+
+function isDfMdColHidden(key) {
+  return state.hiddenDfMdColumns.has(key);
+}
+
+function applyDfMdColumnHeaderVisibility() {
+  DFMD_TOGGLEABLE_COLUMNS.forEach(({ key }) => {
+    const th = document.querySelector(`#dfmd-table thead [data-col="${key}"]`);
+    if (!th) return;
+    th.hidden = isDfMdColHidden(key);
+  });
+}
+
+function renderDfMdColMenu() {
+  const list = document.getElementById("dfmd-col-menu-list");
+  list.innerHTML = DFMD_TOGGLEABLE_COLUMNS.map(
+    ({ key, label }) => `
+    <label class="col-menu-item">
+      <input type="checkbox" class="dfmd-col-checkbox" data-col-key="${key}" ${isDfMdColHidden(key) ? "" : "checked"} />
+      ${label}
+    </label>`,
+  ).join("");
+  list.querySelectorAll(".dfmd-col-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const key = e.target.dataset.colKey;
+      if (e.target.checked) state.hiddenDfMdColumns.delete(key);
+      else state.hiddenDfMdColumns.add(key);
+      saveHiddenDfMdColumns();
+      renderDigitalFeatureMasterData();
+    });
+  });
+}
+
+function openDfMdColMenu() {
+  renderDfMdColMenu();
+  document.getElementById("dfmd-col-menu").hidden = false;
+  document.getElementById("dfmd-col-menu-btn").setAttribute("aria-expanded", "true");
+}
+
+function closeDfMdColMenu() {
+  document.getElementById("dfmd-col-menu").hidden = true;
+  document.getElementById("dfmd-col-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function initDfMdColumnMenu() {
+  state.hiddenDfMdColumns = loadHiddenDfMdColumns();
+  applyDfMdColumnHeaderVisibility();
+
+  const menuWrap = document.getElementById("dfmd-col-menu-wrap");
+  const menuBtn = document.getElementById("dfmd-col-menu-btn");
+  const menu = document.getElementById("dfmd-col-menu");
+  if (!menuWrap || !menuBtn || !menu) return;
+
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.hidden) openDfMdColMenu();
+    else closeDfMdColMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menuWrap.contains(e.target)) closeDfMdColMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDfMdColMenu();
+  });
+  document.getElementById("dfmd-col-menu-reset").addEventListener("click", () => {
+    state.hiddenDfMdColumns.clear();
+    saveHiddenDfMdColumns();
+    applyDfMdColumnHeaderVisibility();
+    renderDigitalFeatureMasterData();
+  });
+}
+initDfMdColumnMenu();
+
+// Checkbox chọn nhiều + nút "Xóa đã chọn" — chỉ admin (class delete-action).
+function updateDfMdSelectionUI() {
+  const visible = state.digitalFeatureMasterData;
+  const visibleSelectedCount = visible.filter((r) => state.selectedDfMdIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-dfmd-btn");
+  const countEl = document.getElementById("selected-dfmd-count");
+  const selectAll = document.getElementById("dfmd-select-all");
+  if (btn) btn.hidden = state.selectedDfMdIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedDfMdIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
+function renderDigitalFeatureMasterData() {
+  const tbody = document.getElementById("dfmd-tbody");
+  const empty = document.getElementById("dfmd-empty");
+  if (!tbody) return;
+  applyDfMdColumnHeaderVisibility();
+  const colHidden = (key) => (isDfMdColHidden(key) ? "hidden" : "");
+  const rows = state.digitalFeatureMasterData;
+  empty.hidden = rows.length > 0;
+  const pageItems = dfmdPagination.slice(rows);
+  const pageStart = (dfmdPagination.page - 1) * dfmdPagination.pageSize;
+
+  tbody.innerHTML = pageItems
+    .map((r, idx) => `
+    <tr data-id="${r.id}">
+      <td><input type="checkbox" class="dfmd-row-checkbox" ${state.selectedDfMdIds.has(r.id) ? "checked" : ""} /></td>
+      <td>${pageStart + idx + 1}</td>
+      <td data-col="ma_danh_muc" ${colHidden("ma_danh_muc")}>${r.ma_danh_muc ? `<span class="pill" title="Mã danh mục">${r.ma_danh_muc.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
+      <td>${dfFull(r.ten_danh_muc)}</td>
+      <td data-col="noi_dung_thuoc_tinh" ${colHidden("noi_dung_thuoc_tinh")}>${dfFull(r.noi_dung_thuoc_tinh)}</td>
+      <td data-col="quan_tri_boi" ${colHidden("quan_tri_boi")}>${dfFull(r.quan_tri_boi)}</td>
+      <td>
+        <div class="actions-cell" style="justify-content:flex-start;gap:2px">
+          <button type="button" class="small btn-edit icon-btn dfmd-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
+          <button type="button" class="small btn-delete icon-btn dfmd-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+        </div>
+      </td>
+    </tr>`)
+    .join("");
+
+  tbody.querySelectorAll(".dfmd-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) state.selectedDfMdIds.add(id);
+      else state.selectedDfMdIds.delete(id);
+      updateDfMdSelectionUI();
+    });
+  });
+  tbody.querySelectorAll(".dfmd-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openDigitalFeatureMdDialog(Number(btn.dataset.id)));
+  });
+  tbody.querySelectorAll(".dfmd-del-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const item = state.digitalFeatureMasterData.find((r) => r.id === Number(btn.dataset.id));
+      if (!(await confirmDialog(`Xoá danh mục${item?.ten_danh_muc ? ` "${item.ten_danh_muc}"` : ""}?`, { danger: true }))) return;
+      try {
+        await api(`/api/digital-feature-master-data/${btn.dataset.id}`, { method: "DELETE" });
+        showToast("Đã xoá.", "success");
+        await loadDigitalFeatureMasterData(state.currentDigitalFeatureId);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  updateDfMdSelectionUI();
+}
+
+document.getElementById("dfmd-select-all")?.addEventListener("change", (e) => {
+  if (e.target.checked) {
+    state.digitalFeatureMasterData.forEach((r) => state.selectedDfMdIds.add(r.id));
+  } else {
+    state.digitalFeatureMasterData.forEach((r) => state.selectedDfMdIds.delete(r.id));
+  }
+  renderDigitalFeatureMasterData();
+});
+
+document.getElementById("delete-selected-dfmd-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedDfMdIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} danh mục đã chọn?`, { danger: true }))) return;
+  try {
+    const res = await api(`/api/digital-features/${state.currentDigitalFeatureId}/master-data/delete-selected`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedDfMdIds.clear();
+    await loadDigitalFeatureMasterData(state.currentDigitalFeatureId);
+    showToast(`Đã xóa ${res?.deleted ?? 0} danh mục.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Dialog Thêm mới / Sửa danh mục ----
+
+function openDigitalFeatureMdDialog(id) {
+  const item = id != null ? state.digitalFeatureMasterData.find((r) => r.id === id) : null;
+  document.getElementById("dfmd-dialog-title").textContent = item ? "Sửa danh mục" : "Thêm danh mục";
+  document.getElementById("dfmd-id").value = item?.id ?? "";
+  document.getElementById("dfmd-ma").value = item?.ma_danh_muc ?? "";
+  document.getElementById("dfmd-ten").value = item?.ten_danh_muc ?? "";
+  document.getElementById("dfmd-noi-dung").value = item?.noi_dung_thuoc_tinh ?? "";
+  document.getElementById("dfmd-quan-tri").value = item?.quan_tri_boi ?? "";
+  document.getElementById("digital-feature-md-dialog").showModal();
+}
+
+document.getElementById("add-df-md-btn")?.addEventListener("click", () => openDigitalFeatureMdDialog(null));
+
+document.getElementById("digital-feature-md-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("dfmd-id").value;
+  const body = {
+    ten_danh_muc: document.getElementById("dfmd-ten").value.trim(),
+    noi_dung_thuoc_tinh: document.getElementById("dfmd-noi-dung").value.trim() || undefined,
+    quan_tri_boi: document.getElementById("dfmd-quan-tri").value.trim() || undefined,
+  };
+  const ma = document.getElementById("dfmd-ma").value.trim();
+  if (ma) body.ma_danh_muc = ma;
+  try {
+    if (id) {
+      await api(`/api/digital-feature-master-data/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      showToast("Đã lưu thay đổi.", "success");
+    } else {
+      await api(`/api/digital-features/${state.currentDigitalFeatureId}/master-data`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      showToast("Đã thêm danh mục.", "success");
+    }
+    document.getElementById("digital-feature-md-dialog").close();
+    await loadDigitalFeatureMasterData(state.currentDigitalFeatureId);
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById("digital-feature-md-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("digital-feature-md-dialog").close();
+});
+
+// ---- File mẫu / Import Excel / Export Excel của tab danh mục ----
+
+document.getElementById("download-dfmd-template-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/master-data/import-template`;
+});
+
+document.getElementById("export-dfmd-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/master-data/export`;
+});
+
+document.getElementById("import-dfmd-btn")?.addEventListener("click", () => {
+  document.getElementById("dfmd-import-input").click();
+});
+
+document.getElementById("dfmd-import-input")?.addEventListener("change", async () => {
+  const input = document.getElementById("dfmd-import-input");
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    // Body là bytes thô .xlsx — fetch() thẳng thay vì api() vì Content-Type
+    // là kiểu file (giống import tab Màn hình ở trên).
+    const buffer = await file.arrayBuffer();
+    const res = await fetch(`/api/digital-features/${state.currentDigitalFeatureId}/master-data/import`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Lỗi ${res.status}`);
+    }
+    const result = await res.json();
+    await loadDigitalFeatureMasterData(state.currentDigitalFeatureId);
+
+    let msg = `Đã nhập ${result.imported} danh mục.`;
+    if (result.skipped?.length) {
+      const detail = result.skipped
+        .slice(0, 5)
+        .map((s) => `dòng ${s.row}${s.label ? ` (${s.label})` : ""}: ${s.reason}`)
+        .join("; ");
+      const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+      showToast(`${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`, "error");
+    } else {
+      showToast(msg, "success");
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Thanh cuộn ngang phía trên bảng danh mục (nhân bản setupDfsScrollTopSync). ----
+(function setupDfMdScrollTopSync() {
+  const fake = document.getElementById("dfmd-table-scroll-top");
+  const spacer = document.getElementById("dfmd-table-scroll-top-spacer");
+  const real = document.getElementById("dfmd-table-wrap");
   if (!fake || !spacer || !real) return;
   const syncSpacer = () => {
     spacer.style.width = `${real.scrollWidth}px`;

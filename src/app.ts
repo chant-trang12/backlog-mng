@@ -166,6 +166,9 @@ export function createApp() {
   // Xóa nhiều màn hình (tab "Màn hình, Tính năng & Phân quyền" trong chi
   // tiết Tính năng số hoá) — chỉ Admin, cùng cách scope tiền tố ở trên.
   app.use("/api/digital-features/:id/screens/delete-selected", requireAdmin);
+  // Xóa nhiều Danh mục (Master Data) — tab 3 trong chi tiết Tính năng số
+  // hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/master-data/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);

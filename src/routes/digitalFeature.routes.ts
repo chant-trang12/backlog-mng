@@ -21,6 +21,17 @@ import {
   listDigitalFeatureScreensHandler,
   updateDigitalFeatureScreenHandler,
 } from "../controllers/digitalFeatureScreen.controller.js";
+import {
+  createDigitalFeatureMasterDataHandler,
+  deleteDigitalFeatureMasterDataHandler,
+  deleteSelectedDigitalFeatureMasterDataHandler,
+  downloadDigitalFeatureMdTemplateHandler,
+  exportDigitalFeatureMasterDataHandler,
+  getDigitalFeatureMasterDataHandler,
+  importDigitalFeatureMasterDataHandler,
+  listDigitalFeatureMasterDataHandler,
+  updateDigitalFeatureMasterDataHandler,
+} from "../controllers/digitalFeatureMasterData.controller.js";
 
 const router = Router();
 
@@ -62,6 +73,25 @@ router.post("/digital-features/:id/screens", createDigitalFeatureScreenHandler);
 router.get("/digital-feature-screens/:id", getDigitalFeatureScreenHandler);
 router.put("/digital-feature-screens/:id", updateDigitalFeatureScreenHandler);
 router.delete("/digital-feature-screens/:id", deleteDigitalFeatureScreenHandler);
+
+// ===== Danh mục (Master Data) của Module (tab 3 trong chi tiết tính năng)
+// — cùng cấu trúc route với tab Màn hình ở trên. =====
+// Xóa nhiều (checkbox bảng) — admin chặn ở app.ts theo tiền tố path.
+router.post("/digital-features/:id/master-data/delete-selected", deleteSelectedDigitalFeatureMasterDataHandler);
+router.get("/digital-features/:id/master-data/import-template", downloadDigitalFeatureMdTemplateHandler);
+router.post(
+  "/digital-features/:id/master-data/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importDigitalFeatureMasterDataHandler,
+);
+router.get("/digital-features/:id/master-data/export", exportDigitalFeatureMasterDataHandler);
+router.get("/digital-features/:id/master-data", listDigitalFeatureMasterDataHandler);
+router.post("/digital-features/:id/master-data", createDigitalFeatureMasterDataHandler);
+
+// Route phẳng cho từng danh mục (sửa/xóa/xem 1 dòng).
+router.get("/digital-feature-master-data/:id", getDigitalFeatureMasterDataHandler);
+router.put("/digital-feature-master-data/:id", updateDigitalFeatureMasterDataHandler);
+router.delete("/digital-feature-master-data/:id", deleteDigitalFeatureMasterDataHandler);
 
 router.get("/digital-features/:id", getDigitalFeatureHandler);
 router.put("/digital-features/:id", updateDigitalFeatureHandler);

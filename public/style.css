@@ -1186,6 +1186,16 @@ th {
    bảng Tính năng số hoá; ô dữ liệu dài căn trái cho dễ đọc. */
 #dfs-table th { text-align: center; }
 #dfs-table td { vertical-align: middle; }
+/* Bảng Danh mục (Master Data) — nhãn cột căn giữa, ô dữ liệu dài căn trái. */
+#dfmd-table th { text-align: center; }
+#dfmd-table td { vertical-align: middle; }
+/* Pill Mã danh mục — không bẻ 2 dòng khi cột hẹp (như pill Mã ở bảng khác). */
+#dfmd-table td[data-col="ma_danh_muc"] .pill {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 2px 10px;
+  cursor: default;
+}
 /* 9 cột phân quyền — ký hiệu căn giữa; badges xếp giữa ô, gộp nhiều chữ cái
    ("CEA") thì tách thành từng badge riêng. */
 #dfs-table td[data-col="sales_am"],
