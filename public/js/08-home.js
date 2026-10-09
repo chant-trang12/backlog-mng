@@ -178,24 +178,15 @@ document.getElementById("home-can-xu-ly-gap-tbody")?.addEventListener("click", a
 });
 
 // Card đôn đốc ("Việc đang treo"/"Việc cần xử lý gấp") đóng/mở được — bấm tiêu
-// đề (hoặc Enter/Space) để thu gọn bảng. Trạng thái ghi nhớ theo từng card
-// qua localStorage nên giữ nguyên khi tải lại trang.
+// đề (hoặc Enter/Space) để thu gọn bảng. Mặc định LUÔN MỞ: trạng thái thu gọn
+// chỉ mang tính tạm trong phiên xem, tải lại trang (F5) trở về mở như cũ.
 document.querySelectorAll(".home-urgent-card").forEach((card) => {
   const toggle = card.querySelector(".urgency-toggle");
   if (!toggle) return;
-  const storageKey = `home-urgent-collapsed:${card.id}`;
   const setCollapsed = (v) => {
     card.classList.toggle("collapsed", v);
     toggle.setAttribute("aria-expanded", String(!v));
-    try {
-      localStorage.setItem(storageKey, v ? "1" : "0");
-    } catch {}
   };
-  let saved = null;
-  try {
-    saved = localStorage.getItem(storageKey);
-  } catch {}
-  setCollapsed(saved === "1");
   toggle.addEventListener("click", () => setCollapsed(!card.classList.contains("collapsed")));
   toggle.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {

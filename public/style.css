@@ -402,7 +402,7 @@ main {
   color: var(--delete);
 }
 /* Tiêu đề card đôn đốc là nút đóng/mở danh sách (thu gọn = ẩn .table-wrap,
-   mũi tên quay sang phải; trạng thái ghi nhớ qua localStorage, xem 08-home.js). */
+   mũi tên quay sang phải; mặc định luôn mở — F5 trở về mở như cũ). */
 .home-urgent-card h2.urgency-toggle { cursor: pointer; user-select: none; }
 .home-urgent-card h2.urgency-toggle:focus-visible { outline: 2px solid var(--delete); outline-offset: 4px; border-radius: 4px; }
 .home-urgent-card h2 .chev { width: 1.1em; height: 1.1em; margin-left: auto; transition: transform 0.15s ease; }
