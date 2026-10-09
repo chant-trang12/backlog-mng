@@ -6,6 +6,7 @@ const pages = {
   team: document.getElementById("page-team"),
   cskh: document.getElementById("page-cskh"),
   roadmap: document.getElementById("page-roadmap"),
+  "digital-features": document.getElementById("page-digital-features"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),
