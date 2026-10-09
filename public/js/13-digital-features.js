@@ -19,7 +19,6 @@ function filteredDigitalFeatures() {
   const search = (document.getElementById("df-filter-search")?.value ?? "").trim().toLowerCase();
   const module = document.getElementById("df-filter-module")?.value ?? "";
   const giaiDoan = document.getElementById("df-filter-giai-doan")?.value ?? "";
-  const tnMh = document.getElementById("df-filter-tn-mh")?.value ?? "";
   const donVi = document.getElementById("df-filter-don-vi")?.value ?? "";
   return state.digitalFeatures.filter((r) => {
     if (search) {
@@ -41,7 +40,6 @@ function filteredDigitalFeatures() {
     }
     if (module && (r.module ?? "") !== module) return false;
     if (giaiDoan && (r.giai_doan ?? "") !== giaiDoan) return false;
-    if (tnMh && (r.tn_mh ?? "") !== tnMh) return false;
     if (donVi && (r.don_vi_chu_tri ?? "") !== donVi) return false;
     return true;
   });
@@ -53,7 +51,6 @@ function populateDfFilterOptions() {
   const configs = [
     { id: "df-filter-module", key: "module" },
     { id: "df-filter-giai-doan", key: "giai_doan" },
-    { id: "df-filter-tn-mh", key: "tn_mh" },
     { id: "df-filter-don-vi", key: "don_vi_chu_tri" },
   ];
   for (const cfg of configs) {
@@ -339,7 +336,7 @@ document.getElementById("digital-feature-cancel-btn")?.addEventListener("click",
 
 // ---- Bộ lọc + tìm kiếm ----
 
-for (const id of ["df-filter-module", "df-filter-giai-doan", "df-filter-tn-mh", "df-filter-don-vi"]) {
+for (const id of ["df-filter-module", "df-filter-giai-doan", "df-filter-don-vi"]) {
   document.getElementById(id)?.addEventListener("change", () => {
     dfPagination.reset();
     renderDigitalFeatures();
@@ -366,8 +363,6 @@ document.getElementById("export-df-btn")?.addEventListener("click", () => {
   if (module) params.set("module", module);
   const giaiDoan = document.getElementById("df-filter-giai-doan")?.value ?? "";
   if (giaiDoan) params.set("giai_doan", giaiDoan);
-  const tnMh = document.getElementById("df-filter-tn-mh")?.value ?? "";
-  if (tnMh) params.set("tn_mh", tnMh);
   const donVi = document.getElementById("df-filter-don-vi")?.value ?? "";
   if (donVi) params.set("don_vi_chu_tri", donVi);
   const query = params.toString();
