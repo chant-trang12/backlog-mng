@@ -1787,12 +1787,11 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   white-space: nowrap;
 }
 
-/* Badge trạng thái đưa vào Backlog (Roadmap năm) — hiển thị block xếp dọc
-   (không kéo cột Trạng thái giãn ngang): đứng TRÊN badge Trạng thái ở bảng
-   chính, riêng 1 cột ở bảng chi tiết theo tháng. */
+/* Badge trạng thái đưa vào Backlog (Roadmap năm) — bản item-level (.rm-synced-badge)
+   ở góc trên phải ô Nhiệm vụ của bảng chính; bản tháng (.rm-backlog-badge) đứng
+   CẠNH nhãn "Tháng m/yyyy" trong khối chi tiết theo tháng. */
 .rm-backlog-badge {
-  display: block;
-  width: fit-content;
+  display: inline-block;
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.5;
@@ -1801,11 +1800,6 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   background: var(--success);
   color: #fff;
   white-space: nowrap;
-  margin: 0 auto 4px;
-  vertical-align: middle;
-}
-.rm-backlog-badge:last-child {
-  margin-bottom: 0;
 }
 .rm-backlog-badge.pending {
   background: var(--border);

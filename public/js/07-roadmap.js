@@ -318,19 +318,20 @@ function renderRoadmapDetail() {
   el.roadmapDetailMonths.innerHTML = months
     .map((m) => {
       const rows = state.roadmapDetails.filter((d) => d.month === m);
+      const syncedCount = rows.filter((d) => d.synced_task_id && !d.task_deleted).length;
+      const monthBadge = rows.length
+        ? syncedCount === rows.length
+          ? '<span class="rm-backlog-badge" title="Tất cả việc của tháng này đã được tự động đưa vào Backlog (DOD = Nội dung công việc)">✓ Đã vào Backlog</span>'
+          : '<span class="rm-backlog-badge pending" title="Chưa đưa hết việc vào Backlog (tháng chưa được quản lý, ngoài phạm vi Bắt đầu -> Kết thúc, hoặc task đã bị xóa)">Chưa vào Backlog</span>'
+        : "";
       const body = rows.length
         ? `<div class="table-wrap"><table class="rm-detail-table">
-            <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="width:130px" title="Tự động đưa vào Backlog của tháng này khi tháng đã được quản lý">Backlog</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
+            <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
             <tbody>${rows
               .map(
                 (d) => `<tr>
                   <td>${nl2br(d.noi_dung)}</td>
                   <td style="text-align:center"><span class="status-badge ${STATUS_CLASS[d.trang_thai] || "status-default"}">${d.trang_thai}</span></td>
-                  <td style="text-align:center">${
-                    d.synced_task_id && !d.task_deleted
-                      ? '<span class="rm-backlog-badge" title="Đã tự động đưa vào Backlog của tháng này (DOD = Nội dung công việc)">✓ Đã vào Backlog</span>'
-                      : '<span class="rm-backlog-badge pending" title="Chưa được đưa vào Backlog (tháng chưa được quản lý, ngoài phạm vi Bắt đầu -> Kết thúc, hoặc task đã bị xóa)">Chưa vào Backlog</span>'
-                  }</td>
                   <td>${nl2br(d.ghi_chu)}</td>
                   <td><div class="actions-cell">
                     <button class="small btn-edit write-action rd-edit-btn" data-id="${d.id}">Sửa</button>
@@ -342,7 +343,7 @@ function renderRoadmapDetail() {
         : `<p class="muted" style="margin:6px 0 0">Chưa có việc nào cho tháng này.</p>`;
       return `<div class="rm-month-block">
         <div class="row" style="justify-content:space-between;align-items:center">
-          <h3 style="margin:0;font-size:1rem">Tháng ${m}/${item.year}</h3>
+          <h3 style="margin:0;font-size:1rem;display:flex;align-items:center;gap:8px">Tháng ${m}/${item.year}${monthBadge}</h3>
           <button type="button" class="small primary rd-add-btn" data-month="${m}">+ Thêm việc</button>
         </div>
         ${body}
