@@ -1182,6 +1182,10 @@ th {
    [data-col=...] vì bảng cho ẩn cột tuỳ ý. */
 #df-table th { text-align: center; }
 #df-table td { vertical-align: middle; }
+/* Bảng Màn hình, Tính năng & Phân quyền — nhãn cột căn giữa, cùng cách
+   bảng Tính năng số hoá; ô dữ liệu dài căn trái cho dễ đọc. */
+#dfs-table th { text-align: center; }
+#dfs-table td { vertical-align: middle; }
 #df-table td:nth-child(1),
 #df-table td:nth-child(2),
 #df-table td[data-col="ma"],
