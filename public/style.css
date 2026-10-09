@@ -1186,6 +1186,33 @@ th {
    bảng Tính năng số hoá; ô dữ liệu dài căn trái cho dễ đọc. */
 #dfs-table th { text-align: center; }
 #dfs-table td { vertical-align: middle; }
+/* 9 cột phân quyền — ký hiệu căn giữa; badges xếp giữa ô, gộp nhiều chữ cái
+   ("CEA") thì tách thành từng badge riêng. */
+#dfs-table td[data-col="sales_am"],
+#dfs-table td[data-col="truong_dvkd"],
+#dfs-table td[data-col="presales_sp"],
+#dfs-table td[data-col="nv_bdkd"],
+#dfs-table td[data-col="ks_lanh_dao_bdkd"],
+#dfs-table td[data-col="phap_che"],
+#dfs-table td[data-col="tckt"],
+#dfs-table td[data-col="ban_lanh_dao"],
+#dfs-table td[data-col="quan_tri_he_thong"] {
+  text-align: center;
+}
+/* Badge 1 ký hiệu quyền (V/C/E/D/A/X/S) — ô vuông nhỏ gọn như ma trận
+   phân quyền; title rê chuột hiện ý nghĩa đầy đủ. */
+.perm-badge {
+  display: inline-block;
+  min-width: 24px;
+  margin: 1px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-align: center;
+}
 #df-table td:nth-child(1),
 #df-table td:nth-child(2),
 #df-table td[data-col="ma"],

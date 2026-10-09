@@ -20,6 +20,31 @@ function dfFull(text) {
   return `<div>${value.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>`;
 }
 
+// Ký hiệu quyền quy ước (một ô có thể gộp nhiều chữ cái, VD "CEA") — khớp
+// bảng ký hiệu trong tài liệu mô tả (V xem, C tạo, E sửa, D hủy, A duyệt,
+// X xuất, S cấu hình).
+const DFS_PERM_LEGEND = {
+  V: "View – Xem",
+  C: "Create – Tạo mới",
+  E: "Edit – Sửa",
+  D: "Delete/Cancel – Hủy, xóa mềm",
+  A: "Approve/Confirm – Phê duyệt, xác nhận, khóa",
+  X: "Export – Xuất báo cáo/file",
+  S: "Setup – Cấu hình (rule, danh mục, mẫu)",
+};
+
+// Phân rã chuỗi ký hiệu quyền ("VCEX") thành các badge riêng từng chữ cái
+// (title = ý nghĩa); rỗng -> "—" (không có quyền). Chuỗi không theo ký hiệu
+// quy ước thì giữ nguyên văn.
+function dfPermBadges(value) {
+  if (!value) return `<span class="muted">—</span>`;
+  const symbols = String(value).toUpperCase().match(/[VCEDAXS]/g);
+  if (!symbols) return dfFull(value);
+  return symbols
+    .map((s) => `<span class="perm-badge" title="${DFS_PERM_LEGEND[s] ?? s}">${s}</span>`)
+    .join("");
+}
+
 // Bộ lọc hiện tại (select + tìm từ khóa) — áp trên state.digitalFeatures
 // (server trả toàn bộ danh sách chưa xóa, lọc thêm ở FE giống bảng Yêu cầu
 // tính năng).
@@ -713,15 +738,15 @@ function renderDigitalFeatureScreens() {
       <td data-col="thanh_phan_chinh" ${colHidden("thanh_phan_chinh")}>${dfFull(r.thanh_phan_chinh)}</td>
       <td data-col="hanh_dong" ${colHidden("hanh_dong")}>${dfFull(r.hanh_dong)}</td>
       <td data-col="quy_tac_nghiep_vu" ${colHidden("quy_tac_nghiep_vu")}>${dfFull(r.quy_tac_nghiep_vu)}</td>
-      <td data-col="sales_am" ${colHidden("sales_am")}>${dfFull(r.sales_am)}</td>
-      <td data-col="truong_dvkd" ${colHidden("truong_dvkd")}>${dfFull(r.truong_dvkd)}</td>
-      <td data-col="presales_sp" ${colHidden("presales_sp")}>${dfFull(r.presales_sp)}</td>
-      <td data-col="nv_bdkd" ${colHidden("nv_bdkd")}>${dfFull(r.nv_bdkd)}</td>
-      <td data-col="ks_lanh_dao_bdkd" ${colHidden("ks_lanh_dao_bdkd")}>${dfFull(r.ks_lanh_dao_bdkd)}</td>
-      <td data-col="phap_che" ${colHidden("phap_che")}>${dfFull(r.phap_che)}</td>
-      <td data-col="tckt" ${colHidden("tckt")}>${dfFull(r.tckt)}</td>
-      <td data-col="ban_lanh_dao" ${colHidden("ban_lanh_dao")}>${dfFull(r.ban_lanh_dao)}</td>
-      <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfFull(r.quan_tri_he_thong)}</td>
+      <td data-col="sales_am" ${colHidden("sales_am")}>${dfPermBadges(r.sales_am)}</td>
+      <td data-col="truong_dvkd" ${colHidden("truong_dvkd")}>${dfPermBadges(r.truong_dvkd)}</td>
+      <td data-col="presales_sp" ${colHidden("presales_sp")}>${dfPermBadges(r.presales_sp)}</td>
+      <td data-col="nv_bdkd" ${colHidden("nv_bdkd")}>${dfPermBadges(r.nv_bdkd)}</td>
+      <td data-col="ks_lanh_dao_bdkd" ${colHidden("ks_lanh_dao_bdkd")}>${dfPermBadges(r.ks_lanh_dao_bdkd)}</td>
+      <td data-col="phap_che" ${colHidden("phap_che")}>${dfPermBadges(r.phap_che)}</td>
+      <td data-col="tckt" ${colHidden("tckt")}>${dfPermBadges(r.tckt)}</td>
+      <td data-col="ban_lanh_dao" ${colHidden("ban_lanh_dao")}>${dfPermBadges(r.ban_lanh_dao)}</td>
+      <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfPermBadges(r.quan_tri_he_thong)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
           <button type="button" class="small btn-edit icon-btn dfs-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
