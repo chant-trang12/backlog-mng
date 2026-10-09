@@ -1802,8 +1802,9 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   white-space: nowrap;
 }
 .rm-backlog-badge.pending {
-  background: var(--border);
-  color: var(--muted);
+  /* Xanh nhạt — tránh trùng badge "Chưa thực hiện" (be) và "Đang thực hiện" (vàng) */
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 /* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân
