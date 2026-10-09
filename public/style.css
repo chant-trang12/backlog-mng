@@ -1195,6 +1195,9 @@ th {
    liệu dài căn trái. */
 #dfdo-table th { text-align: center; }
 #dfdo-table td { vertical-align: middle; }
+/* Bảng Tích hợp & Sự kiện — nhãn cột căn giữa, ô dữ liệu dài căn trái. */
+#dfint-table th { text-align: center; }
+#dfint-table td { vertical-align: middle; }
 /* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
    thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
    non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */

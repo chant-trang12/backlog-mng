@@ -43,6 +43,17 @@ import {
   listDigitalFeatureDataObjectsHandler,
   updateDigitalFeatureDataObjectHandler,
 } from "../controllers/digitalFeatureDataObject.controller.js";
+import {
+  createDigitalFeatureIntegrationHandler,
+  deleteDigitalFeatureIntegrationHandler,
+  deleteSelectedDigitalFeatureIntegrationsHandler,
+  downloadDigitalFeatureIntTemplateHandler,
+  exportDigitalFeatureIntegrationsHandler,
+  getDigitalFeatureIntegrationHandler,
+  importDigitalFeatureIntegrationsHandler,
+  listDigitalFeatureIntegrationsHandler,
+  updateDigitalFeatureIntegrationHandler,
+} from "../controllers/digitalFeatureIntegration.controller.js";
 
 const router = Router();
 
@@ -122,6 +133,25 @@ router.post("/digital-features/:id/data-objects", createDigitalFeatureDataObject
 router.get("/digital-feature-data-objects/:id", getDigitalFeatureDataObjectHandler);
 router.put("/digital-feature-data-objects/:id", updateDigitalFeatureDataObjectHandler);
 router.delete("/digital-feature-data-objects/:id", deleteDigitalFeatureDataObjectHandler);
+
+// ===== Tích hợp & Sự kiện (tab 5 trong chi tiết tính năng) — cùng cấu
+// trúc route với tab Đối tượng dữ liệu ở trên. =====
+// Xóa nhiều (checkbox bảng) — admin chặn ở app.ts theo tiền tố path.
+router.post("/digital-features/:id/integrations/delete-selected", deleteSelectedDigitalFeatureIntegrationsHandler);
+router.get("/digital-features/:id/integrations/import-template", downloadDigitalFeatureIntTemplateHandler);
+router.post(
+  "/digital-features/:id/integrations/import",
+  express.raw({ type: () => true, limit: "20mb" }),
+  importDigitalFeatureIntegrationsHandler,
+);
+router.get("/digital-features/:id/integrations/export", exportDigitalFeatureIntegrationsHandler);
+router.get("/digital-features/:id/integrations", listDigitalFeatureIntegrationsHandler);
+router.post("/digital-features/:id/integrations", createDigitalFeatureIntegrationHandler);
+
+// Route phẳng cho từng luồng tích hợp (sửa/xóa/xem 1 dòng).
+router.get("/digital-feature-integrations/:id", getDigitalFeatureIntegrationHandler);
+router.put("/digital-feature-integrations/:id", updateDigitalFeatureIntegrationHandler);
+router.delete("/digital-feature-integrations/:id", deleteDigitalFeatureIntegrationHandler);
 
 router.get("/digital-features/:id", getDigitalFeatureHandler);
 router.put("/digital-features/:id", updateDigitalFeatureHandler);

@@ -172,6 +172,9 @@ export function createApp() {
   // Xóa nhiều Đối tượng dữ liệu & Vòng đời trạng thái — tab 4 trong chi
   // tiết Tính năng số hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
   app.use("/api/digital-features/:id/data-objects/delete-selected", requireAdmin);
+  // Xóa nhiều Tích hợp & Sự kiện — tab 5 trong chi tiết Tính năng số hoá,
+  // chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/integrations/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);

@@ -111,3 +111,27 @@ export type CreateDigitalFeatureDataObjectInput = Partial<
 export type UpdateDigitalFeatureDataObjectInput = Partial<
   Omit<DigitalFeatureDataObject, "id" | "digital_feature_id" | "created_at" | "updated_at">
 >;
+
+// ===== Tích hợp & Sự kiện (tab 5 màn hình chi tiết) =====
+
+export interface DigitalFeatureIntegration {
+  id: number;
+  digital_feature_id: number;
+  huong: string;
+  module_he_thong: string | null;
+  du_lieu_trao_doi: string | null;
+  co_che_tan_suat: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CreateDigitalFeatureIntegrationInput = Partial<
+  Omit<DigitalFeatureIntegration, "id" | "digital_feature_id" | "created_at" | "updated_at">
+> & {
+  digital_feature_id: number;
+  huong: string;
+};
+
+export type UpdateDigitalFeatureIntegrationInput = Partial<
+  Omit<DigitalFeatureIntegration, "id" | "digital_feature_id" | "created_at" | "updated_at">
+>;

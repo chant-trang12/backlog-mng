@@ -458,6 +458,7 @@ function openDigitalFeatureDetail(id) {
   loadDigitalFeatureScreens(id).catch((err) => showToast(err.message));
   loadDigitalFeatureMasterData(id).catch((err) => showToast(err.message));
   loadDigitalFeatureDataObjects(id).catch((err) => showToast(err.message));
+  loadDigitalFeatureIntegrations(id).catch((err) => showToast(err.message));
   // Ẩn trang danh sách, hiện trang chi tiết (trang này cũng nằm trong
   // `pages` ở 09-main.js nên user bấm sang mục menu khác thì tự ẩn).
   document.getElementById("page-digital-features").hidden = true;
@@ -1589,6 +1590,332 @@ document.getElementById("dfdo-import-input")?.addEventListener("change", async (
   const fake = document.getElementById("dfdo-table-scroll-top");
   const spacer = document.getElementById("dfdo-table-scroll-top-spacer");
   const real = document.getElementById("dfdo-table-wrap");
+  if (!fake || !spacer || !real) return;
+  const syncSpacer = () => {
+    spacer.style.width = `${real.scrollWidth}px`;
+  };
+  fake.addEventListener("scroll", () => {
+    real.scrollLeft = fake.scrollLeft;
+  });
+  real.addEventListener("scroll", () => {
+    fake.scrollLeft = real.scrollLeft;
+  });
+  new ResizeObserver(syncSpacer).observe(real);
+  syncSpacer();
+})();
+
+// ==================== Tab "Tích hợp & Sự kiện" ====================
+// Nhân bản cấu trúc tab Đối tượng dữ liệu ở trên với bảng 4 trường: Hướng,
+// Module / hệ thống, Dữ liệu trao đổi, Cơ chế & tần suất.
+
+async function loadDigitalFeatureIntegrations(featureId) {
+  state.digitalFeatureIntegrations = await api(`/api/digital-features/${featureId}/integrations`);
+  const ids = new Set(state.digitalFeatureIntegrations.map((r) => r.id));
+  state.selectedDfIntIds.forEach((id) => {
+    if (!ids.has(id)) state.selectedDfIntIds.delete(id);
+  });
+  dfintPagination.reset();
+  renderDigitalFeatureIntegrations();
+}
+
+// ---- Menu "Cấu hình cột" — cột "Hướng" KHÔNG cho ẩn (nhận diện dòng);
+// STT và Action luôn hiển thị. Tuỳ chọn lưu localStorage theo máy.
+const DFINT_TOGGLEABLE_COLUMNS = [
+  { key: "module_he_thong", label: "Module / hệ thống" },
+  { key: "du_lieu_trao_doi", label: "Dữ liệu trao đổi" },
+  { key: "co_che_tan_suat", label: "Cơ chế & tần suất" },
+];
+const DFINT_COL_LS_KEY = "backlog.dfIntColumns.hiddenV1";
+
+function loadHiddenDfIntColumns() {
+  try {
+    const raw = localStorage.getItem(DFINT_COL_LS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveHiddenDfIntColumns() {
+  try {
+    localStorage.setItem(DFINT_COL_LS_KEY, JSON.stringify([...state.hiddenDfIntColumns]));
+  } catch {
+    // Không lưu được thì bỏ qua — tuỳ chọn vẫn áp dụng cho phiên hiện tại.
+  }
+}
+
+function isDfIntColHidden(key) {
+  return state.hiddenDfIntColumns.has(key);
+}
+
+function applyDfIntColumnHeaderVisibility() {
+  DFINT_TOGGLEABLE_COLUMNS.forEach(({ key }) => {
+    const th = document.querySelector(`#dfint-table thead [data-col="${key}"]`);
+    if (!th) return;
+    th.hidden = isDfIntColHidden(key);
+  });
+}
+
+function renderDfIntColMenu() {
+  const list = document.getElementById("dfint-col-menu-list");
+  list.innerHTML = DFINT_TOGGLEABLE_COLUMNS.map(
+    ({ key, label }) => `
+    <label class="col-menu-item">
+      <input type="checkbox" class="dfint-col-checkbox" data-col-key="${key}" ${isDfIntColHidden(key) ? "" : "checked"} />
+      ${label}
+    </label>`,
+  ).join("");
+  list.querySelectorAll(".dfint-col-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const key = e.target.dataset.colKey;
+      if (e.target.checked) state.hiddenDfIntColumns.delete(key);
+      else state.hiddenDfIntColumns.add(key);
+      saveHiddenDfIntColumns();
+      renderDigitalFeatureIntegrations();
+    });
+  });
+}
+
+function openDfIntColMenu() {
+  renderDfIntColMenu();
+  document.getElementById("dfint-col-menu").hidden = false;
+  document.getElementById("dfint-col-menu-btn").setAttribute("aria-expanded", "true");
+}
+
+function closeDfIntColMenu() {
+  document.getElementById("dfint-col-menu").hidden = true;
+  document.getElementById("dfint-col-menu-btn").setAttribute("aria-expanded", "false");
+}
+
+function initDfIntColumnMenu() {
+  state.hiddenDfIntColumns = loadHiddenDfIntColumns();
+  applyDfIntColumnHeaderVisibility();
+
+  const menuWrap = document.getElementById("dfint-col-menu-wrap");
+  const menuBtn = document.getElementById("dfint-col-menu-btn");
+  const menu = document.getElementById("dfint-col-menu");
+  if (!menuWrap || !menuBtn || !menu) return;
+
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.hidden) openDfIntColMenu();
+    else closeDfIntColMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menuWrap.contains(e.target)) closeDfIntColMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeDfIntColMenu();
+  });
+  document.getElementById("dfint-col-menu-reset").addEventListener("click", () => {
+    state.hiddenDfIntColumns.clear();
+    saveHiddenDfIntColumns();
+    applyDfIntColumnHeaderVisibility();
+    renderDigitalFeatureIntegrations();
+  });
+}
+initDfIntColumnMenu();
+
+// Checkbox chọn nhiều + nút "Xóa đã chọn" — chỉ admin (class delete-action).
+function updateDfIntSelectionUI() {
+  const visible = state.digitalFeatureIntegrations;
+  const visibleSelectedCount = visible.filter((r) => state.selectedDfIntIds.has(r.id)).length;
+  const btn = document.getElementById("delete-selected-dfint-btn");
+  const countEl = document.getElementById("selected-dfint-count");
+  const selectAll = document.getElementById("dfint-select-all");
+  if (btn) btn.hidden = state.selectedDfIntIds.size === 0;
+  if (countEl) countEl.textContent = String(state.selectedDfIntIds.size);
+  if (selectAll) {
+    selectAll.checked = visible.length > 0 && visibleSelectedCount === visible.length;
+    selectAll.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visible.length;
+  }
+}
+
+function renderDigitalFeatureIntegrations() {
+  const tbody = document.getElementById("dfint-tbody");
+  const empty = document.getElementById("dfint-empty");
+  if (!tbody) return;
+  applyDfIntColumnHeaderVisibility();
+  const colHidden = (key) => (isDfIntColHidden(key) ? "hidden" : "");
+  const rows = state.digitalFeatureIntegrations;
+  empty.hidden = rows.length > 0;
+  const pageItems = dfintPagination.slice(rows);
+  const pageStart = (dfintPagination.page - 1) * dfintPagination.pageSize;
+
+  tbody.innerHTML = pageItems
+    .map((r, idx) => `
+    <tr data-id="${r.id}">
+      <td><input type="checkbox" class="dfint-row-checkbox" ${state.selectedDfIntIds.has(r.id) ? "checked" : ""} /></td>
+      <td>${pageStart + idx + 1}</td>
+      <td>${dfFull(r.huong)}</td>
+      <td data-col="module_he_thong" ${colHidden("module_he_thong")}>${dfFull(r.module_he_thong)}</td>
+      <td data-col="du_lieu_trao_doi" ${colHidden("du_lieu_trao_doi")}>${dfFull(r.du_lieu_trao_doi)}</td>
+      <td data-col="co_che_tan_suat" ${colHidden("co_che_tan_suat")}>${dfFull(r.co_che_tan_suat)}</td>
+      <td>
+        <div class="actions-cell" style="justify-content:flex-start;gap:2px">
+          <button type="button" class="small btn-edit icon-btn dfint-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
+          <button type="button" class="small btn-delete icon-btn dfint-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+        </div>
+      </td>
+    </tr>`)
+    .join("");
+
+  tbody.querySelectorAll(".dfint-row-checkbox").forEach((checkbox) => {
+    checkbox.addEventListener("change", (e) => {
+      const id = Number(e.target.closest("tr").dataset.id);
+      if (e.target.checked) state.selectedDfIntIds.add(id);
+      else state.selectedDfIntIds.delete(id);
+      updateDfIntSelectionUI();
+    });
+  });
+  tbody.querySelectorAll(".dfint-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openDigitalFeatureIntDialog(Number(btn.dataset.id)));
+  });
+  tbody.querySelectorAll(".dfint-del-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const item = state.digitalFeatureIntegrations.find((r) => r.id === Number(btn.dataset.id));
+      if (!(await confirmDialog(`Xoá luồng tích hợp${item?.module_he_thong ? ` với "${item.module_he_thong}"` : ""}?`, { danger: true }))) return;
+      try {
+        await api(`/api/digital-feature-integrations/${btn.dataset.id}`, { method: "DELETE" });
+        showToast("Đã xoá.", "success");
+        await loadDigitalFeatureIntegrations(state.currentDigitalFeatureId);
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+  });
+  updateDfIntSelectionUI();
+}
+
+document.getElementById("dfint-select-all")?.addEventListener("change", (e) => {
+  if (e.target.checked) {
+    state.digitalFeatureIntegrations.forEach((r) => state.selectedDfIntIds.add(r.id));
+  } else {
+    state.digitalFeatureIntegrations.forEach((r) => state.selectedDfIntIds.delete(r.id));
+  }
+  renderDigitalFeatureIntegrations();
+});
+
+document.getElementById("delete-selected-dfint-btn")?.addEventListener("click", async () => {
+  const ids = [...state.selectedDfIntIds];
+  if (ids.length === 0) return;
+  if (!(await confirmDialog(`Xóa ${ids.length} luồng tích hợp đã chọn?`, { danger: true }))) return;
+  try {
+    const res = await api(`/api/digital-features/${state.currentDigitalFeatureId}/integrations/delete-selected`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+    state.selectedDfIntIds.clear();
+    await loadDigitalFeatureIntegrations(state.currentDigitalFeatureId);
+    showToast(`Đã xóa ${res?.deleted ?? 0} luồng tích hợp.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Dialog Thêm mới / Sửa luồng tích hợp ----
+
+function openDigitalFeatureIntDialog(id) {
+  const item = id != null ? state.digitalFeatureIntegrations.find((r) => r.id === id) : null;
+  document.getElementById("dfint-dialog-title").textContent = item ? "Sửa tích hợp & sự kiện" : "Thêm tích hợp & sự kiện";
+  document.getElementById("dfint-id").value = item?.id ?? "";
+  document.getElementById("dfint-huong").value = item?.huong ?? "";
+  document.getElementById("dfint-module").value = item?.module_he_thong ?? "";
+  document.getElementById("dfint-du-lieu").value = item?.du_lieu_trao_doi ?? "";
+  document.getElementById("dfint-co-che").value = item?.co_che_tan_suat ?? "";
+  document.getElementById("digital-feature-int-dialog").showModal();
+}
+
+document.getElementById("add-df-int-btn")?.addEventListener("click", () => openDigitalFeatureIntDialog(null));
+
+document.getElementById("digital-feature-int-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("dfint-id").value;
+  const body = {
+    huong: document.getElementById("dfint-huong").value.trim(),
+    module_he_thong: document.getElementById("dfint-module").value.trim() || undefined,
+    du_lieu_trao_doi: document.getElementById("dfint-du-lieu").value.trim() || undefined,
+    co_che_tan_suat: document.getElementById("dfint-co-che").value.trim() || undefined,
+  };
+  try {
+    if (id) {
+      await api(`/api/digital-feature-integrations/${id}`, { method: "PUT", body: JSON.stringify(body) });
+      showToast("Đã lưu thay đổi.", "success");
+    } else {
+      await api(`/api/digital-features/${state.currentDigitalFeatureId}/integrations`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      showToast("Đã thêm luồng tích hợp.", "success");
+    }
+    document.getElementById("digital-feature-int-dialog").close();
+    await loadDigitalFeatureIntegrations(state.currentDigitalFeatureId);
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById("digital-feature-int-cancel-btn")?.addEventListener("click", () => {
+  document.getElementById("digital-feature-int-dialog").close();
+});
+
+// ---- File mẫu / Import Excel / Export Excel của tab tích hợp ----
+
+document.getElementById("download-dfint-template-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/integrations/import-template`;
+});
+
+document.getElementById("export-dfint-btn")?.addEventListener("click", () => {
+  window.location.href = `/api/digital-features/${state.currentDigitalFeatureId}/integrations/export`;
+});
+
+document.getElementById("import-dfint-btn")?.addEventListener("click", () => {
+  document.getElementById("dfint-import-input").click();
+});
+
+document.getElementById("dfint-import-input")?.addEventListener("change", async () => {
+  const input = document.getElementById("dfint-import-input");
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    // Body là bytes thô .xlsx — fetch() thẳng thay vì api() vì Content-Type
+    // là kiểu file (giống import tab Đối tượng dữ liệu ở trên).
+    const buffer = await file.arrayBuffer();
+    const res = await fetch(`/api/digital-features/${state.currentDigitalFeatureId}/integrations/import`, {
+      method: "POST",
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+      body: buffer,
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || `Lỗi ${res.status}`);
+    }
+    const result = await res.json();
+    await loadDigitalFeatureIntegrations(state.currentDigitalFeatureId);
+
+    let msg = `Đã nhập ${result.imported} luồng tích hợp.`;
+    if (result.skipped?.length) {
+      const detail = result.skipped
+        .slice(0, 5)
+        .map((s) => `dòng ${s.row}${s.label ? ` (${s.label})` : ""}: ${s.reason}`)
+        .join("; ");
+      const more = result.skipped.length > 5 ? `; +${result.skipped.length - 5} dòng khác` : "";
+      showToast(`${msg} Bỏ qua ${result.skipped.length} dòng — ${detail}${more}`, "error");
+    } else {
+      showToast(msg, "success");
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Thanh cuộn ngang phía trên bảng tích hợp (nhân bản setupDfDoScrollTopSync). ----
+(function setupDfIntScrollTopSync() {
+  const fake = document.getElementById("dfint-table-scroll-top");
+  const spacer = document.getElementById("dfint-table-scroll-top-spacer");
+  const real = document.getElementById("dfint-table-wrap");
   if (!fake || !spacer || !real) return;
   const syncSpacer = () => {
     spacer.style.width = `${real.scrollWidth}px`;

@@ -55,6 +55,9 @@ const state = {
   digitalFeatureDataObjects: [], // đối tượng dữ liệu & vòng đời của tính năng đang mở chi tiết (tab 4)
   selectedDfDoIds: new Set(), // checkbox "xóa nhiều" ở bảng đối tượng dữ liệu
   hiddenDfDoColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng đối tượng
+  digitalFeatureIntegrations: [], // tích hợp & sự kiện của tính năng đang mở chi tiết (tab 5)
+  selectedDfIntIds: new Set(), // checkbox "xóa nhiều" ở bảng tích hợp
+  hiddenDfIntColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng tích hợp
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
@@ -524,6 +527,7 @@ const dfPagination = createPagination("df", () => renderDigitalFeatures());
 const dfsPagination = createPagination("dfs", () => renderDigitalFeatureScreens());
 const dfmdPagination = createPagination("dfmd", () => renderDigitalFeatureMasterData());
 const dfdoPagination = createPagination("dfdo", () => renderDigitalFeatureDataObjects());
+const dfintPagination = createPagination("dfint", () => renderDigitalFeatureIntegrations());
 const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
 const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
 const actionLogPagination = createPagination("al", () => renderActionLogTable());
