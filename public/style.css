@@ -1217,8 +1217,8 @@ th {
 .perm-badge.perm-e { background: #f7efda; border: 1px solid #e3cf9c; color: #8a6a1c; }
 .perm-badge.perm-d { background: #f3ded9; border: 1px solid #e0b5a8; color: #a03d28; }
 .perm-badge.perm-a { background: #eedde0; border: 1px solid #d0a3ab; color: #7d3b47; }
-.perm-badge.perm-x { background: #f1e8da; border: 1px solid #d9c4a4; color: #7d5f3b; }
-.perm-badge.perm-s { background: #eceadd; border: 1px solid #cdc8ae; color: #676b4e; }
+.perm-badge.perm-x { background: #f6e3d2; border: 1px solid #e0b48a; color: #a35c1e; }
+.perm-badge.perm-s { background: #e3e7ec; border: 1px solid #b0bdc9; color: #46586a; }
 
 @media (prefers-color-scheme: dark) {
   .perm-badge.perm-v { background: #39422b; border-color: #66754a; color: #ccd8ac; }
@@ -1226,8 +1226,8 @@ th {
   .perm-badge.perm-e { background: #474023; border-color: #8f7a35; color: #e0c878; }
   .perm-badge.perm-d { background: #4a2c25; border-color: #9c5540; color: #eba58f; }
   .perm-badge.perm-a { background: #453034; border-color: #8a5a64; color: #e3b3bd; }
-  .perm-badge.perm-x { background: #453723; border-color: #93764c; color: #dcb98a; }
-  .perm-badge.perm-s { background: #3a3a2a; border-color: #77755a; color: #c4c2a2; }
+  .perm-badge.perm-x { background: #48311c; border-color: #96602c; color: #eebd85; }
+  .perm-badge.perm-s { background: #2f3844; border-color: #5a6b7d; color: #b0c4d6; }
 }
 #df-table td:nth-child(1),
 #df-table td:nth-child(2),
