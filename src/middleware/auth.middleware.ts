@@ -3,6 +3,21 @@ import { isSsoEnabled } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
 import { isSessionExpired, touchSession } from "../session.config.js";
+import { resolveModuleAndAction } from "./actionLog.middleware.js";
+import { getRolePermission } from "../services/permission.service.js";
+
+// "module" (nhãn tiếng Việt do resolveModuleAndAction trả, dùng chung với
+// Nhật ký hoạt động) -> function_key cấu hình quyền được (permission.service.ts).
+// Module không có trong map này (VD "Cấu hình") -> KHÔNG cấu hình qua UI
+// Phân quyền, requireWrite bỏ qua để requireAdmin/route riêng tự quyết định.
+const MODULE_TO_FUNCTION_KEY: Record<string, string> = {
+  "Backlog": "nhiem_vu",
+  "Team & Nhân sự": "team_nhan_su",
+  "CSKH": "cskh",
+  "Roadmap năm": "roadmap",
+  "Yêu cầu tính năng": "yeu_cau_tinh_nang",
+  "Quản lý tính năng số hoá": "quan_ly_tinh_nang_so_hoa",
+};
 
 /**
  * Middleware to require authentication when SSO is enabled.
@@ -86,73 +101,78 @@ export async function attachScope(req: Request, _res: Response, next: NextFuncti
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-// Ngoại lệ cho viewer: TẠO MỚI Yêu cầu tính năng không phải "ghi dữ liệu
-// nghiệp vụ" theo nghĩa thông thường — mọi phòng ban (mọi quyền, kể cả
-// viewer) đều được đề xuất. Duyệt/Từ chối/Đưa vào Backlog/Roadmap vẫn cần
-// quyền ghi (editor/bgd/admin trở lên) NHƯ BÌNH THƯỜNG — không nằm trong
-// danh sách này — cộng thêm điều kiện phải thuộc đúng phòng ban đích
-// (requireTargetScope ở featureRequest.controller.ts, không liên quan role).
-// req.path đã bị Express cắt bỏ tiền tố "/api" (mount ở app.use("/api", ...)).
-const VIEWER_ALLOWED_WRITES = new Set(["POST /feature-requests", "POST /feature-requests/import"]);
-// File đính kèm là 1 phần của việc "đề xuất" (bổ sung tài liệu cho chính
-// yêu cầu vừa/đang tạo) — cùng tinh thần ngoại lệ ở trên, nhưng path có
-// :id động nên không đưa được vào Set literal, phải so bằng regex riêng.
-const VIEWER_ALLOWED_ATTACHMENT_PATH = /^\/feature-requests\/\d+\/attachment$/;
-
 // Chấm điểm (% Đánh giá + Nội dung đánh giá ở nút "Chấm điểm", menu Nhiệm
 // vụ) tách route riêng "PUT /tasks/:id/grade" (khác route sửa task thường
-// "PUT /tasks/:id") đúng để CHẶN ĐƯỢC RIÊNG theo role ở đây — không lẫn
-// với sửa nội dung/cập nhật tiến độ (vẫn theo luật ghi thông thường).
-// Role được chấm điểm: admin (không qua middleware này) + bgd. editor
-// KHÔNG được chấm điểm — đây là điểm khác biệt DUY NHẤT còn lại giữa
-// bgd và editor sau khi nâng quyền bgd lên ngang editor (xem requireWrite).
+// "PUT /tasks/:id") — CHẶN/CHO theo function_key RIÊNG "nhiem_vu_cham_diem"
+// (bảng role_permissions), không lẫn với "nhiem_vu" chung (sửa nội dung/
+// cập nhật tiến độ) dù cùng nằm trên resource "tasks".
 const TASK_GRADE_PATH = /^\/tasks\/\d+\/grade$/;
 
+const ROLE_LABEL: Record<string, string> = { editor: "editor", bgd: "BGĐ", viewer: "viewer" };
+
 /**
- * Role "viewer" chỉ đọc — chặn mọi request ghi tới /api, trừ đúng danh sách
- * VIEWER_ALLOWED_WRITES ở trên.
+ * Role "admin": toàn quyền, bypass hẳn (không tra DB).
  *
- * Role "bgd" và "editor" dùng CHUNG 1 bộ luật ghi — được ghi (POST/PUT/
- * PATCH) nhưng không được xóa (Quy tắc 9.1 — quyền xóa chỉ dành cho admin).
- * Khác biệt DUY NHẤT giữa 2 role này: "bgd" được chấm điểm (PUT .../grade),
- * "editor" thì KHÔNG (chỉ Admin/BGĐ được chấm điểm) — bgd coi như "editor +
- * chấm điểm". Yêu cầu nghiệp vụ: nâng quyền bgd từ "chỉ xem + chấm điểm"
- * lên ngang editor (trước đây bgd xử lý y hệt viewer).
+ * Role "editor"/"bgd"/"viewer": quyền Add/Edit theo TỪNG CHỨC NĂNG (7 chức
+ * năng ở PERMISSION_FUNCTIONS, permission.service.ts) đọc từ bảng
+ * role_permissions — ADMIN CẤU HÌNH TRỰC TIẾP ở Cấu hình → Phân quyền, có
+ * hiệu lực ngay, không cần sửa code/deploy lại. "Chức năng" của 1 request
+ * suy từ path qua resolveModuleAndAction() (actionLog.middleware.ts) —
+ * CÙNG 1 logic đang dùng để ghi Nhật ký hoạt động, nên luôn khớp đúng
+ * module hiển thị trên UI đó.
+ *
+ * 2 ngoại lệ CỐ ĐỊNH, KHÔNG cấu hình được qua UI (an toàn, tránh admin tự
+ * làm yếu bảo mật hệ thống):
+ * - Quy tắc 9.1 — CHỈ admin được xóa. Chặn cả khi method=DELETE lẫn khi
+ *   action suy ra là "xoa" dù method khác (VD các route bulk xóa hàng loạt
+ *   dạng "delete-selected" dùng POST — vá luôn 1 lỗ hổng cũ: trước đây các
+ *   route này chỉ bị chặn theo method nên editor/bgd vẫn gọi lọt).
+ * - Route KHÔNG thuộc 1 trong 7 Chức năng cấu hình được (VD Cấu hình/
+ *   Quản lý User/Nhật ký hoạt động, hoặc route lạ) — bỏ qua ở đây, để
+ *   requireAdmin (mount riêng theo tiền tố route, nếu có) hoặc handler
+ *   phía sau quyết định, giữ đúng ranh giới bảo mật cũ không đổi.
  *
  * Không có tác dụng khi SSO tắt (req.appUser không được gắn — xem
  * requireAuth). Mount ngay sau requireAuth, TRƯỚC mọi router nghiệp vụ.
  */
-export function requireWrite(req: Request, res: Response, next: NextFunction): void {
+export async function requireWrite(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.appUser || !WRITE_METHODS.has(req.method)) {
     return next();
   }
   const role = req.appUser.role;
-  const isGradeRequest = req.method === "PUT" && TASK_GRADE_PATH.test(req.path);
+  if (role === "admin") return next();
 
-  if (role === "viewer") {
-    if (VIEWER_ALLOWED_WRITES.has(`${req.method} ${req.path}`)) {
-      return next();
-    }
-    if (req.method === "POST" && VIEWER_ALLOWED_ATTACHMENT_PATH.test(req.path)) {
-      return next();
-    }
-    res.status(403).json({ error: "Tài khoản chỉ có quyền xem (viewer), không thể thực hiện thao tác này." });
-    return;
-  }
-  if (role === "editor" || role === "bgd") {
-    if (req.method === "DELETE") {
+  if (TASK_GRADE_PATH.test(req.path) && req.method === "PUT") {
+    const perm = await getRolePermission("nhiem_vu_cham_diem", role);
+    if (!perm?.can_edit) {
       res.status(403).json({
-        error:
-          role === "bgd"
-            ? "Tài khoản BGĐ không có quyền xóa dữ liệu — liên hệ Admin."
-            : "Tài khoản editor không có quyền xóa dữ liệu — liên hệ Admin.",
+        error: `Tài khoản ${ROLE_LABEL[role] ?? role} không có quyền chấm điểm — liên hệ Admin hoặc BGĐ.`,
       });
       return;
     }
-    if (role === "editor" && isGradeRequest) {
-      res.status(403).json({ error: "Tài khoản editor không có quyền chấm điểm — liên hệ Admin hoặc BGĐ." });
-      return;
-    }
+    return next();
+  }
+
+  const { module: moduleLabel, action } = resolveModuleAndAction(req);
+
+  if (req.method === "DELETE" || action === "xoa") {
+    res.status(403).json({ error: `Tài khoản ${ROLE_LABEL[role] ?? role} không có quyền xóa dữ liệu — liên hệ Admin.` });
+    return;
+  }
+
+  const functionKey = moduleLabel ? MODULE_TO_FUNCTION_KEY[moduleLabel] : undefined;
+  if (!functionKey) {
+    return next();
+  }
+
+  const perm = await getRolePermission(functionKey, role);
+  const operation = action === "tao_moi" ? "add" : "edit";
+  const allowed = operation === "add" ? perm?.can_add : perm?.can_edit;
+  if (!allowed) {
+    res.status(403).json({
+      error: `Tài khoản ${ROLE_LABEL[role] ?? role} không có quyền "${operation === "add" ? "Thêm" : "Sửa"}" ở chức năng này — liên hệ Admin (Cấu hình → Phân quyền).`,
+    });
+    return;
   }
   next();
 }

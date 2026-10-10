@@ -48,6 +48,7 @@ import { migrateDigitalFeatureDataObjectTables } from "./migrations/digitalFeatu
 import { migrateDigitalFeatureIntegrationTables } from "./migrations/digitalFeatureIntegrations.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
+import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
 
 let initPromise: Promise<void> | null = null;
@@ -140,6 +141,10 @@ export async function initDatabase(): Promise<void> {
     // ATTT (Stored XSS): làm sạch dữ liệu CŨ chứa ký tự tạo thẻ HTML — chạy
     // sau cùng khi toàn bộ bảng/cột đã sẵn sàng (idempotent, xem xssScrub.ts).
     await scrubLegacyHtmlChars();
+
+    // Màn "Phân quyền" (Cấu hình) — seed ma trận quyền mặc định khớp đúng
+    // hành vi hardcode trước đây, requireWrite đọc bảng này từ giờ.
+    await migrateRolePermissions();
   })();
 
   return initPromise;

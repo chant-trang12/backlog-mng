@@ -2151,6 +2151,7 @@
             <span class="pill" data-tab="tagphanloai">Cấu hình</span>
             <span class="pill" data-tab="phongban">Phòng ban</span>
             <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
+            <span class="pill" data-tab="permissions" id="config-permissions-pill" hidden>Phân quyền</span>
           </div>
 
           <div id="config-tab-users" hidden>
@@ -2203,6 +2204,34 @@
                 <span id="users-config-page-info" class="muted"></span>
                 <button type="button" id="users-config-page-next" class="small">Sau ›</button>
               </div>
+            </div>
+          </section>
+          </div>
+
+          <!-- Phân quyền — admin cấu hình quyền Add/Edit của Editor/BGĐ/Viewer
+               theo từng Chức năng, CÓ HIỆU LỰC NGAY (role_permissions, đọc bởi
+               requireWrite). Read/Delete không cấu hình được: Read luôn mở cho
+               mọi role đã đăng nhập; Delete tuyệt đối chỉ Admin (Quy tắc 9.1).
+               Xem renderPermissionsConfig(), 06-config.js. -->
+          <div id="config-tab-permissions" hidden>
+          <section class="card">
+            <h2 style="margin:0">Ma trận phân quyền theo Role</h2>
+            <p class="muted" style="margin:6px 0 0">Tick/bỏ tick ô Add/Edit để cấp/thu quyền ngay lập tức cho Editor/BGĐ/Viewer — không cần deploy lại. Cột Read luôn mở cho mọi role đã đăng nhập; cột Delete tuyệt đối chỉ Admin (Quy tắc 9.1), không cấu hình được ở đây.</p>
+            <div class="table-wrap" style="margin-top:14px">
+              <table id="permissions-config-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:170px">Chức năng</th>
+                    <th style="min-width:220px">Mô tả</th>
+                    <th style="min-width:90px">Role</th>
+                    <th style="width:70px;text-align:center">Read</th>
+                    <th style="width:70px;text-align:center">Add</th>
+                    <th style="width:70px;text-align:center">Delete</th>
+                    <th style="width:70px;text-align:center">Edit</th>
+                  </tr>
+                </thead>
+                <tbody id="permissions-config-tbody"></tbody>
+              </table>
             </div>
           </section>
           </div>

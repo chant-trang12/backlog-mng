@@ -30,6 +30,11 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const MODULE_LABELS: Record<string, { module: string; entity: string; table?: string; nameColumn?: string }> = {
   tasks: { module: "Backlog", entity: "Nhiệm vụ", table: "tasks", nameColumn: "nhiem_vu" },
   "task-members": { module: "Backlog", entity: "Nhân sự tham gia task" },
+  // "Việc" (task con, phân công khối lượng) — thiếu từ trước giờ nên log
+  // hoạt động + (nay) permission check đều rơi về module=null cho 2 route
+  // này; bổ sung để vào đúng "Backlog" như phần còn lại của Nhiệm vụ.
+  "task-items": { module: "Backlog", entity: "Việc (task con)" },
+  "task-item-members": { module: "Backlog", entity: "Phân công nhân sự cho Việc" },
   periods: { module: "Backlog", entity: "Tháng backlog", table: "periods", nameColumn: "label" },
   teams: { module: "Team & Nhân sự", entity: "Team", table: "teams", nameColumn: "name" },
   members: { module: "Team & Nhân sự", entity: "Nhân sự", table: "members", nameColumn: "name" },
@@ -313,6 +318,41 @@ async function resolveTaskMemberNames(
     // im lặng bỏ qua — lỗi truy vấn không được làm hỏng request chính.
   }
   return { memberName: "", taskName: "" };
+}
+
+// Suy luận "module nghiệp vụ nào, hành động gì" từ path + body — THUẦN
+// ĐỒNG BỘ, không đụng DB (khác buildDescription() bên dưới, cần thêm vài
+// SELECT để tra TÊN bản ghi cho phần mô tả). Tách riêng để dùng chung ở 2
+// nơi cần "module/action" mà KHÔNG cần mô tả đầy đủ: actionLogMiddleware
+// (gọi tiếp phần build description) và requireWrite (auth.middleware.ts —
+// kiểm tra quyền Add/Edit theo role dựa trên bảng role_permissions, xem
+// resolvePermissionCheck ở đó) — permission check chạy TRƯỚC Controller
+// trên MỌI request ghi nên phải rẻ, không được thêm query DB.
+export function resolveModuleAndAction(req: Request): { module: string | null; action: ActionLogType; root: string } {
+  const segments = req.path.split("/").filter(Boolean);
+  const root = segments[0] ?? "";
+  const lastSegment = segments[segments.length - 1];
+  const verbEntry = segments.length > 1 && !isNumericSegment(lastSegment) ? VERB_LABELS[lastSegment as string] : undefined;
+
+  // Route lồng "/<root>/:id/<subResource>[/<hành động>]" (VD
+  // /tasks/:id/members, /digital-features/:id/screens/delete-selected) ->
+  // ưu tiên nhãn theo subResource (xem SUB_RESOURCE_LABELS), không dùng
+  // nhãn của root. Từ >= 3 segments để bắt cả hành động đuôi dài
+  // (delete-selected/import sau subResource).
+  const subKey =
+    segments.length >= 3 && isNumericSegment(segments[1]) && !isNumericSegment(segments[2])
+      ? `${segments[0]}/${segments[2]}`
+      : undefined;
+  const subBase = subKey ? SUB_RESOURCE_LABELS[subKey] : undefined;
+  const base = subBase ?? MODULE_LABELS[root];
+  const moduleLabel = base?.module ?? null;
+
+  const body = req.body as unknown;
+  const fieldOverride = !verbEntry ? pickFieldVerbOverride(root, body) : null;
+  const defaultVerb = DEFAULT_VERB[req.method] ?? { action: "cap_nhat" as ActionLogType, verb: "Thao tác" };
+  const { action } = verbEntry ?? fieldOverride ?? defaultVerb;
+
+  return { module: moduleLabel, action, root };
 }
 
 async function buildDescription(req: Request): Promise<{ module: string | null; action: ActionLogType; description: string }> {

@@ -60,6 +60,7 @@ const state = {
   hiddenDfIntColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng tích hợp
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
+  permissionsConfig: null, // { functions, roles, rows } từ GET /api/role-permissions — Cấu hình > Phân quyền
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
   actionLogs: [], // Nhật ký hoạt động đã tải theo bộ lọc hiện tại (server đã lọc sẵn, FE chỉ phân trang)
   actionLogUsers: [], // toàn bộ user (GET /api/users) — đổ vào dropdown lọc "Người thực hiện"

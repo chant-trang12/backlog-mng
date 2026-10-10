@@ -994,6 +994,99 @@ function renderUsersConfig() {
   });
 });
 
+// ---- Cấu hình > Phân quyền (chỉ Admin thấy được, xem checkAuth()/
+// #config-permissions-pill) — tick Add/Edit cho Editor/BGĐ/Viewer theo
+// từng Chức năng, PUT /api/role-permissions có hiệu lực NGAY cho mọi
+// request sau đó (requireWrite đọc thẳng DB, không cache) — không cần
+// deploy lại. Read/Delete không hiện checkbox (Read luôn mở cho mọi role
+// đã đăng nhập; Delete tuyệt đối chỉ Admin — Quy tắc 9.1, xem
+// auth.middleware.ts). Role "admin" luôn hiện đủ 4 cột, không có ô tick
+// (toàn quyền, bypass trước khi tra bảng role_permissions).
+const PERMISSIONS_ROLE_LABELS = { admin: "Admin", editor: "Editor", bgd: "BGĐ", viewer: "Viewer" };
+const PERMISSIONS_ROLE_CLASS = { admin: "status-hoan-thanh", editor: "status-dang-thuc-hien", bgd: "status-tru-diem", viewer: "status-default" };
+// "Nhiệm vụ — Chấm điểm" không có khái niệm "Thêm mới" (chỉ sửa điểm 1
+// task đã có sẵn) — ẩn hẳn checkbox Add cho chức năng này, mọi role.
+const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem"]);
+
+async function loadPermissionsConfig() {
+  const tbody = document.getElementById("permissions-config-tbody");
+  if (!tbody) return;
+  const data = await api("/api/role-permissions");
+  state.permissionsConfig = data;
+  renderPermissionsConfig();
+}
+
+function permissionCellHtml(functionKey, role, op, checked, disabled) {
+  if (disabled) {
+    return `<td style="text-align:center"><span class="muted">—</span></td>`;
+  }
+  return `<td style="text-align:center">
+    <input type="checkbox" class="permission-cell-checkbox" data-function="${functionKey}" data-role="${role}" data-op="${op}" ${checked ? "checked" : ""} />
+  </td>`;
+}
+
+function renderPermissionsConfig() {
+  const tbody = document.getElementById("permissions-config-tbody");
+  if (!tbody || !state.permissionsConfig) return;
+  const { functions, rows } = state.permissionsConfig;
+  const rowFor = (fnKey, role) => rows.find((r) => r.function_key === fnKey && r.role === role);
+
+  tbody.innerHTML = functions
+    .map((fn) => {
+      const roleOrder = ["admin", "editor", "bgd", "viewer"];
+      const noAdd = PERMISSIONS_NO_ADD.has(fn.key);
+      return roleOrder
+        .map((role, i) => {
+          const fnCell =
+            i === 0
+              ? `<td rowspan="${roleOrder.length}" style="font-weight:600">${fn.label}</td><td rowspan="${roleOrder.length}" class="muted">${fn.desc ?? ""}</td>`
+              : "";
+          const roleBadge = `<span class="status-badge ${PERMISSIONS_ROLE_CLASS[role]}">${PERMISSIONS_ROLE_LABELS[role]}</span>`;
+          if (role === "admin") {
+            // Admin toàn quyền, không có dòng trong role_permissions — hiện
+            // tĩnh, không cho sửa (bypass hẳn requireWrite, sửa ở đây vô nghĩa).
+            return `<tr>${fnCell}
+              <td>${roleBadge}</td>
+              <td style="text-align:center"><span class="status-badge status-hoan-thanh">R</span></td>
+              ${noAdd ? `<td style="text-align:center"><span class="muted">—</span></td>` : `<td style="text-align:center"><span class="status-badge status-hoan-thanh">A</span></td>`}
+              <td style="text-align:center"><span class="status-badge status-hoan-thanh">D</span></td>
+              <td style="text-align:center"><span class="status-badge status-hoan-thanh">E</span></td>
+            </tr>`;
+          }
+          const row = rowFor(fn.key, role);
+          return `<tr>${fnCell}
+            <td>${roleBadge}</td>
+            <td style="text-align:center"><span class="status-badge status-hoan-thanh">R</span></td>
+            ${permissionCellHtml(fn.key, role, "can_add", row?.can_add, noAdd)}
+            <td style="text-align:center"><span class="muted" title="Quy tắc 9.1 — chỉ Admin được xóa, không cấu hình được">—</span></td>
+            ${permissionCellHtml(fn.key, role, "can_edit", row?.can_edit, false)}
+          </tr>`;
+        })
+        .join("");
+    })
+    .join("");
+
+  tbody.querySelectorAll(".permission-cell-checkbox").forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      const { function: functionKey, role, op } = cb.dataset;
+      cb.disabled = true;
+      try {
+        await api("/api/role-permissions", {
+          method: "PUT",
+          body: JSON.stringify({ function_key: cb.dataset.function, role: cb.dataset.role, [op]: cb.checked }),
+        });
+        showToast("Đã cập nhật quyền — có hiệu lực ngay.", "success");
+        await loadPermissionsConfig();
+      } catch (err) {
+        showToast(err.message);
+        cb.checked = !cb.checked;
+      } finally {
+        cb.disabled = false;
+      }
+    });
+  });
+}
+
 // ---- Cấu hình > Hệ thống / Mục tiêu (danh mục đơn, dùng ở Roadmap năm) ----
 
 function renderSimpleCatalog(tbodyEl, emptyEl, items, valueKey, endpoint, reload, label, colorClassFn) {

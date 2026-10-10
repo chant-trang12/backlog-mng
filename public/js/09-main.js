@@ -144,6 +144,8 @@ async function checkAuth() {
     // quyền gì khi SSO tắt.
     const usersPill = document.getElementById("config-users-pill");
     if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
+    const permissionsPill = document.getElementById("config-permissions-pill");
+    if (permissionsPill) permissionsPill.hidden = data.ssoEnabled && data.role !== "admin";
     const configNav = document.querySelector('.nav-item[data-page="config"]');
     if (configNav) configNav.hidden = data.ssoEnabled && data.role !== "admin";
     const actionLogNav = document.querySelector('.nav-item[data-page="action-logs"]');

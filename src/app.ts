@@ -28,6 +28,7 @@ import userRoutes from "./routes/user.routes.js";
 import featureRequestRoutes from "./routes/featureRequest.routes.js";
 import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
+import permissionRoutes from "./routes/permission.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
 import { sanitizeWriteInput } from "./middleware/sanitize.middleware.js";
@@ -155,6 +156,11 @@ export function createApp() {
   // /api/users ở trên (scope requireAdmin đúng vào tiền tố route, không
   // đè lên toàn bộ /api).
   app.use("/api/action-logs", requireAdmin);
+  // Màn "Cấu hình → Phân quyền" — cấu hình quyền Add/Edit của
+  // editor/bgd/viewer theo từng Chức năng, có hiệu lực ngay (requireWrite
+  // đọc bảng role_permissions). Chỉ Admin được xem/sửa, cùng cách scope
+  // tiền tố route như /api/users, /api/action-logs ở trên.
+  app.use("/api/role-permissions", requireAdmin);
   // Xóa nhiều Yêu cầu tính năng (checkbox trên bảng) — chỉ Admin, cùng cách
   // scope requireAdmin đúng tiền tố route như /api/users, /api/action-logs
   // ở trên (không đè lên toàn bộ /api/feature-requests — route xem/tạo/sửa/
@@ -177,6 +183,7 @@ export function createApp() {
   app.use("/api/digital-features/:id/integrations/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
+  app.use("/api", permissionRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
