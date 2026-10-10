@@ -248,7 +248,7 @@ describe("Authentication & SSO Integration", () => {
     });
   });
 
-  describe("requireWrite — role 'bgd': giống viewer, CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
+  describe("requireWrite — role 'bgd': NGANG editor (CRUD bình thường, không xóa), CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
     function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path?: string) {
       const req: any = { appUser: role ? { role } : undefined, method, path };
       let statusCode: number | undefined;
@@ -270,12 +270,18 @@ describe("Authentication & SSO Integration", () => {
       return { statusCode, body, nextCalled };
     }
 
-    it("blocks bgd from write methods like viewer, including DELETE", () => {
-      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-        const { statusCode, nextCalled } = callRequireWrite("bgd", method, "/tasks/1");
-        expect(statusCode).toBe(403);
-        expect(nextCalled).toBe(false);
+    it("allows bgd to POST/PUT/PATCH like editor (CRUD dữ liệu nghiệp vụ bình thường)", () => {
+      for (const method of ["POST", "PUT", "PATCH"]) {
+        const { nextCalled } = callRequireWrite("bgd", method, "/tasks/1");
+        expect(nextCalled).toBe(true);
       }
+    });
+
+    it("blocks bgd from DELETE with 403 (Quy tắc 9.1 — chỉ admin được xóa)", () => {
+      const { statusCode, body, nextCalled } = callRequireWrite("bgd", "DELETE", "/tasks/1");
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/BGĐ không có quyền xóa/i);
+      expect(nextCalled).toBe(false);
     });
 
     it("allows bgd to PUT /tasks/:id/grade (chấm điểm)", () => {
@@ -283,13 +289,7 @@ describe("Authentication & SSO Integration", () => {
       expect(nextCalled).toBe(true);
     });
 
-    it("still blocks bgd from PUT /tasks/:id (sửa task thường, không phải chấm điểm)", () => {
-      const { statusCode, nextCalled } = callRequireWrite("bgd", "PUT", "/tasks/1");
-      expect(statusCode).toBe(403);
-      expect(nextCalled).toBe(false);
-    });
-
-    it("allows bgd to POST /feature-requests (cùng ngoại lệ như viewer)", () => {
+    it("allows bgd to POST /feature-requests (CRUD bình thường, không cần ngoại lệ viewer)", () => {
       const { nextCalled } = callRequireWrite("bgd", "POST", "/feature-requests");
       expect(nextCalled).toBe(true);
     });
@@ -300,7 +300,7 @@ describe("Authentication & SSO Integration", () => {
       expect(nextCalled).toBe(false);
     });
 
-    it("blocks editor from PUT /tasks/:id/grade (trước đây được, nay bị chặn)", () => {
+    it("blocks editor from PUT /tasks/:id/grade (khác biệt duy nhất còn lại giữa editor và bgd)", () => {
       const { statusCode, body, nextCalled } = callRequireWrite("editor", "PUT", "/tasks/1/grade");
       expect(statusCode).toBe(403);
       expect(body.error).toMatch(/editor không có quyền chấm điểm/i);

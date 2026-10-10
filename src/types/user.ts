@@ -1,11 +1,12 @@
 // Quản lý User + Phân quyền — 4 role cố định, KHÔNG phải free-form:
 // - admin: toàn quyền, gồm cả quản lý User (nâng/hạ quyền, khóa/mở tài khoản).
 // - editor: CRUD dữ liệu nghiệp vụ bình thường (task, nhân sự, tiêu chí...)
-//   nhưng không vào được Quản lý User, KHÔNG được thao tác nút Chấm điểm
-//   (PUT /tasks/:id/grade — chỉ admin/bgd, xem requireWrite bên dưới).
-// - bgd (Ban Giám Đốc): giống hệt viewer (chỉ xem, mọi request ghi khác bị
-//   chặn) NGOẠI TRỪ được phép chấm điểm (PUT /tasks/:id/grade) — quyền xem
-//   kèm 1 thao tác ghi duy nhất, không phải 1 nấc quyền ghi rộng như editor.
+//   nhưng không vào được Quản lý User, KHÔNG được xóa (Quy tắc 9.1), KHÔNG
+//   được thao tác nút Chấm điểm (PUT /tasks/:id/grade — chỉ admin/bgd).
+// - bgd (Ban Giám Đốc): CÙNG quyền ghi với editor (CRUD dữ liệu nghiệp vụ
+//   bình thường, không xóa) CỘNG THÊM được phép chấm điểm (PUT
+//   /tasks/:id/grade) — coi như "editor + chấm điểm". Xem requireWrite
+//   bên dưới (auth.middleware.ts).
 // - viewer: chỉ xem (read-only) — mọi request ghi (POST/PUT/PATCH/DELETE)
 //   tới /api bị chặn ở middleware (xem requireWrite trong auth.middleware.ts).
 // Role chỉ thực sự được ÁP DỤNG khi SSO_ENABLED=true — tắt SSO (mặc định ở
