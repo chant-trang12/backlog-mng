@@ -1757,6 +1757,18 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   font-size: 0.78rem;
   white-space: nowrap;
 }
+/* .status-badge mặc định white-space:nowrap — đúng cho nhãn ngắn cố định
+   (trạng thái, 1 mã...) nhưng vỡ layout (tràn đè lên cột bên cạnh) khi nội
+   dung là text tự do có thể dài/ghép nhiều mã (VD "Mã danh mục" ở Quản lý
+   tính năng số hoá, user có thể gõ "DM-A / DM-B / DM-C..."). Modifier này
+   cho badge tự xuống dòng bình thường trong đúng chiều rộng ô, bo góc nhỏ
+   lại cho hợp với khối nhiều dòng (999px tròn hẳn nhìn kỳ khi có 2-3 dòng). */
+.status-badge-wrap {
+  white-space: normal;
+  word-break: break-word;
+  border-radius: 8px;
+  max-width: 100%;
+}
 
 /* Badge "✓ Backlog"/"✓ Roadmap" (Yêu cầu tính năng) — 2 màu khác nhau
    (tím/xanh dương), cả 2 đều tách biệt hẳn với 3 màu trạng thái chính
