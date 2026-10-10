@@ -275,9 +275,9 @@ function renderDigitalFeatures() {
       <td data-col="chuyen_dau_ra_toi" ${colHidden("chuyen_dau_ra_toi")}>${dfClamp(r.chuyen_dau_ra_toi)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-view icon-btn df-view-btn" data-id="${r.id}" title="Xem chi tiết"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg></button>
-          <button type="button" class="small btn-edit icon-btn df-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn df-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-view df-view-btn" data-id="${r.id}">Xem chi tiết</button>
+          <button type="button" class="small btn-edit df-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete df-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`;
@@ -752,8 +752,8 @@ function renderDigitalFeatureScreens() {
       <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfPermBadges(r.quan_tri_he_thong)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfs-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfs-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfs-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfs-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1105,8 +1105,8 @@ function renderDigitalFeatureMasterData() {
       <td data-col="quan_tri_boi" ${colHidden("quan_tri_boi")}>${dfFull(r.quan_tri_boi)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfmd-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfmd-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfmd-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfmd-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1430,8 +1430,8 @@ function renderDigitalFeatureDataObjects() {
       <td data-col="vong_doi_trang_thai" ${colHidden("vong_doi_trang_thai")}>${dfFull(r.vong_doi_trang_thai)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfdo-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfdo-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfdo-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfdo-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1754,8 +1754,8 @@ function renderDigitalFeatureIntegrations() {
       <td data-col="co_che_tan_suat" ${colHidden("co_che_tan_suat")}>${dfFull(r.co_che_tan_suat)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfint-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfint-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfint-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfint-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
