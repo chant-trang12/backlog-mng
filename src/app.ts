@@ -29,7 +29,7 @@ import featureRequestRoutes from "./routes/featureRequest.routes.js";
 import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
-import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
+import { attachScope, requireAdmin, requireAdminOrSubAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
 import { sanitizeWriteInput } from "./middleware/sanitize.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
@@ -152,35 +152,39 @@ export function createApp() {
   // path đó có thuộc nó không — non-admin bị 403 trên toàn bộ /api, không
   // chỉ /api/users. Scope requireAdmin đúng vào tiền tố "/api/users".
   app.use("/api/users", requireAdmin);
-  // Nhật ký hoạt động — chỉ Admin xem được, cùng lý do/cách chặn như
-  // /api/users ở trên (scope requireAdmin đúng vào tiền tố route, không
-  // đè lên toàn bộ /api).
-  app.use("/api/action-logs", requireAdmin);
+  // Nhật ký hoạt động — KHÔNG phải 1 tab trong màn hình Cấu hình (nav
+  // riêng) nên subadmin ("tương tự admin", chỉ bị chặn khỏi Cấu hình) vẫn
+  // xem được — requireAdminOrSubAdmin thay vì requireAdmin, cùng cách scope
+  // tiền tố route như /api/users ở trên.
+  app.use("/api/action-logs", requireAdminOrSubAdmin);
   // Màn "Cấu hình → Phân quyền" — cấu hình quyền Add/Edit của
   // editor/bgd/viewer theo từng Chức năng, có hiệu lực ngay (requireWrite
-  // đọc bảng role_permissions). Chỉ Admin được xem/sửa, cùng cách scope
-  // tiền tố route như /api/users, /api/action-logs ở trên.
+  // đọc bảng role_permissions). Chỉ Admin THẬT được xem/sửa (1 trong các
+  // tab của màn hình Cấu hình — đây chính là ranh giới subadmin không vào
+  // được), cùng cách scope tiền tố route như /api/users ở trên.
   app.use("/api/role-permissions", requireAdmin);
-  // Xóa nhiều Yêu cầu tính năng (checkbox trên bảng) — chỉ Admin, cùng cách
-  // scope requireAdmin đúng tiền tố route như /api/users, /api/action-logs
-  // ở trên (không đè lên toàn bộ /api/feature-requests — route xem/tạo/sửa/
-  // Duyệt/Từ chối/xóa từng cái vẫn theo luật cũ, editor vẫn dùng được).
-  app.use("/api/feature-requests/delete-selected", requireAdmin);
-  // Xóa nhiều Tính năng số hoá (checkbox trên bảng) — chỉ Admin, scope
-  // requireAdmin đúng tiền tố route, không đè lên toàn bộ /api/digital-features.
-  app.use("/api/digital-features/delete-selected", requireAdmin);
+  // Xóa nhiều Yêu cầu tính năng (checkbox trên bảng) — thao tác nghiệp vụ
+  // bình thường trên trang Yêu cầu tính năng, KHÔNG phải màn hình Cấu
+  // hình, nên subadmin vẫn làm được (requireAdminOrSubAdmin) — cùng cách
+  // scope tiền tố route (không đè lên toàn bộ /api/feature-requests — route
+  // xem/tạo/sửa/Duyệt/Từ chối/xóa từng cái vẫn theo luật cũ, editor vẫn
+  // dùng được).
+  app.use("/api/feature-requests/delete-selected", requireAdminOrSubAdmin);
+  // Xóa nhiều Tính năng số hoá (checkbox trên bảng) — cùng lý do/cách scope
+  // như trên (thao tác trên trang nghiệp vụ, không phải Cấu hình).
+  app.use("/api/digital-features/delete-selected", requireAdminOrSubAdmin);
   // Xóa nhiều màn hình (tab "Màn hình, Tính năng & Phân quyền" trong chi
-  // tiết Tính năng số hoá) — chỉ Admin, cùng cách scope tiền tố ở trên.
-  app.use("/api/digital-features/:id/screens/delete-selected", requireAdmin);
+  // tiết Tính năng số hoá) — cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/screens/delete-selected", requireAdminOrSubAdmin);
   // Xóa nhiều Danh mục (Master Data) — tab 3 trong chi tiết Tính năng số
-  // hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
-  app.use("/api/digital-features/:id/master-data/delete-selected", requireAdmin);
+  // hoá, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/master-data/delete-selected", requireAdminOrSubAdmin);
   // Xóa nhiều Đối tượng dữ liệu & Vòng đời trạng thái — tab 4 trong chi
-  // tiết Tính năng số hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
-  app.use("/api/digital-features/:id/data-objects/delete-selected", requireAdmin);
+  // tiết Tính năng số hoá, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/data-objects/delete-selected", requireAdminOrSubAdmin);
   // Xóa nhiều Tích hợp & Sự kiện — tab 5 trong chi tiết Tính năng số hoá,
-  // chỉ Admin, cùng cách scope tiền tố ở trên.
-  app.use("/api/digital-features/:id/integrations/delete-selected", requireAdmin);
+  // cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/integrations/delete-selected", requireAdminOrSubAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", permissionRoutes);

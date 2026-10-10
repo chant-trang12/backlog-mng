@@ -82,8 +82,9 @@ describe("Quản lý User + Phân quyền", () => {
   });
 
   describe("isValidRole", () => {
-    it("chỉ chấp nhận đúng 4 giá trị admin/editor/bgd/viewer", () => {
+    it("chỉ chấp nhận đúng 5 giá trị admin/subadmin/editor/bgd/viewer", () => {
       expect(isValidRole("admin")).toBe(true);
+      expect(isValidRole("subadmin")).toBe(true);
       expect(isValidRole("editor")).toBe(true);
       expect(isValidRole("bgd")).toBe(true);
       expect(isValidRole("viewer")).toBe(true);

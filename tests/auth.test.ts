@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import { requireAdmin, requireWrite } from "../src/middleware/auth.middleware.js";
+import { requireAdmin, requireAdminOrSubAdmin, requireWrite } from "../src/middleware/auth.middleware.js";
 
 describe("Authentication & SSO Integration", () => {
   const originalSso = process.env.SSO_ENABLED;
@@ -150,7 +150,7 @@ describe("Authentication & SSO Integration", () => {
   });
 
   describe("requireWrite — Quy tắc 9.1: chỉ admin được xóa; Add/Edit theo role_permissions (seed mặc định)", () => {
-    async function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
       const req: any = { appUser: role ? { role } : undefined, method, path, body: {} };
       let statusCode: number | undefined;
       let body: any;
@@ -188,6 +188,13 @@ describe("Authentication & SSO Integration", () => {
     it("allows admin to DELETE (bypass hẳn, không tra role_permissions)", async () => {
       const { nextCalled } = await callRequireWrite("admin", "DELETE", "/tasks/1");
       expect(nextCalled).toBe(true);
+    });
+
+    it("allows subadmin to DELETE/POST/PUT/PATCH y hệt admin (bypass hẳn requireWrite — 'tương tự admin' trừ Cấu hình, xem requireAdmin)", async () => {
+      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+        const { nextCalled } = await callRequireWrite("subadmin", method, "/tasks/1");
+        expect(nextCalled).toBe(true);
+      }
     });
 
     it("still blocks viewer from any write method on a configurable function, including DELETE", async () => {
@@ -266,7 +273,7 @@ describe("Authentication & SSO Integration", () => {
   });
 
   describe("requireWrite — role 'bgd': NGANG editor (CRUD bình thường, không xóa), CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
-    async function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
       const req: any = { appUser: role ? { role } : undefined, method, path, body: {} };
       let statusCode: number | undefined;
       let body: any;
@@ -336,7 +343,7 @@ describe("Authentication & SSO Integration", () => {
   });
 
   describe("requireWrite — màn Phân quyền (Cấu hình → Phân quyền) thay đổi role_permissions -> có hiệu lực NGAY", () => {
-    async function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer", method: string, path: string) {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer", method: string, path: string) {
       const req: any = { appUser: { role }, method, path, body: {} };
       let statusCode: number | undefined;
       let nextCalled = false;
@@ -398,6 +405,14 @@ describe("Authentication & SSO Integration", () => {
       expect(nextCalled).toBe(true);
     });
 
+    it("blocks subadmin with 403 (ranh giới 'không vào được màn hình Cấu hình' — subadmin KHÔNG qua requireAdmin dù 'tương tự admin' ở requireWrite)", () => {
+      process.env.SSO_ENABLED = "true";
+      const { statusCode, body, nextCalled } = callRequireAdmin("subadmin" as any);
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/chỉ admin/i);
+      expect(nextCalled).toBe(false);
+    });
+
     it("blocks editor with 403", () => {
       process.env.SSO_ENABLED = "true";
       const { statusCode, body, nextCalled } = callRequireAdmin("editor");
@@ -422,8 +437,60 @@ describe("Authentication & SSO Integration", () => {
 
     it("passes through every role when SSO is disabled", () => {
       process.env.SSO_ENABLED = "false";
-      for (const role of ["admin", "editor", "viewer", undefined] as const) {
+      for (const role of ["admin", "subadmin", "editor", "viewer", undefined] as const) {
         const { nextCalled } = callRequireAdmin(role);
+        expect(nextCalled).toBe(true);
+      }
+    });
+  });
+
+  describe("requireAdminOrSubAdmin — 'admin' HOẶC 'subadmin' qua được (/api/action-logs, */delete-selected ngoài Cấu hình)", () => {
+    function callRequireAdminOrSubAdmin(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined) {
+      const req: any = { appUser: role ? { role } : undefined };
+      let statusCode: number | undefined;
+      let body: any;
+      let nextCalled = false;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return res;
+        },
+        json: (payload: any) => {
+          body = payload;
+          return res;
+        },
+      };
+      requireAdminOrSubAdmin(req, res, () => {
+        nextCalled = true;
+      });
+      return { statusCode, body, nextCalled };
+    }
+
+    it("allows admin", () => {
+      process.env.SSO_ENABLED = "true";
+      const { nextCalled } = callRequireAdminOrSubAdmin("admin");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("allows subadmin (khác requireAdmin — đây chính là nơi subadmin 'tương tự admin')", () => {
+      process.env.SSO_ENABLED = "true";
+      const { nextCalled } = callRequireAdminOrSubAdmin("subadmin");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks editor/bgd/viewer with 403", () => {
+      process.env.SSO_ENABLED = "true";
+      for (const role of ["editor", "bgd", "viewer"] as const) {
+        const { statusCode, nextCalled } = callRequireAdminOrSubAdmin(role);
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("passes through every role when SSO is disabled", () => {
+      process.env.SSO_ENABLED = "false";
+      for (const role of ["admin", "subadmin", "editor", "bgd", "viewer", undefined] as const) {
+        const { nextCalled } = callRequireAdminOrSubAdmin(role);
         expect(nextCalled).toBe(true);
       }
     });

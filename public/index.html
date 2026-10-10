@@ -2167,6 +2167,7 @@
                 <select id="user-filter-role">
                   <option value="">Tất cả</option>
                   <option value="admin">Admin</option>
+                  <option value="subadmin">Sub-Admin</option>
                   <option value="editor">Biên tập</option>
                   <option value="bgd">BGĐ</option>
                   <option value="viewer">Chỉ xem</option>
@@ -2216,7 +2217,7 @@
           <div id="config-tab-permissions" hidden>
           <section class="card">
             <h2 style="margin:0">Ma trận phân quyền theo Role</h2>
-            <p class="muted" style="margin:6px 0 0">Tick/bỏ tick ô Add/Edit để cấp/thu quyền ngay lập tức cho Editor/BGĐ/Viewer — không cần deploy lại. Cột Read luôn mở cho mọi role đã đăng nhập; cột Delete tuyệt đối chỉ Admin (Quy tắc 9.1), không cấu hình được ở đây.</p>
+            <p class="muted" style="margin:6px 0 0">Tick/bỏ tick ô Add/Edit để cấp/thu quyền ngay lập tức cho Editor/BGĐ/Viewer — không cần deploy lại. Cột Read luôn mở cho mọi role đã đăng nhập; cột Delete tuyệt đối chỉ Admin (Quy tắc 9.1), không cấu hình được ở đây. Sub-Admin toàn quyền giống Admin ở mọi chức năng bên dưới — khác biệt DUY NHẤT: Sub-Admin KHÔNG vào được màn hình Cấu hình (tất cả các tab, kể cả tab Phân quyền này).</p>
             <div class="table-wrap" style="margin-top:14px">
               <table id="permissions-config-table">
                 <thead>

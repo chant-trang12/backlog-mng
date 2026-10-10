@@ -140,7 +140,13 @@ export async function requireWrite(req: Request, res: Response, next: NextFuncti
     return next();
   }
   const role = req.appUser.role;
-  if (role === "admin") return next();
+  // subadmin = "tương tự admin" cho MỌI thao tác ghi dữ liệu nghiệp vụ —
+  // bypass hẳn giống admin ở đây. Khác biệt DUY NHẤT của subadmin nằm ở
+  // requireAdmin (chỉ "admin" thật mới qua) vs requireAdminOrSubAdmin
+  // (cả 2) — xem 2 hàm bên dưới, gắn vào đúng các route thuộc màn hình
+  // Cấu hình (Tiêu chí/Ranking team/Cấu hình/Phòng ban/Quản lý User/
+  // Phân quyền) để chặn RIÊNG subadmin khỏi những route đó.
+  if (role === "admin" || role === "subadmin") return next();
 
   if (TASK_GRADE_PATH.test(req.path) && req.method === "PUT") {
     const perm = await getRolePermission("nhiem_vu_cham_diem", role);
@@ -178,12 +184,33 @@ export async function requireWrite(req: Request, res: Response, next: NextFuncti
 }
 
 /**
- * Chỉ role "admin" mới qua được — dùng cho router Quản lý User
- * (/api/users). Không có tác dụng khi SSO tắt (giống requireAuth/
- * requireWrite — mọi request đều qua được ở chế độ dev/test không SSO).
+ * Chỉ role "admin" THẬT mới qua được (subadmin KHÔNG qua được đây dù
+ * "tương tự admin" ở mọi nơi khác — đây chính là ranh giới "không được
+ * thao tác trên màn hình Cấu hình") — dùng cho các route thuộc màn hình
+ * Cấu hình: Quản lý User (/api/users), Phân quyền (/api/role-permissions),
+ * Tiêu chí/Ranking team/Danh mục (catalog/ranking/tieuchi.routes.ts),
+ * Phòng ban (department.routes.ts). Không có tác dụng khi SSO tắt (giống
+ * requireAuth/requireWrite — mọi request đều qua được ở chế độ dev/test
+ * không SSO).
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!isSsoEnabled() || req.appUser?.role === "admin") {
+    return next();
+  }
+  res.status(403).json({ error: "Chỉ Admin mới có quyền truy cập mục này." });
+}
+
+/**
+ * "admin" HOẶC "subadmin" qua được — dùng cho các route KHÔNG thuộc màn
+ * hình Cấu hình nhưng vốn chỉ dành cho admin: Nhật ký hoạt động
+ * (/api/action-logs — nav riêng, không phải tab trong Cấu hình) và các
+ * route xóa hàng loạt (dạng "delete-selected") của Yêu cầu tính năng/Tính năng
+ * số hoá — đây là thao tác nghiệp vụ bình thường trên chính trang đó,
+ * không phải "màn hình Cấu hình", nên subadmin ("tương tự admin") vẫn
+ * làm được. Không có tác dụng khi SSO tắt, giống requireAdmin.
+ */
+export function requireAdminOrSubAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!isSsoEnabled() || req.appUser?.role === "admin" || req.appUser?.role === "subadmin") {
     return next();
   }
   res.status(403).json({ error: "Chỉ Admin mới có quyền truy cập mục này." });

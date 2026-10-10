@@ -846,7 +846,7 @@ document.getElementById("department-form").addEventListener("submit", async (e) 
 // ---- Cấu hình > Quản lý User & Phân quyền (chỉ Admin thấy được, xem
 // checkAuth()/#config-users-pill) ----
 
-const USER_ROLE_LABELS = { admin: "Admin", editor: "Biên tập", bgd: "BGĐ", viewer: "Chỉ xem" };
+const USER_ROLE_LABELS = { admin: "Admin", subadmin: "Sub-Admin", editor: "Biên tập", bgd: "BGĐ", viewer: "Chỉ xem" };
 
 function formatUserLastLogin(value) {
   const f = formatDbDateTime(value);
@@ -1002,8 +1002,11 @@ function renderUsersConfig() {
 // đã đăng nhập; Delete tuyệt đối chỉ Admin — Quy tắc 9.1, xem
 // auth.middleware.ts). Role "admin" luôn hiện đủ 4 cột, không có ô tick
 // (toàn quyền, bypass trước khi tra bảng role_permissions).
-const PERMISSIONS_ROLE_LABELS = { admin: "Admin", editor: "Editor", bgd: "BGĐ", viewer: "Viewer" };
-const PERMISSIONS_ROLE_CLASS = { admin: "status-hoan-thanh", editor: "status-dang-thuc-hien", bgd: "status-tru-diem", viewer: "status-default" };
+const PERMISSIONS_ROLE_LABELS = { admin: "Admin", subadmin: "Sub-Admin", editor: "Editor", bgd: "BGĐ", viewer: "Viewer" };
+// subadmin dùng CHUNG màu với admin (status-hoan-thanh) — "tương tự
+// admin" ở mọi chỗ khác, chỉ khác đúng 1 điểm (không vào Cấu hình, xem
+// dòng "Không truy cập" riêng bên dưới) nên cố ý nhóm chung 1 tông màu.
+const PERMISSIONS_ROLE_CLASS = { admin: "status-hoan-thanh", subadmin: "status-hoan-thanh", editor: "status-dang-thuc-hien", bgd: "status-tru-diem", viewer: "status-default" };
 // "Nhiệm vụ — Chấm điểm" không có khái niệm "Thêm mới" (chỉ sửa điểm 1
 // task đã có sẵn) — ẩn hẳn checkbox Add cho chức năng này, mọi role.
 const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem"]);
@@ -1033,7 +1036,7 @@ function renderPermissionsConfig() {
 
   tbody.innerHTML = functions
     .map((fn) => {
-      const roleOrder = ["admin", "editor", "bgd", "viewer"];
+      const roleOrder = ["admin", "subadmin", "editor", "bgd", "viewer"];
       const noAdd = PERMISSIONS_NO_ADD.has(fn.key);
       return roleOrder
         .map((role, i) => {
@@ -1042,9 +1045,13 @@ function renderPermissionsConfig() {
               ? `<td rowspan="${roleOrder.length}" style="font-weight:600">${fn.label}</td><td rowspan="${roleOrder.length}" class="muted">${fn.desc ?? ""}</td>`
               : "";
           const roleBadge = `<span class="status-badge ${PERMISSIONS_ROLE_CLASS[role]}">${PERMISSIONS_ROLE_LABELS[role]}</span>`;
-          if (role === "admin") {
-            // Admin toàn quyền, không có dòng trong role_permissions — hiện
-            // tĩnh, không cho sửa (bypass hẳn requireWrite, sửa ở đây vô nghĩa).
+          if (role === "admin" || role === "subadmin") {
+            // Admin/Sub-Admin toàn quyền ở 7 Chức năng này, không có dòng
+            // trong role_permissions — hiện tĩnh, không cho sửa (bypass hẳn
+            // requireWrite, sửa ở đây vô nghĩa). Khác biệt DUY NHẤT của
+            // Sub-Admin (không vào được màn hình Cấu hình) không thể hiện
+            // được ở BẢNG NÀY vì chính nó nằm trong Cấu hình — xem ghi chú
+            // đầu trang.
             return `<tr>${fnCell}
               <td>${roleBadge}</td>
               <td style="text-align:center"><span class="status-badge status-hoan-thanh">R</span></td>
