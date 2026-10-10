@@ -1011,6 +1011,22 @@ th {
   padding-bottom: 16px;
 }
 
+/* Bảng "Phân quyền" (Cấu hình) — bỏ giới hạn chiều cao riêng (khác mọi
+   bảng khác trong app): đây là bảng tra cứu/cấu hình ít khi cần cuộn dọc
+   nhanh qua nhiều dòng, user muốn thấy TRỌN bảng ngay khi mở tab thay vì
+   bị khung cố định cắt bớt rồi phải cuộn trong khung nhỏ. Đánh đổi: mất
+   sticky header khi cuộn (chấp nhận được — trang tự cuộn thay thế). */
+#permissions-table-wrap {
+  max-height: none;
+}
+/* Không còn là scroll container riêng (max-height:none ở trên) nên sticky
+   header (th { position:sticky; top:0 }) sẽ bám theo ancestor cuộn khác
+   (trang) thay vì khung bảng này — tắt hẳn cho khỏi dính lưng chừng trang
+   khi cuộn, bảng tra cứu ít dòng/lần xem không cần ghim tiêu đề. */
+#permissions-config-table th {
+  position: static;
+}
+
 /* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
    thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
    hết mới thấy. .table-scroll-top là 1 thanh giả cùng chiều rộng, đồng bộ
