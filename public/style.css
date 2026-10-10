@@ -1259,34 +1259,38 @@ th {
   text-align: center;
 }
 /* Badge 1 ký hiệu quyền (V/C/E/D/A/X/S) — mỗi loại một màu riêng, lấy từ
-   palette olive/khaki của trang (tint nhạt + chữ đậm cùng tông) để phân
-   biệt nhanh mức quyền khi quét hàng; title rê chuột hiện ý nghĩa đầy đủ. */
+   palette olive/khaki của trang để phân biệt nhanh mức quyền khi quét
+   hàng; title rê chuột hiện ý nghĩa đầy đủ. Hình dạng (bo tròn hoàn toàn,
+   không viền, cỡ chữ) khớp ĐÚNG .status-badge dùng chung toàn trang —
+   trước đây .perm-badge tự có hình chữ nhật bo nhẹ + viền riêng, lệch hẳn
+   "ngôn ngữ badge" của phần còn lại (user phản hồi: badge ở Quản lý tính
+   năng số hoá chưa hợp style chung). */
 .perm-badge {
   display: inline-block;
-  min-width: 24px;
+  min-width: 22px;
   margin: 1px;
-  padding: 2px 7px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
   text-align: center;
+  white-space: nowrap;
 }
-.perm-badge.perm-v { background: #eef3e2; border: 1px solid #c9d6a9; color: #5d7143; }
-.perm-badge.perm-c { background: #e3ede9; border: 1px solid #a8c6bb; color: #3f6a5a; }
-.perm-badge.perm-e { background: #f7efda; border: 1px solid #e3cf9c; color: #8a6a1c; }
-.perm-badge.perm-d { background: #f3ded9; border: 1px solid #e0b5a8; color: #a03d28; }
-.perm-badge.perm-a { background: #eedde0; border: 1px solid #d0a3ab; color: #7d3b47; }
-.perm-badge.perm-x { background: #f6e3d2; border: 1px solid #e0b48a; color: #a35c1e; }
-.perm-badge.perm-s { background: #e3e7ec; border: 1px solid #b0bdc9; color: #46586a; }
+.perm-badge.perm-v { background: #eef3e2; color: #5d7143; }
+.perm-badge.perm-c { background: #e3ede9; color: #3f6a5a; }
+.perm-badge.perm-e { background: #f7efda; color: #8a6a1c; }
+.perm-badge.perm-d { background: #f3ded9; color: #a03d28; }
+.perm-badge.perm-a { background: #eedde0; color: #7d3b47; }
+.perm-badge.perm-x { background: #f6e3d2; color: #a35c1e; }
+.perm-badge.perm-s { background: #e3e7ec; color: #46586a; }
 
 @media (prefers-color-scheme: dark) {
-  .perm-badge.perm-v { background: #39422b; border-color: #66754a; color: #ccd8ac; }
-  .perm-badge.perm-c { background: #2b4038; border-color: #557a6b; color: #a8cfc0; }
-  .perm-badge.perm-e { background: #474023; border-color: #8f7a35; color: #e0c878; }
-  .perm-badge.perm-d { background: #4a2c25; border-color: #9c5540; color: #eba58f; }
-  .perm-badge.perm-a { background: #453034; border-color: #8a5a64; color: #e3b3bd; }
-  .perm-badge.perm-x { background: #48311c; border-color: #96602c; color: #eebd85; }
-  .perm-badge.perm-s { background: #2f3844; border-color: #5a6b7d; color: #b0c4d6; }
+  .perm-badge.perm-v { background: #39422b; color: #ccd8ac; }
+  .perm-badge.perm-c { background: #2b4038; color: #a8cfc0; }
+  .perm-badge.perm-e { background: #474023; color: #e0c878; }
+  .perm-badge.perm-d { background: #4a2c25; color: #eba58f; }
+  .perm-badge.perm-a { background: #453034; color: #e3b3bd; }
+  .perm-badge.perm-x { background: #48311c; color: #eebd85; }
+  .perm-badge.perm-s { background: #2f3844; color: #b0c4d6; }
 }
 #df-table td:nth-child(1),
 #df-table td:nth-child(2),
