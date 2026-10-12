@@ -100,8 +100,17 @@ async function nextStt(periodId: number): Promise<number> {
 // lại "lỗ hổng" STT giữa các dòng còn lại, menu Nhiệm vụ cần STT luôn liên
 // tục không hở để không gây nhầm lẫn khi xem/xuất Excel).
 async function renumberTaskStt(periodId: number): Promise<void> {
+  // ATTT/ổn định (SQL Server): ép về number nguyên tường minh trước khi đưa
+  // vào where() — tránh lỗi driver mssql "Validation failed for parameter
+  // 'p0'. Invalid string." khi periodId tới đây không phải primitive number
+  // "sạch" (VD giá trị đọc ra từ 1 dòng DB khác, hoặc 1 phần tử distinct()
+  // ở deleteTasks() có kiểu khác literal number) — driver mssql suy sai
+  // kiểu tham số (NVarChar) cho cột INT khi gặp giá trị không chuẩn. SQLite
+  // (dev/test) không bị ảnh hưởng, Number(n) với n đã là number là no-op.
+  const safePeriodId = Number(periodId);
+  if (!Number.isFinite(safePeriodId)) return;
   const remaining = await db("tasks")
-    .where({ period_id: periodId, is_deleted: false })
+    .where({ period_id: safePeriodId, is_deleted: false })
     .orderBy("stt", "asc")
     .orderBy("id", "asc")
     .select("id", "stt");
