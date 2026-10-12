@@ -4,8 +4,12 @@ const pages = {
   home: document.getElementById("page-home"),
   backlog: document.getElementById("page-backlog"),
   team: document.getElementById("page-team"),
-  cskh: document.getElementById("page-cskh"),
   roadmap: document.getElementById("page-roadmap"),
+  "digital-features": document.getElementById("page-digital-features"),
+  // Trang CHI TIẾT tính năng số hoá — không có mục ở menu trái (mở bằng
+  // icon "Xem chi tiết" ở bảng danh sách, 13-digital-features.js). Nằm
+  // trong `pages` để khi user bấm sang mục menu khác, trang này tự ẩn.
+  "digital-feature-detail": document.getElementById("page-digital-feature-detail"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),
@@ -37,6 +41,9 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // Yêu cầu tính năng — hộp thư dùng chung, tải lại mỗi lần vào trang để
     // thấy ngay yêu cầu mới từ phòng ban khác.
     if (btn.dataset.page === "feature-requests") loadFeatureRequests().catch((err) => showToast(err.message));
+    // Quản lý tính năng số hoá — tải lại mỗi lần vào trang để thấy ngay dữ
+    // liệu mới (import/xóa ở lần xem trước).
+    if (btn.dataset.page === "digital-features") loadDigitalFeatures().catch((err) => showToast(err.message));
     // Nhật ký hoạt động — tải danh mục lọc (module/user) + dữ liệu mỗi lần
     // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
     // Admin dùng, tránh gọi API thừa cho editor/viewer).

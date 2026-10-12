@@ -143,13 +143,20 @@ function renderRoadmap() {
     .map((it, i) => {
       const sc = STATUS_CLASS[it.trang_thai] || "status-default";
       const selCls = it.id === state.roadmapSelectedId ? " class=\"rm-row-selected\"" : "";
+      // Badge "✓ Đã vào Backlog" — góc trên phải ô Nhiệm vụ (giống tính năng
+      // cũ), hiện khi có tháng được tự động đưa vào backlog (sync theo chi
+      // tiết từng tháng hoặc kiểu cũ); tooltip liệt kê các tháng đã đưa.
+      const syncedMonths = it.synced_months ?? [];
+      const backlogBadge = syncedMonths.length
+        ? `<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span>`
+        : "";
       return `<tr data-id="${it.id}"${selCls}>
       <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
       <td style="text-align:center">${offset + i + 1}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.team, `class="status-badge ${teamColorClass(it.team)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.he_thong, `class="status-badge ${systemColorClass(it.he_thong)}"`)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.muc_tieu, `class="status-badge ${objectiveColorClass(it.muc_tieu)}"`)}</td>
-      <td class="rm-nv-cell${it.synced_task_id ? " has-sync-badge" : ""}">${it.synced_task_id ? '<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog theo tháng bắt đầu">✓ Đã vào Backlog</span>' : ""}${nl2br(it.nhiem_vu)}</td>
+      <td class="rm-nv-cell${backlogBadge ? " has-sync-badge" : ""}">${backlogBadge}${nl2br(it.nhiem_vu)}</td>
       <td>${nl2br(it.dod)}</td>
       <td>${nl2br(it.dieu_kien_dam_bao)}</td>
       <td style="text-align:center;vertical-align:middle">${badge(it.phan_loai, categoryBadgeAttrs(it.phan_loai))}</td>
@@ -311,6 +318,12 @@ function renderRoadmapDetail() {
   el.roadmapDetailMonths.innerHTML = months
     .map((m) => {
       const rows = state.roadmapDetails.filter((d) => d.month === m);
+      const syncedCount = rows.filter((d) => d.synced_task_id && !d.task_deleted).length;
+      const monthBadge = rows.length
+        ? syncedCount === rows.length
+          ? '<span class="rm-backlog-badge" title="Tất cả việc của tháng này đã được tự động đưa vào Backlog (DOD = Nội dung công việc)">✓ Đã vào Backlog</span>'
+          : '<span class="rm-backlog-badge pending" title="Chưa đưa hết việc vào Backlog (tháng chưa được quản lý, ngoài phạm vi Bắt đầu -> Kết thúc, hoặc task đã bị xóa)">Chưa vào Backlog</span>'
+        : "";
       const body = rows.length
         ? `<div class="table-wrap"><table class="rm-detail-table">
             <thead><tr><th style="min-width:260px">Nội dung công việc</th><th style="width:130px">Trạng thái</th><th style="min-width:160px">Ghi chú</th><th style="width:120px"></th></tr></thead>
@@ -330,7 +343,7 @@ function renderRoadmapDetail() {
         : `<p class="muted" style="margin:6px 0 0">Chưa có việc nào cho tháng này.</p>`;
       return `<div class="rm-month-block">
         <div class="row" style="justify-content:space-between;align-items:center">
-          <h3 style="margin:0;font-size:1rem">Tháng ${m}/${item.year}</h3>
+          <h3 style="margin:0;font-size:1rem;display:flex;align-items:center;gap:8px">Tháng ${m}/${item.year}${monthBadge}</h3>
           <button type="button" class="small primary rd-add-btn" data-month="${m}">+ Thêm việc</button>
         </div>
         ${body}

@@ -1,5 +1,5 @@
 import type ExcelJS from "exceljs";
-import { createRoadmapItem } from "./roadmap.service.js";
+import { createRoadmapItem, syncRoadmapItemToBacklog } from "./roadmap.service.js";
 import type { TaskStatus } from "../types/backlog.js";
 import {
   buildTemplateWorkbook,
@@ -120,7 +120,7 @@ export async function importRoadmapFromWorkbook(
     const rawStatus = val(row, col("trang_thai"));
     const trangThai = STATUSES.find((s) => s.toLowerCase() === rawStatus.toLowerCase());
 
-    await createRoadmapItem(
+    const created = await createRoadmapItem(
       {
         year,
         department_id: departmentId ?? null,
@@ -138,6 +138,9 @@ export async function importRoadmapFromWorkbook(
       },
       { all: true, departmentId: null },
     );
+    // Dòng import không bao giờ có chi tiết theo tháng -> đưa vào backlog
+    // theo logic cũ (1 task ở tháng bắt đầu, DOD = cột DOD của dòng).
+    await syncRoadmapItemToBacklog(created);
     result.imported += 1;
   }
 

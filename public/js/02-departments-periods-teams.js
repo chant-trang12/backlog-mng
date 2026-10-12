@@ -141,17 +141,22 @@ function renderDeptSwitcher() {
   applyDeptModeSidebarNav();
 }
 
-// Menu "CSKH" (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — đều tính theo team) ẩn
-// đi với phòng ban tính KPI theo Task (không chia team, xem
-// homeCachTinhKpiTheoTask). Đang đứng ở trang CSKH mà đổi sang phòng loại
-// này thì tự chuyển về Home.
+// 3 tab CSKH (Sự cố/Hỗ trợ ticket/Tỉ lệ khởi tạo — dữ liệu tính theo team,
+// xem 05-cskh.js) đã nhập vào Team & Nhân sự sau tab Chấm công. Phòng ban
+// tính KPI theo Task (không chia team) thì ẩn 3 tab này; đang đứng ở 1
+// trong 3 tab thì tự chuyển về tab Nhân sự.
 function applyDeptModeSidebarNav() {
-  const cskhNav = document.querySelector('.nav-item[data-page="cskh"]');
-  if (!cskhNav) return;
   const theoTask = homeCachTinhKpiTheoTask();
-  cskhNav.hidden = theoTask;
-  if (theoTask && cskhNav.classList.contains("active")) {
-    document.querySelector('.nav-item[data-page="home"]')?.click();
+  const cskhTabs = ["incidents", "tickets", "creation-rates"];
+  cskhTabs.forEach((tab) => {
+    const pill = document.querySelector(`#team-subnav .pill[data-tab="${tab}"]`);
+    if (pill) pill.hidden = theoTask;
+  });
+  if (theoTask) {
+    const activeCskh = document.querySelector(
+      cskhTabs.map((tab) => `#team-subnav .pill.active[data-tab="${tab}"]`).join(", "),
+    );
+    if (activeCskh) document.querySelector('#team-subnav .pill[data-tab="nhansu"]')?.click();
   }
 
   // Phòng ban tính KPI theo task (không chia team) — bỏ luôn bộ lọc Team
@@ -381,7 +386,10 @@ function isTaskUpcomingDeadline(t) {
 }
 
 function renderTaskWarnings() {
-  const tasks = state.tasksAll;
+  // Đếm trên danh sách đã lọc theo khung Tìm kiếm (Team/Trạng thái/Tag/Phân
+  // loại/Tính chất/từ khóa) — KHÔNG theo chip nhắc việc đang bật (bấm chip
+  // chỉ lọc bảng bên dưới, không làm sai lệch số đếm của các chip khác).
+  const tasks = state.tasksAll.filter(taskMatchesSearchFilters);
   const noScoreCount = tasks.filter(isTaskNotGraded).length;
   const overdueCount = tasks.filter(isTaskOverdue).length;
   const upcomingCount = tasks.filter(isTaskUpcomingDeadline).length;
@@ -443,7 +451,17 @@ async function loadPeriods() {
   }
 
   if (!state.currentPeriodId || !state.periods.some((p) => p.id === state.currentPeriodId)) {
-    state.currentPeriodId = state.periods[0].id;
+    // Mặc định chọn theo THÁNG THỰC TẾ (hôm nay) nếu tháng đó đã được quản
+    // lý — VD đang quản lý 8-11/2026 và hôm nay là 10/10/2026 thì mở app
+    // mặc định ở tháng 10/2026 (Trang chủ + Nhiệm vụ hiển thị theo). Hôm
+    // nay rơi vào tháng chưa quản lý (hoặc trước tháng cũ nhất) thì giữ
+    // behavior cũ: chọn tháng mới nhất trong danh sách. User vẫn đổi được
+    // tay — mặc định chỉ áp khi chưa chọn hoặc tháng đã chọn bị xóa.
+    const now = new Date();
+    const currentReal = state.periods.find(
+      (p) => p.year === now.getFullYear() && p.month === now.getMonth() + 1,
+    );
+    state.currentPeriodId = (currentReal ?? state.periods[0]).id;
   }
   el.periodSelect.value = String(state.currentPeriodId);
   el.teamPeriodSelect.value = String(state.currentPeriodId);
@@ -774,31 +792,37 @@ el.filterNature.addEventListener("change", () => {
   state.taskFilters.nature = el.filterNature.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterExcludedFromScore.addEventListener("change", () => {
   state.taskFilters.excludedFromScore = el.filterExcludedFromScore.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterTeam.addEventListener("change", () => {
   state.taskFilters.team = el.filterTeam.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterStatus.addEventListener("change", () => {
   state.taskFilters.status = el.filterStatus.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.filterTag.addEventListener("change", () => {
   state.taskFilters.tag = el.filterTag.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 el.taskSearch.addEventListener("input", () => {
   state.taskSearch = el.taskSearch.value;
   applyTaskFilters();
   renderTasks();
+  renderTaskWarnings();
 });
 
 // Bấm vào 1 dòng (ngoài checkbox/nút/ô nhập) -> tô nổi bật dòng đó, giúp dễ
@@ -813,30 +837,38 @@ el.taskTbody.addEventListener("click", (e) => {
   if (!wasOn) tr.classList.add("row-highlighted");
 });
 
-function applyTaskFilters() {
+// Điều kiện lọc từ khung Tìm kiếm (Phân loại/Tính chất/Team/Trạng thái/Tag +
+// từ khóa) — dùng chung cho bảng task và 4 chip nhắc việc (số đếm trên chip
+// theo đúng bộ lọc đang chọn, KHÔNG gồm chính chip đang bật).
+function taskMatchesSearchFilters(t) {
   const { nature, excludedFromScore, team, status, tag } = state.taskFilters;
   const term = state.taskSearch.trim().toLowerCase();
+  if (team && t.team !== team) return false;
+  if (status && t.trang_thai !== status) return false;
+  if (tag && t.tag !== tag) return false;
+  if (excludedFromScore === "Đã chuyển" && !t.da_chuyen_thang) return false;
+  if (excludedFromScore === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
+  if (nature) {
+    const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
+    if (!items.includes(nature)) return false;
+  }
+  if (term) {
+    const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
+      .filter(Boolean)
+      .join(" \n ")
+      .toLowerCase();
+    if (!haystack.includes(term)) return false;
+  }
+  return true;
+}
+
+function applyTaskFilters() {
   state.tasks = state.tasksAll.filter((t) => {
-    if (team && t.team !== team) return false;
-    if (status && t.trang_thai !== status) return false;
-    if (tag && t.tag !== tag) return false;
-    if (excludedFromScore === "Đã chuyển" && !t.da_chuyen_thang) return false;
-    if (excludedFromScore === "Không tính điểm" && t.khong_tinh_diem !== "Không tính điểm") return false;
-    if (nature) {
-      const items = (t.tinh_chat ?? "").split(",").map((v) => v.trim());
-      if (!items.includes(nature)) return false;
-    }
+    if (!taskMatchesSearchFilters(t)) return false;
     if (state.taskWarningFilter === "no-score" && !isTaskNotGraded(t)) return false;
     if (state.taskWarningFilter === "overdue" && !isTaskOverdue(t)) return false;
     if (state.taskWarningFilter === "upcoming" && !isTaskUpcomingDeadline(t)) return false;
     if (state.taskWarningFilter === "urgent" && !t.co_viec_xu_ly_gap) return false;
-    if (term) {
-      const haystack = [t.nhiem_vu, t.dod, t.team, t.tag, t.tinh_chat, t.nvtt, t.tien_do, t.cpo_comment]
-        .filter(Boolean)
-        .join(" \n ")
-        .toLowerCase();
-      if (!haystack.includes(term)) return false;
-    }
     return true;
   });
   taskPagination.reset();

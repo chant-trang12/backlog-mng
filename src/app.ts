@@ -26,6 +26,7 @@ import catalogRoutes from "./routes/catalog.routes.js";
 import roadmapRoutes from "./routes/roadmap.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import featureRequestRoutes from "./routes/featureRequest.routes.js";
+import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import { attachScope, requireAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
@@ -159,6 +160,21 @@ export function createApp() {
   // ở trên (không đè lên toàn bộ /api/feature-requests — route xem/tạo/sửa/
   // Duyệt/Từ chối/xóa từng cái vẫn theo luật cũ, editor vẫn dùng được).
   app.use("/api/feature-requests/delete-selected", requireAdmin);
+  // Xóa nhiều Tính năng số hoá (checkbox trên bảng) — chỉ Admin, scope
+  // requireAdmin đúng tiền tố route, không đè lên toàn bộ /api/digital-features.
+  app.use("/api/digital-features/delete-selected", requireAdmin);
+  // Xóa nhiều màn hình (tab "Màn hình, Tính năng & Phân quyền" trong chi
+  // tiết Tính năng số hoá) — chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/screens/delete-selected", requireAdmin);
+  // Xóa nhiều Danh mục (Master Data) — tab 3 trong chi tiết Tính năng số
+  // hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/master-data/delete-selected", requireAdmin);
+  // Xóa nhiều Đối tượng dữ liệu & Vòng đời trạng thái — tab 4 trong chi
+  // tiết Tính năng số hoá, chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/data-objects/delete-selected", requireAdmin);
+  // Xóa nhiều Tích hợp & Sự kiện — tab 5 trong chi tiết Tính năng số hoá,
+  // chỉ Admin, cùng cách scope tiền tố ở trên.
+  app.use("/api/digital-features/:id/integrations/delete-selected", requireAdmin);
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", departmentRoutes);
@@ -179,6 +195,7 @@ export function createApp() {
   app.use("/api", catalogRoutes);
   app.use("/api", roadmapRoutes);
   app.use("/api", featureRequestRoutes);
+  app.use("/api", digitalFeatureRoutes);
 
   app.use(notFound);
   // Global error handler — must be last, after notFound

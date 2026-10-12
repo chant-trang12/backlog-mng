@@ -365,13 +365,13 @@ main {
   width: 100%;
 }
 
-#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs {
+#page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #page-digital-features, #config-tab-users, #config-tab-phongban, #page-action-logs {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden], #page-action-logs[hidden] {
+#page-backlog[hidden], #page-team[hidden], #page-cskh[hidden], #team-tab-nhansu[hidden], #page-feature-requests[hidden], #page-digital-features[hidden], #config-tab-users[hidden], #config-tab-phongban[hidden], #page-action-logs[hidden] {
   display: none;
 }
 
@@ -398,8 +398,17 @@ main {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0 0 12px;
   color: var(--delete);
 }
+/* Tiêu đề card đôn đốc là nút đóng/mở danh sách (thu gọn = ẩn .table-wrap,
+   mũi tên quay sang phải; mặc định luôn mở — F5 trở về mở như cũ). */
+.home-urgent-card h2.urgency-toggle { cursor: pointer; user-select: none; }
+.home-urgent-card h2.urgency-toggle:focus-visible { outline: 2px solid var(--delete); outline-offset: 4px; border-radius: 4px; }
+.home-urgent-card h2 .chev { width: 1.1em; height: 1.1em; margin-left: auto; transition: transform 0.15s ease; }
+.home-urgent-card.collapsed h2 { margin-bottom: 0; }
+.home-urgent-card.collapsed h2 .chev { transform: rotate(-90deg); }
+.home-urgent-card.collapsed .table-wrap { display: none; }
 .home-urgent-card h2 .icon { width: 1.3em; height: 1.3em; }
 .home-urgent-card .table-wrap { background: var(--card-bg); border-radius: 8px; overflow: hidden; }
 .home-urgent-card thead th { background: var(--delete) !important; text-align: center; }
@@ -660,6 +669,13 @@ button.btn-progress { background: #d6ebf5; border-color: #b7d9ea; color: #1f5f80
 button.btn-progress:hover { background: #b7d9ea; }
 button.btn-member { background: #e6dcf5; border-color: #cbb8e8; color: #5c3494; }
 button.btn-member:hover { background: #cbb8e8; }
+/* Nút icon "Xem chi tiết" trong cột Action của bảng Tính năng số hoá —
+   tông trung tính (không mang ý nghĩa sửa/xóa), icon mắt là chính. */
+button.btn-view { background: #eef1f4; border-color: #d3dbe3; color: #45566a; }
+button.btn-view:hover { background: #d3dbe3; }
+/* Cột Action chứa 3 nút icon (Xem/Sửa/Xoá) — nút vuông, icon giữa nút. */
+.actions-cell button.small.icon-btn { padding: 4px 6px; line-height: 0; }
+.actions-cell button.small.icon-btn .icon { width: 14px; height: 14px; }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -918,6 +934,18 @@ button.btn-restore:hover { background: #6c8a4d; border-color: #6c8a4d; }
   font-weight: 600;
 }
 
+/* Tab màn hình chi tiết Tính năng số hoá: 5 tab bề ngang bằng nhau,
+   chia đều theo bề rộng khung (nhãn dài tự xuống dòng, căn giữa). */
+#df-detail-subnav {
+  gap: 8px;
+}
+
+#df-detail-subnav .pill {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
 .tab-panel-group #team-tab-nhansu > .card,
 .tab-panel-group #config-tab-users > .card:first-child,
 .tab-panel-group #config-tab-phongban > .card:first-child,
@@ -1155,6 +1183,111 @@ th {
  }
 #fr-table tbody tr.fr-row-clickable { cursor: pointer; }
 #fr-table tbody tr.fr-row-clickable:hover { background: var(--bg); }
+
+/* Bảng Tính năng số hoá (#df-table) — giống bảng Yêu cầu tính năng: tiêu
+   đề cột căn giữa, ô ngắn (checkbox/STT/Mã/Giai đoạn/TN-MH) căn giữa; ô
+   text dài căn trái cho dễ đọc. Cột checkbox + STT đứng đầu bảng và KHÔNG
+   cho ẩn nên định vị bằng nth-child(1)/(2) ổn định; các cột còn lại dùng
+   [data-col=...] vì bảng cho ẩn cột tuỳ ý. */
+#df-table th { text-align: center; }
+#df-table td { vertical-align: middle; }
+/* Bảng Màn hình, Tính năng & Phân quyền — nhãn cột căn giữa, cùng cách
+   bảng Tính năng số hoá; ô dữ liệu dài căn trái cho dễ đọc. */
+#dfs-table th { text-align: center; }
+#dfs-table td { vertical-align: middle; }
+/* Bảng Danh mục (Master Data) — nhãn cột căn giữa, ô dữ liệu dài căn trái. */
+#dfmd-table th { text-align: center; }
+#dfmd-table td { vertical-align: middle; }
+/* Cột "Quản trị bởi" — nội dung ngắn, căn giữa cho đồng bộ nhãn cột. */
+#dfmd-table td[data-col="quan_tri_boi"] { text-align: center; }
+/* Bảng Đối tượng dữ liệu & Vòng đời trạng thái — nhãn cột căn giữa, ô dữ
+   liệu dài căn trái. */
+#dfdo-table th { text-align: center; }
+#dfdo-table td { vertical-align: middle; }
+/* Bảng Tích hợp & Sự kiện — nhãn cột căn giữa, ô dữ liệu dài căn trái;
+   cột Hướng nội dung ngắn nên căn giữa. */
+#dfint-table th { text-align: center; }
+#dfint-table td { vertical-align: middle; }
+#dfint-table td:nth-child(3) { text-align: center; }
+
+/* Cột STT (cột thứ 2, sau checkbox) căn giữa ở tất cả các bảng dữ liệu
+   trong mọi tab của trang chi tiết Tính năng số hoá. */
+#dfs-table td:nth-child(2),
+#dfmd-table td:nth-child(2),
+#dfdo-table td:nth-child(2),
+#dfint-table td:nth-child(2) { text-align: center; }
+/* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
+   thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
+   non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */
+#dfmd-table td[data-col="ma_danh_muc"] {
+  max-width: 200px;
+}
+#dfmd-table td[data-col="ma_danh_muc"] .pill {
+  display: inline-block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding: 2px 10px;
+  cursor: default;
+}
+/* 9 cột phân quyền — ký hiệu căn giữa; badges xếp giữa ô, gộp nhiều chữ cái
+   ("CEA") thì tách thành từng badge riêng. */
+#dfs-table td[data-col="sales_am"],
+#dfs-table td[data-col="truong_dvkd"],
+#dfs-table td[data-col="presales_sp"],
+#dfs-table td[data-col="nv_bdkd"],
+#dfs-table td[data-col="ks_lanh_dao_bdkd"],
+#dfs-table td[data-col="phap_che"],
+#dfs-table td[data-col="tckt"],
+#dfs-table td[data-col="ban_lanh_dao"],
+#dfs-table td[data-col="quan_tri_he_thong"] {
+  text-align: center;
+}
+/* Badge 1 ký hiệu quyền (V/C/E/D/A/X/S) — mỗi loại một màu riêng, lấy từ
+   palette olive/khaki của trang (tint nhạt + chữ đậm cùng tông) để phân
+   biệt nhanh mức quyền khi quét hàng; title rê chuột hiện ý nghĩa đầy đủ. */
+.perm-badge {
+  display: inline-block;
+  min-width: 24px;
+  margin: 1px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-align: center;
+}
+.perm-badge.perm-v { background: #eef3e2; border: 1px solid #c9d6a9; color: #5d7143; }
+.perm-badge.perm-c { background: #e3ede9; border: 1px solid #a8c6bb; color: #3f6a5a; }
+.perm-badge.perm-e { background: #f7efda; border: 1px solid #e3cf9c; color: #8a6a1c; }
+.perm-badge.perm-d { background: #f3ded9; border: 1px solid #e0b5a8; color: #a03d28; }
+.perm-badge.perm-a { background: #eedde0; border: 1px solid #d0a3ab; color: #7d3b47; }
+.perm-badge.perm-x { background: #f6e3d2; border: 1px solid #e0b48a; color: #a35c1e; }
+.perm-badge.perm-s { background: #e3e7ec; border: 1px solid #b0bdc9; color: #46586a; }
+
+@media (prefers-color-scheme: dark) {
+  .perm-badge.perm-v { background: #39422b; border-color: #66754a; color: #ccd8ac; }
+  .perm-badge.perm-c { background: #2b4038; border-color: #557a6b; color: #a8cfc0; }
+  .perm-badge.perm-e { background: #474023; border-color: #8f7a35; color: #e0c878; }
+  .perm-badge.perm-d { background: #4a2c25; border-color: #9c5540; color: #eba58f; }
+  .perm-badge.perm-a { background: #453034; border-color: #8a5a64; color: #e3b3bd; }
+  .perm-badge.perm-x { background: #48311c; border-color: #96602c; color: #eebd85; }
+  .perm-badge.perm-s { background: #2f3844; border-color: #5a6b7d; color: #b0c4d6; }
+}
+#df-table td:nth-child(1),
+#df-table td:nth-child(2),
+#df-table td[data-col="ma"],
+#df-table td[data-col="giai_doan"],
+#df-table td[data-col="tn_mh"] {
+  text-align: center;
+}
+/* Ô Mã dạng pill — không cho xuống dòng trong pill (TNSH-026 bị bẻ 2 dòng
+   khi cột hẹp), padding gọn lại; pill này chỉ hiển thị, không bấm được. */
+#df-table td[data-col="ma"] .pill,
+#dfs-table td[data-col="ma_mh"] .pill {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 2px 10px;
+  cursor: default;
+}
 
 /* Ô text dài trong bảng Yêu cầu tính năng — giới hạn 3 dòng, tràn thì hiện
    "…" (title attr ở từng ô cho xem đầy đủ khi rê chuột). */
@@ -1418,6 +1551,7 @@ th {
 .rm-month-block { padding: 12px 0; border-top: 1px solid var(--border); }
 .rm-month-block:first-child { border-top: none; padding-top: 0; }
 .rm-detail-table { margin-top: 8px; }
+.rm-detail-table th { text-align: center; }
 .rm-detail-table td { vertical-align: middle; }
 
 #incident-table td:nth-child(1), /* Tháng */
@@ -1643,9 +1777,9 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    phản hồi 2 badge cùng màu đỏ khó phân biệt). */
 .status-tru-diem { background: #ffdfc0; color: #92400e; }
 
-/* Roadmap năm — dòng đã tự động đưa vào Backlog: badge nổi bật (nền xanh lá
-   đậm, chữ trắng), ghim ở góc trên bên phải ô "Nhiệm vụ" (giống cách ghim
-   .cell-prev-badge ở bảng Backlog) thay vì nằm inline theo dòng chữ. */
+/* Roadmap năm — dòng đã tự động đưa vào Backlog: badge nền lavender nhạt, chữ
+   tím (giống nút "✓ Backlog" mẫu), ghim ở góc trên bên phải ô "Nhiệm vụ"
+   (giống cách ghim .cell-prev-badge ở bảng Backlog) thay vì nằm inline. */
 #roadmap-table td.rm-nv-cell { position: relative; }
 #roadmap-table td.rm-nv-cell.has-sync-badge { padding-top: 20px; }
 .rm-synced-badge {
@@ -1653,13 +1787,33 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
   top: 3px;
   right: 4px;
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.4;
-  padding: 1px 7px;
+  padding: 1px 9px;
   border-radius: 999px;
-  background: var(--success);
-  color: #fff;
+  background: #ede9fe;
+  color: #6d28d9;
   white-space: nowrap;
+}
+
+/* Badge trạng thái đưa vào Backlog (Roadmap năm) — bản item-level (.rm-synced-badge)
+   ở góc trên phải ô Nhiệm vụ của bảng chính; bản tháng (.rm-backlog-badge) đứng
+   CẠNH nhãn "Tháng m/yyyy" trong khối chi tiết theo tháng. */
+.rm-backlog-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #6d28d9;
+  white-space: nowrap;
+}
+.rm-backlog-badge.pending {
+  /* Xanh nhạt — tránh trùng badge "Chưa thực hiện" (be) và "Đang thực hiện" (vàng) */
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 /* Tính chất — "Nhiệm vụ tồn" là giá trị hệ thống (không thuộc danh mục Phân
@@ -2368,7 +2522,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ---- Điện thoại (≤600px) ---- */
 @media (max-width: 600px) {
-  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #config-tab-users, #config-tab-phongban, #page-action-logs { gap: 14px; }
+  #page-backlog, #page-team, #page-cskh, #team-tab-nhansu, #page-feature-requests, #page-digital-features, #config-tab-users, #config-tab-phongban, #page-action-logs { gap: 14px; }
   .card h2 { font-size: 1rem; }
   .row-split { gap: 12px; }
   .row { gap: 10px; }

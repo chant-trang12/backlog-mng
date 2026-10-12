@@ -41,6 +41,11 @@ import {
   migrateSoftDeleteUsers,
 } from "./migrations/users.js";
 import { migrateFeatureRequestTables } from "./migrations/featureRequests.js";
+import { migrateDigitalFeatureTables } from "./migrations/digitalFeatures.js";
+import { migrateDigitalFeatureScreenTables } from "./migrations/digitalFeatureScreens.js";
+import { migrateDigitalFeatureMasterDataTables } from "./migrations/digitalFeatureMasterData.js";
+import { migrateDigitalFeatureDataObjectTables } from "./migrations/digitalFeatureDataObjects.js";
+import { migrateDigitalFeatureIntegrationTables } from "./migrations/digitalFeatureIntegrations.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -108,6 +113,14 @@ export async function initDatabase(): Promise<void> {
     // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
     // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
     await migrateActionLogsTable();
+    // digital_features (module "Quản lý tính năng số hoá") — bảng độc lập,
+    // không FK bảng khác; phần sửa nhãn log cũ phải chạy SAU khi action_logs
+    // đã tồn tại (xem migrateDigitalFeatureTables).
+    await migrateDigitalFeatureTables();
+    await migrateDigitalFeatureScreenTables();
+    await migrateDigitalFeatureMasterDataTables();
+    await migrateDigitalFeatureDataObjectTables();
+    await migrateDigitalFeatureIntegrationTables();
 
     // Xóa mềm (is_deleted/deleted_at) cho dữ liệu nghiệp vụ chính — gắn cờ
     // thay vì DELETE thật để không mất dữ liệu khi có sự cố (vẫn backup/

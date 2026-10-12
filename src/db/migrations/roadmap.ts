@@ -85,8 +85,21 @@ export async function migrateRoadmapTables(): Promise<void> {
   // động đưa vào backlog (task tương ứng) theo tháng bắt đầu, để không tạo
   // trùng khi thêm tháng mới hoặc sửa lại roadmap. Task bị xóa thì chỉ gỡ
   // liên kết (SET NULL), không xóa ngược lại dòng roadmap.
+  // LƯU Ý: từ khi đổi sang logic "đưa CHI TIẾT công việc theo tháng vào
+  // backlog" (mỗi dòng chi tiết = 1 task ở tháng đó), cột này chỉ còn dùng
+  // cho dòng roadmap KHÔNG có chi tiết nào (fallback giữ logic cũ) và các
+  // dòng đã sync trước thời điểm đổi — xem syncRoadmapItemToBacklog.
   if (!(await db.schema.hasColumn("roadmap_items", "synced_task_id"))) {
     await db.schema.alterTable("roadmap_items", (table) => {
+      table.integer("synced_task_id").references("id").inTable("tasks").onDelete("SET NULL");
+    });
+  }
+
+  // 28b. roadmap_details.synced_task_id — đánh dấu TỪNG dòng chi tiết theo
+  // tháng đã được tự động đưa vào backlog (task ở tháng đó, DOD = Nội dung
+  // công việc của dòng). Task bị xóa -> SET NULL, không xóa ngược lại.
+  if (!(await db.schema.hasColumn("roadmap_details", "synced_task_id"))) {
+    await db.schema.alterTable("roadmap_details", (table) => {
       table.integer("synced_task_id").references("id").inTable("tasks").onDelete("SET NULL");
     });
   }
