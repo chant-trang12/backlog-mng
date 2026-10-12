@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
-import { requireAdmin, requireWrite } from "../src/middleware/auth.middleware.js";
+import { requireAdmin, requireAdminOrSubAdmin, requireWrite } from "../src/middleware/auth.middleware.js";
 
 describe("Authentication & SSO Integration", () => {
   const originalSso = process.env.SSO_ENABLED;
@@ -149,9 +149,9 @@ describe("Authentication & SSO Integration", () => {
     });
   });
 
-  describe("requireWrite — Quy tắc 9.1: editor không được xóa", () => {
-    function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path?: string) {
-      const req: any = { appUser: role ? { role } : undefined, method, path };
+  describe("requireWrite — Quy tắc 9.1: chỉ admin được xóa; Add/Edit theo role_permissions (seed mặc định)", () => {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
+      const req: any = { appUser: role ? { role } : undefined, method, path, body: {} };
       let statusCode: number | undefined;
       let body: any;
       let nextCalled = false;
@@ -165,92 +165,116 @@ describe("Authentication & SSO Integration", () => {
           return res;
         },
       };
-      requireWrite(req, res, () => {
+      await requireWrite(req, res, () => {
         nextCalled = true;
       });
       return { statusCode, body, nextCalled };
     }
 
-    it("blocks editor from DELETE with 403", () => {
-      const { statusCode, body, nextCalled } = callRequireWrite("editor", "DELETE");
+    it("blocks editor from DELETE with 403 (/tasks/1 — function 'nhiem_vu')", async () => {
+      const { statusCode, body, nextCalled } = await callRequireWrite("editor", "DELETE", "/tasks/1");
       expect(statusCode).toBe(403);
       expect(body.error).toMatch(/editor không có quyền xóa/i);
       expect(nextCalled).toBe(false);
     });
 
-    it("allows editor to POST/PUT/PATCH", () => {
+    it("allows editor to POST/PUT/PATCH on a configurable function (seed mặc định: nhiem_vu editor can_add/can_edit=true)", async () => {
       for (const method of ["POST", "PUT", "PATCH"]) {
-        const { nextCalled } = callRequireWrite("editor", method);
+        const { nextCalled } = await callRequireWrite("editor", method, "/tasks/1");
         expect(nextCalled).toBe(true);
       }
     });
 
-    it("allows admin to DELETE", () => {
-      const { nextCalled } = callRequireWrite("admin", "DELETE");
+    it("allows admin to DELETE (bypass hẳn, không tra role_permissions)", async () => {
+      const { nextCalled } = await callRequireWrite("admin", "DELETE", "/tasks/1");
       expect(nextCalled).toBe(true);
     });
 
-    it("still blocks viewer from any write method, including DELETE", () => {
+    it("allows subadmin to DELETE/POST/PUT/PATCH y hệt admin (bypass hẳn requireWrite — 'tương tự admin' trừ Cấu hình, xem requireAdmin)", async () => {
       for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-        const { statusCode, nextCalled } = callRequireWrite("viewer", method);
+        const { nextCalled } = await callRequireWrite("subadmin", method, "/tasks/1");
+        expect(nextCalled).toBe(true);
+      }
+    });
+
+    it("still blocks viewer from any write method on a configurable function, including DELETE", async () => {
+      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+        const { statusCode, nextCalled } = await callRequireWrite("viewer", method, "/tasks/1");
         expect(statusCode).toBe(403);
         expect(nextCalled).toBe(false);
       }
     });
 
-    it("allows viewer to POST /feature-requests (đề xuất — mọi phòng ban đều được, không phải quyền ghi thông thường)", () => {
-      const { nextCalled } = callRequireWrite("viewer", "POST", "/feature-requests");
+    it("allows viewer to POST /feature-requests (seed mặc định: yeu_cau_tinh_nang viewer can_add=true — đề xuất mở cho mọi role)", async () => {
+      const { nextCalled } = await callRequireWrite("viewer", "POST", "/feature-requests");
       expect(nextCalled).toBe(true);
     });
 
-    it("still blocks viewer from PUT/DELETE /feature-requests/:id and POST .../approve|reject (chỉ ngoại lệ đúng route tạo mới)", () => {
+    it("still blocks viewer from PUT /feature-requests/:id và POST .../approve|reject|to-backlog (cần can_edit, viewer không có)", async () => {
       for (const [method, path] of [
         ["PUT", "/feature-requests/1"],
-        ["DELETE", "/feature-requests/1"],
         ["POST", "/feature-requests/1/approve"],
         ["POST", "/feature-requests/1/reject"],
         ["POST", "/feature-requests/1/to-backlog"],
       ] as const) {
-        const { statusCode, nextCalled } = callRequireWrite("viewer", method, path);
+        const { statusCode, nextCalled } = await callRequireWrite("viewer", method, path);
         expect(statusCode).toBe(403);
         expect(nextCalled).toBe(false);
       }
     });
 
-    it("allows viewer (và bgd) to POST /feature-requests/import — xem/tải file mẫu/import đều mở cho mọi role", () => {
-      const viewer = callRequireWrite("viewer", "POST", "/feature-requests/import");
-      expect(viewer.nextCalled).toBe(true);
-      const bgd = callRequireWrite("bgd", "POST", "/feature-requests/import");
-      expect(bgd.nextCalled).toBe(true);
-    });
-
-    it("allows viewer to POST /feature-requests/:id/attachment (đính kèm file bổ sung cho chính đề xuất — cùng tinh thần ngoại lệ tạo mới)", () => {
-      const { nextCalled } = callRequireWrite("viewer", "POST", "/feature-requests/1/attachment");
-      expect(nextCalled).toBe(true);
-    });
-
-    it("still blocks viewer from DELETE /feature-requests/:id/attachment (Quy tắc 9.1 — xóa vẫn cần editor trở lên)", () => {
-      const { statusCode, nextCalled } = callRequireWrite("viewer", "DELETE", "/feature-requests/1/attachment");
+    it("blocks viewer from DELETE /feature-requests/:id (Quy tắc 9.1 — xóa luôn chỉ admin, không tra role_permissions)", async () => {
+      const { statusCode, nextCalled } = await callRequireWrite("viewer", "DELETE", "/feature-requests/1");
       expect(statusCode).toBe(403);
       expect(nextCalled).toBe(false);
     });
 
-    it("passes through GET for every role, including editor", () => {
+    it("allows viewer (và bgd) to POST /feature-requests/import — action suy ra 'tao_moi' -> cần can_add, viewer có qua ngoại lệ seed", async () => {
+      const viewer = await callRequireWrite("viewer", "POST", "/feature-requests/import");
+      expect(viewer.nextCalled).toBe(true);
+      const bgd = await callRequireWrite("bgd", "POST", "/feature-requests/import");
+      expect(bgd.nextCalled).toBe(true);
+    });
+
+    it("allows viewer to POST /feature-requests/:id/attachment (action mặc định POST -> 'tao_moi' -> can_add, viewer có)", async () => {
+      const { nextCalled } = await callRequireWrite("viewer", "POST", "/feature-requests/1/attachment");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks bulk delete-selected (POST) cho editor/bgd/viewer dù method không phải DELETE — vá lỗ hổng cũ (action suy ra 'xoa')", async () => {
+      for (const role of ["editor", "bgd", "viewer"] as const) {
+        const { statusCode, nextCalled } = await callRequireWrite(role, "POST", "/tasks/delete-selected");
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("allows admin to POST delete-selected", async () => {
+      const { nextCalled } = await callRequireWrite("admin", "POST", "/tasks/delete-selected");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("passes through writes to routes outside 7 Chức năng cấu hình được (VD /departments — admin-only riêng qua requireAdmin, không qua đây)", async () => {
+      const { nextCalled } = await callRequireWrite("editor", "POST", "/departments");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("passes through GET for every role, including editor", async () => {
       for (const role of ["admin", "editor", "bgd", "viewer"] as const) {
-        const { nextCalled } = callRequireWrite(role, "GET");
+        const { nextCalled } = await callRequireWrite(role, "GET", "/tasks");
         expect(nextCalled).toBe(true);
       }
     });
 
-    it("passes through when req.appUser is not set (SSO disabled)", () => {
-      const { nextCalled } = callRequireWrite(undefined, "DELETE");
+    it("passes through when req.appUser is not set (SSO disabled)", async () => {
+      const { nextCalled } = await callRequireWrite(undefined, "DELETE", "/tasks/1");
       expect(nextCalled).toBe(true);
     });
   });
 
-  describe("requireWrite — role 'bgd': giống viewer, CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
-    function callRequireWrite(role: "admin" | "editor" | "bgd" | "viewer" | undefined, method: string, path?: string) {
-      const req: any = { appUser: role ? { role } : undefined, method, path };
+  describe("requireWrite — role 'bgd': NGANG editor (CRUD bình thường, không xóa), CỘNG THÊM được chấm điểm (PUT /tasks/:id/grade)", () => {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined, method: string, path = "/tasks/1") {
+      const req: any = { appUser: role ? { role } : undefined, method, path, body: {} };
       let statusCode: number | undefined;
       let body: any;
       let nextCalled = false;
@@ -264,57 +288,92 @@ describe("Authentication & SSO Integration", () => {
           return res;
         },
       };
-      requireWrite(req, res, () => {
+      await requireWrite(req, res, () => {
         nextCalled = true;
       });
       return { statusCode, body, nextCalled };
     }
 
-    it("blocks bgd from write methods like viewer, including DELETE", () => {
-      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
-        const { statusCode, nextCalled } = callRequireWrite("bgd", method, "/tasks/1");
-        expect(statusCode).toBe(403);
-        expect(nextCalled).toBe(false);
+    it("allows bgd to POST/PUT/PATCH like editor (CRUD dữ liệu nghiệp vụ bình thường)", async () => {
+      for (const method of ["POST", "PUT", "PATCH"]) {
+        const { nextCalled } = await callRequireWrite("bgd", method, "/tasks/1");
+        expect(nextCalled).toBe(true);
       }
     });
 
-    it("allows bgd to PUT /tasks/:id/grade (chấm điểm)", () => {
-      const { nextCalled } = callRequireWrite("bgd", "PUT", "/tasks/1/grade");
+    it("blocks bgd from DELETE with 403 (Quy tắc 9.1 — chỉ admin được xóa)", async () => {
+      const { statusCode, body, nextCalled } = await callRequireWrite("bgd", "DELETE", "/tasks/1");
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/BGĐ không có quyền xóa/i);
+      expect(nextCalled).toBe(false);
+    });
+
+    it("allows bgd to PUT /tasks/:id/grade (chấm điểm)", async () => {
+      const { nextCalled } = await callRequireWrite("bgd", "PUT", "/tasks/1/grade");
       expect(nextCalled).toBe(true);
     });
 
-    it("still blocks bgd from PUT /tasks/:id (sửa task thường, không phải chấm điểm)", () => {
-      const { statusCode, nextCalled } = callRequireWrite("bgd", "PUT", "/tasks/1");
+    it("allows bgd to POST /feature-requests (CRUD bình thường, không cần ngoại lệ viewer)", async () => {
+      const { nextCalled } = await callRequireWrite("bgd", "POST", "/feature-requests");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks viewer from PUT /tasks/:id/grade (chỉ admin/bgd được chấm điểm)", async () => {
+      const { statusCode, nextCalled } = await callRequireWrite("viewer", "PUT", "/tasks/1/grade");
       expect(statusCode).toBe(403);
       expect(nextCalled).toBe(false);
     });
 
-    it("allows bgd to POST /feature-requests (cùng ngoại lệ như viewer)", () => {
-      const { nextCalled } = callRequireWrite("bgd", "POST", "/feature-requests");
-      expect(nextCalled).toBe(true);
-    });
-
-    it("blocks viewer from PUT /tasks/:id/grade (chỉ admin/bgd được chấm điểm)", () => {
-      const { statusCode, nextCalled } = callRequireWrite("viewer", "PUT", "/tasks/1/grade");
+    it("blocks editor from PUT /tasks/:id/grade (khác biệt duy nhất còn lại giữa editor và bgd)", async () => {
+      const { statusCode, body, nextCalled } = await callRequireWrite("editor", "PUT", "/tasks/1/grade");
       expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/không có quyền chấm điểm/i);
       expect(nextCalled).toBe(false);
     });
 
-    it("blocks editor from PUT /tasks/:id/grade (trước đây được, nay bị chặn)", () => {
-      const { statusCode, body, nextCalled } = callRequireWrite("editor", "PUT", "/tasks/1/grade");
-      expect(statusCode).toBe(403);
-      expect(body.error).toMatch(/editor không có quyền chấm điểm/i);
-      expect(nextCalled).toBe(false);
-    });
-
-    it("still allows editor to PUT /tasks/:id (sửa task thường không bị ảnh hưởng)", () => {
-      const { nextCalled } = callRequireWrite("editor", "PUT", "/tasks/1");
+    it("still allows editor to PUT /tasks/:id (sửa task thường không bị ảnh hưởng)", async () => {
+      const { nextCalled } = await callRequireWrite("editor", "PUT", "/tasks/1");
       expect(nextCalled).toBe(true);
     });
 
-    it("allows admin to PUT /tasks/:id/grade", () => {
-      const { nextCalled } = callRequireWrite("admin", "PUT", "/tasks/1/grade");
+    it("allows admin to PUT /tasks/:id/grade", async () => {
+      const { nextCalled } = await callRequireWrite("admin", "PUT", "/tasks/1/grade");
       expect(nextCalled).toBe(true);
+    });
+  });
+
+  describe("requireWrite — màn Phân quyền (Cấu hình → Phân quyền) thay đổi role_permissions -> có hiệu lực NGAY", () => {
+    async function callRequireWrite(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer", method: string, path: string) {
+      const req: any = { appUser: { role }, method, path, body: {} };
+      let statusCode: number | undefined;
+      let nextCalled = false;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return res;
+        },
+        json: () => res,
+      };
+      await requireWrite(req, res, () => {
+        nextCalled = true;
+      });
+      return { statusCode, nextCalled };
+    }
+
+    it("tắt can_add của editor cho 'roadmap' -> POST /roadmap-items bị chặn ngay, không cần sửa code/deploy lại", async () => {
+      const { updateRolePermission } = await import("../src/services/permission.service.js");
+      const before = await callRequireWrite("editor", "POST", "/roadmap-items");
+      expect(before.nextCalled).toBe(true); // seed mặc định: editor can_add=true
+
+      await updateRolePermission("roadmap", "editor", { can_add: false });
+      try {
+        const after = await callRequireWrite("editor", "POST", "/roadmap-items");
+        expect(after.statusCode).toBe(403);
+        expect(after.nextCalled).toBe(false);
+      } finally {
+        // Trả lại seed mặc định — không để 1 test làm lệch test khác chạy sau.
+        await updateRolePermission("roadmap", "editor", { can_add: true });
+      }
     });
   });
 
@@ -346,6 +405,14 @@ describe("Authentication & SSO Integration", () => {
       expect(nextCalled).toBe(true);
     });
 
+    it("blocks subadmin with 403 (ranh giới 'không vào được màn hình Cấu hình' — subadmin KHÔNG qua requireAdmin dù 'tương tự admin' ở requireWrite)", () => {
+      process.env.SSO_ENABLED = "true";
+      const { statusCode, body, nextCalled } = callRequireAdmin("subadmin" as any);
+      expect(statusCode).toBe(403);
+      expect(body.error).toMatch(/chỉ admin/i);
+      expect(nextCalled).toBe(false);
+    });
+
     it("blocks editor with 403", () => {
       process.env.SSO_ENABLED = "true";
       const { statusCode, body, nextCalled } = callRequireAdmin("editor");
@@ -370,8 +437,60 @@ describe("Authentication & SSO Integration", () => {
 
     it("passes through every role when SSO is disabled", () => {
       process.env.SSO_ENABLED = "false";
-      for (const role of ["admin", "editor", "viewer", undefined] as const) {
+      for (const role of ["admin", "subadmin", "editor", "viewer", undefined] as const) {
         const { nextCalled } = callRequireAdmin(role);
+        expect(nextCalled).toBe(true);
+      }
+    });
+  });
+
+  describe("requireAdminOrSubAdmin — 'admin' HOẶC 'subadmin' qua được (/api/action-logs, */delete-selected ngoài Cấu hình)", () => {
+    function callRequireAdminOrSubAdmin(role: "admin" | "subadmin" | "editor" | "bgd" | "viewer" | undefined) {
+      const req: any = { appUser: role ? { role } : undefined };
+      let statusCode: number | undefined;
+      let body: any;
+      let nextCalled = false;
+      const res: any = {
+        status: (code: number) => {
+          statusCode = code;
+          return res;
+        },
+        json: (payload: any) => {
+          body = payload;
+          return res;
+        },
+      };
+      requireAdminOrSubAdmin(req, res, () => {
+        nextCalled = true;
+      });
+      return { statusCode, body, nextCalled };
+    }
+
+    it("allows admin", () => {
+      process.env.SSO_ENABLED = "true";
+      const { nextCalled } = callRequireAdminOrSubAdmin("admin");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("allows subadmin (khác requireAdmin — đây chính là nơi subadmin 'tương tự admin')", () => {
+      process.env.SSO_ENABLED = "true";
+      const { nextCalled } = callRequireAdminOrSubAdmin("subadmin");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks editor/bgd/viewer with 403", () => {
+      process.env.SSO_ENABLED = "true";
+      for (const role of ["editor", "bgd", "viewer"] as const) {
+        const { statusCode, nextCalled } = callRequireAdminOrSubAdmin(role);
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("passes through every role when SSO is disabled", () => {
+      process.env.SSO_ENABLED = "false";
+      for (const role of ["admin", "subadmin", "editor", "bgd", "viewer", undefined] as const) {
+        const { nextCalled } = callRequireAdminOrSubAdmin(role);
         expect(nextCalled).toBe(true);
       }
     });

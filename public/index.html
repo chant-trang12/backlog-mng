@@ -1378,7 +1378,7 @@
               <button type="button" id="df-detail-back-btn" class="small">← Quay lại</button>
               <h2 style="margin:0;font-size:1.1rem" id="df-detail-page-title">Chi tiết tính năng số hoá</h2>
             </div>
-            <span class="pill" id="df-detail-page-ma" hidden></span>
+            <span class="status-badge status-default status-badge-wrap" id="df-detail-page-ma" hidden></span>
           </div>
 
           <div class="tab-panel-group">
@@ -2151,6 +2151,7 @@
             <span class="pill" data-tab="tagphanloai">Cấu hình</span>
             <span class="pill" data-tab="phongban">Phòng ban</span>
             <span class="pill" data-tab="users" id="config-users-pill" hidden>Quản lý User</span>
+            <span class="pill" data-tab="permissions" id="config-permissions-pill" hidden>Phân quyền</span>
           </div>
 
           <div id="config-tab-users" hidden>
@@ -2166,6 +2167,7 @@
                 <select id="user-filter-role">
                   <option value="">Tất cả</option>
                   <option value="admin">Admin</option>
+                  <option value="subadmin">Sub-Admin</option>
                   <option value="editor">Biên tập</option>
                   <option value="bgd">BGĐ</option>
                   <option value="viewer">Chỉ xem</option>
@@ -2203,6 +2205,33 @@
                 <span id="users-config-page-info" class="muted"></span>
                 <button type="button" id="users-config-page-next" class="small">Sau ›</button>
               </div>
+            </div>
+          </section>
+          </div>
+
+          <!-- Phân quyền — admin cấu hình quyền Add/Edit của Editor/BGĐ/Viewer
+               theo từng Chức năng, CÓ HIỆU LỰC NGAY (role_permissions, đọc bởi
+               requireWrite). Read/Delete không cấu hình được: Read luôn mở cho
+               mọi role đã đăng nhập; Delete tuyệt đối chỉ Admin (Quy tắc 9.1).
+               Xem renderPermissionsConfig(), 06-config.js. -->
+          <div id="config-tab-permissions" hidden>
+          <section class="card">
+            <h2 style="margin:0">Ma trận phân quyền theo Role</h2>
+            <div class="table-wrap" id="permissions-table-wrap" style="margin-top:14px">
+              <table id="permissions-config-table">
+                <thead>
+                  <tr>
+                    <th style="min-width:170px">Chức năng</th>
+                    <th style="min-width:220px">Mô tả</th>
+                    <th style="min-width:90px">Role</th>
+                    <th style="width:70px;text-align:center">Read</th>
+                    <th style="width:70px;text-align:center">Add</th>
+                    <th style="width:70px;text-align:center">Delete</th>
+                    <th style="width:70px;text-align:center">Edit</th>
+                  </tr>
+                </thead>
+                <tbody id="permissions-config-tbody"></tbody>
+              </table>
             </div>
           </section>
           </div>

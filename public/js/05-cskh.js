@@ -16,11 +16,12 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#config-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["tieuchi", "ranking", "tagphanloai", "phongban", "users"].forEach((tab) => {
+    ["tieuchi", "ranking", "tagphanloai", "phongban", "users", "permissions"].forEach((tab) => {
       document.getElementById(`config-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
     if (pill.dataset.tab === "phongban") loadDepartmentConfig().catch((err) => showToast(err.message));
     if (pill.dataset.tab === "users") loadUsersConfig().catch((err) => showToast(err.message));
+    if (pill.dataset.tab === "permissions") loadPermissionsConfig().catch((err) => showToast(err.message));
   });
 });
 

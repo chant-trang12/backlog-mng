@@ -144,10 +144,16 @@ async function checkAuth() {
     // quyền gì khi SSO tắt.
     const usersPill = document.getElementById("config-users-pill");
     if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
+    const permissionsPill = document.getElementById("config-permissions-pill");
+    if (permissionsPill) permissionsPill.hidden = data.ssoEnabled && data.role !== "admin";
     const configNav = document.querySelector('.nav-item[data-page="config"]');
     if (configNav) configNav.hidden = data.ssoEnabled && data.role !== "admin";
+    // Nhật ký hoạt động KHÔNG phải 1 tab trong Cấu hình (nav riêng) nên
+    // subadmin ("tương tự admin", chỉ bị chặn khỏi Cấu hình) vẫn thấy được
+    // — khác với usersPill/permissionsPill/configNav ở trên (role !== "admin"
+    // đã đúng chủ ý chặn cả subadmin, vì đó đều là Cấu hình).
     const actionLogNav = document.querySelector('.nav-item[data-page="action-logs"]');
-    if (actionLogNav) actionLogNav.hidden = data.ssoEnabled && data.role !== "admin";
+    if (actionLogNav) actionLogNav.hidden = data.ssoEnabled && data.role !== "admin" && data.role !== "subadmin";
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {

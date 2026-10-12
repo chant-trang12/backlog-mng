@@ -263,7 +263,7 @@ function renderDigitalFeatures() {
     <tr data-id="${r.id}">
       <td><input type="checkbox" class="df-row-checkbox" ${state.selectedDigitalFeatureIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
-      <td data-col="ma" ${colHidden("ma")}>${r.ma ? `<span class="pill" title="Mã tính năng">${r.ma.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
+      <td data-col="ma" ${colHidden("ma")}>${r.ma ? `<span class="status-badge status-default status-badge-wrap" title="Mã tính năng">${r.ma.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
       <td>${dfClamp(r.module)}</td>
       <td data-col="don_vi_chu_tri" ${colHidden("don_vi_chu_tri")}>${dfClamp(r.don_vi_chu_tri)}</td>
       <td data-col="don_vi_phoi_hop" ${colHidden("don_vi_phoi_hop")}>${dfClamp(r.don_vi_phoi_hop)}</td>
@@ -275,9 +275,9 @@ function renderDigitalFeatures() {
       <td data-col="chuyen_dau_ra_toi" ${colHidden("chuyen_dau_ra_toi")}>${dfClamp(r.chuyen_dau_ra_toi)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-view icon-btn df-view-btn" data-id="${r.id}" title="Xem chi tiết"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg></button>
-          <button type="button" class="small btn-edit icon-btn df-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn df-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-view df-view-btn" data-id="${r.id}">Xem chi tiết</button>
+          <button type="button" class="small btn-edit df-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete df-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`;
@@ -734,7 +734,7 @@ function renderDigitalFeatureScreens() {
     <tr data-id="${r.id}">
       <td><input type="checkbox" class="dfs-row-checkbox" ${state.selectedDfScreenIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
-      <td data-col="ma_mh" ${colHidden("ma_mh")}>${r.ma_mh ? `<span class="pill" title="Mã màn hình">${r.ma_mh.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
+      <td data-col="ma_mh" ${colHidden("ma_mh")}>${r.ma_mh ? `<span class="status-badge status-default status-badge-wrap" title="Mã màn hình">${r.ma_mh.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
       <td data-col="tn" ${colHidden("tn")}>${dfFull(r.tn)}</td>
       <td>${dfFull(r.ten_man_hinh)}</td>
       <td data-col="loai" ${colHidden("loai")}>${dfFull(r.loai)}</td>
@@ -752,8 +752,8 @@ function renderDigitalFeatureScreens() {
       <td data-col="quan_tri_he_thong" ${colHidden("quan_tri_he_thong")}>${dfPermBadges(r.quan_tri_he_thong)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfs-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfs-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfs-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfs-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1099,14 +1099,14 @@ function renderDigitalFeatureMasterData() {
     <tr data-id="${r.id}">
       <td><input type="checkbox" class="dfmd-row-checkbox" ${state.selectedDfMdIds.has(r.id) ? "checked" : ""} /></td>
       <td>${pageStart + idx + 1}</td>
-      <td data-col="ma_danh_muc" ${colHidden("ma_danh_muc")}>${r.ma_danh_muc ? `<span class="pill" title="Mã danh mục">${r.ma_danh_muc.replace(/</g, "&lt;").replace(/-/g, "\u2011")}</span>` : `<span class="muted">—</span>`}</td>
+      <td data-col="ma_danh_muc" ${colHidden("ma_danh_muc")}>${r.ma_danh_muc ? `<span class="status-badge status-default status-badge-wrap" title="Mã danh mục">${r.ma_danh_muc.replace(/</g, "&lt;").replace(/-/g, "\u2011")}</span>` : `<span class="muted">—</span>`}</td>
       <td>${dfFull(r.ten_danh_muc)}</td>
       <td data-col="noi_dung_thuoc_tinh" ${colHidden("noi_dung_thuoc_tinh")}>${dfFull(r.noi_dung_thuoc_tinh)}</td>
       <td data-col="quan_tri_boi" ${colHidden("quan_tri_boi")}>${dfFull(r.quan_tri_boi)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfmd-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfmd-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfmd-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfmd-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1430,8 +1430,8 @@ function renderDigitalFeatureDataObjects() {
       <td data-col="vong_doi_trang_thai" ${colHidden("vong_doi_trang_thai")}>${dfFull(r.vong_doi_trang_thai)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfdo-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfdo-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfdo-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfdo-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
@@ -1754,8 +1754,8 @@ function renderDigitalFeatureIntegrations() {
       <td data-col="co_che_tan_suat" ${colHidden("co_che_tan_suat")}>${dfFull(r.co_che_tan_suat)}</td>
       <td>
         <div class="actions-cell" style="justify-content:flex-start;gap:2px">
-          <button type="button" class="small btn-edit icon-btn dfint-edit-btn" data-id="${r.id}" title="Sửa"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-pen"/></svg></button>
-          <button type="button" class="small btn-delete icon-btn dfint-del-btn" data-id="${r.id}" title="Xoá"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>
+          <button type="button" class="small btn-edit dfint-edit-btn" data-id="${r.id}">Sửa</button>
+          <button type="button" class="small btn-delete dfint-del-btn" data-id="${r.id}">Xóa</button>
         </div>
       </td>
     </tr>`)
