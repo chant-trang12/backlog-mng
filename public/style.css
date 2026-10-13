@@ -1998,24 +1998,29 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
    (dùng HT_COLOR_COUNT riêng, không dùng chung TEAM_COLOR_COUNT=6 của
    Team nữa). Cả dải màu vẫn nằm trong tông lạnh để tách hẳn khỏi Team
    (xanh lá/đỏ/vàng/olive/teal/mận) và Mục tiêu (tông nóng, xem dưới). */
-.ht-color-0 { background: hsl(165, 62%, 90%); color: hsl(165, 55%, 30%); }
-.ht-color-1 { background: hsl(171, 62%, 90%); color: hsl(171, 55%, 30%); }
-.ht-color-2 { background: hsl(178, 62%, 90%); color: hsl(178, 55%, 30%); }
-.ht-color-3 { background: hsl(184, 62%, 90%); color: hsl(184, 55%, 30%); }
-.ht-color-4 { background: hsl(191, 62%, 90%); color: hsl(191, 55%, 30%); }
-.ht-color-5 { background: hsl(197, 62%, 90%); color: hsl(197, 55%, 30%); }
-.ht-color-6 { background: hsl(204, 62%, 90%); color: hsl(204, 55%, 30%); }
-.ht-color-7 { background: hsl(210, 62%, 90%); color: hsl(210, 55%, 30%); }
-.ht-color-8 { background: hsl(217, 62%, 90%); color: hsl(217, 55%, 30%); }
-.ht-color-9 { background: hsl(223, 62%, 90%); color: hsl(223, 55%, 30%); }
-.ht-color-10 { background: hsl(230, 62%, 90%); color: hsl(230, 55%, 30%); }
-.ht-color-11 { background: hsl(236, 62%, 90%); color: hsl(236, 55%, 30%); }
-.ht-color-12 { background: hsl(243, 62%, 90%); color: hsl(243, 55%, 30%); }
-.ht-color-13 { background: hsl(249, 62%, 90%); color: hsl(249, 55%, 30%); }
-.ht-color-14 { background: hsl(256, 62%, 90%); color: hsl(256, 55%, 30%); }
-.ht-color-15 { background: hsl(262, 62%, 90%); color: hsl(262, 55%, 30%); }
-.ht-color-16 { background: hsl(269, 62%, 90%); color: hsl(269, 55%, 30%); }
-.ht-color-17 { background: hsl(275, 62%, 90%); color: hsl(275, 55%, 30%); }
+/* Trước đây sat/light 62%/90% (quá nhạt) khiến các mức hue liền nhau gần
+   như không phân biệt được bằng mắt dù đã xoay thứ tự chống liền kề
+   (HT_COLOR_ORDER, 07-roadmap.js) — ảnh user gửi: nhiều dòng "Hệ thống"
+   trông cùng 1 màu. Tăng sat 70%, giảm light xuống 83% để hue thật sự nổi
+   bật, vẫn giữ sắc thái pastel badge chung của trang. */
+.ht-color-0 { background: hsl(165, 70%, 83%); color: hsl(165, 62%, 26%); }
+.ht-color-1 { background: hsl(171, 70%, 83%); color: hsl(171, 62%, 26%); }
+.ht-color-2 { background: hsl(178, 70%, 83%); color: hsl(178, 62%, 26%); }
+.ht-color-3 { background: hsl(184, 70%, 83%); color: hsl(184, 62%, 26%); }
+.ht-color-4 { background: hsl(191, 70%, 83%); color: hsl(191, 62%, 26%); }
+.ht-color-5 { background: hsl(197, 70%, 83%); color: hsl(197, 62%, 26%); }
+.ht-color-6 { background: hsl(204, 70%, 83%); color: hsl(204, 62%, 26%); }
+.ht-color-7 { background: hsl(210, 70%, 83%); color: hsl(210, 62%, 26%); }
+.ht-color-8 { background: hsl(217, 70%, 83%); color: hsl(217, 62%, 26%); }
+.ht-color-9 { background: hsl(223, 70%, 83%); color: hsl(223, 62%, 26%); }
+.ht-color-10 { background: hsl(230, 70%, 83%); color: hsl(230, 62%, 26%); }
+.ht-color-11 { background: hsl(236, 70%, 83%); color: hsl(236, 62%, 26%); }
+.ht-color-12 { background: hsl(243, 70%, 83%); color: hsl(243, 62%, 26%); }
+.ht-color-13 { background: hsl(249, 70%, 83%); color: hsl(249, 62%, 26%); }
+.ht-color-14 { background: hsl(256, 70%, 83%); color: hsl(256, 62%, 26%); }
+.ht-color-15 { background: hsl(262, 70%, 83%); color: hsl(262, 62%, 26%); }
+.ht-color-16 { background: hsl(269, 70%, 83%); color: hsl(269, 62%, 26%); }
+.ht-color-17 { background: hsl(275, 70%, 83%); color: hsl(275, 62%, 26%); }
 
 /* Mục tiêu — bảng màu riêng, tông NÓNG (cam/hồng/tím hồng/hổ phách đậm) —
    đối lập hẳn với tông lạnh của Hệ thống ở trên để 2 nhóm badge không bị
