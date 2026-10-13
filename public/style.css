@@ -1990,37 +1990,36 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 .team-color-4 { background: #d7e8e3; color: #2f6157; }
 .team-color-5 { background: #ecdbe4; color: #6b3a52; }
 
-/* Hệ thống — bảng màu riêng, tông LẠNH (xanh ngọc -> xanh da trời -> xanh
-   dương -> chàm -> tím) — 18 màu (không phải 6) vì danh mục Hệ thống ở
-   Cấu hình có thể phát sinh nhiều giá trị theo thời gian; trước đây chỉ
-   có 6 màu nên tạo quá 6 hệ thống là màu bị LẶP LẠI (badge hệ thống #7
-   trùng hệt màu #1), gây nhầm lẫn — xem systemColorClass ở 07-roadmap.js
+/* Hệ thống — 18 màu (không phải 6) vì danh mục Hệ thống ở Cấu hình có thể
+   phát sinh nhiều giá trị theo thời gian; trước đây chỉ có 6 màu nên tạo
+   quá 6 hệ thống là màu bị LẶP LẠI — xem systemColorClass ở 07-roadmap.js
    (dùng HT_COLOR_COUNT riêng, không dùng chung TEAM_COLOR_COUNT=6 của
-   Team nữa). Cả dải màu vẫn nằm trong tông lạnh để tách hẳn khỏi Team
-   (xanh lá/đỏ/vàng/olive/teal/mận) và Mục tiêu (tông nóng, xem dưới). */
-/* Trước đây sat/light 62%/90% (quá nhạt) khiến các mức hue liền nhau gần
-   như không phân biệt được bằng mắt dù đã xoay thứ tự chống liền kề
-   (HT_COLOR_ORDER, 07-roadmap.js) — ảnh user gửi: nhiều dòng "Hệ thống"
-   trông cùng 1 màu. Tăng sat 70%, giảm light xuống 83% để hue thật sự nổi
-   bật, vẫn giữ sắc thái pastel badge chung của trang. */
-.ht-color-0 { background: hsl(165, 70%, 83%); color: hsl(165, 62%, 26%); }
-.ht-color-1 { background: hsl(171, 70%, 83%); color: hsl(171, 62%, 26%); }
-.ht-color-2 { background: hsl(178, 70%, 83%); color: hsl(178, 62%, 26%); }
-.ht-color-3 { background: hsl(184, 70%, 83%); color: hsl(184, 62%, 26%); }
-.ht-color-4 { background: hsl(191, 70%, 83%); color: hsl(191, 62%, 26%); }
-.ht-color-5 { background: hsl(197, 70%, 83%); color: hsl(197, 62%, 26%); }
-.ht-color-6 { background: hsl(204, 70%, 83%); color: hsl(204, 62%, 26%); }
-.ht-color-7 { background: hsl(210, 70%, 83%); color: hsl(210, 62%, 26%); }
-.ht-color-8 { background: hsl(217, 70%, 83%); color: hsl(217, 62%, 26%); }
-.ht-color-9 { background: hsl(223, 70%, 83%); color: hsl(223, 62%, 26%); }
-.ht-color-10 { background: hsl(230, 70%, 83%); color: hsl(230, 62%, 26%); }
-.ht-color-11 { background: hsl(236, 70%, 83%); color: hsl(236, 62%, 26%); }
-.ht-color-12 { background: hsl(243, 70%, 83%); color: hsl(243, 62%, 26%); }
-.ht-color-13 { background: hsl(249, 70%, 83%); color: hsl(249, 62%, 26%); }
-.ht-color-14 { background: hsl(256, 70%, 83%); color: hsl(256, 62%, 26%); }
-.ht-color-15 { background: hsl(262, 70%, 83%); color: hsl(262, 62%, 26%); }
-.ht-color-16 { background: hsl(269, 70%, 83%); color: hsl(269, 62%, 26%); }
-.ht-color-17 { background: hsl(275, 70%, 83%); color: hsl(275, 62%, 26%); }
+   Team). TRƯỚC ĐÂY cố định trong dải tông lạnh (165°-275°, xanh ngọc->
+   tím) để tách khỏi Team/Mục tiêu — nhưng dải hẹp đó (dù đã tăng sat/
+   giảm light 1 lần) vẫn khiến nhiều hệ thống liền kề trông CÙNG 1 MÀU (2
+   lần user gửi ảnh phản hồi). Đổi hẳn sang trải ĐỀU 360° (bước 20°, mỗi
+   .ht-color-N 1 họ màu khác hẳn nhau: đỏ/cam/vàng/lục/lam/chàm/tím/hồng...)
+   — chấp nhận trùng vùng hue với Team/Mục tiêu (2 bảng đó dùng hex tay
+   không theo công thức) để đổi lấy khả năng PHÂN BIỆT GIỮA CÁC HỆ THỐNG
+   VỚI NHAU, ưu tiên cao hơn theo yêu cầu user. */
+.ht-color-0 { background: hsl(0, 65%, 82%); color: hsl(0, 55%, 24%); }
+.ht-color-1 { background: hsl(20, 65%, 82%); color: hsl(20, 55%, 24%); }
+.ht-color-2 { background: hsl(40, 65%, 82%); color: hsl(40, 55%, 24%); }
+.ht-color-3 { background: hsl(60, 65%, 82%); color: hsl(60, 55%, 24%); }
+.ht-color-4 { background: hsl(80, 65%, 82%); color: hsl(80, 55%, 24%); }
+.ht-color-5 { background: hsl(100, 65%, 82%); color: hsl(100, 55%, 24%); }
+.ht-color-6 { background: hsl(120, 65%, 82%); color: hsl(120, 55%, 24%); }
+.ht-color-7 { background: hsl(140, 65%, 82%); color: hsl(140, 55%, 24%); }
+.ht-color-8 { background: hsl(160, 65%, 82%); color: hsl(160, 55%, 24%); }
+.ht-color-9 { background: hsl(180, 65%, 82%); color: hsl(180, 55%, 24%); }
+.ht-color-10 { background: hsl(200, 65%, 82%); color: hsl(200, 55%, 24%); }
+.ht-color-11 { background: hsl(220, 65%, 82%); color: hsl(220, 55%, 24%); }
+.ht-color-12 { background: hsl(240, 65%, 82%); color: hsl(240, 55%, 24%); }
+.ht-color-13 { background: hsl(260, 65%, 82%); color: hsl(260, 55%, 24%); }
+.ht-color-14 { background: hsl(280, 65%, 82%); color: hsl(280, 55%, 24%); }
+.ht-color-15 { background: hsl(300, 65%, 82%); color: hsl(300, 55%, 24%); }
+.ht-color-16 { background: hsl(320, 65%, 82%); color: hsl(320, 55%, 24%); }
+.ht-color-17 { background: hsl(340, 65%, 82%); color: hsl(340, 55%, 24%); }
 
 /* Mục tiêu — bảng màu riêng, tông NÓNG (cam/hồng/tím hồng/hổ phách đậm) —
    đối lập hẳn với tông lạnh của Hệ thống ở trên để 2 nhóm badge không bị
