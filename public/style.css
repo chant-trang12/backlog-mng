@@ -654,6 +654,15 @@ button.btn-muted-disabled,
 button.btn-muted-disabled:hover { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 button.btn-delete { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
 button.btn-delete:hover { background: var(--delete-light-hover); }
+/* Cùng màu đỏ nhạt với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu"
+   (Quy tắc 9.1 chỉ admin được xóa) — dùng cho nút "Xin Hủy nhiệm vụ" (popup
+   Cập nhật tiến độ), vốn chỉ là đổi Trạng thái sang "Hủy" (editor vẫn sửa
+   được task bình thường), tách riêng để không bị ẩn nhầm với editor/bgd/
+   viewer bởi CSS chọn theo .btn-delete bên dưới (user phản hồi: editor
+   không thấy nút này) — cùng tinh thần .btn-reject đã tách cho nút "Từ
+   chối" Yêu cầu tính năng. */
+button.btn-cancel-request { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+button.btn-cancel-request:hover { background: var(--delete-light-hover); }
 /* Cùng tông màu với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu" (Quy
    tắc 9.1 chỉ admin được xóa) — dùng cho nút "Từ chối" yêu cầu tính năng,
    vốn chỉ là đổi trạng thái (editor thuộc phòng đích vẫn được làm), tách

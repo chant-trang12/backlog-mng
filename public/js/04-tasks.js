@@ -781,7 +781,7 @@ function updateRequestCancelBtnUI() {
   if (progressDialogTask?.trang_thai === "Hủy") {
     btn.textContent = "Nhiệm vụ đã hủy";
     btn.disabled = true;
-    btn.classList.remove("btn-delete", "btn-exclude");
+    btn.classList.remove("btn-cancel-request", "btn-exclude");
     btn.classList.add("btn-muted-disabled");
     return;
   }
@@ -789,7 +789,7 @@ function updateRequestCancelBtnUI() {
   btn.classList.remove("btn-muted-disabled");
   btn.textContent = progressCancelRequested ? "Bỏ xin Hủy nhiệm vụ" : "Xin Hủy nhiệm vụ";
   btn.classList.toggle("btn-exclude", progressCancelRequested);
-  btn.classList.toggle("btn-delete", !progressCancelRequested);
+  btn.classList.toggle("btn-cancel-request", !progressCancelRequested);
 }
 
 // % thời gian mục tiêu (đầu tháng backlog -> Deadline task) đã trôi qua —
