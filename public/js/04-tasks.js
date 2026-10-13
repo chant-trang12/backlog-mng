@@ -1003,7 +1003,7 @@ function renderTaskMemberThead() {
     <th style="width:190px">Vai trò</th>
     <th style="width:150px">Phân loại</th>
     <th style="width:120px">Tỷ lệ đóng góp (%)</th>
-    ${graded ? '<th style="width:140px">Điểm cá nhân</th>' : ""}
+    ${graded ? '<th style="width:140px">Điểm theo task</th>' : ""}
     <th style="width:100px">Hours</th>
     <th style="width:90px">MD</th>
     <th style="width:570px">Nội dung công việc</th>
