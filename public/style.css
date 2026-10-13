@@ -1941,6 +1941,12 @@ select.tm-phanloai-select {
 }
 .tm-add-frame-toggle .caret { transition: transform 0.15s ease; }
 .tm-add-frame-toggle[aria-expanded="false"] .caret { transform: rotate(-90deg); }
+
+/* Khung "Trừ điểm cá nhân" (popup Chấm điểm) — màu cam cảnh báo (khớp màu
+   badge .status-tru-diem) thay vì nền trung tính như .tm-add-frame thường,
+   để phân biệt rõ đây là hành động TRỪ điểm, không phải "Thêm". */
+.tm-add-frame-warn { background: #fff4e6; border-color: #f3c988; }
+.tm-add-frame-warn .tm-add-frame-toggle { color: #92400e; }
 #tm-add-frame-body { display: flex; flex-direction: column; gap: 12px; }
 #tm-add-frame-body[hidden] { display: none; }
 
