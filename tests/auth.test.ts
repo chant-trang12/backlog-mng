@@ -340,6 +340,39 @@ describe("Authentication & SSO Integration", () => {
       const { nextCalled } = await callRequireWrite("admin", "PUT", "/tasks/1/grade");
       expect(nextCalled).toBe(true);
     });
+
+    // "Trừ điểm cá nhân" ở popup Chấm điểm (nhiemVuMenu) — POST /tasks/:id/
+    // grade-deductions dùng CHUNG quyền "nhiem_vu_cham_diem" với PUT .../grade
+    // (TASK_GRADE_PATH mở rộng, xem auth.middleware.ts) — user yêu cầu xác
+    // nhận lại BGĐ vẫn thực hiện được sau khi ẩn khối này khỏi editor/viewer
+    // ở FE (CSS), KHÔNG phải chặn ở server.
+    it("allows bgd to POST /tasks/:id/grade-deductions (Trừ điểm cá nhân, cùng quyền với Chấm điểm)", async () => {
+      const { nextCalled } = await callRequireWrite("bgd", "POST", "/tasks/1/grade-deductions");
+      expect(nextCalled).toBe(true);
+    });
+
+    it("blocks editor/viewer from POST /tasks/:id/grade-deductions", async () => {
+      for (const role of ["editor", "viewer"] as const) {
+        const { statusCode, nextCalled } = await callRequireWrite(role, "POST", "/tasks/1/grade-deductions");
+        expect(statusCode).toBe(403);
+        expect(nextCalled).toBe(false);
+      }
+    });
+
+    it("allows admin/subadmin to POST /tasks/:id/grade-deductions (bypass hẳn)", async () => {
+      for (const role of ["admin", "subadmin"] as const) {
+        const { nextCalled } = await callRequireWrite(role, "POST", "/tasks/1/grade-deductions");
+        expect(nextCalled).toBe(true);
+      }
+    });
+
+    // "Trừ điểm cá nhân" ở Sự cố (CSKH) — POST /incident-members/:id/tru-diem,
+    // action suy ra "cap_nhat" -> xét function_key "cskh" (seed mặc định bgd
+    // can_edit=true, NGANG editor — xem rolePermissions.ts).
+    it("allows bgd to POST /incident-members/:id/tru-diem (Trừ điểm cá nhân ở Sự cố)", async () => {
+      const { nextCalled } = await callRequireWrite("bgd", "POST", "/incident-members/1/tru-diem");
+      expect(nextCalled).toBe(true);
+    });
   });
 
   describe("requireWrite — màn Phân quyền (Cấu hình → Phân quyền) thay đổi role_permissions -> có hiệu lực NGAY", () => {
