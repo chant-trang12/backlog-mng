@@ -1527,6 +1527,7 @@ th {
 #member-table td:nth-child(9), /* Hỗ trợ */
 #member-table td:nth-child(10), /* Đánh giá */
 #member-table td:nth-child(11), /* Điểm cá nhân (Tính theo task) */
+#member-table td:nth-child(12), /* Điểm cá nhân (Mặc định) */
 #member-table td:last-child { /* Sửa/Xóa */
   text-align: center;
   vertical-align: middle;
