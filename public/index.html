@@ -3240,8 +3240,11 @@
            trên: trừ thẳng 10 điểm vào "Điểm cá nhân (Mặc định)" (100 điểm/
            tháng, xem gradeDeduction.service.ts) của 1 nhân sự được chọn.
            Mỗi (task, nhân sự) chỉ trừ được 1 lần — nhân sự đã trừ rồi hiện
-           badge, không chọn lại được (xem renderGradeDeductions, 04-tasks.js). -->
-      <div class="tm-add-frame tm-add-frame-warn" style="margin-top:4px">
+           badge, không chọn lại được (xem renderGradeDeductions, 04-tasks.js).
+           Class "grade-write-action" (chung với nút "Chấm điểm") — ẩn khối
+           này với editor/viewer, chỉ BGĐ (+ admin/subadmin, luôn toàn
+           quyền) thấy được (yêu cầu user, xem style.css). -->
+      <div class="tm-add-frame tm-add-frame-warn grade-write-action" style="margin-top:4px">
         <button type="button" id="grade-deduction-toggle-btn" class="tm-add-frame-toggle" aria-expanded="false">
           <span>Trừ điểm cá nhân</span>
           <span class="caret" aria-hidden="true">▾</span>
