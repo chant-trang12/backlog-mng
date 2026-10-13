@@ -516,7 +516,7 @@
                     <th style="min-width:110px">Đào tạo</th>
                     <th style="min-width:110px">Hỗ trợ</th>
                     <th style="min-width:110px">Ranking</th>
-                    <th style="min-width:170px" title="Trung bình % Đánh giá (không nhân tỷ lệ đóng góp) các task &quot;Thực hiện chính&quot; (hoặc chưa phân loại) + cộng thẳng điểm các task &quot;Hỗ trợ&quot; = Tỷ lệ đóng góp × % Đánh giá (không tính vào trung bình) — ĐÃ TRỪ điểm Trừ điểm cá nhân từ Sự cố (nếu có)">Điểm cá nhân (Tính theo task)</th>
+                    <th style="min-width:170px" title="Trung bình % Đánh giá (không nhân tỷ lệ đóng góp) các task &quot;Thực hiện chính&quot; (hoặc chưa phân loại) + cộng thẳng điểm các task &quot;Hỗ trợ&quot; = Tỷ lệ đóng góp × % Đánh giá (không tính vào trung bình) — KHÔNG trừ bất kỳ khoản 'Trừ điểm cá nhân' nào (xem cột Mặc định bên phải)">Điểm cá nhân (Tính theo task)</th>
                     <th style="min-width:170px" title="Mỗi nhân sự mặc định 100 điểm/tháng, trừ dần theo nút 'Trừ điểm cá nhân' ở popup Chấm điểm (menu Nhiệm vụ, mỗi lần trừ 10 điểm), tự về 100 khi sang tháng mới — ĐỘC LẬP với cột 'Tính theo task' bên trái">Điểm cá nhân (Mặc định)</th>
                     <th style="min-width:220px">Ghi chú</th>
                     <th style="min-width:170px"></th>
@@ -3139,7 +3139,7 @@
       <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
       <p class="muted" style="margin:0">Danh sách task đã gán nhân sự này ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn.</p>
       <p class="muted" style="margin:0">Cách tính cột Điểm: nếu đã ghi đè tay (Điểm cá nhân) thì lấy đúng giá trị đó. Nếu chưa, task <strong>Thực hiện chính</strong> (hoặc chưa phân loại) lấy thẳng % Đánh giá; task <strong>Hỗ trợ</strong> nhân thêm Tỷ lệ đóng góp (Tỷ lệ đóng góp × % Đánh giá). Task chưa chấm điểm thì để trống.</p>
-      <p class="muted" style="margin:0">"Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm của các task Thực hiện chính, cộng thêm điểm các task Hỗ trợ, trừ đi điểm "Trừ điểm cá nhân" từ Sự cố (nếu có).</p>
+      <p class="muted" style="margin:0">"Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm của các task Thực hiện chính, cộng thêm điểm các task Hỗ trợ (không còn trừ khoản "Trừ điểm cá nhân" nào — các khoản trừ nay chỉ tính vào cột "Điểm cá nhân (Mặc định)").</p>
       <div class="table-wrap">
         <table id="member-task-detail-table">
           <thead>

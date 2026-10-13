@@ -291,7 +291,7 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     expect(again.body.error).toContain("chỉ trừ được 1 lần");
   });
 
-  it('"Trừ điểm cá nhân" từ Sự cố kéo "Điểm cá nhân (Tính theo task)" <= 0 -> tự động Hạ KI (dùng chung logic autoHaKiNeuDiemNhoHonBang0 với Nhân sự tham gia task)', async () => {
+  it('"Trừ điểm cá nhân" từ Sự cố kéo "Điểm cá nhân (Mặc định)" <= 0 -> tự động Hạ KI (dùng chung logic autoHaKiNeuMacDinhNhoHonBang0 với popup Chấm điểm), KHÔNG đụng "Tính theo task"', async () => {
     const app = createApp();
     const periodId = await makePeriod(app, 2042, 5);
     const teamId = await makeTeam(app, "IM auto ha ki team", periodId);
@@ -309,22 +309,28 @@ describe("CSKH: Nhân sự liên quan sự cố", () => {
     );
     expect(before.ha_ki).toBe(false);
 
-    const incidentId = await makeIncident(app, periodId, teamId, "Su co keo diem am");
-    const im = await request(app).post(`/api/incidents/${incidentId}/members`).send({ member_id: memberId });
-    // Trừ lần 1: 40 - 50 = -10 -> đã <= 0, phải tự Hạ KI ngay (không cần đợi dòng trừ thứ 2).
-    const truDiem = await request(app).post(`/api/incident-members/${im.body.id}/tru-diem`);
-    expect(truDiem.body.member_ha_ki).toBe(true);
+    // 2 sự cố khác nhau, mỗi lần trừ 50 điểm vào "Mặc định" -> 100-50-50=0 <= 0.
+    const incident1 = await makeIncident(app, periodId, teamId, "Su co keo diem am 1");
+    const im1 = await request(app).post(`/api/incidents/${incident1}/members`).send({ member_id: memberId });
+    const tru1 = await request(app).post(`/api/incident-members/${im1.body.id}/tru-diem`);
+    expect(tru1.body.member_ha_ki).toBe(false); // sau lần 1: Mặc định = 50 > 0, chưa hạ
+
+    const incident2 = await makeIncident(app, periodId, teamId, "Su co keo diem am 2");
+    const im2 = await request(app).post(`/api/incidents/${incident2}/members`).send({ member_id: memberId });
+    const tru2 = await request(app).post(`/api/incident-members/${im2.body.id}/tru-diem`);
+    expect(tru2.body.member_ha_ki).toBe(true); // sau lần 2: Mặc định = 0 <= 0 -> tự Hạ KI
 
     const after = (await request(app).get(`/api/members?period_id=${periodId}`)).body.find(
       (m: { id: number }) => m.id === memberId,
     );
     expect(after.ha_ki).toBe(true);
     expect(after.tang_ki).toBe(false);
-    expect(after.ki_ly_do).toBe("Tự động trừ KI do điểm cá nhân <= 0");
+    expect(after.ki_ly_do).toBe("Tự động trừ KI do Điểm cá nhân (Mặc định) <= 0");
 
     const kpi = await request(app).get(`/api/kpi-theo-task?period_id=${periodId}`);
     const row = kpi.body.find((r: { member_id: number }) => r.member_id === memberId);
-    expect(row.tong_diem).toBe(-10);
+    expect(row.tong_diem).toBe(40); // "Tính theo task" không còn bị đụng
+    expect(row.diem_mac_dinh).toBe(0);
   });
 
   it("rejects actions for a missing incident-member row", async () => {

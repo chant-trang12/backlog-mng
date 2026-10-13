@@ -89,34 +89,44 @@ export async function sumGradeDeductions(memberId: number, periodId: number): Pr
   return Math.round(Number((row as any)?.tong ?? 0) * 100) / 100;
 }
 
-// Chi tiết từng lượt trừ (tên nhiệm vụ gây trừ điểm + số điểm + ngày) — cho
-// note ở cột Ghi chú bảng Nhân sự, giống su_co_tru_diem (KpiTheoTaskRow).
-export async function listGradeDeductionsForMemberPeriod(
-  memberId: number,
-  periodId: number,
-): Promise<{ nhiem_vu: string; so_diem: number; ngay: string | null }[]> {
-  const rows = await db("grade_deductions as gd")
-    .join("tasks as t", "gd.task_id", "t.id")
-    .where("gd.member_id", memberId)
-    .where("t.period_id", periodId)
-    .where("gd.is_deleted", false)
-    .select("t.nhiem_vu", "gd.so_diem", "gd.tru_luc")
-    .orderBy("gd.id", "asc");
-  return (rows as any[]).map((r) => ({
-    nhiem_vu: r.nhiem_vu,
-    so_diem: Math.round(Number(r.so_diem) * 100) / 100,
-    ngay: r.tru_luc ?? null,
-  }));
+// Tổng điểm bị trừ từ Sự cố (incident_members.tru_diem_so_diem, nút "Trừ
+// điểm cá nhân" ở popup "Nhân sự liên quan") của 1 nhân sự trong 1 tháng —
+// CŨNG trừ vào "Điểm cá nhân (Mặc định)" (yêu cầu user: gộp mọi rule "Trừ
+// điểm cá nhân" trong hệ thống về chung 1 đích là cột Mặc định, không còn
+// đụng vào "Điểm cá nhân (Tính theo task)" nữa).
+async function sumIncidentDeductions(memberId: number, periodId: number): Promise<number> {
+  const row = await db("incident_members as im")
+    .join("incidents as inc", "im.incident_id", "inc.id")
+    .where("im.member_id", memberId)
+    .where("inc.period_id", periodId)
+    .where("inc.is_deleted", false)
+    .whereNotNull("im.tru_diem_luc")
+    .sum({ tong: "im.tru_diem_so_diem" })
+    .first();
+  return Math.round(Number((row as any)?.tong ?? 0) * 100) / 100;
+}
+
+// Tổng mọi khoản trừ vào "Điểm cá nhân (Mặc định)" của 1 nhân sự trong 1
+// tháng — gộp grade_deductions (popup Chấm điểm + nút "Trừ điểm cá nhân" ở
+// "Nhân sự tham gia") VÀ incident_members (Sự cố). Dùng cho cả
+// listKpiTheoTask (taskMember.service.ts, hiển thị cột Mặc định) lẫn
+// autoHaKiNeuMacDinhNhoHonBang0 bên dưới.
+export async function sumMacDinhDeductions(memberId: number, periodId: number): Promise<number> {
+  const [grade, incident] = await Promise.all([
+    sumGradeDeductions(memberId, periodId),
+    sumIncidentDeductions(memberId, periodId),
+  ]);
+  return Math.round((grade + incident) * 100) / 100;
 }
 
 const AUTO_HA_KI_LY_DO_MAC_DINH = "Tự động trừ KI do Điểm cá nhân (Mặc định) <= 0";
 
-// Tự động Hạ KI khi "Điểm cá nhân (Mặc định)" (100 - tổng grade_deductions
-// trong tháng) rơi <= 0 — cùng tinh thần autoHaKiNeuDiemNhoHonBang0
-// (taskMember.service.ts) nhưng tính theo nguồn điểm trừ khác hẳn (yêu cầu
-// user). Không đụng nhân sự đã đang Hạ KI (giữ nguyên lý do cũ).
+// Tự động Hạ KI khi "Điểm cá nhân (Mặc định)" (100 - tổng mọi khoản trừ
+// trong tháng, gồm grade_deductions + Sự cố) rơi <= 0 — gọi từ CẢ
+// addGradeDeduction (trên) lẫn truDiemIncidentMember (incidentMember.
+// service.ts). Không đụng nhân sự đã đang Hạ KI (giữ nguyên lý do cũ).
 export async function autoHaKiNeuMacDinhNhoHonBang0(memberId: number, periodId: number): Promise<boolean> {
-  const tongTru = await sumGradeDeductions(memberId, periodId);
+  const tongTru = await sumMacDinhDeductions(memberId, periodId);
   const macDinh = Math.round((DIEM_MAC_DINH_GOC - tongTru) * 100) / 100;
   if (macDinh > 0) return false;
 

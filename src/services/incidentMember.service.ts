@@ -3,7 +3,7 @@ import type { CreateIncidentMemberInput, IncidentMember } from "../types/cskh.js
 import { getIncident } from "./incident.service.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { getMember } from "./member.service.js";
-import { autoHaKiNeuDiemNhoHonBang0 } from "./taskMember.service.js";
+import { autoHaKiNeuMacDinhNhoHonBang0 } from "./gradeDeduction.service.js";
 
 const TRU_DIEM_SO_DIEM = 50; // trừ điểm cá nhân cho nhân sự liên quan sự cố
 
@@ -138,12 +138,13 @@ export async function truDiemIncidentMember(id: number, scope: DataScope): Promi
       tru_diem_ly_do: lyDo,
       updated_at: db.fn.now(),
     });
-  // Khoản trừ này cũng tính vào "Điểm cá nhân (Tính theo task)" (xem
-  // listKpiTheoTask, taskMember.service.ts) — kiểm tra lại, rơi <= 0 thì
-  // tự động Hạ KI, ĐÚNG logic đã có sẵn cho "Trừ điểm cá nhân" ở Nhân sự
-  // tham gia task (user yêu cầu dùng chung 1 logic).
+  // Khoản trừ này tính vào "Điểm cá nhân (Mặc định)" (KHÔNG còn đụng "Điểm
+  // cá nhân (Tính theo task)" nữa — yêu cầu user: bỏ mọi rule trừ điểm
+  // liên quan cột Tính theo task, gộp về chung cột Mặc định, xem
+  // listKpiTheoTask/gradeDeduction.service.ts) — kiểm tra lại, rơi <= 0 thì
+  // tự động Hạ KI.
   if (incident?.period_id != null) {
-    await autoHaKiNeuDiemNhoHonBang0(existing.member_id, incident.period_id);
+    await autoHaKiNeuMacDinhNhoHonBang0(existing.member_id, incident.period_id);
   }
   return getIncidentMemberRow(id);
 }

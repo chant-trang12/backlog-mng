@@ -302,12 +302,6 @@ export interface UpdateTaskMemberInput {
   // da_xu_ly_gap_luc = hôm nay. Thắng mọi field can_xu_ly_gap* khác gửi
   // kèm (nếu có).
   mark_can_xu_ly_gap_resolved?: boolean;
-  // true -> "Trừ điểm cá nhân" (nút 1 lần/dòng): trừ 10 điểm khỏi Điểm cá
-  // nhân đang hiển thị (tự tính hay ghi đè tay đều được — giá trị mới lưu
-  // vào diem_ca_nhan) + ghi tru_diem_luc. Chỉ được gọi khi dòng chưa trừ;
-  // backend tự Hạ KI nhân sự nếu tổng "Điểm cá nhân (Tính theo task)" của
-  // người đó trong tháng rơi <= 0 (xem taskMember.service.ts).
-  tru_diem_ca_nhan?: boolean;
 }
 
 // KPI nhân sự tính trực tiếp theo task (departments.cach_tinh_kpi =
@@ -333,21 +327,20 @@ export interface KpiTheoTaskRow {
   member_chuc_vu: string | null;
   team_name: string | null;
   so_task: number;
+  // tong_diem = thuần % Đánh giá các task (KHÔNG còn trừ điểm nào — mọi
+  // rule "Trừ điểm cá nhân" đã chuyển hết sang diem_mac_dinh bên dưới,
+  // theo yêu cầu user, xem listKpiTheoTask).
   tong_diem: number;
-  // Tổng điểm bị trừ từ "Trừ điểm cá nhân" ở các Sự cố (CSKH) của nhân sự
-  // này trong tháng — khoản trừ ĐỘC LẬP, không gắn vào task nào, áp vào
-  // tong_diem SAU KHI đã tính xong (xem listKpiTheoTask). 0 nếu không có.
-  diem_tru_su_co: number;
-  // Chi tiết từng lượt trừ (1 sự cố có thể trừ nhiều nhân sự, 1 nhân sự có
-  // thể dính nhiều sự cố trong tháng) — dùng để hiện note ở cột Ghi chú
-  // bảng Nhân sự (xem memberNoteCellContent, 03-members.js).
-  su_co_tru_diem: { ten_su_co: string; so_diem: number; ngay: string | null }[];
   // "Điểm cá nhân (Mặc định)" — mỗi nhân sự mặc định 100 điểm/tháng, trừ
-  // dần theo các lần bị trừ ở popup "Chấm điểm" (grade_deductions), tự về
-  // lại 100 khi sang tháng (period) mới. ĐỘC LẬP hoàn toàn với tong_diem/
-  // diem_tru_su_co ở trên (xem gradeDeduction.service.ts).
+  // dần theo MỌI nguồn "Trừ điểm cá nhân" trong hệ thống (popup Chấm điểm,
+  // nút ở "Nhân sự tham gia" — cả 2 đều ghi vào grade_deductions — và Sự
+  // cố, incident_members), tự về lại 100 khi sang tháng (period) mới. Xem
+  // gradeDeduction.service.ts.
   diem_mac_dinh: number;
-  mac_dinh_tru_diem: { nhiem_vu: string; so_diem: number; ngay: string | null }[];
+  // Chi tiết từng lượt trừ (nguồn = "nhiệm vụ ..."/"sự cố ..." + điểm +
+  // ngày) — dùng để hiện note ở cột Ghi chú bảng Nhân sự (xem
+  // memberNoteCellContent, 03-members.js).
+  mac_dinh_tru_diem: { nguon: string; so_diem: number; ngay: string | null }[];
   tasks: KpiTheoTaskTaskEntry[];
 }
 

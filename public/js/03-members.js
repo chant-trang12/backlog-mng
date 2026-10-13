@@ -104,32 +104,22 @@ function memberKpiTheoTaskRow(memberId) {
 // làm trọn (100%) dù % Đánh giá như nhau, không phản ánh đúng nỗ lực; task
 // "Hỗ trợ" = Tỷ lệ đóng góp × % Đánh giá (VẪN nhân tỷ lệ — hỗ trợ càng
 // nhiều mới cộng càng nhiều).
-// Trung bình % Đánh giá (task Thực hiện chính/chưa phân loại) + cộng thẳng
-// điểm task Hỗ trợ — PHẦN CHUNG giữa 2 cột "Điểm cá nhân (Tính theo task)"
-// (đã trừ Sự cố) và "Điểm cá nhân (Mặc định)" (chưa trừ) bên dưới, tách
-// riêng để khỏi lặp lại logic tính trung bình/bonus 2 lần.
-function memberDiemTheoTaskBase(memberId) {
+// "Điểm cá nhân (Tính theo task)" = ĐIỂM TRUNG BÌNH (không phải tổng) của
+// các task "Thực hiện chính"/chưa phân loại ĐÃ CÓ điểm, + cộng thẳng điểm
+// task "Hỗ trợ" (không chia lại theo số lượng). KHÔNG còn điểm trừ nào áp
+// vào đây nữa (bỏ hẳn theo yêu cầu user — mọi rule "Trừ điểm cá nhân"
+// trong hệ thống giờ chỉ còn đụng cột "Điểm cá nhân (Mặc định)", xem
+// memberDiemMacDinh bên dưới). null nếu chưa có task nào có điểm.
+function memberAvgDiemTheoTask(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
-  const truSuCo = row.diem_tru_su_co ?? 0;
   const scored = row.tasks.filter((t) => t.diem !== null);
   const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
   const bonusTasks = scored.filter((t) => t.phan_loai === HO_TRO_LABEL);
-  if (mainTasks.length === 0 && bonusTasks.length === 0 && truSuCo === 0) return null;
+  if (mainTasks.length === 0 && bonusTasks.length === 0) return null;
   const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
   const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
-  return { mainAvg, bonus, truSuCo };
-}
-
-// "Điểm cá nhân (Tính theo task)" = giá trị CUỐI CÙNG hiển thị/dùng cho
-// KPI — ĐÃ TRỪ điểm "Trừ điểm cá nhân" từ Sự cố (CSKH, khoản trừ độc lập,
-// áp SAU khi tính xong trung bình + bonus — xem listKpiTheoTask,
-// taskMember.service.ts). Nhân sự có sự cố nhưng không tham gia task nào
-// tháng đó vẫn hiện điểm âm thay vì "—".
-function memberAvgDiemTheoTask(memberId) {
-  const base = memberDiemTheoTaskBase(memberId);
-  if (!base) return null;
-  return Math.round((base.mainAvg + base.bonus - base.truSuCo) * 100) / 100;
+  return Math.round((mainAvg + bonus) * 100) / 100;
 }
 
 // "Điểm cá nhân (Mặc định)" — HOÀN TOÀN ĐỘC LẬP với công thức "Tính theo
@@ -150,9 +140,7 @@ function openMemberTaskDetailDialog(member) {
   document.getElementById("member-task-detail-name").textContent = member.name;
   const tbody = document.getElementById("member-task-detail-tbody");
   const empty = document.getElementById("member-task-detail-empty");
-  // Có điểm trừ Sự cố dù 0 task thì vẫn hiện dòng trừ điểm (không phải
-  // "chưa có gì") — xem dòng "Trừ điểm cá nhân (Sự cố)" bên dưới.
-  empty.hidden = tasks.length > 0 || (row?.diem_tru_su_co ?? 0) > 0;
+  empty.hidden = tasks.length > 0;
 
   // Phòng ban tính KPI theo task (không chia team) — cột Team ở bảng chi
   // tiết này không có ý nghĩa (mọi task đều cùng 1 team hoặc không chia
@@ -161,12 +149,13 @@ function openMemberTaskDetailDialog(member) {
   const teamTh = document.getElementById("member-task-detail-team-th");
   if (teamTh) teamTh.hidden = hideTeamColumn;
 
-  const truSuCo = row?.diem_tru_su_co ?? 0;
-  const colCount = hideTeamColumn ? 5 : 6;
-  tbody.innerHTML =
-    tasks
-      .map(
-        (t) => `
+  // KHÔNG còn dòng "Trừ điểm cá nhân (Sự cố)" ở cuối bảng này nữa — khoản
+  // trừ đó giờ chỉ đụng cột "Điểm cá nhân (Mặc định)" (xem note ở cột Ghi
+  // chú bảng Nhân sự, memberNoteCellContent), không còn liên quan tổng
+  // điểm các task liệt kê ở đây.
+  tbody.innerHTML = tasks
+    .map(
+      (t) => `
     <tr>
       <td>${t.nhiem_vu}</td>
       <td ${hideTeamColumn ? "hidden" : ""}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
@@ -175,17 +164,8 @@ function openMemberTaskDetailDialog(member) {
       <td>${t.cpo_danh_gia ?? "-"}</td>
       <td>${t.diem ?? "-"}</td>
     </tr>`,
-      )
-      .join("") +
-    // Trừ điểm cá nhân từ Sự cố — khoản trừ độc lập, không gắn task nào
-    // (xem memberAvgDiemTheoTask/listKpiTheoTask), hiện dòng riêng cuối
-    // bảng để biết vì sao tổng thấp hơn tổng các task liệt kê ở trên.
-    (truSuCo > 0
-      ? `<tr>
-      <td colspan="${colCount - 1}" style="text-align:right;font-weight:600">Trừ điểm cá nhân (Sự cố):</td>
-      <td style="font-weight:600;color:var(--delete)">-${truSuCo}</td>
-    </tr>`
-      : "");
+    )
+    .join("");
   document.getElementById("member-task-detail-dialog").showModal();
 }
 document.getElementById("member-task-detail-close-btn").addEventListener("click", () => {
@@ -203,24 +183,14 @@ function memberNoteCellContent(m) {
     const label = m.ha_ki ? "Lý do hạ KI" : "Lý do tăng KI";
     parts.push(`<div class="ki-reason-note"><strong>${label}:</strong> ${m.ki_ly_do.replace(/\n/g, "<br/>")}</div>`);
   }
-  // Bị "Trừ điểm cá nhân" từ (các) Sự cố trong tháng — khoản trừ ĐỘC LẬP
-  // với mọi task (xem diem_tru_su_co, listKpiTheoTask ở
-  // taskMember.service.ts) nên không hiện ở đâu khác ngoài tổng điểm; note
-  // lại đây để biết LÝ DO cụ thể vì sao điểm bị trừ, giống cách Hạ KI/Tăng
-  // KI note lý do ở trên.
+  // Bị "Trừ điểm cá nhân" (popup Chấm điểm, "Nhân sự tham gia", hoặc Sự cố
+  // — mọi nguồn đều đụng chung cột "Điểm cá nhân (Mặc định)", xem
+  // mac_dinh_tru_diem/listKpiTheoTask) — note lại đây để biết LÝ DO cụ thể
+  // vì sao điểm bị trừ, giống cách Hạ KI/Tăng KI note lý do ở trên.
   const kpiRow = memberKpiTheoTaskRow(m.id);
-  if (kpiRow?.su_co_tru_diem?.length) {
-    const lines = kpiRow.su_co_tru_diem
-      .map((s) => `Trừ ${s.so_diem} điểm do sự cố "${s.ten_su_co}"${s.ngay ? ` (${s.ngay})` : ""}`)
-      .join("<br/>");
-    parts.push(`<div class="ki-reason-note"><strong>Trừ điểm cá nhân:</strong><br/>${lines}</div>`);
-  }
-  // Bị "Trừ điểm cá nhân" ở popup Chấm điểm (cột "Điểm cá nhân (Mặc định)")
-  // — khoản trừ RIÊNG, khác hẳn khoản trừ Sự cố ở trên (xem
-  // mac_dinh_tru_diem, listKpiTheoTask).
   if (kpiRow?.mac_dinh_tru_diem?.length) {
     const lines = kpiRow.mac_dinh_tru_diem
-      .map((s) => `Trừ ${s.so_diem} điểm (Mặc định) ở nhiệm vụ "${s.nhiem_vu}"${s.ngay ? ` (${s.ngay})` : ""}`)
+      .map((s) => `Trừ ${s.so_diem} điểm (Mặc định) do ${s.nguon}${s.ngay ? ` (${s.ngay})` : ""}`)
       .join("<br/>");
     parts.push(`<div class="ki-reason-note"><strong>Trừ điểm cá nhân (Mặc định):</strong><br/>${lines}</div>`);
   }

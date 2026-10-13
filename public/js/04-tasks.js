@@ -1020,7 +1020,14 @@ function renderTaskMemberThead() {
 
 async function loadTaskMembers() {
   if (!state.taskMemberTaskId) return;
-  state.taskMembers = await api(`/api/tasks/${state.taskMemberTaskId}/members`);
+  const [taskMembers, gradeDeductions] = await Promise.all([
+    api(`/api/tasks/${state.taskMemberTaskId}/members`),
+    api(`/api/tasks/${state.taskMemberTaskId}/grade-deductions`).catch(() => []),
+  ]);
+  state.taskMembers = taskMembers;
+  // Set member_id đã bị trừ 10 điểm cá nhân (Mặc định) ở CHÍNH task này —
+  // dùng để hiện badge "Đã trừ điểm" thay vì nút (xem renderTaskMembers).
+  state.taskMemberGradeDeductedIds = new Set(gradeDeductions.map((d) => d.member_id));
   renderTaskMembers();
   // Danh sách Nhân sự tham gia vừa đổi -> nguồn gán vào từng Việc (phần
   // "Chi tiết công việc" gộp chung dialog này) cũng cần vẽ lại.
@@ -1080,20 +1087,18 @@ function renderTaskMembers() {
               ? round2((state.taskMemberTaskScore * contrib) / 100)
               : null
             : state.taskMemberTaskScore;
-        // Điểm trừ "Trừ điểm cá nhân" là lớp RIÊNG (tru_diem_so_diem) — ↺
-        // reset chỉ xóa điểm nhập tay về tự tính, KHÔNG xóa được điểm trừ
-        // (yêu cầu user): điểm mặc định = tự tính - tru_diem_so_diem. Có
-        // điểm trừ mà tự tính null -> trừ trên 0 (= -tru_diem_so_diem).
-        const truSoDiem = Number(tm.tru_diem_so_diem ?? 0);
-        const autoSauTru = truSoDiem === 0 ? auto : auto == null ? -truSoDiem : round2(auto - truSoDiem);
+        // KHÔNG còn điểm trừ "Trừ điểm cá nhân" nào áp vào điểm tự tính ở
+        // đây nữa (bỏ hẳn theo yêu cầu user — xem nút "Trừ điểm cá nhân" ở
+        // cột hành động bên dưới, giờ trừ thẳng vào "Điểm cá nhân (Mặc
+        // định)" qua POST /api/tasks/:taskId/grade-deductions, không còn
+        // đụng tới điểm hiển thị ở đây).
         const isManual = tm.diem_ca_nhan != null;
-        const rawPercent = isManual ? Number(tm.diem_ca_nhan) : autoSauTru;
+        const rawPercent = isManual ? Number(tm.diem_ca_nhan) : auto;
         const displayScore = rawPercent == null ? "" : unit === "scale5" ? percentToScale5(rawPercent) : rawPercent;
         const autoTitle =
-          (tm.phan_loai === HO_TRO_LABEL
+          tm.phan_loai === HO_TRO_LABEL
             ? "Tự tính (Hỗ trợ) = % Đánh giá của task × Tỷ lệ đóng góp"
-            : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp") +
-          (truSoDiem > 0 ? ` — đã trừ ${truSoDiem} điểm cá nhân (không reset được)` : "");
+            : "Tự tính (Thực hiện chính) = thẳng % Đánh giá của task, không nhân Tỷ lệ đóng góp";
         // Dùng grid 2 cột CỐ ĐỊNH (không phải flex) — cột 1 luôn đúng 64px
         // cho ô nhập, bất kể phần đuôi (icon "↺" hay chữ "(tự tính)") dài
         // ngắn khác nhau — đảm bảo số luôn nằm cùng 1 vị trí giữa các dòng
@@ -1105,7 +1110,7 @@ function renderTaskMembers() {
           <input type="number" class="inline-cell-input tm-score-input" data-id="${tm.id}" step="0.1" value="${displayScore}" placeholder="—" style="width:64px" />
           ${
             isManual
-              ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %${truSoDiem > 0 ? " (vẫn giữ điểm đã trừ cá nhân — không reset được)" : ""}" style="justify-self:start">↺</span>`
+              ? `<span class="pill-x tm-score-reset" data-id="${tm.id}" title="Xóa điểm nhập tay, về tự tính theo %" style="justify-self:start">↺</span>`
               : `<span class="muted" style="font-size:0.68rem;white-space:nowrap;justify-self:start" title="${autoTitle}">(tự tính)</span>`
           }
         </div>
@@ -1143,19 +1148,17 @@ function renderTaskMembers() {
                 : ""
           }
           ${
-            // "Trừ điểm cá nhân" — nút 1 lần/dòng: trừ 10 điểm khỏi Điểm cá
-            // nhân đang hiển thị (xem updateTaskMember, taskMember.service.ts).
-            // HIỆN MỌI LÚC (kể cả task chưa chấm điểm — dòng chưa có điểm tự
-            // tính thì trừ trên 0, thành -10; backend taskMember.service.ts
-            // không chặn task chưa chấm). Sau khi trừ, nút thay bằng badge
-            // "Đã trừ điểm" (không trừ lại được). Backend tự Hạ KI nhân sự
-            // nếu tổng "Điểm cá nhân (Tính theo task)" của người đó trong
-            // tháng rơi <= 0. Nút × (bỏ khỏi task) xếp CÙNG DÒNG để đỡ dài
-            // cột hành động (user phản hồi).
+            // "Trừ điểm cá nhân" — trừ thẳng 10 điểm vào "Điểm cá nhân (Mặc
+            // định)" của nhân sự này (POST /api/tasks/:taskId/grade-
+            // deductions, CÙNG cơ chế với popup Chấm điểm — xem
+            // gradeDeduction.service.ts). KHÔNG còn đụng điểm hiển thị ở cột
+            // bên trái nữa. Mỗi (task, nhân sự) chỉ trừ được 1 lần — gating
+            // theo state.taskMemberGradeDeductedIds (load cùng loadTaskMembers).
+            // Nút × (bỏ khỏi task) xếp CÙNG DÒNG để đỡ dài cột hành động.
             `<div style="display:flex;align-items:center;gap:4px">${
-              tm.tru_diem_luc
-                ? `<span class="status-badge status-tru-diem" style="font-size:0.72rem" title="Đã trừ 10 điểm cá nhân ngày ${formatDateDisplay(tm.tru_diem_luc)} — mỗi dòng chỉ trừ được 1 lần, ↺ reset không xóa được điểm trừ">Đã trừ điểm</span>`
-                : `<button type="button" class="small btn-reject tm-tru-diem-btn" data-id="${tm.id}" style="white-space:nowrap" title="Trừ 10 điểm cá nhân của người này (mỗi dòng chỉ trừ được 1 lần)">Trừ điểm cá nhân</button>`
+              state.taskMemberGradeDeductedIds?.has(tm.member_id)
+                ? `<span class="status-badge status-tru-diem" style="font-size:0.72rem" title="Đã trừ 10 điểm cá nhân (Mặc định) ở task này — mỗi task chỉ trừ được 1 lần/người">Đã trừ điểm</span>`
+                : `<button type="button" class="small btn-reject tm-tru-diem-btn" data-id="${tm.id}" data-member-id="${tm.member_id}" style="white-space:nowrap" title="Trừ 10 điểm cá nhân (Mặc định) của người này (mỗi task chỉ trừ được 1 lần/người)">Trừ điểm cá nhân</button>`
             }<button type="button" class="small btn-delete tm-del-btn" data-id="${tm.id}" title="Bỏ khỏi task">×</button></div>`
           }
         </div>
@@ -1177,30 +1180,29 @@ function renderTaskMembers() {
     });
   });
 
-  // "Trừ điểm cá nhân" — nút 1 lần/dòng: trừ thẳng 10 điểm khỏi Điểm cá
-  // nhân đang hiển thị của dòng (backend tự ghi đè vào diem_ca_nhan + chặn
-  // trừ lần 2, xem taskMember.service.ts). Sau khi trừ, loadTaskMembers()
-  // vẽ lại bảng — nút biến thành badge "Đã trừ điểm", điểm mới hiện ở cột
-  // Điểm cá nhân (VD 5 -> -5). Backend còn tự Hạ KI nhân sự khi tổng "Điểm
-  // cá nhân (Tính theo task)" của người đó trong tháng rơi <= 0.
+  // "Trừ điểm cá nhân" — trừ thẳng 10 điểm vào "Điểm cá nhân (Mặc định)"
+  // của nhân sự (grade_deductions, CÙNG endpoint với popup Chấm điểm — xem
+  // loadGradeDeductions/gradeDeduction.service.ts). Backend tự Hạ KI nhân
+  // sự khi tổng "Mặc định" của người đó trong tháng rơi <= 0.
   el.taskMemberTbody.querySelectorAll(".tm-tru-diem-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       if (
-        !(await confirmDialog("Trừ 10 điểm cá nhân của nhân sự này? Mỗi dòng chỉ được trừ 1 lần.", {
+        !(await confirmDialog("Trừ 10 điểm cá nhân (Mặc định) của nhân sự này? Mỗi task chỉ được trừ 1 lần/người.", {
           title: "Trừ điểm cá nhân",
         }))
       )
         return;
       try {
-        await api(`/api/task-members/${btn.dataset.id}`, {
-          method: "PUT",
-          body: JSON.stringify({ tru_diem_ca_nhan: true }),
+        await api(`/api/tasks/${state.taskMemberTaskId}/grade-deductions`, {
+          method: "POST",
+          body: JSON.stringify({ member_id: Number(btn.dataset.memberId) }),
         });
-        showToast("Đã trừ 10 điểm cá nhân.", "success");
+        showToast("Đã trừ 10 điểm cá nhân (Mặc định).", "success");
       } catch (err) {
         showToast(err.message);
       }
       await loadTaskMembers();
+      if (typeof loadMembers === "function") await loadMembers();
     });
   });
 
