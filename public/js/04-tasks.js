@@ -717,8 +717,88 @@ function openGradeDialog(task) {
       })
       .catch(() => {});
   }
+  // Đóng khung "Trừ điểm cá nhân" mỗi lần mở lại dialog — tránh còn mở từ
+  // lần chấm điểm task trước.
+  document.getElementById("grade-deduction-frame").hidden = true;
+  document.getElementById("grade-deduction-toggle-btn").setAttribute("aria-expanded", "false");
+  loadGradeDeductions(task);
   el.gradeDialog.showModal();
 }
+
+// "Trừ điểm cá nhân" ở popup Chấm điểm — trừ 10 điểm vào "Điểm cá nhân
+// (Mặc định)" của 1 nhân sự (ĐỘC LẬP với % Đánh giá task, xem
+// gradeDeduction.service.ts). Tải song song: danh sách nhân sự trong tháng
+// của task (cho select) + các lượt đã trừ của CHÍNH task này (ẩn khỏi
+// select + hiện badge).
+async function loadGradeDeductions(task) {
+  const select = document.getElementById("grade-deduction-member");
+  const list = document.getElementById("grade-deduction-list");
+  select.innerHTML = "";
+  list.innerHTML = "";
+  if (!task?.id) return;
+  let members = [];
+  let deductions = [];
+  try {
+    [members, deductions] = await Promise.all([
+      api(`/api/members?period_id=${task.period_id}${deptParam()}`),
+      api(`/api/tasks/${task.id}/grade-deductions`),
+    ]);
+  } catch (err) {
+    showToast(err.message);
+    return;
+  }
+  const deductedIds = new Set(deductions.map((d) => d.member_id));
+  select.innerHTML = members
+    .filter((m) => !deductedIds.has(m.id))
+    .map((m) => `<option value="${m.id}">${m.name}${m.team_name ? ` (${m.team_name})` : ""}</option>`)
+    .join("");
+  list.innerHTML = deductions
+    .map(
+      (d) =>
+        `<span class="status-badge status-tru-diem" title="Trừ ${d.so_diem} điểm cá nhân (Mặc định)${d.tru_luc ? ` ngày ${formatDateDisplay(d.tru_luc)}` : ""}${d.nguoi_tru ? ` · ${d.nguoi_tru}` : ""}">${d.member_name}: -${d.so_diem}đ</span>`,
+    )
+    .join("");
+}
+
+document.getElementById("grade-deduction-toggle-btn")?.addEventListener("click", () => {
+  const toggle = document.getElementById("grade-deduction-toggle-btn");
+  const frame = document.getElementById("grade-deduction-frame");
+  const expanded = toggle.getAttribute("aria-expanded") !== "false";
+  toggle.setAttribute("aria-expanded", String(!expanded));
+  frame.hidden = expanded;
+});
+
+document.getElementById("grade-deduction-submit-btn")?.addEventListener("click", async () => {
+  const taskId = document.getElementById("grade-task-id").value;
+  const select = document.getElementById("grade-deduction-member");
+  const memberId = Number(select.value);
+  if (!taskId || !Number.isFinite(memberId) || memberId <= 0) {
+    showToast("Hãy chọn nhân sự.");
+    return;
+  }
+  const memberName = select.selectedOptions[0]?.textContent ?? "";
+  if (
+    !(await confirmDialog(`Trừ 10 điểm cá nhân (Mặc định) của ${memberName}? Mỗi nhiệm vụ chỉ trừ được 1 lần/người.`, {
+      title: "Trừ điểm cá nhân",
+    }))
+  )
+    return;
+  try {
+    await api(`/api/tasks/${taskId}/grade-deductions`, {
+      method: "POST",
+      body: JSON.stringify({ member_id: memberId }),
+    });
+    showToast("Đã trừ 10 điểm cá nhân.", "success");
+    const task = state.tasks.find((t) => t.id === Number(taskId));
+    await loadGradeDeductions(task);
+    // Làm mới sẵn state.memberKpiTheoTask — bảng Nhân sự (tab khác) sẽ thấy
+    // đúng "Điểm cá nhân (Mặc định)" mới ngay khi chuyển qua, không cần đợi
+    // người dùng F5 (loadMembers() tự gọi lại GET /api/kpi-theo-task).
+    if (typeof loadMembers === "function") await loadMembers();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 el.gradeCancelBtn.addEventListener("click", () => el.gradeDialog.close());
 

@@ -132,13 +132,16 @@ function memberAvgDiemTheoTask(memberId) {
   return Math.round((base.mainAvg + base.bonus - base.truSuCo) * 100) / 100;
 }
 
-// "Điểm cá nhân (Mặc định)" — GIỐNG HỆT công thức trên nhưng CHƯA trừ điểm
-// Sự cố, để thấy giá trị gốc trước khi bị trừ (đặt cạnh cột đã trừ ở bảng
-// Nhân sự để so sánh — user yêu cầu).
-function memberDefaultDiemTheoTask(memberId) {
-  const base = memberDiemTheoTaskBase(memberId);
-  if (!base) return null;
-  return Math.round((base.mainAvg + base.bonus) * 100) / 100;
+// "Điểm cá nhân (Mặc định)" — HOÀN TOÀN ĐỘC LẬP với công thức "Tính theo
+// task" ở trên (user yêu cầu). Mỗi nhân sự mặc định 100 điểm/tháng, trừ
+// dần theo nút "Trừ điểm cá nhân" ở popup Chấm điểm (menu Nhiệm vụ — mỗi
+// lần trừ 10 điểm), tự về lại 100 khi sang tháng (period) mới. Giá trị đã
+// tính sẵn ở backend (diem_mac_dinh, listKpiTheoTask/
+// taskMember.service.ts) — mặc định 100 nếu nhân sự chưa từng xuất hiện ở
+// GET /api/kpi-theo-task (chưa có task/sự cố/điểm trừ nào trong tháng).
+function memberDiemMacDinh(memberId) {
+  const row = memberKpiTheoTaskRow(memberId);
+  return row?.diem_mac_dinh ?? 100;
 }
 
 function openMemberTaskDetailDialog(member) {
@@ -212,6 +215,15 @@ function memberNoteCellContent(m) {
       .join("<br/>");
     parts.push(`<div class="ki-reason-note"><strong>Trừ điểm cá nhân:</strong><br/>${lines}</div>`);
   }
+  // Bị "Trừ điểm cá nhân" ở popup Chấm điểm (cột "Điểm cá nhân (Mặc định)")
+  // — khoản trừ RIÊNG, khác hẳn khoản trừ Sự cố ở trên (xem
+  // mac_dinh_tru_diem, listKpiTheoTask).
+  if (kpiRow?.mac_dinh_tru_diem?.length) {
+    const lines = kpiRow.mac_dinh_tru_diem
+      .map((s) => `Trừ ${s.so_diem} điểm (Mặc định) ở nhiệm vụ "${s.nhiem_vu}"${s.ngay ? ` (${s.ngay})` : ""}`)
+      .join("<br/>");
+    parts.push(`<div class="ki-reason-note"><strong>Trừ điểm cá nhân (Mặc định):</strong><br/>${lines}</div>`);
+  }
   return parts.join("");
 }
 
@@ -229,7 +241,7 @@ function renderMemberTable() {
     .map((m, i) => {
       const workRuleTotal = workRuleByName.get(m.name) ?? 0;
       const avgDiem = memberAvgDiemTheoTask(m.id);
-      const defaultDiem = memberDefaultDiemTheoTask(m.id);
+      const defaultDiem = memberDiemMacDinh(m.id);
       return `
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>

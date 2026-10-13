@@ -517,7 +517,7 @@
                     <th style="min-width:110px">Hỗ trợ</th>
                     <th style="min-width:110px">Ranking</th>
                     <th style="min-width:170px" title="Trung bình % Đánh giá (không nhân tỷ lệ đóng góp) các task &quot;Thực hiện chính&quot; (hoặc chưa phân loại) + cộng thẳng điểm các task &quot;Hỗ trợ&quot; = Tỷ lệ đóng góp × % Đánh giá (không tính vào trung bình) — ĐÃ TRỪ điểm Trừ điểm cá nhân từ Sự cố (nếu có)">Điểm cá nhân (Tính theo task)</th>
-                    <th style="min-width:170px" title="Giống hệt cột bên trái nhưng CHƯA trừ điểm 'Trừ điểm cá nhân' từ Sự cố — xem giá trị gốc trước khi bị trừ">Điểm cá nhân (Mặc định)</th>
+                    <th style="min-width:170px" title="Mỗi nhân sự mặc định 100 điểm/tháng, trừ dần theo nút 'Trừ điểm cá nhân' ở popup Chấm điểm (menu Nhiệm vụ, mỗi lần trừ 10 điểm), tự về 100 khi sang tháng mới — ĐỘC LẬP với cột 'Tính theo task' bên trái">Điểm cá nhân (Mặc định)</th>
                     <th style="min-width:220px">Ghi chú</th>
                     <th style="min-width:170px"></th>
                   </tr>
@@ -3235,6 +3235,29 @@
              đây, không phải field nhập liệu. Xem openGradeDialog, 04-tasks.js. -->
         <p class="muted auto-cancel-note" id="grade-comment-cancel-info" hidden style="margin:6px 0 0"></p>
       </div>
+
+      <!-- "Trừ điểm cá nhân" — ĐỘC LẬP với % Đánh giá/Nội dung đánh giá ở
+           trên: trừ thẳng 10 điểm vào "Điểm cá nhân (Mặc định)" (100 điểm/
+           tháng, xem gradeDeduction.service.ts) của 1 nhân sự được chọn.
+           Mỗi (task, nhân sự) chỉ trừ được 1 lần — nhân sự đã trừ rồi hiện
+           badge, không chọn lại được (xem renderGradeDeductions, 04-tasks.js). -->
+      <div class="tm-add-frame" style="margin-top:4px">
+        <button type="button" id="grade-deduction-toggle-btn" class="tm-add-frame-toggle" aria-expanded="false">
+          <span>Trừ điểm cá nhân</span>
+          <span class="caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="grade-deduction-frame" hidden style="padding:10px 2px 0">
+          <div class="field-row" style="align-items:flex-end">
+            <div style="flex:1">
+              <label for="grade-deduction-member">Nhân sự</label>
+              <select id="grade-deduction-member"></select>
+            </div>
+            <button type="button" id="grade-deduction-submit-btn" class="small btn-reject" style="white-space:nowrap">Trừ 10 điểm</button>
+          </div>
+          <div id="grade-deduction-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+      </div>
+
       <div class="actions">
         <button type="button" id="grade-cancel-btn">Hủy</button>
         <button type="submit" class="primary">Lưu</button>

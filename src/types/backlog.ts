@@ -342,7 +342,26 @@ export interface KpiTheoTaskRow {
   // thể dính nhiều sự cố trong tháng) — dùng để hiện note ở cột Ghi chú
   // bảng Nhân sự (xem memberNoteCellContent, 03-members.js).
   su_co_tru_diem: { ten_su_co: string; so_diem: number; ngay: string | null }[];
+  // "Điểm cá nhân (Mặc định)" — mỗi nhân sự mặc định 100 điểm/tháng, trừ
+  // dần theo các lần bị trừ ở popup "Chấm điểm" (grade_deductions), tự về
+  // lại 100 khi sang tháng (period) mới. ĐỘC LẬP hoàn toàn với tong_diem/
+  // diem_tru_su_co ở trên (xem gradeDeduction.service.ts).
+  diem_mac_dinh: number;
+  mac_dinh_tru_diem: { nhiem_vu: string; so_diem: number; ngay: string | null }[];
   tasks: KpiTheoTaskTaskEntry[];
+}
+
+// ---- "Trừ điểm cá nhân" ở popup Chấm điểm (menu Nhiệm vụ) ----
+// Trừ vào "Điểm cá nhân (Mặc định)" — xem KpiTheoTaskRow.diem_mac_dinh.
+export interface GradeDeduction {
+  id: number;
+  task_id: number;
+  member_id: number;
+  member_name: string;
+  so_diem: number;
+  tru_luc: string | null;
+  nguoi_tru: string | null;
+  created_at: string;
 }
 
 // Chi tiết công việc theo tháng của 1 dòng roadmap.

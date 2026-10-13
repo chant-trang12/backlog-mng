@@ -8,6 +8,7 @@ import type {
 } from "../types/backlog.js";
 import { assertDepartmentInScope, departmentIdFromTaskId, type DataScope } from "./scope.util.js";
 import { softDeleteWhere } from "./softDelete.util.js";
+import { DIEM_MAC_DINH_GOC } from "./gradeDeduction.service.js";
 
 const SELECT_COLUMNS = [
   "task_members.id",
@@ -457,6 +458,8 @@ export async function listKpiTheoTask(
         tong_diem: 0,
         diem_tru_su_co: 0,
         su_co_tru_diem: [],
+        diem_mac_dinh: DIEM_MAC_DINH_GOC,
+        mac_dinh_tru_diem: [],
         tasks: [],
       });
     }
@@ -514,6 +517,8 @@ export async function listKpiTheoTask(
         tong_diem: 0,
         diem_tru_su_co: 0,
         su_co_tru_diem: [],
+        diem_mac_dinh: DIEM_MAC_DINH_GOC,
+        mac_dinh_tru_diem: [],
         tasks: [],
       });
     }
@@ -521,6 +526,51 @@ export async function listKpiTheoTask(
     entry.diem_tru_su_co = Math.round((entry.diem_tru_su_co + soDiem) * 100) / 100;
     entry.tong_diem = Math.round((entry.tong_diem - soDiem) * 100) / 100;
     entry.su_co_tru_diem.push({ ten_su_co: r.ten_su_co, so_diem: soDiem, ngay: r.tru_diem_luc });
+  }
+
+  // "Điểm cá nhân (Mặc định)" — mặc định 100 điểm/tháng, trừ dần theo
+  // grade_deductions (nút "Trừ điểm cá nhân" ở popup Chấm điểm) — ĐỘC LẬP
+  // hoàn toàn với tong_diem/diem_tru_su_co ở trên (xem
+  // gradeDeduction.service.ts, yêu cầu user). Nhân sự chưa từng bị trừ ở
+  // đây vẫn cần xuất hiện (nếu đã có mặt từ task/sự cố ở trên) với mặc
+  // định = 100.
+  const gradeDeductionQuery = db("grade_deductions as gd")
+    .join("tasks as t", "gd.task_id", "t.id")
+    .join("members as m", "gd.member_id", "m.id")
+    .leftJoin("teams as tm2", "m.team_id", "tm2.id")
+    .where("t.period_id", periodId)
+    .where("gd.is_deleted", false);
+  if (departmentId != null) gradeDeductionQuery.where("t.department_id", departmentId);
+  const gradeDeductionRows = await gradeDeductionQuery.select(
+    "gd.member_id",
+    "m.name as member_name",
+    "m.chuc_vu as member_chuc_vu",
+    "tm2.name as team_name",
+    "t.nhiem_vu",
+    "gd.so_diem",
+    "gd.tru_luc",
+  );
+  for (const r of gradeDeductionRows as any[]) {
+    const soDiem = Math.round(Number(r.so_diem ?? 0) * 100) / 100;
+    if (soDiem === 0) continue;
+    if (!byMember.has(r.member_id)) {
+      byMember.set(r.member_id, {
+        member_id: r.member_id,
+        member_name: r.member_name,
+        member_chuc_vu: r.member_chuc_vu,
+        team_name: r.team_name,
+        so_task: 0,
+        tong_diem: 0,
+        diem_tru_su_co: 0,
+        su_co_tru_diem: [],
+        diem_mac_dinh: DIEM_MAC_DINH_GOC,
+        mac_dinh_tru_diem: [],
+        tasks: [],
+      });
+    }
+    const entry = byMember.get(r.member_id)!;
+    entry.diem_mac_dinh = Math.round((entry.diem_mac_dinh - soDiem) * 100) / 100;
+    entry.mac_dinh_tru_diem.push({ nhiem_vu: r.nhiem_vu, so_diem: soDiem, ngay: r.tru_luc });
   }
 
   return Array.from(byMember.values()).sort((a, b) => b.tong_diem - a.tong_diem);

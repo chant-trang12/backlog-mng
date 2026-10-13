@@ -24,6 +24,10 @@ import {
   listTaskMembersHandler,
   updateTaskMemberHandler,
 } from "../controllers/taskMember.controller.js";
+import {
+  createGradeDeductionHandler,
+  listGradeDeductionsHandler,
+} from "../controllers/gradeDeduction.controller.js";
 
 const router = Router();
 
@@ -52,6 +56,12 @@ router.put("/tasks/:id", updateTaskHandler);
 // theo path "/tasks/:id/grade" (auth.middleware.ts).
 router.put("/tasks/:id/grade", updateTaskGradeHandler);
 router.delete("/tasks/:id", deleteTaskHandler);
+
+// "Trừ điểm cá nhân" ở popup Chấm điểm — trừ vào "Điểm cá nhân (Mặc định)",
+// dùng CHUNG quyền "nhiem_vu_cham_diem" với "/tasks/:id/grade" (cùng popup
+// — xem TASK_GRADE_PATH, auth.middleware.ts).
+router.get("/tasks/:taskId/grade-deductions", listGradeDeductionsHandler);
+router.post("/tasks/:taskId/grade-deductions", createGradeDeductionHandler);
 
 // Nhân sự tham gia task (VD 1 task dự án phần mềm có SM, PO, Dev, QA...).
 router.get("/tasks/:taskId/members", listTaskMembersHandler);

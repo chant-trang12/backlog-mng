@@ -106,7 +106,10 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // "PUT /tasks/:id") — CHẶN/CHO theo function_key RIÊNG "nhiem_vu_cham_diem"
 // (bảng role_permissions), không lẫn với "nhiem_vu" chung (sửa nội dung/
 // cập nhật tiến độ) dù cùng nằm trên resource "tasks".
-const TASK_GRADE_PATH = /^\/tasks\/\d+\/grade$/;
+// "/tasks/:id/grade-deductions" (POST, nút "Trừ điểm cá nhân" ở CHÍNH popup
+// Chấm điểm) dùng CHUNG quyền với "/tasks/:id/grade" — cùng 1 popup, cùng
+// 1 hành động "chấm điểm" theo nghĩa rộng (xem task.routes.ts).
+const TASK_GRADE_PATH = /^\/tasks\/\d+\/(grade|grade-deductions)$/;
 
 const ROLE_LABEL: Record<string, string> = { editor: "editor", bgd: "BGĐ", viewer: "viewer" };
 
@@ -148,7 +151,7 @@ export async function requireWrite(req: Request, res: Response, next: NextFuncti
   // Phân quyền) để chặn RIÊNG subadmin khỏi những route đó.
   if (role === "admin" || role === "subadmin") return next();
 
-  if (TASK_GRADE_PATH.test(req.path) && req.method === "PUT") {
+  if (TASK_GRADE_PATH.test(req.path) && (req.method === "PUT" || req.method === "POST")) {
     const perm = await getRolePermission("nhiem_vu_cham_diem", role);
     if (!perm?.can_edit) {
       res.status(403).json({

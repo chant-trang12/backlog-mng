@@ -48,6 +48,7 @@ import { migrateDigitalFeatureDataObjectTables } from "./migrations/digitalFeatu
 import { migrateDigitalFeatureIntegrationTables } from "./migrations/digitalFeatureIntegrations.js";
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
+import { migrateGradeDeductionsTable } from "./migrations/gradeDeductions.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
 
@@ -92,6 +93,10 @@ export async function initDatabase(): Promise<void> {
     await migrateTaskMembersTables();
     // 31-32: task_items + task_item_members ("Việc" con trong 1 Nhiệm vụ).
     await migrateTaskItemsTables();
+    // grade_deductions — "Trừ điểm cá nhân" ở popup Chấm điểm, trừ vào
+    // "Điểm cá nhân (Mặc định)" (riêng biệt với tru_diem_so_diem của
+    // task_members, trừ vào "Điểm cá nhân (Tính theo task)").
+    await migrateGradeDeductionsTable();
     // Seed dữ liệu cho catalogs (19-22) — chạy sau vì nhom_options backfill
     // từ dữ liệu tieu_chi_configs sẵn có.
     await seedCatalogData();
