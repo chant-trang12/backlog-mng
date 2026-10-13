@@ -104,13 +104,13 @@ function memberKpiTheoTaskRow(memberId) {
 // làm trọn (100%) dù % Đánh giá như nhau, không phản ánh đúng nỗ lực; task
 // "Hỗ trợ" = Tỷ lệ đóng góp × % Đánh giá (VẪN nhân tỷ lệ — hỗ trợ càng
 // nhiều mới cộng càng nhiều).
-function memberAvgDiemTheoTask(memberId) {
+// Trung bình % Đánh giá (task Thực hiện chính/chưa phân loại) + cộng thẳng
+// điểm task Hỗ trợ — PHẦN CHUNG giữa 2 cột "Điểm cá nhân (Tính theo task)"
+// (đã trừ Sự cố) và "Điểm cá nhân (Mặc định)" (chưa trừ) bên dưới, tách
+// riêng để khỏi lặp lại logic tính trung bình/bonus 2 lần.
+function memberDiemTheoTaskBase(memberId) {
   const row = memberKpiTheoTaskRow(memberId);
   if (!row) return null;
-  // Trừ điểm cá nhân ở Sự cố (CSKH) — khoản trừ độc lập, áp SAU khi đã
-  // tính xong trung bình + điểm Hỗ trợ (xem listKpiTheoTask,
-  // taskMember.service.ts). Nhân sự có sự cố nhưng không tham gia task
-  // nào tháng đó vẫn hiện điểm âm thay vì "—".
   const truSuCo = row.diem_tru_su_co ?? 0;
   const scored = row.tasks.filter((t) => t.diem !== null);
   const mainTasks = scored.filter((t) => t.phan_loai !== HO_TRO_LABEL);
@@ -118,7 +118,27 @@ function memberAvgDiemTheoTask(memberId) {
   if (mainTasks.length === 0 && bonusTasks.length === 0 && truSuCo === 0) return null;
   const mainAvg = mainTasks.length > 0 ? mainTasks.reduce((sum, t) => sum + t.diem, 0) / mainTasks.length : 0;
   const bonus = bonusTasks.reduce((sum, t) => sum + t.diem, 0);
-  return Math.round((mainAvg + bonus - truSuCo) * 100) / 100;
+  return { mainAvg, bonus, truSuCo };
+}
+
+// "Điểm cá nhân (Tính theo task)" = giá trị CUỐI CÙNG hiển thị/dùng cho
+// KPI — ĐÃ TRỪ điểm "Trừ điểm cá nhân" từ Sự cố (CSKH, khoản trừ độc lập,
+// áp SAU khi tính xong trung bình + bonus — xem listKpiTheoTask,
+// taskMember.service.ts). Nhân sự có sự cố nhưng không tham gia task nào
+// tháng đó vẫn hiện điểm âm thay vì "—".
+function memberAvgDiemTheoTask(memberId) {
+  const base = memberDiemTheoTaskBase(memberId);
+  if (!base) return null;
+  return Math.round((base.mainAvg + base.bonus - base.truSuCo) * 100) / 100;
+}
+
+// "Điểm cá nhân (Mặc định)" — GIỐNG HỆT công thức trên nhưng CHƯA trừ điểm
+// Sự cố, để thấy giá trị gốc trước khi bị trừ (đặt cạnh cột đã trừ ở bảng
+// Nhân sự để so sánh — user yêu cầu).
+function memberDefaultDiemTheoTask(memberId) {
+  const base = memberDiemTheoTaskBase(memberId);
+  if (!base) return null;
+  return Math.round((base.mainAvg + base.bonus) * 100) / 100;
 }
 
 function openMemberTaskDetailDialog(member) {
@@ -209,6 +229,7 @@ function renderMemberTable() {
     .map((m, i) => {
       const workRuleTotal = workRuleByName.get(m.name) ?? 0;
       const avgDiem = memberAvgDiemTheoTask(m.id);
+      const defaultDiem = memberDefaultDiemTheoTask(m.id);
       return `
     <tr data-id="${m.id}" class="member-row-clickable" title="Bấm để xem chi tiết công việc tham gia">
       <td><input type="checkbox" class="member-row-checkbox" ${state.selectedMemberIds.has(m.id) ? "checked" : ""} /></td>
@@ -222,6 +243,7 @@ function renderMemberTable() {
       <td>${m.ho_tro ?? ""}</td>
       <td>${m.danh_gia ?? ""}</td>
       <td>${avgDiem ?? "-"}</td>
+      <td>${defaultDiem ?? "-"}</td>
       <td>${memberNoteCellContent(m)}</td>
       <td><div class="actions-cell" title="">
         <button class="small ${m.ha_ki ? "btn-progress" : "btn-exclude"} write-action toggle-ha-ki-btn" data-ha-ki="${m.ha_ki}">${m.ha_ki ? "Bỏ hạ KI" : "Hạ KI"}</button>
