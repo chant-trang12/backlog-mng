@@ -265,12 +265,12 @@ const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn
 // Màu donut "Nhiệm vụ theo Trạng thái" (Trang chủ) — đã qua nhiều vòng
 // chỉnh theo phản hồi trực tiếp của user (branch main1410), giá trị hiện
 // tại là bản CHỐT: Chưa thực hiện = Tan nhạt (trung tính), Đang thực
-// hiện = San hô (đang "nóng"), Hoàn thành = Xanh dương #60a5fa (khớp
-// var(--success), style.css — KHÔNG dùng đỏ/xanh lá), Hủy = Đỏ tươi
-// (khớp var(--delete)).
+// hiện = Cam #fb923c (đang "nóng", từ dải cam/vàng user gửi), Hoàn thành
+// = Xanh dương #60a5fa (khớp var(--success), style.css — KHÔNG dùng đỏ/
+// xanh lá), Hủy = Đỏ tươi (khớp var(--delete)).
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
-  "Đang thực hiện": "#e6977e",
+  "Đang thực hiện": "#fb923c",
   "Hoàn thành": "#60a5fa",
   Hủy: "#ee0033",
 };
