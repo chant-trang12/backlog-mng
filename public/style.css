@@ -854,8 +854,11 @@ input[type="checkbox"] { accent-color: var(--primary); }
   font-size: 0.85rem;
   background: rgba(255, 255, 255, 0.6);
 }
-.task-warning-graded { background: #ead9b0; border-color: #d9c187; color: #7a5a12; }
-.task-warning-overdue { background: var(--delete-light); border-color: #e0b6a9; color: var(--delete); }
+/* Đổi khỏi màu olive/khaki cũ (lạc tông với bảng màu Đỏ/Burgundy/San hô
+   mới) — dùng Burgundy nhạt để khác hẳn 3 chip còn lại (hồng/cam-tan/đỏ
+   đậm) nhưng vẫn cùng họ ấm (yêu cầu user, ảnh chụp dải "Trang chủ"). */
+.task-warning-graded { background: #f3d9de; border-color: #e3afb9; color: var(--burgundy-800); }
+.task-warning-overdue { background: var(--delete-light); border-color: var(--red-300); color: var(--delete); }
 .task-warning-upcoming { background: #ffedd5; border-color: #f0cd9e; color: #9a3412; }
 /* Đậm hơn hẳn "quá hạn" (cũng tông đỏ) — đây là cờ người tự tay đánh dấu
    (can_xu_ly_gap), không phải suy ra từ deadline, nên cần nổi bật rõ hơn
