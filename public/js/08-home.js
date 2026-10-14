@@ -262,11 +262,17 @@ function renderHomeKpiTheoTaskTable() {
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
+// Đổi theo bảng màu mới (Đỏ/Burgundy/Tan/San hô, branch main1410) — trước
+// đó dùng tông xanh lá/vàng của theme cũ (olive), nay không còn hợp
+// (ảnh user gửi: donut "7 Nhiệm vụ" lạc hẳn tông so với phần còn lại của
+// trang). Chưa thực hiện = Tan nhạt (trung tính) -> Đang thực hiện = San
+// hô (đang "nóng") -> Hoàn thành = Burgundy (màu thương hiệu, tích cực
+// nhất) -> Hủy = Đỏ rực (báo động, cùng tông với --delete).
 const HOME_STAT_STATUS_HEX = {
-  "Chưa thực hiện": "#9aad79",
-  "Đang thực hiện": "#c9a24c",
-  "Hoàn thành": "#7c9b5c",
-  Hủy: "#b3452f",
+  "Chưa thực hiện": "#e6cba5",
+  "Đang thực hiện": "#e6977e",
+  "Hoàn thành": "#7a0e2a",
+  Hủy: "#ee0033",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
