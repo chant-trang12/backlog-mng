@@ -263,15 +263,18 @@ function renderHomeKpiTheoTaskTable() {
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
 // Đổi theo bảng màu mới (Đỏ/Burgundy/Tan/San hô, branch main1410) — trước
-// đó dùng tông xanh lá/vàng của theme cũ (olive), nay không còn hợp
-// (ảnh user gửi: donut "7 Nhiệm vụ" lạc hẳn tông so với phần còn lại của
-// trang). Chưa thực hiện = Tan nhạt (trung tính) -> Đang thực hiện = San
-// hô (đang "nóng") -> Hoàn thành = Burgundy (màu thương hiệu, tích cực
-// nhất) -> Hủy = Đỏ rực (báo động, cùng tông với --delete).
+// đó dùng tông xanh lá/vàng của theme cũ (olive), nay không còn hợp (ảnh
+// user gửi: donut "7 Nhiệm vụ" lạc hẳn tông so với phần còn lại trang).
+// Hoàn thành LÚC ĐẦU đổi sang Burgundy nhưng vẫn đọc ra là ĐỎ (user phản
+// hồi "hoàn thành không cho màu đỏ" — hợp lý, đỏ thường mang nghĩa cảnh
+// báo/dừng, không nên gắn cho trạng thái tích cực) -> đổi sang
+// var(--success) (nâu trầm, không thuộc họ đỏ) để tách bạch hẳn với Hủy
+// (đỏ rực). Chưa thực hiện = Tan nhạt (trung tính), Đang thực hiện = San
+// hô (đang "nóng").
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
-  "Hoàn thành": "#7a0e2a",
+  "Hoàn thành": "#6b5142",
   Hủy: "#ee0033",
 };
 
