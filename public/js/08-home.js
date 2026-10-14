@@ -271,12 +271,13 @@ const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn
 // Đỏ/Burgundy/Kem-Tan-San hô ban đầu nhưng là yêu cầu rõ ràng của user,
 // ưu tiên cao hơn). Dùng xanh lá rừng trầm (không chói) để không phá
 // tông ấm của phần còn lại trang. Chưa thực hiện = Tan nhạt (trung
-// tính), Đang thực hiện = San hô (đang "nóng").
+// tính), Đang thực hiện = San hô (đang "nóng"), Hủy = Đỏ thâm (--red-900,
+// trầm hơn đỏ rực --delete — user yêu cầu đổi lại sau khi xem thử).
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
   "Hoàn thành": "#7aab66",
-  Hủy: "#ee0033",
+  Hủy: "#620915",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
