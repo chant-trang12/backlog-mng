@@ -64,7 +64,7 @@
   /* Xanh lá (chart "Hoàn thành" + nút "Đánh dấu Đã xử lý"/"Tăng KI") đổi
      hẳn sang xanh dương — user yêu cầu đổi cả 2 nơi cùng lúc, vẫn khớp
      đúng màu với HOME_STAT_STATUS_HEX["Hoàn thành"] (08-home.js). */
-  --success: #5b8ab0;
+  --success: #60a5fa;
   --warning: var(--rose-500);
   /* Header bảng dữ liệu — ĐỔI từ Burgundy (đỏ thâm) sang Đỏ tươi, khớp
      --primary (user yêu cầu, ảnh chụp header bảng). */
@@ -889,7 +889,7 @@ button.btn-export:hover { background: #f6cbbd; }
 button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
 button.btn-exclude:hover { background: var(--rose-600); border-color: var(--rose-600); }
 button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
-button.btn-restore:hover { background: #45708f; border-color: #45708f; }
+button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
 
 /* Chặn lỗi kinh điển của flexbox: item flex mặc định không co xuống dưới
    kích thước nội dung của nó (min-width: auto), nên nếu chữ trong select/
