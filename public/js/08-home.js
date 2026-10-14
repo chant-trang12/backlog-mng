@@ -265,16 +265,17 @@ const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn
 // Đổi theo bảng màu mới (Đỏ/Burgundy/Tan/San hô, branch main1410) — trước
 // đó dùng tông xanh lá/vàng của theme cũ (olive), nay không còn hợp (ảnh
 // user gửi: donut "7 Nhiệm vụ" lạc hẳn tông so với phần còn lại trang).
-// Hoàn thành LÚC ĐẦU đổi sang Burgundy nhưng vẫn đọc ra là ĐỎ (user phản
-// hồi "hoàn thành không cho màu đỏ" — hợp lý, đỏ thường mang nghĩa cảnh
-// báo/dừng, không nên gắn cho trạng thái tích cực) -> đổi sang
-// var(--success) (nâu trầm, không thuộc họ đỏ) để tách bạch hẳn với Hủy
-// (đỏ rực). Chưa thực hiện = Tan nhạt (trung tính), Đang thực hiện = San
-// hô (đang "nóng").
+// Hoàn thành thử qua Burgundy (vẫn đọc ra ĐỎ) rồi nâu trầm var(--success)
+// (user: "hoàn thành không cho màu đỏ") — cuối cùng user yêu cầu THẲNG
+// màu XANH (quy ước phổ biến "hoàn thành = xanh lá", ngoài 3 dải màu
+// Đỏ/Burgundy/Kem-Tan-San hô ban đầu nhưng là yêu cầu rõ ràng của user,
+// ưu tiên cao hơn). Dùng xanh lá rừng trầm (không chói) để không phá
+// tông ấm của phần còn lại trang. Chưa thực hiện = Tan nhạt (trung
+// tính), Đang thực hiện = San hô (đang "nóng").
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
-  "Hoàn thành": "#6b5142",
+  "Hoàn thành": "#4f7942",
   Hủy: "#ee0033",
 };
 
