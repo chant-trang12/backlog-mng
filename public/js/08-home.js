@@ -277,7 +277,7 @@ const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
   "Hoàn thành": "#7aab66",
-  Hủy: "#620915",
+  Hủy: "#890d1e",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
