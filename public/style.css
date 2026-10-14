@@ -52,8 +52,13 @@
   --text: #2b1f1a;
   --muted: #8a7367;
   --border: #e8d4b0;
-  --primary: var(--burgundy-800);
-  --primary-hover: var(--burgundy-900);
+  /* Primary (nav menu active + tab active) — ĐỔI từ Burgundy sang Đỏ rực
+     (--red-600), khớp đúng màu ở bảng "Việc cần xử lý gấp"/task-warning-
+     urgent (user yêu cầu, 2 ảnh chụp nav + tab). Burgundy giữ lại riêng
+     cho --header-bg (header bảng dữ liệu, KHÔNG đổi — user chỉ nhắc đến
+     menu/tab). */
+  --primary: var(--red-600);
+  --primary-hover: var(--red-700);
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
   --success: #6b5142;
