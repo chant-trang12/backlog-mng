@@ -2064,13 +2064,16 @@ button.btn-split-even:hover { background: var(--red-500); border-color: var(--re
 .mt-color-5 { background: #fbdcd4; color: #c2440c; } /* cam san hô (coral) */
 
 /* Bản đậm hơn của bảng màu team, dùng làm màu tô cột trong biểu đồ (trang
-   Home) — cùng thứ tự index với team-color-N (xem teamBarColorClass). */
-.team-bar-0 { background: #7c9b5c; }
-.team-bar-1 { background: #b3452f; }
-.team-bar-2 { background: #c9a24c; }
-.team-bar-3 { background: #546b41; }
-.team-bar-4 { background: #4f8a7c; }
-.team-bar-5 { background: #8a5a75; }
+   Home) + avatar monogram phòng ban (dept-mono, xem DEPT_COLORS ở
+   02-departments-periods-teams.js — CÙNG 6 màu). Xen kẽ Đỏ/Xám theo bảng
+   màu mới (user yêu cầu đổi riêng nhóm này, khác các badge phân loại dữ
+   liệu khác vẫn giữ nguyên) để 2 phòng/team liền kề không trùng họ màu. */
+.team-bar-0 { background: #890d1e; }
+.team-bar-1 { background: #495057; }
+.team-bar-2 { background: #ee0033; }
+.team-bar-3 { background: #212529; }
+.team-bar-4 { background: #c4132b; }
+.team-bar-5 { background: #6c757d; }
 
 .hbar-empty { color: var(--muted); padding: 8px 4px; }
 
