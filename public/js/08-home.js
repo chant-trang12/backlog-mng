@@ -275,7 +275,7 @@ const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
-  "Hoàn thành": "#4f7942",
+  "Hoàn thành": "#7aab66",
   Hủy: "#ee0033",
 };
 
