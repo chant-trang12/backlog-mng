@@ -262,22 +262,17 @@ function renderHomeKpiTheoTaskTable() {
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
-// Đổi theo bảng màu mới (Đỏ/Burgundy/Tan/San hô, branch main1410) — trước
-// đó dùng tông xanh lá/vàng của theme cũ (olive), nay không còn hợp (ảnh
-// user gửi: donut "7 Nhiệm vụ" lạc hẳn tông so với phần còn lại trang).
-// Hoàn thành thử qua Burgundy (vẫn đọc ra ĐỎ) rồi nâu trầm var(--success)
-// (user: "hoàn thành không cho màu đỏ") — cuối cùng user yêu cầu THẲNG
-// màu XANH (quy ước phổ biến "hoàn thành = xanh lá", ngoài 3 dải màu
-// Đỏ/Burgundy/Kem-Tan-San hô ban đầu nhưng là yêu cầu rõ ràng của user,
-// ưu tiên cao hơn). Dùng xanh lá rừng trầm (không chói) để không phá
-// tông ấm của phần còn lại trang. Chưa thực hiện = Tan nhạt (trung
-// tính), Đang thực hiện = San hô (đang "nóng"), Hủy = Đỏ thâm (--red-900,
-// trầm hơn đỏ rực --delete — user yêu cầu đổi lại sau khi xem thử).
+// Màu donut "Nhiệm vụ theo Trạng thái" (Trang chủ) — đã qua nhiều vòng
+// chỉnh theo phản hồi trực tiếp của user (branch main1410), giá trị hiện
+// tại là bản CHỐT: Chưa thực hiện = Tan nhạt (trung tính), Đang thực
+// hiện = San hô (đang "nóng"), Hoàn thành = Xanh dương #60a5fa (khớp
+// var(--success), style.css — KHÔNG dùng đỏ/xanh lá), Hủy = Đỏ tươi
+// (khớp var(--delete)).
 const HOME_STAT_STATUS_HEX = {
   "Chưa thực hiện": "#e6cba5",
   "Đang thực hiện": "#e6977e",
   "Hoàn thành": "#60a5fa",
-  Hủy: "#890d1e",
+  Hủy: "#ee0033",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
