@@ -176,12 +176,12 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   text-align: left;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
-.dept-trigger:hover { background: var(--card-bg); border-color: var(--primary); }
+.dept-trigger:hover { background: var(--card-bg); border-color: var(--red-600); }
 /* Quy tắc 9.2 — tài khoản bị giới hạn theo phòng ban: khoá switcher, không
    cho mở panel chọn phòng khác (xem renderDeptSwitcher() ở app.js). */
 .dept-trigger-locked { cursor: not-allowed; opacity: 0.75; }
 .dept-trigger-locked:hover { background: var(--bg); border-color: var(--border); }
-.dept-trigger[aria-expanded="true"] { border-color: var(--primary); background: var(--card-bg); }
+.dept-trigger[aria-expanded="true"] { border-color: var(--red-600); background: var(--card-bg); }
 
 .dept-mono {
   flex: 0 0 auto;
@@ -195,7 +195,7 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #fff;
-  background: var(--primary);
+  background: var(--red-600);
 }
 
 .dept-trigger-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
@@ -257,7 +257,7 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   text-align: left;
 }
 .dept-option:hover { background: var(--bg); }
-.dept-option.active { background: color-mix(in srgb, var(--primary) 16%, transparent); }
+.dept-option.active { background: color-mix(in srgb, var(--red-600) 16%, transparent); }
 /* 1 dòng, cắt "…" khi dài — giữ panel gọn. Tên đầy đủ xem ở tooltip .dept-tip. */
 .dept-option-name {
   flex: 1 1 auto;
@@ -268,7 +268,7 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.dept-option-check { flex: 0 0 auto; color: var(--primary); font-weight: 800; opacity: 0; }
+.dept-option-check { flex: 0 0 auto; color: var(--red-600); font-weight: 800; opacity: 0; }
 .dept-option.active .dept-option-check { opacity: 1; }
 
 .dept-panel-sep { height: 1px; background: var(--border); margin: 6px 4px; }
@@ -1266,19 +1266,19 @@ th {
 #task-table tbody tr.row-highlighted td:nth-child(3),
 #task-table tbody tr.row-highlighted td:nth-child(4),
 #task-table tbody tr.row-highlighted td:nth-child(5),
-#task-table tbody tr.row-highlighted td:nth-child(6) { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted td:nth-child(6) { background: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover td:nth-child(1),
 #task-table tbody tr.row-highlighted:hover td:nth-child(2),
 #task-table tbody tr.row-highlighted:hover td:nth-child(3),
 #task-table tbody tr.row-highlighted:hover td:nth-child(4),
 #task-table tbody tr.row-highlighted:hover td:nth-child(5),
-#task-table tbody tr.row-highlighted:hover td:nth-child(6) { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted:hover td:nth-child(6) { background: color-mix(in srgb, var(--red-600) 22%, var(--card-bg)); }
 
 #task-table th { text-align: center; }
 #task-table td { vertical-align: middle; }
 #task-table tbody tr:hover { background: var(--bg); }
-#task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--primary) 16%, var(--card-bg)); }
-#task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--primary) 22%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
+#task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--red-600) 22%, var(--card-bg)); }
 
 /* Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — tô nền hàng
    (sắc đỏ đất nhạt, cùng tông với .home-urgent-card ở Trang chủ) để nổi
@@ -1692,11 +1692,11 @@ th {
 #roadmap-table td { vertical-align: middle; }
 #roadmap-table tbody tr { cursor: pointer; }
 #roadmap-table tbody tr:hover { background: var(--bg); }
-#roadmap-table tbody tr.rm-row-selected { background: var(--bg); box-shadow: inset 3px 0 0 var(--primary); }
+#roadmap-table tbody tr.rm-row-selected { background: var(--bg); box-shadow: inset 3px 0 0 var(--red-600); }
 /* Cột checkbox cố định — đồng bộ màu theo trạng thái hover/đang chọn xem
    chi tiết của dòng (xem ghi chú tương tự ở #task-table). */
 #roadmap-table tbody tr:hover td:first-child { background: var(--bg); }
-#roadmap-table tbody tr.rm-row-selected td:first-child { background: var(--bg); box-shadow: inset 3px 0 0 var(--primary); }
+#roadmap-table tbody tr.rm-row-selected td:first-child { background: var(--bg); box-shadow: inset 3px 0 0 var(--red-600); }
 
 .rm-month-block { padding: 12px 0; border-top: 1px solid var(--border); }
 .rm-month-block:first-child { border-top: none; padding-top: 0; }
@@ -2465,7 +2465,7 @@ dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn g
   cursor: pointer;
   font-size: 0.92rem;
 }
-.tm-suggest-item:hover { background: var(--primary); color: #fff; }
+.tm-suggest-item:hover { background: var(--red-600); color: #fff; }
 .tm-suggest-empty { padding: 8px 10px; color: var(--muted); font-size: 0.88rem; }
 
 .confirm-icon {
