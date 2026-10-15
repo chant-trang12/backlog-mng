@@ -904,6 +904,14 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
    dương, dành cho nút Lưu/+Thêm...), cùng tinh thần đã tách cho nav/tab/
    select/list trước đó. */
 input[type="checkbox"] { accent-color: var(--red-600); }
+/* Checkbox "Chọn tất cả" nằm trong <th> (nền header giờ CŨNG Đỏ tươi) —
+   tự thân checkbox đỏ trên nền đỏ bị chìm, gần như vô hình (user phản
+   hồi). Viền trắng để tách khung rõ khỏi nền header. */
+th input[type="checkbox"] {
+  outline: 1px solid #fff;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
 .col-menu-item input { margin: 0; cursor: pointer; }
 
 /* Banner cảnh báo ở trang Backlog — chưa chấm điểm / quá hạn / sắp đến hạn. */
