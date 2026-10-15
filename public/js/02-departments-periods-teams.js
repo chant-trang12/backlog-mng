@@ -9,10 +9,11 @@ function deptParam(prefix = "&") {
     : "";
 }
 
-// Bảng màu monogram cho phòng — cùng họ với --team-bar-N của theme (xen kẽ
-// Đỏ/Xám theo bảng màu mới, branch main1410, để 2 phòng liền kề không bao
-// giờ cùng 1 họ màu — chữ trắng luôn đủ tương phản trên cả 6 màu).
-const DEPT_COLORS = ["#890d1e", "#44403c", "#ee0033", "#1c1917", "#c4132b", "#57534e"];
+// Bảng màu monogram cho phòng — cùng họ với --team-bar-N của theme. Mỗi
+// màu 1 họ KHÁC HẲN (Đỏ/Cyan/Đỏ tươi/Stone đen/Pink/Cam) theo bảng màu
+// "mix đợt 2" (branch main1410), xen kẽ để 2 phòng liền kề không bao giờ
+// cùng 1 họ màu — chữ trắng luôn đủ tương phản trên cả 6 màu.
+const DEPT_COLORS = ["#890d1e", "#0e7490", "#ee0033", "#1c1917", "#be185d", "#c2410c"];
 
 function deptColor(dept) {
   const i = Math.max(0, state.departments.findIndex((d) => d.id === dept.id));

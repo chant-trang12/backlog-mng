@@ -2141,11 +2141,11 @@ button.btn-split-even:hover { background: var(--sky-700); border-color: var(--sk
    màu mới (user yêu cầu đổi riêng nhóm này, khác các badge phân loại dữ
    liệu khác vẫn giữ nguyên) để 2 phòng/team liền kề không trùng họ màu. */
 .team-bar-0 { background: #890d1e; }
-.team-bar-1 { background: #44403c; }
+.team-bar-1 { background: #0e7490; }
 .team-bar-2 { background: #ee0033; }
 .team-bar-3 { background: #1c1917; }
-.team-bar-4 { background: #c4132b; }
-.team-bar-5 { background: #57534e; }
+.team-bar-4 { background: #be185d; }
+.team-bar-5 { background: #c2410c; }
 
 .hbar-empty { color: var(--muted); padding: 8px 4px; }
 
