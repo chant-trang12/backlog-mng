@@ -9,15 +9,17 @@ function deptParam(prefix = "&") {
     : "";
 }
 
-// Bảng màu monogram cho phòng — cùng họ với --team-bar-N của theme. Mỗi
-// màu 1 họ KHÁC HẲN (Đỏ/Cyan/Đỏ tươi/Stone đen/Pink/Cam) theo bảng màu
-// "mix đợt 2" (branch main1410), xen kẽ để 2 phòng liền kề không bao giờ
-// cùng 1 họ màu — chữ trắng luôn đủ tương phản trên cả 6 màu.
-const DEPT_COLORS = ["#890d1e", "#0e7490", "#ee0033", "#1c1917", "#be185d", "#c2410c"];
-
+// Bảng màu monogram cho phòng — DÙNG CHUNG bảng màu team (TEAM_BAR_HEX ở
+// 08-home.js = .team-bar-N trong style.css): 18 màu pastel-đậm cùng tông với
+// badge team/cột biểu đồ (hue nhảy bước 140°, 2 phòng liền kề luôn khác họ
+// màu), thay cho bộ 6 màu rực cũ (đỏ thẫm/cyan/đỏ tươi/đen...) lệch hẳn với
+// style chung của trang. Chữ trắng đủ tương phản trên cả 18 màu (45%/48%).
+// Đọc TEAM_BAR_HEX TẠI THỜI ĐIỂM GỌI (không gán cấp cao nhất) vì 02-...js
+// tải trước 08-home.js — const của script sau chưa tồn tại khi script trước
+// chạy top-level (TDZ).
 function deptColor(dept) {
   const i = Math.max(0, state.departments.findIndex((d) => d.id === dept.id));
-  return DEPT_COLORS[i % DEPT_COLORS.length];
+  return TEAM_BAR_HEX[i % TEAM_BAR_HEX.length];
 }
 
 function deptMonogram(dept) {

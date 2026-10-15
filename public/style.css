@@ -2267,9 +2267,10 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 
 /* Bản đậm hơn của bảng màu team (cùng THỨ TỰ với .team-color-N), dùng làm
    màu tô cột trong biểu đồ (trang Home) + avatar monogram phòng ban
-   (dept-mono, xem DEPT_COLORS ở 02-departments-periods-teams.js): mỗi màu
-   = cùng hue với badge team tương ứng, đậm lại hsl(H, 45%, 48%) để chữ
-   trắng trên cột vẫn đọc được. 18 màu khớp TEAM_COLOR_COUNT = 18. */
+   (dept-mono, deptColor() ở 02-departments-periods-teams.js đọc TEAM_BAR_HEX
+   — cùng bảng 18 màu): mỗi màu = cùng hue với badge team tương ứng, đậm lại
+   hsl(H, 45%, 48%) để chữ trắng trên cột vẫn đọc được. 18 màu khớp
+   TEAM_COLOR_COUNT vòng 1 (tổng 36 = 2 vòng). */
 .team-bar-0 { background: #b14343; }
 .team-bar-1 { background: #43b168; }
 .team-bar-2 { background: #8d43b1; }
