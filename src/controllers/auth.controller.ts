@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import {
+  buildCallbackUrl,
   generateAuthUrl,
   getLogoutUrl,
   getRequestBaseUrl,
@@ -57,7 +58,7 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
       return;
     }
 
-    const currentUrl = new URL(req.originalUrl, `${req.protocol}://${req.get("host")}`);
+    const currentUrl = buildCallbackUrl(getRequestBaseUrl(req), req.originalUrl);
 
     const user = await handleOidcCallback(currentUrl, expectedState, codeVerifier);
     // Tạo/đồng bộ record user cục bộ (bảng users) — người đăng nhập đầu

@@ -45,6 +45,21 @@ export function getOidcRedirectUri(baseUrl: string): string {
 }
 
 /**
+ * URL callback dùng để đổi code lấy token. openid-client suy `redirect_uri`
+ * của token request từ ORIGIN + PATH của URL này, và IdP so khớp nó với
+ * redirect_uri đã gửi ở bước authorize. Sau reverse proxy (IIS/ARR gửi
+ * `Host: localhost:<PORT>`) origin lấy từ request sẽ khác URL công khai nên
+ * đổi token báo invalid_grant ("redirect_uri doesn't match") — vì vậy dựng
+ * origin + path từ ĐÚNG redirect_uri đã cấu hình (cùng nguồn với bước
+ * authorize), chỉ lấy query (code/state/iss) từ request thật.
+ */
+export function buildCallbackUrl(baseUrl: string, originalUrl: string): URL {
+  const redirect = new URL(getOidcRedirectUri(baseUrl));
+  const { search } = new URL(originalUrl, "http://placeholder.invalid");
+  return new URL(`${redirect.origin}${redirect.pathname}${search}`);
+}
+
+/**
  * Pre-fetch OIDC discovery metadata via raw-socket fetch, bypassing any
  * system-level HTTP proxy interception (Windows WinHTTP → Squid, etc.).
  * The IdP is then constructed manually via `client.Configuration` since
