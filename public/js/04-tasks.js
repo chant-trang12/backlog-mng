@@ -1350,8 +1350,16 @@ function updateTaskMemberTotalBadge() {
     state.taskMembers.reduce((s, tm) => s + (tm.ty_le_dong_gop != null ? Number(tm.ty_le_dong_gop) : 0), 0),
   );
   el.taskMemberTotalBadge.textContent = `Tổng đã phân bổ: ${total}% / 100%`;
+  // Trước dùng CHUNG class trạng thái thật (status-hoan-thanh/status-huy/
+  // status-default, xanh lá/đỏ/xám cũ) — đổi badge tĩnh "% Đánh giá" cạnh
+  // nó sang .tm-info-badge không kéo theo đổi được badge NÀY vì set bằng
+  // JS (ghi đè className mỗi lần render, html chỉnh tay không ăn — lý do
+  // user vẫn thấy màu cũ dù đã sửa HTML). Đổi hẳn sang 3 class riêng của
+  // khối này (tm-total-badge-*), không đụng status-hoan-thanh/status-huy
+  // (vẫn dùng ở badge Trạng thái thật trong các bảng).
   el.taskMemberTotalBadge.className =
-    "status-badge " + (Math.abs(total - 100) < 0.01 ? "status-hoan-thanh" : total > 100 ? "status-huy" : "status-default");
+    "status-badge " +
+    (Math.abs(total - 100) < 0.01 ? "tm-total-badge-ok" : total > 100 ? "tm-total-badge-over" : "tm-info-badge");
 }
 
 el.tmScoreUnit.addEventListener("change", () => {

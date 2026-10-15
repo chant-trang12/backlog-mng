@@ -1949,6 +1949,11 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    ".tm-add-frame" đứng ngay phía trên (user phản hồi) -> đổi sang Stone
    trung tính để tách biệt rõ 2 khối. */
 .tm-info-badge { background: var(--stone-200); color: var(--stone-700); }
+/* "Tổng đã phân bổ" đổi màu theo đúng/vượt 100% (xem updateTaskMemberTotalBadge,
+   04-tasks.js) — 2 class riêng, KHÔNG dùng status-hoan-thanh/status-huy
+   (badge Trạng thái thật ở các bảng, không đổi). */
+.tm-total-badge-ok { background: var(--blue-100); color: var(--blue-800); }
+.tm-total-badge-over { background: var(--red-200); color: var(--red-700); }
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
