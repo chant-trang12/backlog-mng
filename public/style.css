@@ -798,8 +798,10 @@ button.btn-reject { background: var(--delete); border-color: var(--delete); colo
 button.btn-reject:hover { background: var(--red-800); border-color: var(--red-800); }
 button.btn-grade { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
 button.btn-grade:hover { background: var(--sky-300); }
-button.btn-progress { background: var(--cyan-100); border-color: var(--cyan-300); color: var(--cyan-800); }
-button.btn-progress:hover { background: var(--cyan-300); }
+/* Trước dùng Cyan — na ná Sky của .btn-grade đứng cạnh nó trong dòng
+   Nhiệm vụ (user phản hồi) — đổi sang Vàng (Yellow) để khác hẳn. */
+button.btn-progress { background: var(--yellow-100); border-color: var(--yellow-300); color: var(--yellow-800); }
+button.btn-progress:hover { background: var(--yellow-300); }
 button.btn-member { background: var(--pink-100); border-color: var(--pink-300); color: var(--pink-800); }
 button.btn-member:hover { background: var(--pink-300); }
 /* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — tông
