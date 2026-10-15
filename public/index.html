@@ -365,7 +365,12 @@
           <section class="card">
             <div class="row" style="justify-content:space-between;margin-bottom:12px">
               <h2 style="margin:0">Danh sách nhiệm vụ</h2>
-              <div class="row">
+              <!-- justify-content:flex-end — khi hiện nút "Thao tác với N đã
+                   chọn" (bulk-actions), hàng nút rộng ra vượt khung, tự xuống
+                   dòng (flex-wrap) và CĂN TRÁI mặc định, nhìn như "lệch sang
+                   trái" so với lúc chưa chọn gì (user phản hồi). Ép căn phải
+                   để dòng xuống vẫn giữ đúng vị trí bên phải. -->
+              <div class="row" style="justify-content:flex-end">
                 <div class="bulk-actions write-action" id="bulk-actions" hidden>
                   <button type="button" id="bulk-actions-btn" class="btn-move-month" aria-haspopup="true" aria-expanded="false">
                     Thao tác với <span id="selected-task-count">0</span> task đã chọn
