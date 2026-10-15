@@ -1006,15 +1006,17 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
 .actions-cell button.small + button.small { margin-left: 0; }
 
 /* Bộ chọn năm (Roadmap) — nổi bật: viền + mũi tên màu chủ đạo, số năm là
-   chip nền accent. */
+   chip nền accent. Đỏ tươi cố định, KHÔNG theo --primary (nay Xanh
+   dương) — cùng tinh thần đã tách cho nav/tab/select/checkbox trước đó
+   (user yêu cầu). */
 .year-stepper {
   display: inline-flex;
   align-items: stretch;
-  border: 2px solid var(--primary);
+  border: 2px solid var(--red-600);
   border-radius: 999px;
   background: var(--card-bg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(238, 0, 51, 0.25);
 }
 .year-stepper button {
   border: none;
@@ -1024,17 +1026,17 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   font-size: 1.15rem;
   font-weight: 800;
   line-height: 1;
-  color: var(--primary);
+  color: var(--red-600);
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
 .year-stepper button:hover:not(:disabled),
 .year-stepper button:focus-visible:not(:disabled) {
-  color: var(--delete);
+  color: var(--red-800);
   outline: none;
 }
 .year-stepper button:active:not(:disabled) {
-  color: var(--delete-hover);
+  color: var(--red-900);
 }
 .year-stepper button:disabled { opacity: 0.3; cursor: not-allowed; }
 .year-stepper-value {
@@ -1043,7 +1045,7 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   justify-content: center;
   min-width: 68px;
   padding: 6px 8px;
-  background: var(--primary);
+  background: var(--red-600);
   color: #fff;
   font-weight: 800;
   font-size: 1.1rem;
