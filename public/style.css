@@ -2018,10 +2018,20 @@ select.tm-phanloai-select {
   padding: 3px 22px 3px 10px;
   font-size: 0.78rem;
   max-width: none;
+  min-width: 70px;
   background-image: var(--select-chevron);
   background-repeat: no-repeat;
   background-position: right 6px center;
   background-size: 10px;
+}
+/* .status-default (chưa chọn Phân loại) thua .inline-cell-input:focus/
+   :hover (cùng gắn trên select này) ở nền/viền khi focus/hover — khoá lại
+   nền + chữ bằng selector 2 class cho chắc chắn luôn đọc được "— Không —"
+   dù đang ở trạng thái tương tác nào (user phản hồi: không hiện chữ khi
+   chưa chọn gì). */
+select.tm-phanloai-select.status-default {
+  background-color: var(--border);
+  color: var(--maroon);
 }
 
 /* BUG đã sửa: .row đặt display:flex (CSS tác giả) nên ĐÈ luôn lên hành vi
