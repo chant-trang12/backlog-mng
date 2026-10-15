@@ -1949,6 +1949,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    ".tm-add-frame" đứng ngay phía trên (user phản hồi) -> đổi sang Stone
    trung tính để tách biệt rõ 2 khối. */
 .tm-info-badge { background: var(--stone-200); color: var(--stone-700); }
+/* "% Đánh giá" (badge điểm task đã chấm) — tách riêng khỏi .tm-info-badge
+   (Stone, user chê xám) sang Sky nhạt, cùng họ màu với nút "Chấm điểm"
+   (btn-grade) để liên tưởng cùng 1 ngữ cảnh chấm điểm. */
+.tm-score-badge { background: var(--sky-100); color: var(--sky-800); }
 /* "Tổng đã phân bổ" đổi màu theo đúng/vượt 100% (xem updateTaskMemberTotalBadge,
    04-tasks.js) — 2 class riêng, KHÔNG dùng status-hoan-thanh/status-huy
    (badge Trạng thái thật ở các bảng, không đổi). */
