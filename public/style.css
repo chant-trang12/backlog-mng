@@ -542,6 +542,14 @@ input, select, textarea {
   color: var(--text);
   max-width: 100%;
 }
+/* Trước đây không ghi đè — input/textarea dùng viền focus XANH mặc định
+   của trình duyệt (khác hẳn style Đỏ đã thống nhất cho select/listbox,
+   user phản hồi). Ép về Đỏ tươi cho đồng bộ toàn bộ ô nhập liệu. */
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus {
+  outline: none;
+  border-color: var(--red-600);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--red-600) 25%, transparent);
+}
 
 /* select ở trình duyệt thật (không phải headless) tự co giãn theo option dài
    nhất — có option dài như "NV được giao từ BGĐ" khiến select rất rộng,
