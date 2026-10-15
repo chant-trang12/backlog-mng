@@ -415,7 +415,10 @@ td > .icon:only-child { margin-right: 0; }
 }
 
 .nav-item:hover { background: var(--bg); }
-.nav-item.active { background: var(--primary); color: #fff; }
+/* User: "menu này tôi không yêu cầu đổi, trả về màu đỏ tươi" — menu
+   sidebar active KHÔNG theo --primary (nay Xanh dương) nữa, cố định lại
+   Đỏ tươi (--red-600) dù --primary đổi màu khác trong tương lai. */
+.nav-item.active { background: var(--red-600); color: #fff; }
 
 /* Chấm đỏ báo số yêu cầu tính năng "Chờ duyệt" gửi đến phòng đang xem —
    xem countPendingFeatureRequestsForTarget()/updateFeatureRequestNavBadge()
@@ -435,7 +438,7 @@ td > .icon:only-child { margin-right: 0; }
   line-height: 18px;
   text-align: center;
 }
-.nav-item.active .nav-badge { box-shadow: 0 0 0 2px var(--primary); }
+.nav-item.active .nav-badge { box-shadow: 0 0 0 2px var(--red-600); }
 /* Nhãn "💡 Yêu cầu tính năng" đã khá dài so với bề rộng sidebar — chừa
    thêm chỗ bên phải để không bị chấm đỏ đè lên chữ. */
 .nav-item[data-page="feature-requests"] { padding-right: 32px; }
@@ -1020,7 +1023,10 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   font-size: 0.85rem;
 }
 
-.pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+/* User: "tab này tôi không yêu cầu đổi, trả về màu đỏ tươi" — tab active
+   (pill/chrome-tabs, dùng cho mọi sub-nav: Ranking/Tổng hợp/..., Cấu
+   hình, Team & Nhân sự...) KHÔNG theo --primary nữa, cố định Đỏ tươi. */
+.pill.active { background: var(--red-600); border-color: var(--red-600); color: #fff; }
 
 /* Tab kiểu Chrome cho trang Team & Nhân sự — tab nối liền phía trên khung nội
    dung đang active, không có khoảng cách, giống các tab trình duyệt. */
@@ -1046,8 +1052,8 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
 }
 
 .chrome-tabs .pill.active {
-  background: var(--primary);
-  border: 1px solid var(--primary);
+  background: var(--red-600);
+  border: 1px solid var(--red-600);
   border-bottom: none;
   color: #fff;
   font-weight: 600;
