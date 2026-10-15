@@ -447,7 +447,10 @@ function typeColorClass(value) {
   return TRAINING_TYPE_CLASS[value] || "status-default";
 }
 
-const TEAM_COLOR_COUNT = 6;
+// 18 màu (khớp .team-color-N/.team-bar-N trong style.css) — đủ cho danh mục
+// team/Nhóm tiêu chí phát sinh mà không lặp màu (6 màu cũ bị lặp khi tạo
+// team thứ 7).
+const TEAM_COLOR_COUNT = 18;
 
 // Mỗi team 1 màu riêng — lấy theo vị trí của team trong state.teams (danh
 // sách team đã khai báo) để các team hiện có không bị trùng màu nhau; nếu
