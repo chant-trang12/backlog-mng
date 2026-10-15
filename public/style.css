@@ -861,7 +861,7 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
 }
 /* Trước dùng var(--bg) (xám nhạt, không rõ) — đổi sang Đỏ siêu nhạt cho
    khớp style chung (user yêu cầu). */
-.bulk-menu-item:hover:not(:disabled) { background: var(--red-100); }
+.bulk-menu-item:hover:not(:disabled) { background: var(--red-200); }
 .bulk-menu-item:disabled { color: var(--muted); cursor: not-allowed; }
 .bulk-menu-item[hidden] { display: none; }
 .bulk-menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
@@ -905,7 +905,7 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
   color: var(--text);
   cursor: pointer;
 }
-.col-menu-item:hover { background: var(--red-100); }
+.col-menu-item:hover { background: var(--red-200); }
 /* accent-color = --primary (xanh olive/sage) thay vì xanh dương mặc định
    của trình duyệt cho MỌI checkbox trong app — đồng bộ 1 màu duy nhất
    (trước đây chỉ .col-menu-item input được chỉnh riêng, các checkbox khác
