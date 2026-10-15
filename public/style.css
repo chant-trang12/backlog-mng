@@ -1169,13 +1169,22 @@ th {
      overflow-x: auto (trước đây) biến .table-wrap thành scroll container
      không bao giờ cuộn dọc → tiêu đề trôi theo trang, sticky vô hiệu (đã
      kiểm chứng thực nghiệm bằng headless Chrome). Không đặt max-height thì
-     khung cao bằng nội dung, dọc vẫn do trang cuộn → tiêu đề vẫn trôi. */
-  max-height: calc(100vh - 240px);
+     khung cao bằng nội dung, dọc vẫn do trang cuộn → tiêu đề vẫn trôi.
+     Dự trù 180px cho phần đầu trang (topbar + tab + bộ lọc) — giảm từ 240px
+     để khung bảng cao hơn trên màn hình (user phản hồi bảng hiện quá ngắn). */
+  max-height: calc(100vh - 180px);
   /* Chừa chỗ cho thanh cuộn ngang (xuất hiện khi bảng rộng hơn khung) —
      không thì nó đè ngay lên dòng cuối cùng đang hiện, trông như chữ bị
      cắt mất (VD cột Ghi chú nhiều dòng, user phản hồi kèm ảnh chụp) dù
      thực ra chỉ cần cuộn xuống là thấy — chừa trước để khỏi gây hiểu lầm. */
   padding-bottom: 16px;
+}
+
+/* Riêng bảng Nhiệm vụ (Backlog): phía trên còn có thanh cuộn ngang giả
+   .table-scroll-top (~30px) nữa nên chừa dư hơn mọi bảng khác, để thanh
+   phân trang vẫn nằm gọn trong viewport. */
+#task-table-wrap {
+  max-height: calc(100vh - 210px);
 }
 
 /* Bảng "Phân quyền" (Cấu hình) — bỏ giới hạn chiều cao riêng (khác mọi
