@@ -2056,11 +2056,13 @@ select.tm-phanloai-select.status-default {
   display: none;
 }
 
-/* Khung "Thêm nhân sự" trong dialog "Nhân sự tham gia" — nền khác màu để
-   tách biệt khỏi bảng danh sách bên dưới. */
+/* Khung "Thêm nhân sự"/"Thêm việc" trong các dialog — nền khác màu để
+   tách biệt khỏi bảng danh sách bên dưới. Trước dùng var(--bg) trung
+   tính (xám/kem), đổi sang Đỏ rất nhạt (--red-100/--red-200) để khớp
+   style thương hiệu Đỏ chung của trang thay vì trung tính (user yêu cầu). */
 .tm-add-frame {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--red-100);
+  border: 1px solid var(--red-200);
   border-radius: 10px;
   padding: 14px;
   display: flex;
