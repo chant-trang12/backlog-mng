@@ -88,12 +88,12 @@
   --text: var(--stone-900);
   --muted: var(--stone-600);
   --border: var(--stone-200);
-  /* Primary — Xanh dương, tách khỏi Đỏ (nút "Lưu"/"+Thêm..."). --blue-800
-     (đậm/navy) bị user chê "xấu" -> hạ xuống --blue-600 (tươi/sáng hơn,
-     đúng tông "primary blue" phổ biến). Danger/Header-bg/nav-menu/tab vẫn
-     giữ Đỏ tươi (#EE0033) — không liên quan, đã tách riêng trước đó. */
-  --primary: var(--blue-600);
-  --primary-hover: var(--blue-700);
+  /* Primary — Xanh dương, tách khỏi Đỏ (nút "Lưu"/"+Thêm..."). Qua 2 lần
+     hạ độ đậm theo phản hồi user (blue-800 "xấu" -> blue-600 -> blue-500,
+     nhạt/tươi hơn nữa). Danger/Header-bg/nav-menu/tab vẫn giữ Đỏ tươi
+     (#EE0033) — không liên quan, đã tách riêng trước đó. */
+  --primary: var(--blue-500);
+  --primary-hover: var(--blue-600);
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
   /* Thành công = Xanh dương (đã chốt khớp donut "Hoàn thành", giữ nguyên —
@@ -976,7 +976,7 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   border-radius: 999px;
   background: var(--card-bg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 }
 .year-stepper button {
   border: none;
