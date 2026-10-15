@@ -101,7 +101,7 @@
   /* Success ("Tăng KI"/"Đánh dấu Đã xử lý") đậm hơn Warning để không
      trùng màu khi 2 nút cùng xuất hiện 1 dòng (bảng Nhân sự, lúc cả Hạ KI
      lẫn Tăng KI đều chưa bật). */
-  --success: #8a3a3c;
+  --success: #cc4f55;
   --warning: #e88080;
   --header-bg: var(--red-600);
 
@@ -981,7 +981,7 @@ button.btn-export:hover { background: var(--orange-300); }
 button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
 button.btn-exclude:hover { background: #b83f44; border-color: #b83f44; }
 button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
-button.btn-restore:hover { background: #6e2c2e; border-color: #6e2c2e; }
+button.btn-restore:hover { background: #a83e42; border-color: #a83e42; }
 
 /* Chặn lỗi kinh điển của flexbox: item flex mặc định không co xuống dưới
    kích thước nội dung của nó (min-width: auto), nên nếu chữ trong select/
