@@ -262,16 +262,16 @@ function renderHomeKpiTheoTaskTable() {
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
-// Màu donut "Nhiệm vụ theo Trạng thái" (Trang chủ) — khớp ĐÚNG 4 token màu
-// của bảng màu hệ thống hiện hành (style.css, "mix đợt 2"): Chưa thực
-// hiện = Stone nhạt (trung tính), Đang thực hiện = Cam (đang "nóng"),
-// Hoàn thành = Xanh dương (= var(--success)), Hủy = Đỏ tươi
-// (= var(--delete)/var(--danger)).
+// Màu donut "Nhiệm vụ theo Trạng thái" (Trang chủ) — đổi hẳn sang dải 4
+// màu user gửi ảnh (San hô -> Đỏ vừa -> Đỏ thẫm (brick) -> Kem nhạt), độ
+// đậm tăng dần theo "mức độ nghiêm trọng": Chưa thực hiện nhạt nhất (chưa
+// có gì xảy ra) -> Đang thực hiện (đang "nóng") -> Hoàn thành (nổi bật,
+// thành tích) -> Hủy đậm nhất (kết thúc tiêu cực).
 const HOME_STAT_STATUS_HEX = {
-  "Chưa thực hiện": "#d6d3d1", // --stone-300
-  "Đang thực hiện": "#fb923c", // --orange-400
-  "Hoàn thành": "#60a5fa", // --blue-400 (= --success)
-  Hủy: "#ee0033", // --red-600 (= --delete/--danger)
+  "Chưa thực hiện": "#fde8ce",
+  "Đang thực hiện": "#e88080",
+  "Hoàn thành": "#cc4f55",
+  Hủy: "#8a3a3c",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
