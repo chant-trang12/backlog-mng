@@ -751,22 +751,18 @@ button.primary:hover { background: var(--primary-hover); }
    độ ưu tiên cao hơn). */
 button.primary.tbl-add-btn { background: var(--red-800); border-color: var(--red-800); }
 button.primary.tbl-add-btn:hover { background: var(--red-900); border-color: var(--red-900); }
-/* "+ Nhập task mới" (Backlog) đứng CẠNH "Nhập Excel" (nay Sky), "Xuất
-   Excel" (Cam nhạt) VÀ "File mẫu" (Hổ phách) trên CÙNG 1 thanh công cụ —
-   tự nó cũng là .primary (đỏ tươi, như mọi nút "+ Thêm..." khác trong
-   app) nên KHÔNG đổi var(--primary) chung (sẽ đổi màu nav/tab/header
-   theo — đã chốt giữ nguyên "đỏ tươi"). Chỉ override riêng ID này sang
-   Hồng (Pink) — họ màu duy nhất chưa dùng ở thanh công cụ này — để 5 nút
-   cạnh nhau không nút nào trùng màu (user yêu cầu, ảnh chụp cặp nút). */
-#add-task-btn.primary { background: var(--pink-600); border-color: var(--pink-600); }
-#add-task-btn.primary:hover { background: var(--pink-700); border-color: var(--pink-700); }
+/* "+ Nhập task mới" (Backlog) đứng CẠNH "Nhập Excel"/"Xuất Excel"/"File
+   mẫu" trên CÙNG 1 thanh công cụ — override riêng ID này, nay theo dải
+   màu San hô->Đỏ thẫm user gửi (đỏ hồng vừa, khác --warning "Nhập Excel"
+   nhạt hơn). */
+#add-task-btn.primary { background: #cc4f55; border-color: #cc4f55; }
+#add-task-btn.primary:hover { background: #a83e42; border-color: #a83e42; }
 /* "+ Tạo tháng mới" đứng CẠNH "Xóa tháng này" (.danger, đỏ tươi — GIỮ
-   NGUYÊN, đây là xóa thật theo Quy tắc 9.1, không đổi var(--danger) dùng
-   chung cho MỌI nút xóa trong toàn app) — 2 nút cạnh nhau cùng đỏ, khó
-   phân biệt (ảnh user gửi). Override riêng ID này sang Cyan để tách biệt
-   rõ "tạo mới" (không nguy hiểm) khỏi "xóa" (nguy hiểm). */
-#create-period-btn.primary { background: var(--cyan-600); border-color: var(--cyan-600); }
-#create-period-btn.primary:hover { background: var(--cyan-700); border-color: var(--cyan-700); }
+   NGUYÊN, đây là xóa thật theo Quy tắc 9.1). Override riêng ID này sang
+   Đỏ thẫm (brick, cùng dải San hô->Đỏ thẫm user gửi) — tách biệt rõ với
+   đỏ tươi của nút "Xóa tháng này" cạnh nó. */
+#create-period-btn.primary { background: #8a3a3c; border-color: #8a3a3c; }
+#create-period-btn.primary:hover { background: #6e2e30; border-color: #6e2e30; }
 button.danger { background: var(--delete); border-color: var(--delete); color: #fff; }
 button.danger:hover { background: var(--delete-hover); border-color: var(--delete-hover); }
 button.small { padding: 4px 8px; font-size: 0.8rem; }
