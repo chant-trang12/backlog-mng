@@ -9,17 +9,20 @@ function deptParam(prefix = "&") {
     : "";
 }
 
-// Bảng màu monogram cho phòng — DÙNG CHUNG bảng màu team (TEAM_BAR_HEX ở
-// 08-home.js = .team-bar-N trong style.css): 18 màu pastel-đậm cùng tông với
-// badge team/cột biểu đồ (hue nhảy bước 140°, 2 phòng liền kề luôn khác họ
-// màu), thay cho bộ 6 màu rực cũ (đỏ thẫm/cyan/đỏ tươi/đen...) lệch hẳn với
-// style chung của trang. Chữ trắng đủ tương phản trên cả 18 màu (45%/48%).
-// Đọc TEAM_BAR_HEX TẠI THỜI ĐIỂM GỌI (không gán cấp cao nhất) vì 02-...js
-// tải trước 08-home.js — const của script sau chưa tồn tại khi script trước
-// chạy top-level (TDZ).
+// Bảng màu monogram cho phòng — dẫn xuất từ bảng màu team (cùng 18 hue, thứ
+// tự khớp TEAM_BAR_HEX ở 08-home.js) nhưng NHẬT HƠN 1 BẬC (hsl(H, 42%, 56%)
+// thay vì 45%/48%) theo yêu cầu user ("cho màu nhạt hơn xíu"), và hue xanh
+// lá 140° của slot 2 đổi thành NGỌC 170° (xanh lá trông "lệch tông" với bộ
+// chủ đạo san hô/kem — user phản hồi riêng). Chữ trắng vẫn đọc được trên cả
+// 18 màu. Gán màu theo vị trí phòng trong danh sách, vượt 18 phòng quay vòng.
+const DEPT_COLORS = [
+  "#be6060", "#60beae", "#9f60be", "#bebe60", "#609fbe", "#be607f",
+  "#60be60", "#7f60be", "#be9f60", "#60bebe", "#be609f", "#7fbe60",
+  "#6060be", "#be7f60", "#60be9f", "#be60be", "#9fbe60", "#607fbe",
+];
 function deptColor(dept) {
   const i = Math.max(0, state.departments.findIndex((d) => d.id === dept.id));
-  return TEAM_BAR_HEX[i % TEAM_BAR_HEX.length];
+  return DEPT_COLORS[i % DEPT_COLORS.length];
 }
 
 function deptMonogram(dept) {
