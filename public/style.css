@@ -61,6 +61,7 @@
   --blue-400: #60a5fa;
   --blue-500: #3b82f6;
   --blue-800: #1e40af;
+  --blue-900: #1e3a8a;
 
   --pink-100: #fce7f3;
   --pink-300: #f9a8d4;
@@ -85,19 +86,25 @@
   --text: var(--stone-900);
   --muted: var(--stone-600);
   --border: var(--stone-200);
-  /* Primary/Danger/Header-bg — KHÔNG đổi, đã chốt "đỏ tươi" ở các lần
-     chỉnh trước (user: "trừ các chỉnh sửa màu đỏ tươi trước đó"). */
-  --primary: var(--red-600);
-  --primary-hover: var(--red-700);
+  /* Primary — ĐỔI sang Xanh dương đậm (--blue-800), tách khỏi Đỏ: nút
+     "Lưu"/menu/tab/header lặp lại quá nhiều "đỏ tươi" cạnh nút "Hủy"
+     trung tính, user yêu cầu đổi hẳn (đã hỏi lại — chọn đổi TOÀN CỤC thay
+     vì override từng nút submit riêng lẻ). Danger/Header-bg vẫn giữ Đỏ
+     tươi (#EE0033) — CHỈ Primary đổi, không đụng ý nghĩa "xóa"/"header
+     bảng dữ liệu" đã chốt trước đó. */
+  --primary: var(--blue-800);
+  --primary-hover: var(--blue-900);
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
   /* Thành công = Xanh dương (đã chốt khớp donut "Hoàn thành", giữ nguyên —
      --blue-400 ở đây CHÍNH LÀ #60a5fa user đã chọn). */
   --success: var(--blue-400);
-  /* "Nhập Excel"/btn-exclude trước là Rose — nhìn gần giống --primary (đỏ
-     tươi) khi đặt cạnh nút "+ Thêm/Nhập..." (ảnh user gửi) -> đổi hẳn sang
-     Sky (xanh dương, tách rõ khỏi họ Đỏ). */
-  --warning: var(--sky-600);
+  /* "Nhập Excel"/btn-exclude — Sky từng dùng tạm, nhưng --primary GIỜ CŨNG
+     Xanh dương (--blue-800) nên 2 nút luôn đứng cạnh nhau trên MỌI trang
+     (Nhân sự/Sự cố/Roadmap/Yêu cầu tính năng/4 bảng Tính năng số hoá) sẽ
+     trùng họ màu — đổi hẳn sang Cyan (họ màu riêng, không trùng Primary/
+     Danger/Edit-Hổ phách/Export-Cam ở bất kỳ trang nào có đủ cả 2 nút). */
+  --warning: var(--cyan-700);
   --header-bg: var(--red-600);
 
   --delete: var(--red-600);
@@ -780,8 +787,11 @@ button.btn-view { background: var(--stone-100); border-color: var(--stone-300); 
 button.btn-view:hover { background: var(--stone-200); }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
-button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
-button.btn-move-month:hover { background: var(--primary-hover); }
+/* KHÔNG dùng var(--primary) (nay Xanh dương đậm) — nút này xuất hiện CÙNG
+   thanh công cụ với "Nhập Excel" (Sky, cũng họ xanh) khi có bulk-select,
+   dễ trùng tông. Đổi riêng sang Rose để tách biệt rõ trong hàng 6 nút. */
+button.btn-move-month { background: var(--rose-600); border-color: var(--rose-600); color: #fff; }
+button.btn-move-month:hover { background: #be123c; border-color: #be123c; }
 
 /* Nút "Cột hiển thị" — tách riêng màu (Xám) với .btn-edit (Tan, "File mẫu")
    và .btn-export (San hô, "Xuất Excel") cũng ở thanh công cụ này, để 3 nút
@@ -931,7 +941,7 @@ button.btn-export:hover { background: var(--orange-300); }
 /* Nút "Không tính đi muộn" / "Bỏ Không tính đi muộn" ở tab Chấm công và Nội
    quy — cần nổi bật rõ vì tác động trực tiếp đến số liệu tổng hợp. */
 button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
-button.btn-exclude:hover { background: var(--sky-700); border-color: var(--sky-700); }
+button.btn-exclude:hover { background: var(--cyan-800); border-color: var(--cyan-800); }
 button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
 button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
 
@@ -963,7 +973,7 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   border-radius: 999px;
   background: var(--card-bg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(238, 0, 51, 0.25);
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
 }
 .year-stepper button {
   border: none;
