@@ -1,13 +1,24 @@
 :root {
   color-scheme: light dark;
-  /* Bảng màu MIX (theo 3 ảnh user gửi — dải Đỏ/Xám hệ thống + dải Burgundy/
-     Kem/Hồng + dải Kem khaki/Tan/San hô/Đỏ bụi): nền/viền/chữ chuyển hẳn
-     sang tông KEM-TAN ấm (thay vì xám lạnh trước đó) để hài hoà với họ Đỏ/
-     Burgundy làm điểm nhấn, cộng thêm San hô (Rose/Salmon) làm tầng cảnh
-     báo nhẹ — vẫn giữ nguyên Xám làm 1 họ màu phụ (không bỏ hẳn) để NÚT
-     HÀNH ĐỘNG có đủ họ màu khác nhau, tránh 2 nút cạnh nhau trùng màu
-     (yêu cầu user). KHÔNG đổi màu badge (status-badge/team-color/mt-color/
-     ht-color/perm-badge/al-badge/tinh-chat/...). */
+  /* Bảng màu MIX ĐỢT 2 (3 ảnh user gửi — dải Stone/Đỏ/Cam/Hổ phách/Vàng
+     kiểu Tailwind, dải Cyan/Sky/Xanh dương, dải Hồng/Rose): rebuild toàn bộ
+     token nền tảng từ đây, GIỮ NGUYÊN mọi chỉnh sửa "đỏ tươi" đã chốt
+     trước đó (--primary/--danger/--delete/--header-bg = #EE0033, theo yêu
+     cầu rõ ràng của user — không đổi theo ramp đỏ MỚI #dc2626 trong ảnh
+     này). Neutrals chuyển sang Stone (ấm nhẹ, trung tính hơn Tan/Kem cũ).
+     KHÔNG đổi màu badge (status-badge/team-color/mt-color/ht-color/
+     perm-badge/al-badge/tinh-chat/...). */
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --stone-300: #d6d3d1;
+  --stone-400: #a8a29e;
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+  --stone-800: #292524;
+  --stone-900: #1c1917;
+
+  /* Đỏ "đỏ tươi" đã chốt ở các lần chỉnh trước — GIỮ NGUYÊN giá trị cũ. */
   --red-100: #fef5f6;
   --red-200: #fcd9db;
   --red-300: #f9b3b7;
@@ -17,61 +28,68 @@
   --red-700: #c4132b;
   --red-800: #890d1e;
   --red-900: #620915;
-  --grey-100: #f8f9fa;
-  --grey-200: #e9ecef;
-  --grey-300: #dee2e6;
-  --grey-400: #ced4da;
-  --grey-500: #adb5bd;
-  --grey-600: #6c757d;
-  --grey-700: #495057;
-  --grey-800: #343a40;
-  --grey-900: #212529;
 
-  /* Dải mới lấy từ 2 ảnh "mix" — Kem/Tan/San hô/Burgundy (ấm hơn Đỏ/Xám
-     thuần, hài hoà với bảng màu cream/olive gốc của app trước khi đổi). */
-  --cream-100: #fffbf5;
-  --cream-200: #fdf4e8;
-  --tan-300: #f2e3cc;
-  --tan-400: #e6cba5;
-  --tan-500: #d9b680;
-  --rose-500: #e6977e;
-  --rose-600: #d9846e;
-  --rose-700: #bc5850;
-  --burgundy-800: #7a0e2a;
-  --burgundy-900: #5c0a20;
+  --orange-100: #ffedd5;
+  --orange-300: #fdba74;
+  --orange-400: #fb923c;
+  --orange-800: #9a3412;
+
+  --amber-100: #fef3c7;
+  --amber-300: #fcd34d;
+  --amber-800: #92400e;
+
+  --yellow-100: #fef9c3;
+  --yellow-300: #fde047;
+  --yellow-800: #854d0e;
+
+  --cyan-100: #cffafe;
+  --cyan-300: #67e8f9;
+  --cyan-800: #155e75;
+
+  --sky-100: #e0f2fe;
+  --sky-300: #7dd3fc;
+  --sky-800: #075985;
+
+  --blue-100: #dbeafe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-800: #1e40af;
+
+  --pink-100: #fce7f3;
+  --pink-300: #f9a8d4;
+  --pink-800: #9d174d;
+
+  --rose-100: #ffe4e6;
+  --rose-300: #fda4af;
+  --rose-400: #fb7185;
+  --rose-600: #e11d48;
 
   /* Tên biến cũ (--cream/--pink-light/--pink-rose/--maroon) giữ lại để
      khỏi phải sửa mọi chỗ còn tham chiếu trực tiếp — trỏ sang màu mới. */
-  --cream: var(--cream-100);
-  --pink-light: var(--tan-400);
-  --pink-rose: var(--burgundy-800);
-  --maroon: var(--burgundy-900);
+  --cream: var(--stone-50);
+  --pink-light: var(--stone-300);
+  --pink-rose: var(--red-800);
+  --maroon: var(--red-900);
 
-  --bg: var(--cream-100);
+  --bg: var(--stone-50);
   --card-bg: #ffffff;
-  --text: #2b1f1a;
-  --muted: #8a7367;
-  --border: #e8d4b0;
-  /* Primary (nav menu active + tab active) — ĐỔI từ Burgundy sang Đỏ rực
-     (--red-600), khớp đúng màu ở bảng "Việc cần xử lý gấp"/task-warning-
-     urgent (user yêu cầu, 2 ảnh chụp nav + tab). Burgundy giữ lại riêng
-     cho --header-bg (header bảng dữ liệu, KHÔNG đổi — user chỉ nhắc đến
-     menu/tab). */
+  --text: var(--stone-900);
+  --muted: var(--stone-600);
+  --border: var(--stone-200);
+  /* Primary/Danger/Header-bg — KHÔNG đổi, đã chốt "đỏ tươi" ở các lần
+     chỉnh trước (user: "trừ các chỉnh sửa màu đỏ tươi trước đó"). */
   --primary: var(--red-600);
   --primary-hover: var(--red-700);
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
-  /* Xanh lá (chart "Hoàn thành" + nút "Đánh dấu Đã xử lý"/"Tăng KI") đổi
-     hẳn sang xanh dương — user yêu cầu đổi cả 2 nơi cùng lúc, vẫn khớp
-     đúng màu với HOME_STAT_STATUS_HEX["Hoàn thành"] (08-home.js). */
-  --success: #60a5fa;
-  --warning: var(--rose-500);
-  /* Header bảng dữ liệu — ĐỔI từ Burgundy (đỏ thâm) sang Đỏ tươi, khớp
-     --primary (user yêu cầu, ảnh chụp header bảng). */
+  /* Thành công = Xanh dương (đã chốt khớp donut "Hoàn thành", giữ nguyên —
+     --blue-400 ở đây CHÍNH LÀ #60a5fa user đã chọn). */
+  --success: var(--blue-400);
+  /* Cảnh báo nhẹ — đổi sang Rose (dải mới) thay San hô cũ. */
+  --warning: var(--rose-400);
   --header-bg: var(--red-600);
 
-  /* Nút Xóa dùng chung thang Đỏ với Danger — tách biệt rõ khỏi Primary
-     (Burgundy) dù cùng gốc đỏ, phân biệt bằng hue (đỏ rực vs đỏ rượu vang). */
   --delete: var(--red-600);
   --delete-hover: var(--red-700);
   --delete-light: var(--red-200);
@@ -79,18 +97,18 @@
 
   /* Mũi tên select — ảnh data: URI KHÔNG ăn currentColor (luôn vẽ đen), nên
      tô sẵn màu --muted cho từng theme. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%238a7367' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  --dd-shadow: 0 10px 28px rgba(43, 31, 26, 0.16), 0 2px 6px rgba(43, 31, 26, 0.08);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%2357534e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --dd-shadow: 0 10px 28px rgba(28, 25, 23, 0.16), 0 2px 6px rgba(28, 25, 23, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1e1513;
-    --card-bg: #2b211d;
-    --text: #f5e9dc;
-    --muted: #b8a290;
-    --border: #4a392e;
-    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23b8a290' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --bg: #1c1917;
+    --card-bg: #292524;
+    --text: #f5f5f4;
+    --muted: #a8a29e;
+    --border: #44403c;
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23a8a29e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     --dd-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 }
@@ -194,7 +212,7 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(43, 31, 26, 0.22);
+  box-shadow: 0 12px 32px rgba(28, 25, 23, 0.22);
   padding: 6px;
   max-height: 60vh;
   overflow-y: auto;
@@ -697,8 +715,8 @@ button.small { padding: 4px 8px; font-size: 0.8rem; }
 button.small + button.small { margin-left: 6px; }
 
 /* Nút hành động trong bảng — nền màu để nổi bật thay vì chỉ viền. */
-button.btn-edit { background: var(--tan-300); border-color: var(--tan-400); color: #6b4a1f; }
-button.btn-edit:hover { background: var(--tan-400); }
+button.btn-edit { background: var(--amber-100); border-color: var(--amber-300); color: var(--amber-800); }
+button.btn-edit:hover { background: var(--amber-300); }
 /* Nút "Nhiệm vụ đã hủy" (popup Cập nhật tiến độ) — khóa, không bấm lại
    được (xem updateRequestCancelBtnUI, 04-tasks.js), tô xám để nhìn rõ là
    trạng thái đã chốt, không phải 1 hành động còn làm được nữa. */
@@ -724,16 +742,16 @@ button.btn-cancel-request:hover { background: var(--delete-light-hover); }
    tác của bảng Yêu cầu tính năng, các nút cần khác màu nhau dễ đọc). */
 button.btn-reject { background: var(--delete); border-color: var(--delete); color: #fff; }
 button.btn-reject:hover { background: var(--red-800); border-color: var(--red-800); }
-button.btn-grade { background: #fbe4dc; border-color: var(--rose-500); color: var(--rose-700); }
-button.btn-grade:hover { background: #f6cbbd; }
-button.btn-progress { background: #f3d9de; border-color: #e3afb9; color: var(--burgundy-800); }
-button.btn-progress:hover { background: #e9bcc4; }
-button.btn-member { background: var(--grey-300); border-color: var(--grey-500); color: var(--grey-900); }
-button.btn-member:hover { background: var(--grey-400); }
+button.btn-grade { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
+button.btn-grade:hover { background: var(--sky-300); }
+button.btn-progress { background: var(--cyan-100); border-color: var(--cyan-300); color: var(--cyan-800); }
+button.btn-progress:hover { background: var(--cyan-300); }
+button.btn-member { background: var(--pink-100); border-color: var(--pink-300); color: var(--pink-800); }
+button.btn-member:hover { background: var(--pink-300); }
 /* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — tông
    trung tính (không mang ý nghĩa sửa/xóa như Sửa/Xóa cạnh nó). */
-button.btn-view { background: var(--grey-100); border-color: var(--grey-300); color: var(--grey-600); }
-button.btn-view:hover { background: var(--grey-200); }
+button.btn-view { background: var(--stone-100); border-color: var(--stone-300); color: var(--stone-600); }
+button.btn-view:hover { background: var(--stone-200); }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 button.btn-move-month { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -742,8 +760,8 @@ button.btn-move-month:hover { background: var(--primary-hover); }
 /* Nút "Cột hiển thị" — tách riêng màu (Xám) với .btn-edit (Tan, "File mẫu")
    và .btn-export (San hô, "Xuất Excel") cũng ở thanh công cụ này, để 3 nút
    cạnh nhau không trùng màu. */
-button.btn-col-menu { background: var(--grey-200); border-color: var(--grey-400); color: var(--grey-700); }
-button.btn-col-menu:hover { background: var(--grey-300); }
+button.btn-col-menu { background: var(--stone-200); border-color: var(--stone-400); color: var(--stone-700); }
+button.btn-col-menu:hover { background: var(--stone-300); }
 button.btn-move-month:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 
 /* Cụm "Thao tác với N task đã chọn" — 1 nút mở menu xổ xuống, gom các thao
@@ -762,7 +780,7 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(43, 31, 26, 0.18);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.18);
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -806,7 +824,7 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(43, 31, 26, 0.18);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.18);
   padding: 4px;
   display: flex;
   flex-direction: column;
@@ -867,7 +885,7 @@ input[type="checkbox"] { accent-color: var(--primary); }
 /* Đổi khỏi màu olive/khaki cũ (lạc tông với bảng màu Đỏ/Burgundy/San hô
    mới) — dùng Burgundy nhạt để khác hẳn 3 chip còn lại (hồng/cam-tan/đỏ
    đậm) nhưng vẫn cùng họ ấm (yêu cầu user, ảnh chụp dải "Trang chủ"). */
-.task-warning-graded { background: #f3d9de; border-color: #e3afb9; color: var(--burgundy-800); }
+.task-warning-graded { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
 .task-warning-overdue { background: var(--delete-light); border-color: var(--red-300); color: var(--delete); }
 .task-warning-upcoming { background: #ffedd5; border-color: #f0cd9e; color: #9a3412; }
 /* Đậm hơn hẳn "quá hạn" (cũng tông đỏ) — đây là cờ người tự tay đánh dấu
@@ -876,13 +894,13 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .task-warning-urgent { background: var(--delete); border-color: var(--delete); color: #fff; }
 .task-warning-urgent .task-warning-count { color: var(--delete); } /* nền trắng mờ kế thừa, chữ trắng trên nền đó sẽ mờ -> đổi lại màu đậm */
 .task-warning-chip.active { outline: 2px solid currentColor; }
-button.btn-no-score { background: var(--tan-400); border-color: var(--tan-500); color: #4a3517; }
-button.btn-no-score:hover { background: var(--tan-500); }
+button.btn-no-score { background: var(--yellow-100); border-color: var(--yellow-300); color: var(--yellow-800); }
+button.btn-no-score:hover { background: var(--yellow-300); }
 /* Tách riêng họ màu San hô (Rose) với .btn-col-menu (Xám) và .btn-edit
    ("File mẫu", Tan) đứng CẠNH NHAU trên cùng 1 thanh công cụ — 3 nút
    trung tính cần 3 họ màu khác nhau để không trùng (yêu cầu user). */
-button.btn-export { background: #fbe4dc; border-color: var(--rose-500); color: var(--rose-700); }
-button.btn-export:hover { background: #f6cbbd; }
+button.btn-export { background: var(--orange-100); border-color: var(--orange-300); color: var(--orange-800); }
+button.btn-export:hover { background: var(--orange-300); }
 
 /* Nút "Không tính đi muộn" / "Bỏ Không tính đi muộn" ở tab Chấm công và Nội
    quy — cần nổi bật rõ vì tác động trực tiếp đến số liệu tổng hợp. */
@@ -919,7 +937,7 @@ button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
   border-radius: 999px;
   background: var(--card-bg);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(122, 14, 42, 0.25);
+  box-shadow: 0 2px 8px rgba(238, 0, 51, 0.25);
 }
 .year-stepper button {
   border: none;
@@ -2097,11 +2115,11 @@ button.btn-split-even:hover { background: var(--rose-600); border-color: var(--r
    màu mới (user yêu cầu đổi riêng nhóm này, khác các badge phân loại dữ
    liệu khác vẫn giữ nguyên) để 2 phòng/team liền kề không trùng họ màu. */
 .team-bar-0 { background: #890d1e; }
-.team-bar-1 { background: #495057; }
+.team-bar-1 { background: #44403c; }
 .team-bar-2 { background: #ee0033; }
-.team-bar-3 { background: #212529; }
+.team-bar-3 { background: #1c1917; }
 .team-bar-4 { background: #c4132b; }
-.team-bar-5 { background: #6c757d; }
+.team-bar-5 { background: #57534e; }
 
 .hbar-empty { color: var(--muted); padding: 8px 4px; }
 
@@ -2232,7 +2250,7 @@ button.btn-split-even:hover { background: var(--rose-600); border-color: var(--r
 .home-tonghop-head-chitieu { background: var(--warning); }
 .home-tonghop-head-tru { background: var(--delete); }
 .home-tonghop-head-cong { background: var(--success); }
-.home-tonghop-blank { background: var(--cream-200); }
+.home-tonghop-blank { background: var(--stone-100); }
 
 #home-ranking-team-table th,
 #home-ranking-team-table td,
@@ -2312,7 +2330,7 @@ dialog {
   color: var(--text);
 }
 
-dialog::backdrop { background: rgba(43, 31, 26, 0.35); }
+dialog::backdrop { background: rgba(28, 25, 23, 0.35); }
 
 /* Nút X đóng popup — ghim góc trên bên phải mọi dialog trong hệ thống, dùng
    chung 1 handler ủy quyền (xem app.js) thay vì gắn riêng cho từng dialog. */
@@ -2392,7 +2410,7 @@ dialog.confirm-dialog form > h2 { padding-right: 0; } /* tiêu đề đã căn g
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(43, 31, 26, 0.18);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, 0.18);
   padding: 4px;
 }
 .tm-suggest-item {
@@ -2495,7 +2513,7 @@ dialog.confirm-dialog .confirm-actions button { flex: 1; min-width: 0; }
   border: 1px solid var(--border);
   border-left: 4px solid var(--danger);
   color: var(--text);
-  box-shadow: 0 4px 16px rgba(43, 31, 26, 0.15);
+  box-shadow: 0 4px 16px rgba(28, 25, 23, 0.15);
   font-size: 0.9rem;
   animation: toast-in 0.2s ease-out;
 }
