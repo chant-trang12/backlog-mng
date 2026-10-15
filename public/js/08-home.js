@@ -18,12 +18,13 @@ function homeTeamBarColorClass(teamName) {
 }
 
 // Cùng thứ tự với .team-bar-N trong style.css (18 màu, cùng hue với
-// .team-color-N tương ứng) — dùng cho SVG (không đọc được class CSS trực
-// tiếp trong thuộc tính stroke/fill).
+// .team-color-N tương ứng, hue nhảy bước 140° để các team đầu tiên cách xa
+// nhau) — dùng cho SVG (không đọc được class CSS trực tiếp trong thuộc tính
+// stroke/fill).
 const TEAM_BAR_HEX = [
-  "#b98f46", "#b95746", "#b99846", "#b94655", "#b97646", "#83b946",
-  "#b96546", "#b9a646", "#a6b946", "#50b946", "#46b993", "#46b5b9",
-  "#4689b9", "#4663b9", "#5d46b9", "#a646b9", "#b94693", "#b94659",
+  "#b14343", "#43b168", "#8d43b1", "#b1b143", "#438db1", "#b14368",
+  "#43b143", "#6843b1", "#b18d43", "#43b1b1", "#b1438d", "#68b143",
+  "#4343b1", "#b16843", "#43b18d", "#b143b1", "#8db143", "#4368b1",
 ];
 function homeTeamBarHex(teamName) {
   const index = state.homeTeams.findIndex((t) => t.name === teamName);

@@ -2171,32 +2171,32 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem
    teamColorClass ở 01-state.js). 18 màu — danh mục team phát sinh nên cần
-   đủ màu không LẶP LẠI. Dải màu NHẠT theo bộ màu chủ đạo của trang (theo
-   ảnh mẫu user gửi: kem/san hô/đỏ đất — trùng tông header, nút Thêm, card
-   đôn đốc): 9 màu ĐẦU là họ ấm chủ đạo (kem be → san hô → cát → hồng đào
-   → cam đất → sage...), 9 màu sau là các dải phụ hài hòa (lục/ngọc/lam/
-   tím pastel cùng độ nhạt). Nền pastel ~87-92% light, chữ đậm cùng họ màu
-   — cùng chuẩn với các .status-badge của trang. Thứ tự bảng màu khớp
-   TEAM_BAR_HEX (08-home.js) và .team-bar-N bên dưới. */
-.team-badge { background: hsl(38, 45%, 90%); color: hsl(30, 40%, 30%); }
-.team-color-0 { background: hsl(38, 45%, 90%); color: hsl(30, 40%, 30%); } /* kem be */
-.team-color-1 { background: hsl(9, 50%, 91%); color: hsl(8, 48%, 33%); } /* san hô nhạt */
-.team-color-2 { background: hsl(43, 55%, 87%); color: hsl(43, 55%, 28%); } /* cát vàng */
-.team-color-3 { background: hsl(352, 45%, 92%); color: hsl(352, 45%, 32%); } /* hồng đào */
-.team-color-4 { background: hsl(25, 55%, 89%); color: hsl(25, 58%, 33%); } /* cam đất */
-.team-color-5 { background: hsl(88, 32%, 89%); color: hsl(88, 32%, 27%); } /* sage */
-.team-color-6 { background: hsl(16, 48%, 90%); color: hsl(16, 52%, 33%); } /* đất nung */
-.team-color-7 { background: hsl(50, 48%, 85%); color: hsl(50, 55%, 26%); } /* khaki */
-.team-color-8 { background: hsl(70, 32%, 89%); color: hsl(70, 35%, 26%); } /* olive nhạt */
-.team-color-9 { background: hsl(115, 26%, 90%); color: hsl(115, 32%, 27%); } /* lục nhạt */
-.team-color-10 { background: hsl(160, 27%, 90%); color: hsl(160, 34%, 27%); } /* ngọc */
-.team-color-11 { background: hsl(182, 27%, 90%); color: hsl(182, 35%, 27%); } /* teal xám */
-.team-color-12 { background: hsl(205, 28%, 90%); color: hsl(205, 34%, 29%); } /* lam xám */
-.team-color-13 { background: hsl(225, 27%, 91%); color: hsl(225, 32%, 31%); } /* chàm nhạt */
-.team-color-14 { background: hsl(252, 25%, 91%); color: hsl(252, 30%, 32%); } /* tím nhạt */
-.team-color-15 { background: hsl(290, 25%, 91%); color: hsl(290, 30%, 31%); } /* tím hồng */
-.team-color-16 { background: hsl(320, 28%, 91%); color: hsl(320, 34%, 31%); } /* hồng đậm nhạt */
-.team-color-17 { background: hsl(350, 42%, 91%); color: hsl(350, 48%, 32%); } /* đỏ hồng */
+   đủ màu không LẶP LẠI. Hue nhảy BƯỚC 140° (bước-7 coprime-18, cùng kỹ thuật
+   HT_COLOR_ORDER của Hệ thống) để các team ĐẦU TIÊN (phổ biến nhất) cách
+   nhau tối đa: đỏ hồng → lục → tím → vàng → lam... — KHÔNG na ná nhau
+   (bảng màu ấm liền kề trước đây bị user phản hồi "na ná giống nhau").
+   Vẫn cùng chuẩn nhạt của trang: nền pastel 88% light, chữ đậm cùng họ màu
+   (giống các .status-badge). Thứ tự khớp TEAM_BAR_HEX (08-home.js) và
+   .team-bar-N bên dưới. */
+.team-badge { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); }
+.team-color-0 { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); } /* đỏ hồng */
+.team-color-1 { background: hsl(140, 45%, 88%); color: hsl(140, 42%, 28%); } /* lục */
+.team-color-2 { background: hsl(280, 45%, 88%); color: hsl(280, 42%, 28%); } /* tím */
+.team-color-3 { background: hsl(60, 45%, 88%); color: hsl(60, 42%, 28%); } /* vàng */
+.team-color-4 { background: hsl(200, 45%, 88%); color: hsl(200, 42%, 28%); } /* lam */
+.team-color-5 { background: hsl(340, 45%, 88%); color: hsl(340, 42%, 28%); } /* hồng */
+.team-color-6 { background: hsl(120, 45%, 88%); color: hsl(120, 42%, 28%); } /* lục lá */
+.team-color-7 { background: hsl(260, 45%, 88%); color: hsl(260, 42%, 28%); } /* chàm tím */
+.team-color-8 { background: hsl(40, 45%, 88%); color: hsl(40, 42%, 28%); } /* cam vàng */
+.team-color-9 { background: hsl(180, 45%, 88%); color: hsl(180, 42%, 28%); } /* ngọc */
+.team-color-10 { background: hsl(320, 45%, 88%); color: hsl(320, 42%, 28%); } /* hồng đậm */
+.team-color-11 { background: hsl(100, 45%, 88%); color: hsl(100, 42%, 28%); } /* lục nhạt */
+.team-color-12 { background: hsl(240, 45%, 88%); color: hsl(240, 42%, 28%); } /* lam đậm */
+.team-color-13 { background: hsl(20, 45%, 88%); color: hsl(20, 42%, 28%); } /* cam đất */
+.team-color-14 { background: hsl(160, 45%, 88%); color: hsl(160, 42%, 28%); } /* lục ngọc */
+.team-color-15 { background: hsl(300, 45%, 88%); color: hsl(300, 42%, 28%); } /* tím hồng */
+.team-color-16 { background: hsl(80, 45%, 88%); color: hsl(80, 42%, 28%); } /* vàng lục */
+.team-color-17 { background: hsl(220, 45%, 88%); color: hsl(220, 42%, 28%); } /* lam nhạt */
 
 /* Hệ thống — 18 màu (không phải 6) vì danh mục Hệ thống ở Cấu hình có thể
    phát sinh nhiều giá trị theo thời gian; trước đây chỉ có 6 màu nên tạo
@@ -2243,26 +2243,26 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 /* Bản đậm hơn của bảng màu team (cùng THỨ TỰ với .team-color-N), dùng làm
    màu tô cột trong biểu đồ (trang Home) + avatar monogram phòng ban
    (dept-mono, xem DEPT_COLORS ở 02-departments-periods-teams.js): mỗi màu
-   = cùng hue với badge team tương ứng, đậm lại hsl(H, 45%, 50%) để chữ
+   = cùng hue với badge team tương ứng, đậm lại hsl(H, 45%, 48%) để chữ
    trắng trên cột vẫn đọc được. 18 màu khớp TEAM_COLOR_COUNT = 18. */
-.team-bar-0 { background: #b98f46; }
-.team-bar-1 { background: #b95746; }
-.team-bar-2 { background: #b99846; }
-.team-bar-3 { background: #b94655; }
-.team-bar-4 { background: #b97646; }
-.team-bar-5 { background: #83b946; }
-.team-bar-6 { background: #b96546; }
-.team-bar-7 { background: #b9a646; }
-.team-bar-8 { background: #a6b946; }
-.team-bar-9 { background: #50b946; }
-.team-bar-10 { background: #46b993; }
-.team-bar-11 { background: #46b5b9; }
-.team-bar-12 { background: #4689b9; }
-.team-bar-13 { background: #4663b9; }
-.team-bar-14 { background: #5d46b9; }
-.team-bar-15 { background: #a646b9; }
-.team-bar-16 { background: #b94693; }
-.team-bar-17 { background: #b94659; }
+.team-bar-0 { background: #b14343; }
+.team-bar-1 { background: #43b168; }
+.team-bar-2 { background: #8d43b1; }
+.team-bar-3 { background: #b1b143; }
+.team-bar-4 { background: #438db1; }
+.team-bar-5 { background: #b14368; }
+.team-bar-6 { background: #43b143; }
+.team-bar-7 { background: #6843b1; }
+.team-bar-8 { background: #b18d43; }
+.team-bar-9 { background: #43b1b1; }
+.team-bar-10 { background: #b1438d; }
+.team-bar-11 { background: #68b143; }
+.team-bar-12 { background: #4343b1; }
+.team-bar-13 { background: #b16843; }
+.team-bar-14 { background: #43b18d; }
+.team-bar-15 { background: #b143b1; }
+.team-bar-16 { background: #8db143; }
+.team-bar-17 { background: #4368b1; }
 
 .hbar-empty { color: var(--muted); padding: 8px 4px; }
 
