@@ -113,13 +113,14 @@ chỉ làm reverse proxy bằng URL Rewrite + Application Request Routing (ARR).
    Routing Cache → Server Proxy Settings → Enable proxy*.
 2. Cho phép server variable: *URL Rewrite → View Server Variables → Add*
    `HTTP_X_FORWARDED_PROTO` (bước này cần Administrator).
-3. Giữ nguyên Host gốc để SSO dựng đúng redirect URI (chạy bằng quyền Admin):
-   `%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/proxy /preserveHostHeader:True /commit:apphost`
+3. KHÔNG cần đổi cấu hình proxy cấp server (`preserveHostHeader`) — tránh ảnh
+   hưởng site khác trên cùng IIS: đặt `OIDC_REDIRECT_URI` và `OIDC_LOGOUT_URI`
+   là URL ĐẦY ĐỦ (có `https://tên-miền/...`) để SSO không phụ thuộc Host header.
 4. Tạo site IIS (binding cổng khác `PORT`, ví dụ 80/443) và chép
    [`deploy/iis/web.config`](deploy/iis/web.config) vào thư mục gốc site; đổi
    `localhost:8810` nếu Node chạy cổng khác.
 5. `.env` của Node: `TRUST_PROXY=1`, `COOKIE_SECURE=true` (nếu site dùng
-   HTTPS), `OIDC_REDIRECT_URI` trỏ đúng URL công khai qua IIS.
+   HTTPS), `OIDC_REDIRECT_URI`/`OIDC_LOGOUT_URI` là URL đầy đủ qua IIS (đăng ký đúng URL đó trên IdP).
 
 Lưu ý: phiên đăng nhập lưu trong bộ nhớ process Node — khởi động lại dịch vụ
 thì mọi người phải đăng nhập lại. Chỉ chạy 1 process Node.
