@@ -2194,6 +2194,27 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 .team-color-15 { background: hsl(300, 45%, 88%); color: hsl(300, 42%, 28%); } /* tím hồng */
 .team-color-16 { background: hsl(80, 45%, 88%); color: hsl(80, 42%, 28%); } /* vàng lục */
 .team-color-17 { background: hsl(220, 45%, 88%); color: hsl(220, 42%, 28%); } /* lam nhạt */
+/* Vòng 2 (team 19..36) — cùng hue với vòng 1 nhưng ĐẬM hơn rõ rệt (nền 80%,
+   chữ 22%): đủ 36 slot màu KHÁC NHAU trước khi phải quay vòng, team mới tạo
+   luôn nhận slot chưa dùng (xem buildTeamColorSlots ở 01-state.js). */
+.team-color-18 { background: hsl(0, 45%, 80%); color: hsl(0, 48%, 22%); }
+.team-color-19 { background: hsl(140, 45%, 80%); color: hsl(140, 48%, 22%); }
+.team-color-20 { background: hsl(280, 45%, 80%); color: hsl(280, 48%, 22%); }
+.team-color-21 { background: hsl(60, 45%, 80%); color: hsl(60, 48%, 22%); }
+.team-color-22 { background: hsl(200, 45%, 80%); color: hsl(200, 48%, 22%); }
+.team-color-23 { background: hsl(340, 45%, 80%); color: hsl(340, 48%, 22%); }
+.team-color-24 { background: hsl(120, 45%, 80%); color: hsl(120, 48%, 22%); }
+.team-color-25 { background: hsl(260, 45%, 80%); color: hsl(260, 48%, 22%); }
+.team-color-26 { background: hsl(40, 45%, 80%); color: hsl(40, 48%, 22%); }
+.team-color-27 { background: hsl(180, 45%, 80%); color: hsl(180, 48%, 22%); }
+.team-color-28 { background: hsl(320, 45%, 80%); color: hsl(320, 48%, 22%); }
+.team-color-29 { background: hsl(100, 45%, 80%); color: hsl(100, 48%, 22%); }
+.team-color-30 { background: hsl(240, 45%, 80%); color: hsl(240, 48%, 22%); }
+.team-color-31 { background: hsl(20, 45%, 80%); color: hsl(20, 48%, 22%); }
+.team-color-32 { background: hsl(160, 45%, 80%); color: hsl(160, 48%, 22%); }
+.team-color-33 { background: hsl(300, 45%, 80%); color: hsl(300, 48%, 22%); }
+.team-color-34 { background: hsl(80, 45%, 80%); color: hsl(80, 48%, 22%); }
+.team-color-35 { background: hsl(220, 45%, 80%); color: hsl(220, 48%, 22%); }
 
 /* Hệ thống — 18 màu (không phải 6) vì danh mục Hệ thống ở Cấu hình có thể
    phát sinh nhiều giá trị theo thời gian; trước đây chỉ có 6 màu nên tạo
@@ -2260,6 +2281,25 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 .team-bar-15 { background: #b143b1; }
 .team-bar-16 { background: #8db143; }
 .team-bar-17 { background: #4368b1; }
+/* Vòng 2 — đậm hơn vòng 1 (cùng hue, light 36%), khớp .team-color-18..35. */
+.team-bar-18 { background: #853232; }
+.team-bar-19 { background: #32854e; }
+.team-bar-20 { background: #6a3285; }
+.team-bar-21 { background: #858532; }
+.team-bar-22 { background: #326a85; }
+.team-bar-23 { background: #85324e; }
+.team-bar-24 { background: #328532; }
+.team-bar-25 { background: #4e3285; }
+.team-bar-26 { background: #856a32; }
+.team-bar-27 { background: #328585; }
+.team-bar-28 { background: #85326a; }
+.team-bar-29 { background: #4e8532; }
+.team-bar-30 { background: #323285; }
+.team-bar-31 { background: #854e32; }
+.team-bar-32 { background: #32856a; }
+.team-bar-33 { background: #853285; }
+.team-bar-34 { background: #6a8532; }
+.team-bar-35 { background: #324e85; }
 
 .hbar-empty { color: var(--muted); padding: 8px 4px; }
 
