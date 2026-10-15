@@ -1945,8 +1945,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    (xanh lá/xám cũ, lạc tông với bảng màu mới, user phản hồi) dù không
    thật sự mang ý nghĩa "trạng thái" — tách riêng class để không lẫn với
    badge trạng thái thật (status-hoan-thanh vẫn dùng ở cột Trạng thái các
-   bảng, không đổi). */
-.tm-info-badge { background: var(--red-100); color: var(--red-800); }
+   bảng, không đổi). Lúc đầu đổi Đỏ nhạt nhưng lại TRÙNG màu khung
+   ".tm-add-frame" đứng ngay phía trên (user phản hồi) -> đổi sang Stone
+   trung tính để tách biệt rõ 2 khối. */
+.tm-info-badge { background: var(--stone-200); color: var(--stone-700); }
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
