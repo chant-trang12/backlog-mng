@@ -471,13 +471,20 @@ function renderHomeVBarChart(items, opts = {}) {
 
   let bars = "";
   let xLabels = "";
+  // Nhãn trục X cắt ngắn theo bề rộng ô của từng cột (ước lượng ~6.4px/ký tự
+  // ở font 11px đậm) — tên team dài không còn tràn đè lên tên liền kề (bug
+  // user gửi ảnh). Tên đầy đủ xem bằng cách rê chuột vào nhãn (<title>) hoặc
+  // ở legend bên dưới chart.
+  const labelCharW = 6.4;
   labels.forEach((name, i) => {
     const x = xCenters[i] - barWidth / 2;
     const yTop = yBar(barValues[i]);
     const barH = Math.max(3, padTop + plotH - yTop);
     bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${colorHex(items[i], i)}" />`;
     bars += `<text class="home-combo-barvalue" x="${xCenters[i].toFixed(1)}" y="${(yTop + 12).toFixed(1)}" text-anchor="middle">${barValues[i].toFixed(0)}</text>`;
-    xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${name}</text>`;
+    const maxChars = Math.max(3, Math.floor((step - 4) / labelCharW));
+    const shortName = name.length > maxChars ? `${name.slice(0, maxChars - 1).trimEnd()}…` : name;
+    xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${shortName}<title>${name}</title></text>`;
   });
 
   chartEl.innerHTML = `
