@@ -976,8 +976,12 @@ button.btn-export:hover { background: var(--orange-300); }
 
 /* Nút "Không tính đi muộn" / "Bỏ Không tính đi muộn" ở tab Chấm công và Nội
    quy — cần nổi bật rõ vì tác động trực tiếp đến số liệu tổng hợp. */
-button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
-button.btn-exclude:hover { background: #b83f44; border-color: #b83f44; }
+/* "Nhập Excel" — Hổ phách (vàng đất #c9a24c, bảng màu gốc của trang): KHÔNG
+   dùng --warning nữa vì theme nay đã đổi --warning trùng đúng màu san hô
+   --primary, khiến nút này TRÙNG MÀU với "+ Nhập task mới" đứng cạnh
+   (user gửi ảnh). Vàng đất hài hoà với dải san hô mà vẫn tách bạch. */
+button.btn-exclude { background: #c9a24c; border-color: #c9a24c; color: #fff; }
+button.btn-exclude:hover { background: #b08a3c; border-color: #b08a3c; }
 button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
 button.btn-restore:hover { background: #a83e42; border-color: #a83e42; }
 
