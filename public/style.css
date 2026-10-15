@@ -741,6 +741,18 @@ button {
 
 button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 button.primary:hover { background: var(--primary-hover); }
+/* Nút "+Thêm.../+Tạo.../+Nhập..." (thêm bản ghi mới) hầu hết nằm NGAY TRÊN
+   1 bảng có header Đỏ tươi — Xanh dương (--primary) của .primary đứng
+   cạnh đó bị chê "không hài hoà" (user gửi ảnh). Tách riêng nhóm nút này
+   (.tbl-add-btn, gắn kèm class primary ở mọi nút "+..." trong index.html)
+   sang Đỏ thẫm (--red-800) — cùng họ màu với header nhưng đậm hơn, hài
+   hoà mà vẫn phân biệt được với chính header. "Lưu" (submit form, không
+   đứng cạnh header bảng) vẫn giữ nguyên .primary Xanh dương. 2 nút đã có
+   override ID riêng (add-task-btn/create-period-btn, để tránh trùng màu
+   nút cạnh nó trong CÙNG 1 dòng) giữ nguyên, không bị rule này đè (ID có
+   độ ưu tiên cao hơn). */
+button.primary.tbl-add-btn { background: var(--red-800); border-color: var(--red-800); }
+button.primary.tbl-add-btn:hover { background: var(--red-900); border-color: var(--red-900); }
 /* "+ Nhập task mới" (Backlog) đứng CẠNH "Nhập Excel" (nay Sky), "Xuất
    Excel" (Cam nhạt) VÀ "File mẫu" (Hổ phách) trên CÙNG 1 thanh công cụ —
    tự nó cũng là .primary (đỏ tươi, như mọi nút "+ Thêm..." khác trong
