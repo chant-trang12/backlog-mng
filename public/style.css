@@ -904,10 +904,12 @@ button.btn-move-month:disabled { background: var(--border); border-color: var(--
    dương, dành cho nút Lưu/+Thêm...), cùng tinh thần đã tách cho nav/tab/
    select/list trước đó. */
 input[type="checkbox"] { accent-color: var(--red-600); }
-/* Checkbox "Chọn tất cả" nằm trong <th> (nền header giờ CŨNG Đỏ tươi) —
-   tự thân checkbox đỏ trên nền đỏ bị chìm, gần như vô hình (user phản
-   hồi). Viền trắng để tách khung rõ khỏi nền header. */
-th input[type="checkbox"] {
+/* Checkbox "Chọn tất cả" nằm trong <th> (nền header giờ CŨNG Đỏ tươi) — lúc
+   ĐÃ TICK, phần tô đỏ bên trong (accent-color) bị chìm vào nền header
+   cùng màu, gần như vô hình (user phản hồi) -> thêm viền trắng. Lúc CHƯA
+   tick thì checkbox tự có khung trắng sẵn (checkbox rỗng), không cần viền
+   thêm — user yêu cầu chỉ viền khi đã check. */
+th input[type="checkbox"]:checked {
   outline: 1px solid #fff;
   outline-offset: 1px;
   border-radius: 3px;
