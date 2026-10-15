@@ -5,21 +5,38 @@
 
 // Màu team ở Home lấy theo vị trí trong state.homeTeams (team của đúng
 // tháng/điều kiện đang xem ở Home) — độc lập với state.teams (tháng đang
-// chọn ở Backlog), vì Home có thể đang xem 1 tháng khác.
+// chọn ở Backlog), vì Home có thể đang xem 1 tháng khác. Gán màu theo THỨ
+// TỰ TẠO (id tăng dần — cùng cơ chế teamColorClass ở 01-state.js): team mới
+// tạo luôn nhận slot chưa dùng, không trùng màu team đã có; team lạ (chưa
+// kịp tải/danh sách khác tháng) -> badge trung tính, không chiếm slot 0.
+function homeTeamColorSlotFor(teamName) {
+  const map = new Map();
+  [...state.homeTeams]
+    .sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    .forEach((t, i) => map.set(t.name, i % TEAM_COLOR_COUNT));
+  return map.get(teamName);
+}
 function homeTeamColorClass(teamName) {
-  const index = state.homeTeams.findIndex((t) => t.name === teamName);
-  const safeIndex = index === -1 ? 0 : index;
-  return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
+  const slot = homeTeamColorSlotFor(teamName);
+  return slot === undefined ? "status-default" : `team-color-${slot}`;
 }
 function homeTeamBarColorClass(teamName) {
-  const index = state.homeTeams.findIndex((t) => t.name === teamName);
-  const safeIndex = index === -1 ? 0 : index;
-  return `team-bar-${safeIndex % TEAM_COLOR_COUNT}`;
+  const slot = homeTeamColorSlotFor(teamName);
+  return slot === undefined ? "status-default" : `team-bar-${slot}`;
 }
 
-// Cùng thứ tự với .team-bar-N trong style.css — dùng cho SVG (không đọc được
-// class CSS trực tiếp trong thuộc tính stroke/fill).
-const TEAM_BAR_HEX = ["#7c9b5c", "#b3452f", "#c9a24c", "#546b41", "#4f8a7c", "#8a5a75"];
+// Cùng thứ tự với .team-bar-N trong style.css (36 màu = 2 vòng x 18 hue, cùng
+// hue với .team-color-N tương ứng, hue nhảy bước 140° để các team đầu tiên
+// cách xa nhau) — dùng cho SVG (không đọc được class CSS trực tiếp trong
+// thuộc tính stroke/fill).
+const TEAM_BAR_HEX = [
+  "#b14343", "#43b168", "#8d43b1", "#b1b143", "#438db1", "#b14368",
+  "#43b143", "#6843b1", "#b18d43", "#43b1b1", "#b1438d", "#68b143",
+  "#4343b1", "#b16843", "#43b18d", "#b143b1", "#8db143", "#4368b1",
+  "#853232", "#32854e", "#6a3285", "#858532", "#326a85", "#85324e",
+  "#328532", "#4e3285", "#856a32", "#328585", "#85326a", "#4e8532",
+  "#323285", "#854e32", "#32856a", "#853285", "#6a8532", "#324e85",
+];
 function homeTeamBarHex(teamName) {
   const index = state.homeTeams.findIndex((t) => t.name === teamName);
   const safeIndex = index === -1 ? 0 : index;
@@ -262,11 +279,16 @@ function renderHomeKpiTheoTaskTable() {
 }
 
 const HOME_STAT_STATUSES = ["Chưa thực hiện", "Đang thực hiện", "Hoàn thành", "Hủy"];
+// Màu donut "Nhiệm vụ theo Trạng thái" (Trang chủ) — đổi hẳn sang dải 4
+// màu user gửi ảnh (San hô -> Đỏ vừa -> Đỏ thẫm (brick) -> Kem nhạt), độ
+// đậm tăng dần theo "mức độ nghiêm trọng": Chưa thực hiện nhạt nhất (chưa
+// có gì xảy ra) -> Đang thực hiện (đang "nóng") -> Hoàn thành (nổi bật,
+// thành tích) -> Hủy đậm nhất (kết thúc tiêu cực).
 const HOME_STAT_STATUS_HEX = {
-  "Chưa thực hiện": "#9aad79",
-  "Đang thực hiện": "#c9a24c",
-  "Hoàn thành": "#7c9b5c",
-  Hủy: "#b3452f",
+  "Chưa thực hiện": "#fde8ce",
+  "Đang thực hiện": "#e88080",
+  "Hoàn thành": "#cc4f55",
+  Hủy: "#8a3a3c",
 };
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
@@ -449,13 +471,20 @@ function renderHomeVBarChart(items, opts = {}) {
 
   let bars = "";
   let xLabels = "";
+  // Nhãn trục X cắt ngắn theo bề rộng ô của từng cột (ước lượng ~6.4px/ký tự
+  // ở font 11px đậm) — tên team dài không còn tràn đè lên tên liền kề (bug
+  // user gửi ảnh). Tên đầy đủ xem bằng cách rê chuột vào nhãn (<title>) hoặc
+  // ở legend bên dưới chart.
+  const labelCharW = 6.4;
   labels.forEach((name, i) => {
     const x = xCenters[i] - barWidth / 2;
     const yTop = yBar(barValues[i]);
     const barH = Math.max(3, padTop + plotH - yTop);
     bars += `<rect x="${x.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${colorHex(items[i], i)}" />`;
     bars += `<text class="home-combo-barvalue" x="${xCenters[i].toFixed(1)}" y="${(yTop + 12).toFixed(1)}" text-anchor="middle">${barValues[i].toFixed(0)}</text>`;
-    xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${name}</text>`;
+    const maxChars = Math.max(3, Math.floor((step - 4) / labelCharW));
+    const shortName = name.length > maxChars ? `${name.slice(0, maxChars - 1).trimEnd()}…` : name;
+    xLabels += `<text class="home-combo-xlabel" x="${xCenters[i].toFixed(1)}" y="${height - 4}" text-anchor="middle">${shortName}<title>${name}</title></text>`;
   });
 
   chartEl.innerHTML = `

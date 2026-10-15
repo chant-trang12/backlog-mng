@@ -79,9 +79,10 @@ el.roadmapSearch.addEventListener("input", () => {
 // "Tính năng mới" cùng ở vị trí đầu danh mục thì cùng ra team-color-0).
 // Nay mỗi danh mục có bảng màu riêng (ht-color-N / mt-color-N, xem
 // style.css) để không bao giờ trùng màu với nhau lẫn với Team.
-// Hệ thống dùng riêng HT_COLOR_COUNT=18 (không phải TEAM_COLOR_COUNT=6) —
-// danh mục này hay phát sinh nhiều giá trị hơn Team theo thời gian, chỉ 6
-// màu thì tạo quá 6 hệ thống là màu badge bị LẶP LẠI (bug đã gặp thực tế).
+// Hệ thống dùng riêng HT_COLOR_COUNT=18 (Team đã lên 36 = 2 vòng x 18 —
+// TEAM_COLOR_COUNT ở 01-state.js) — danh mục này hay phát sinh nhiều giá trị
+// theo thời gian, ít màu thì tạo quá nhiều hệ thống là màu badge bị LẶP LẠI
+// (bug đã gặp thực tế).
 const HT_COLOR_COUNT = 18;
 // 18 màu ht-color-N định nghĩa ở style.css xoay hue tuần tự 165°→275°, mỗi
 // màu chỉ cách màu liền kề ~6° — nếu gán thẳng theo thứ tự trong danh mục
@@ -100,7 +101,9 @@ function systemColorClass(value) {
 }
 function objectiveColorClass(value) {
   const i = state.objectiveOptions.findIndex((m) => m.ten_muc_tieu === value);
-  return `mt-color-${(i === -1 ? 0 : i) % TEAM_COLOR_COUNT}`;
+  // Mục tiêu chỉ có 6 màu mt-color-N riêng (style.css) — không dùng
+  // TEAM_COLOR_COUNT (nay là 18) vì mt-color-6..17 không tồn tại.
+  return `mt-color-${(i === -1 ? 0 : i) % 6}`;
 }
 
 // Phân loại nhân sự tham gia task — 2 giá trị mặc định (Thực hiện chính /
