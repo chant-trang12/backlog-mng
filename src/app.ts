@@ -74,6 +74,17 @@ export function createApp() {
 
   const app = express();
 
+  // Chạy sau reverse proxy (IIS + ARR, nginx...): TRUST_PROXY cho Express tin
+  // X-Forwarded-Proto/For của proxy — bắt buộc để cookie phiên "secure"
+  // (COOKIE_SECURE=true) hoạt động khi proxy nói chuyện HTTP với Node, và để
+  // req.protocol/req.ip đúng. Số = số lớp proxy tin cậy (IIS: 1); "false"/để
+  // trống = tắt (chạy trực tiếp). Không bật khi Node mở thẳng ra ngoài —
+  // client giả được header X-Forwarded-*.
+  const trustProxy = (process.env.TRUST_PROXY ?? "").trim();
+  if (trustProxy && trustProxy !== "false") {
+    app.set("trust proxy", /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+  }
+
   // Security headers. CSP: frontend (public/) is same-origin vanilla JS/CSS
   // with no external CDNs and no inline <script>, so script-src can stay
   // locked to 'self'. Inline style="" attributes are used extensively across

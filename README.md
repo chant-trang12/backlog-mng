@@ -103,3 +103,24 @@ với nhóm chức năng tương ứng (`period`, `task`, `team`, `member`, `csk
 - Sử dụng file SQLite test riêng biệt (`data/test-backlog.db`), độc lập hoàn toàn với database dev (`data/backlog.db`).
 - `tests/globalSetup.ts` tự động dọn dẹp và reset database test trước và sau mỗi đợt chạy test, không làm ảnh hưởng đến dữ liệu dev.
 - Các test file chạy tuần tự (`fileParallelism: false`) để đảm bảo tính toàn vẹn dữ liệu.
+
+## Chạy sau IIS (reverse proxy)
+
+Node chạy như một dịch vụ riêng (NSSM/PM2) ở cổng `PORT` (ví dụ `8810`); IIS
+chỉ làm reverse proxy bằng URL Rewrite + Application Request Routing (ARR).
+
+1. Cài **URL Rewrite** và **ARR 3.0**; ở cấp server: *Application Request
+   Routing Cache → Server Proxy Settings → Enable proxy*.
+2. Cho phép server variable: *URL Rewrite → View Server Variables → Add*
+   `HTTP_X_FORWARDED_PROTO` (bước này cần Administrator).
+3. KHÔNG cần đổi cấu hình proxy cấp server (`preserveHostHeader`) — tránh ảnh
+   hưởng site khác trên cùng IIS: đặt `OIDC_REDIRECT_URI` và `OIDC_LOGOUT_URI`
+   là URL ĐẦY ĐỦ (có `https://tên-miền/...`) để SSO không phụ thuộc Host header.
+4. Tạo site IIS (binding cổng khác `PORT`, ví dụ 80/443) và chép
+   [`deploy/iis/web.config`](deploy/iis/web.config) vào thư mục gốc site; đổi
+   `localhost:8810` nếu Node chạy cổng khác.
+5. `.env` của Node: `TRUST_PROXY=1`, `COOKIE_SECURE=true` (nếu site dùng
+   HTTPS), `OIDC_REDIRECT_URI`/`OIDC_LOGOUT_URI` là URL đầy đủ qua IIS (đăng ký đúng URL đó trên IdP).
+
+Lưu ý: phiên đăng nhập lưu trong bộ nhớ process Node — khởi động lại dịch vụ
+thì mọi người phải đăng nhập lại. Chỉ chạy 1 process Node.

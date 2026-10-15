@@ -447,23 +447,52 @@ function typeColorClass(value) {
   return TRAINING_TYPE_CLASS[value] || "status-default";
 }
 
-const TEAM_COLOR_COUNT = 6;
+// 36 màu = 2 vòng x 18 hue (khớp .team-color-N/.team-bar-N trong style.css,
+// vòng 2 đậm hơn vòng 1) — đủ cho danh mục team/Nhóm tiêu chí phát sinh mà
+// không lặp màu (6 màu cũ bị lặp khi tạo team thứ 7).
+const TEAM_COLOR_COUNT = 36;
 
-// Mỗi team 1 màu riêng — lấy theo vị trí của team trong state.teams (danh
-// sách team đã khai báo) để các team hiện có không bị trùng màu nhau; nếu
-// nhiều hơn TEAM_COLOR_COUNT team thì các team sau sẽ quay vòng lại màu đầu.
+// Gán màu theo THỨ TỰ TẠO (id tăng dần) chứ KHÔNG theo thứ tự tên trong danh
+// sách (danh sách đang sắp xếp theo tên alphabetical): team mới tạo luôn
+// nhận slot tiếp theo chưa dùng -> KHÔNG BAO GIỜ trùng màu với team đã có,
+// team cũ cũng không bị xê dịch màu khi team mới chen lên đầu danh sách tên.
+// Vượt TEAM_COLOR_COUNT team mới quay vòng lại các slot (tổng 2 vòng 36 màu
+// vẫn khác nhau tới team thứ 36). Team KHÔNG có trong danh sách (render trước
+// khi tải xong / dữ liệu tham chiếu tên team lạ) -> badge trung tính
+// (status-default), tuyệt đối không chiếm slot màu của team đầu tiên.
+function buildColorSlotMap(list, nameKey) {
+  const map = new Map();
+  [...list]
+    .sort((a, b) => (a.id ?? 0) - (b.id ?? 0))
+    .forEach((item, i) => map.set(item[nameKey], i % TEAM_COLOR_COUNT));
+  return map;
+}
+const teamColorSlotCache = { key: "", map: new Map() };
+function teamColorSlotFor(teamName) {
+  const key = state.teams.map((t) => t.id).join(",");
+  if (teamColorSlotCache.key !== key) {
+    teamColorSlotCache.map = buildColorSlotMap(state.teams, "name");
+    teamColorSlotCache.key = key;
+  }
+  return teamColorSlotCache.map.get(teamName);
+}
 function teamColorClass(teamName) {
-  const index = state.teams.findIndex((t) => t.name === teamName);
-  const safeIndex = index === -1 ? 0 : index;
-  return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
+  const slot = teamColorSlotFor(teamName);
+  return slot === undefined ? "status-default" : `team-color-${slot}`;
 }
 
-// Mỗi Nhóm tiêu chí (trang Cấu hình → Cấu hình → Nhóm) 1 màu riêng, theo vị
-// trí trong danh mục state.groupOptions — cùng bảng màu với team-color-N.
+// Mỗi Nhóm tiêu chí (trang Cấu hình → Cấu hình → Nhóm) 1 màu riêng — cùng cơ
+// chế gán theo thứ tự tạo (id) như teamColorClass ở trên, dùng chung bảng
+// màu team-color-N.
+const groupColorSlotCache = { key: "", map: new Map() };
 function groupColorClass(group) {
-  const index = state.groupOptions.findIndex((n) => n.ten_nhom === group);
-  const safeIndex = index === -1 ? 0 : index;
-  return `team-color-${safeIndex % TEAM_COLOR_COUNT}`;
+  const key = state.groupOptions.map((n) => n.id).join(",");
+  if (groupColorSlotCache.key !== key) {
+    groupColorSlotCache.map = buildColorSlotMap(state.groupOptions, "ten_nhom");
+    groupColorSlotCache.key = key;
+  }
+  const slot = groupColorSlotCache.map.get(group);
+  return slot === undefined ? "status-default" : `team-color-${slot}`;
 }
 
 // Phân trang dùng chung cho mọi bảng dữ liệu (Nhân sự, Sự cố, Hỗ trợ ticket,

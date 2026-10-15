@@ -291,7 +291,7 @@
                   <input id="new-month" type="number" min="1" max="12" style="width:70px" />
                 </div>
                 <div style="align-self:flex-end">
-                  <button id="create-period-btn" class="admin-only-action primary">+ Tạo tháng mới</button>
+                  <button id="create-period-btn" class="admin-only-action primary tbl-add-btn">+ Tạo tháng mới</button>
                 </div>
                 <div style="align-self:flex-end">
                   <button id="delete-period-btn" class="delete-action danger">Xóa tháng này</button>
@@ -371,7 +371,12 @@
           <section class="card">
             <div class="row" style="justify-content:space-between;margin-bottom:12px">
               <h2 style="margin:0">Danh sách nhiệm vụ</h2>
-              <div class="row">
+              <!-- justify-content:flex-end — khi hiện nút "Thao tác với N đã
+                   chọn" (bulk-actions), hàng nút rộng ra vượt khung, tự xuống
+                   dòng (flex-wrap) và CĂN TRÁI mặc định, nhìn như "lệch sang
+                   trái" so với lúc chưa chọn gì (user phản hồi). Ép căn phải
+                   để dòng xuống vẫn giữ đúng vị trí bên phải. -->
+              <div class="row" style="justify-content:flex-end">
                 <div class="bulk-actions write-action" id="bulk-actions" hidden>
                   <button type="button" id="bulk-actions-btn" class="btn-move-month" aria-haspopup="true" aria-expanded="false">
                     Thao tác với <span id="selected-task-count">0</span> task đã chọn
@@ -402,7 +407,7 @@
                 <button id="download-task-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="task-file-input" accept=".xlsx,.xls" hidden />
                 <button id="import-tasks-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
-                <button id="add-task-btn" class="write-action primary">+ Nhập task mới</button>
+                <button id="add-task-btn" class="write-action primary tbl-add-btn">+ Nhập task mới</button>
               </div>
             </div>
             <div class="row" style="margin-bottom:12px;align-items:center">
@@ -500,7 +505,7 @@
                 <button id="download-member-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="member-file-input" accept=".xlsx,.xls" hidden />
                 <button id="import-members-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
-                <button id="add-member-btn" class="write-action primary">+ Thêm nhân sự</button>
+                <button id="add-member-btn" class="write-action primary tbl-add-btn">+ Thêm nhân sự</button>
               </div>
             </div>
             <p class="muted" style="margin:12px 0">Nhập Excel để thêm nhanh nhiều nhân sự vào tháng đang chọn</p>
@@ -555,7 +560,7 @@
           <section class="card" id="team-tab-tuanthu" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Tuân thủ Quy trình và Kế hoạch chung</h2>
-              <button id="add-compliance-btn" class="write-action primary">+ Thêm mới</button>
+              <button id="add-compliance-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
             <div class="table-wrap">
               <table id="compliance-table">
@@ -637,7 +642,7 @@
           <section class="card" id="team-tab-daotao" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Đào tạo nội bộ và Chứng chỉ quốc tế</h2>
-              <button id="add-training-btn" class="write-action primary">+ Thêm mới</button>
+              <button id="add-training-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
             <div class="table-wrap">
               <table id="training-table">
@@ -676,7 +681,7 @@
           <section class="card" id="team-tab-hotro" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Hỗ trợ</h2>
-              <button id="add-support-btn" class="write-action primary">+ Thêm mới</button>
+              <button id="add-support-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
             <div class="table-wrap">
               <table id="support-table">
@@ -715,7 +720,7 @@
           <section class="card" id="team-tab-danhgia" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Đánh giá</h2>
-              <button id="add-danhgia-btn" class="write-action primary">+ Thêm Đánh giá</button>
+              <button id="add-danhgia-btn" class="write-action primary tbl-add-btn">+ Thêm Đánh giá</button>
             </div>
             <div class="table-wrap">
               <table id="danhgia-table">
@@ -757,7 +762,7 @@
                 <button id="mark-excluded-attendance-btn" class="write-action btn-exclude" hidden>Không tính đi muộn</button>
                 <button id="delete-selected-attendance-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-attendance-count">0</span>)</button>
                 <input type="file" id="attendance-file-input" accept=".xlsx,.xls" hidden />
-                <button id="import-attendance-btn" class="write-action primary">+ Nhập file Excel</button>
+                <button id="import-attendance-btn" class="write-action primary tbl-add-btn">+ Nhập file Excel</button>
               </div>
             </div>
             <p class="muted" style="margin:12px 0">Nhập file Excel để hiển thị dữ liệu theo đúng các cột có trong file. Nhập lại sẽ thay thế toàn bộ dữ liệu Chấm công của tháng đang chọn.</p>
@@ -808,7 +813,7 @@
                 </div>
                 <button id="download-incident-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <button id="import-incidents-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
-                <button id="add-incident-btn" class="write-action primary">+ Thêm sự cố</button>
+                <button id="add-incident-btn" class="write-action primary tbl-add-btn">+ Thêm sự cố</button>
               </div>
             </div>
             <div class="table-wrap">
@@ -871,7 +876,7 @@
           <section class="card" id="cskh-tab-tickets" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Hỗ trợ ticket</h2>
-              <button id="add-ticket-btn" class="write-action primary">+ Thêm dữ liệu</button>
+              <button id="add-ticket-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
             <div class="table-wrap">
               <table id="ticket-table">
@@ -910,7 +915,7 @@
           <section class="card" id="cskh-tab-creation-rates" hidden>
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Tỉ lệ khởi tạo</h2>
-              <button id="add-creation-rate-btn" class="write-action primary">+ Thêm dữ liệu</button>
+              <button id="add-creation-rate-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
             <div class="table-wrap">
               <table id="creation-rate-table">
@@ -966,7 +971,7 @@
                 <button id="download-roadmap-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <input type="file" id="roadmap-file-input" accept=".xlsx,.xls" hidden />
                 <button id="import-roadmap-btn" class="write-action btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
-                <button id="add-roadmap-btn" class="write-action primary">+ Thêm dòng roadmap</button>
+                <button id="add-roadmap-btn" class="write-action primary tbl-add-btn">+ Thêm dòng roadmap</button>
               </div>
             </div>
             <p class="muted" style="margin:12px 0">Kế hoạch theo năm của phòng đang chọn — bấm vào 1 dòng để xem &amp; quản lý chi tiết công việc theo từng tháng.</p>
@@ -1081,7 +1086,7 @@
                 <button id="import-df-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                 <input type="file" id="df-import-input" accept=".xlsx,.xlsm" hidden />
                 <button id="export-df-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
-                <button id="add-digital-feature-btn" class="primary">+ Thêm mới</button>
+                <button id="add-digital-feature-btn" class="primary tbl-add-btn">+ Thêm mới</button>
               </div>
             </div>
             <div class="row" style="margin-bottom:12px;align-items:center">
@@ -1465,7 +1470,7 @@
                   <button id="import-dfs-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                   <input type="file" id="dfs-import-input" accept=".xlsx,.xlsm" hidden />
                   <button id="export-dfs-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-screen-btn" class="primary">+ Thêm mới</button>
+                  <button id="add-df-screen-btn" class="primary tbl-add-btn">+ Thêm mới</button>
                 </div>
               </div>
               <!-- Thanh cuộn ngang phía trên — bảng 16 cột dữ liệu rất rộng
@@ -1548,7 +1553,7 @@
                   <button id="import-dfmd-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                   <input type="file" id="dfmd-import-input" accept=".xlsx,.xlsm" hidden />
                   <button id="export-dfmd-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-md-btn" class="primary">+ Thêm mới</button>
+                  <button id="add-df-md-btn" class="primary tbl-add-btn">+ Thêm mới</button>
                 </div>
               </div>
               <div class="table-scroll-top" id="dfmd-table-scroll-top"><div id="dfmd-table-scroll-top-spacer"></div></div>
@@ -1609,7 +1614,7 @@
                   <button id="import-dfdo-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                   <input type="file" id="dfdo-import-input" accept=".xlsx,.xlsm" hidden />
                   <button id="export-dfdo-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-do-btn" class="primary">+ Thêm mới</button>
+                  <button id="add-df-do-btn" class="primary tbl-add-btn">+ Thêm mới</button>
                 </div>
               </div>
               <div class="table-scroll-top" id="dfdo-table-scroll-top"><div id="dfdo-table-scroll-top-spacer"></div></div>
@@ -1669,7 +1674,7 @@
                   <button id="import-dfint-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
                   <input type="file" id="dfint-import-input" accept=".xlsx,.xlsm" hidden />
                   <button id="export-dfint-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-int-btn" class="primary">+ Thêm mới</button>
+                  <button id="add-df-int-btn" class="primary tbl-add-btn">+ Thêm mới</button>
                 </div>
               </div>
               <div class="table-scroll-top" id="dfint-table-scroll-top"><div id="dfint-table-scroll-top-spacer"></div></div>
@@ -1777,7 +1782,7 @@
                 <button id="download-fr-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <button id="import-fr-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <input type="file" id="fr-import-input" accept=".xlsx,.xlsm" hidden />
-                <button id="add-feature-request-btn" class="primary">+ Thêm yêu cầu</button>
+                <button id="add-feature-request-btn" class="primary tbl-add-btn">+ Thêm yêu cầu</button>
               </div>
             </div>
             <!-- Ô tìm từ khoá — hàng riêng NGAY TRÊN bảng, nhãn đứng cạnh ô
@@ -2257,7 +2262,7 @@
           <section class="card">
             <div class="row" style="justify-content:space-between">
               <h2 style="margin:0">Phòng ban</h2>
-              <button id="add-department-btn" class="primary">+ Thêm phòng</button>
+              <button id="add-department-btn" class="primary tbl-add-btn">+ Thêm phòng</button>
             </div>
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
             <div class="table-wrap">
@@ -2290,7 +2295,7 @@
               <h2 style="margin:0">Tiêu chí</h2>
               <div class="row">
                 <button id="clone-tieuchi-btn" class="small">Sao chép từ phòng khác</button>
-                <button id="add-tieuchi-btn" class="primary">+ Thêm tiêu chí</button>
+                <button id="add-tieuchi-btn" class="primary tbl-add-btn">+ Thêm tiêu chí</button>
               </div>
             </div>
             <p class="muted" style="margin:12px 0">Cấu hình tiêu chí, công thức và điểm chuẩn theo từng team — theo phòng ban đang xem (mỗi tiêu chí có thể dùng chung cho mọi phòng, hoặc riêng của đúng phòng này). Cột team lấy theo danh sách team của tháng đang chọn ở trang Team &amp; Nhân sự.</p>
@@ -2321,7 +2326,7 @@
               <h2 style="margin:0">Ranking team</h2>
               <div class="row">
                 <button id="add-ranking-column-btn">+ Thêm cột</button>
-                <button id="add-ranking-row-btn" class="primary">+ Thêm dòng</button>
+                <button id="add-ranking-row-btn" class="primary tbl-add-btn">+ Thêm dòng</button>
               </div>
             </div>
             <p class="muted" style="margin:12px 0">Cấu hình xếp hạng: mỗi dòng là 1 vị trí xếp hạng, mỗi cột là 1 kịch bản xếp hạng — bấm vào tiêu đề cột để đổi tên.</p>
@@ -2342,7 +2347,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Tag</h2>
-                <button id="add-tag-btn" class="primary">+ Thêm tag</button>
+                <button id="add-tag-btn" class="primary tbl-add-btn">+ Thêm tag</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Tag dùng ở form nhập nhiệm vụ Backlog — màu badge gán tự động theo thứ tự, bấm vào tên để đổi.</p>
               <div class="table-wrap">
@@ -2357,7 +2362,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Phân loại</h2>
-                <button id="add-phanloai-btn" class="primary">+ Thêm phân loại</button>
+                <button id="add-phanloai-btn" class="primary tbl-add-btn">+ Thêm phân loại</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Phân loại dùng ở form nhập nhiệm vụ Backlog. "Nhiệm vụ tồn" do hệ thống tự gắn khi chuyển task sang tháng sau, không quản lý ở đây.</p>
               <div class="table-wrap">
@@ -2372,7 +2377,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Nhóm</h2>
-                <button id="add-nhom-btn" class="primary">+ Thêm nhóm</button>
+                <button id="add-nhom-btn" class="primary tbl-add-btn">+ Thêm nhóm</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Nhóm hiển thị ở cột "Nhóm" của tab Tiêu chí.</p>
               <div class="table-wrap">
@@ -2387,7 +2392,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Chức vụ</h2>
-                <button id="add-chucvu-btn" class="primary">+ Thêm chức vụ</button>
+                <button id="add-chucvu-btn" class="primary tbl-add-btn">+ Thêm chức vụ</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Chức vụ ở dropdown khi thêm/sửa nhân sự (Team &amp; Nhân sự).</p>
               <div class="table-wrap">
@@ -2402,7 +2407,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Hệ thống</h2>
-                <button id="add-hethong-btn" class="primary">+ Thêm hệ thống</button>
+                <button id="add-hethong-btn" class="primary tbl-add-btn">+ Thêm hệ thống</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Hệ thống (VD: Website, Nội bộ…) — dùng ở cột "Hệ thống" của Roadmap năm.</p>
               <div class="table-wrap">
@@ -2417,7 +2422,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Mục tiêu</h2>
-                <button id="add-muctieu-btn" class="primary">+ Thêm mục tiêu</button>
+                <button id="add-muctieu-btn" class="primary tbl-add-btn">+ Thêm mục tiêu</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Mục tiêu (VD: Tính năng mới, Nâng cấp tính năng…) — dùng ở cột "Mục tiêu" của Roadmap năm.</p>
               <div class="table-wrap">
@@ -2432,7 +2437,7 @@
             <section class="card row-split-equal">
               <div class="row" style="justify-content:space-between">
                 <h2 style="margin:0">Phân loại nhân sự</h2>
-                <button id="add-phanloainhansu-btn" class="primary">+ Thêm phân loại</button>
+                <button id="add-phanloainhansu-btn" class="primary tbl-add-btn">+ Thêm phân loại</button>
               </div>
               <p class="muted" style="margin:12px 0">Danh sách Phân loại (VD: Thực hiện chính, Hỗ trợ…) — dùng khi gán nhân sự tham gia 1 task ở Backlog.</p>
               <div class="table-wrap">
@@ -2464,7 +2469,7 @@
                   <label for="new-team-name">Khai báo team mới</label>
                   <input id="new-team-name" placeholder="VD: CRM, NVKH, NVPS..." style="width:100%" />
                 </div>
-                <button type="submit" class="primary">+ Thêm team</button>
+                <button type="submit" class="primary tbl-add-btn">+ Thêm team</button>
               </form>
               <div class="pill-group" id="team-list" style="margin-top:12px"></div>
               <p class="muted" id="team-empty" hidden style="margin:8px 0 0">Chưa có team nào cho tháng + phòng này.</p>
@@ -2766,7 +2771,7 @@
           </div>
           <div class="actions">
             <button type="button" id="incident-member-cancel-btn">Hủy</button>
-            <button type="submit" class="primary">+ Thêm nhân sự liên quan</button>
+            <button type="submit" class="primary tbl-add-btn">+ Thêm nhân sự liên quan</button>
           </div>
         </form>
       </div>
@@ -3382,7 +3387,7 @@
               <label>MD</label>
               <p class="muted" id="ti-new-md-display" style="margin:0;padding:8px 0">0 MD</p>
             </div>
-            <button type="button" id="ti-add-btn" class="write-action primary">+ Thêm việc</button>
+            <button type="button" id="ti-add-btn" class="write-action primary tbl-add-btn">+ Thêm việc</button>
           </div>
         </div>
       </div>
@@ -3393,7 +3398,7 @@
            chưa chấm điểm, nên nút "Chia đều tỷ lệ" và tổng đã phân bổ
            (task-member-total-row) luôn hiện. -->
       <div class="row" id="task-member-score-row" hidden style="align-items:center;gap:8px">
-        <span id="task-member-score-badge" class="status-badge status-hoan-thanh" style="font-size:0.95rem;padding:5px 14px"></span>
+        <span id="task-member-score-badge" class="status-badge tm-score-badge" style="font-size:0.95rem;padding:5px 14px"></span>
       </div>
       <div class="row" id="task-member-unit-row" hidden style="align-items:center;gap:8px">
         <label for="tm-score-unit" style="margin:0">Đơn vị điểm cá nhân</label>
@@ -3404,7 +3409,7 @@
       </div>
 
       <div class="row" id="task-member-total-row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <span id="task-member-total-badge" class="status-badge status-default"></span>
+        <span id="task-member-total-badge" class="status-badge tm-info-badge"></span>
         <button type="button" id="tm-split-even-btn" class="small btn-split-even">Chia đều tỷ lệ</button>
       </div>
 
