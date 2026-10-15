@@ -1939,6 +1939,14 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 
 /* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
 .status-default { background: var(--border); color: var(--maroon); }
+
+/* Badge thông tin tĩnh "% Đánh giá"/"Tổng đã phân bổ" (dialog "Nhân sự
+   tham gia") — trước dùng CHUNG class .status-hoan-thanh/.status-default
+   (xanh lá/xám cũ, lạc tông với bảng màu mới, user phản hồi) dù không
+   thật sự mang ý nghĩa "trạng thái" — tách riêng class để không lẫn với
+   badge trạng thái thật (status-hoan-thanh vẫn dùng ở cột Trạng thái các
+   bảng, không đổi). */
+.tm-info-badge { background: var(--red-100); color: var(--red-800); }
 .status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
