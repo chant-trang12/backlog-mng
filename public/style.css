@@ -2170,32 +2170,31 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 }
 
 /* Team — mỗi team 1 màu riêng để dễ phân biệt (gán theo tên team, xem
-   teamColorClass ở 01-state.js). 18 màu (không phải 6, như Hệ thống đã
-   làm trước đó) — cấu hình thực tế (nhiều team/Nhóm tiêu chí cùng dùng
-   bảng màu này) dễ vượt quá 6, màu sẽ LẶP LẠI nếu chỉ có 6 (user yêu
-   cầu: "1 cấu hình bất kỳ" không được trùng màu). Trải đều 360° (bước
-   20°, lệch pha 10° so với Hệ thống để 2 bảng nhìn khác hẳn dù cùng công
-   thức) + xoay thứ tự chống liền kề TEAM_COLOR_ORDER (01-state.js, cùng
-   kỹ thuật bước-7 coprime-18 đã dùng cho Hệ thống). */
-.team-badge { background: #dcfce7; color: #166534; }
-.team-color-0 { background: hsl(10, 65%, 82%); color: hsl(10, 55%, 24%); }
-.team-color-1 { background: hsl(30, 65%, 82%); color: hsl(30, 55%, 24%); }
-.team-color-2 { background: hsl(50, 65%, 82%); color: hsl(50, 55%, 24%); }
-.team-color-3 { background: hsl(70, 65%, 82%); color: hsl(70, 55%, 24%); }
-.team-color-4 { background: hsl(90, 65%, 82%); color: hsl(90, 55%, 24%); }
-.team-color-5 { background: hsl(110, 65%, 82%); color: hsl(110, 55%, 24%); }
-.team-color-6 { background: hsl(130, 65%, 82%); color: hsl(130, 55%, 24%); }
-.team-color-7 { background: hsl(150, 65%, 82%); color: hsl(150, 55%, 24%); }
-.team-color-8 { background: hsl(170, 65%, 82%); color: hsl(170, 55%, 24%); }
-.team-color-9 { background: hsl(190, 65%, 82%); color: hsl(190, 55%, 24%); }
-.team-color-10 { background: hsl(210, 65%, 82%); color: hsl(210, 55%, 24%); }
-.team-color-11 { background: hsl(230, 65%, 82%); color: hsl(230, 55%, 24%); }
-.team-color-12 { background: hsl(250, 65%, 82%); color: hsl(250, 55%, 24%); }
-.team-color-13 { background: hsl(270, 65%, 82%); color: hsl(270, 55%, 24%); }
-.team-color-14 { background: hsl(290, 65%, 82%); color: hsl(290, 55%, 24%); }
-.team-color-15 { background: hsl(310, 65%, 82%); color: hsl(310, 55%, 24%); }
-.team-color-16 { background: hsl(330, 65%, 82%); color: hsl(330, 55%, 24%); }
-.team-color-17 { background: hsl(350, 65%, 82%); color: hsl(350, 55%, 24%); }
+   teamColorClass ở 01-state.js). 18 màu (không phải 6) — cấu hình thực tế
+   (nhiều team/Nhóm tiêu chí cùng dùng bảng màu này) dễ vượt quá 6, màu sẽ
+   LẶP LẠI nếu chỉ có 6. Bảng màu theo STYLE CHUNG của trang (giống các
+   .status-badge: nền pastel nhạt ~89% light, chữ olive đậm ~29% — họ màu
+   be/sage của :root), KHÔNG dùng tông rực (65%/82%) như .ht-color-N. Vẫn
+   trải đều 360° (bước 20°) để 18 team không trùng họ màu. */
+.team-badge { background: #e3ecd7; color: #4a6234; }
+.team-color-0 { background: hsl(10, 38%, 89%); color: hsl(10, 30%, 29%); }
+.team-color-1 { background: hsl(30, 38%, 89%); color: hsl(30, 30%, 29%); }
+.team-color-2 { background: hsl(50, 38%, 89%); color: hsl(50, 30%, 29%); }
+.team-color-3 { background: hsl(70, 38%, 89%); color: hsl(70, 30%, 29%); }
+.team-color-4 { background: hsl(90, 38%, 89%); color: hsl(90, 30%, 29%); }
+.team-color-5 { background: hsl(110, 38%, 89%); color: hsl(110, 30%, 29%); }
+.team-color-6 { background: hsl(130, 38%, 89%); color: hsl(130, 30%, 29%); }
+.team-color-7 { background: hsl(150, 38%, 89%); color: hsl(150, 30%, 29%); }
+.team-color-8 { background: hsl(170, 38%, 89%); color: hsl(170, 30%, 29%); }
+.team-color-9 { background: hsl(190, 38%, 89%); color: hsl(190, 30%, 29%); }
+.team-color-10 { background: hsl(210, 38%, 89%); color: hsl(210, 30%, 29%); }
+.team-color-11 { background: hsl(230, 38%, 89%); color: hsl(230, 30%, 29%); }
+.team-color-12 { background: hsl(250, 38%, 89%); color: hsl(250, 30%, 29%); }
+.team-color-13 { background: hsl(270, 38%, 89%); color: hsl(270, 30%, 29%); }
+.team-color-14 { background: hsl(290, 38%, 89%); color: hsl(290, 30%, 29%); }
+.team-color-15 { background: hsl(310, 38%, 89%); color: hsl(310, 30%, 29%); }
+.team-color-16 { background: hsl(330, 38%, 89%); color: hsl(330, 30%, 29%); }
+.team-color-17 { background: hsl(350, 38%, 89%); color: hsl(350, 30%, 29%); }
 
 /* Hệ thống — 18 màu (không phải 6) vì danh mục Hệ thống ở Cấu hình có thể
    phát sinh nhiều giá trị theo thời gian; trước đây chỉ có 6 màu nên tạo
