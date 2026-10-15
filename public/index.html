@@ -51,7 +51,13 @@
         <!-- ---- Trang Home ---- -->
         <div id="page-home">
           <div class="row-split" style="margin-bottom:20px">
-            <section class="card" style="flex:1 1 160px">
+            <!-- min-width (không chỉ flex-basis 160px) — ở độ rộng màn hình
+                 vừa phải, card này bị co lại quá hẹp (basis 160px < nội
+                 dung thật của 2 ô Tháng/Team), đẩy sát/đè lên card bên
+                 cạnh (user gửi ảnh: viền + donut đỏ của card "7 Nhiệm vụ"
+                 lấn sát ô Team). Giữ min-width đủ cho 2 select không bị
+                 bóp méo trước khi row-split tự xuống dòng. -->
+            <section class="card" style="flex:1 1 160px;min-width:280px">
               <h2>Tìm kiếm</h2>
               <div class="row">
                 <div>
