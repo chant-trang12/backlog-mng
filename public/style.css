@@ -99,12 +99,13 @@
   /* Thành công = Xanh dương (đã chốt khớp donut "Hoàn thành", giữ nguyên —
      --blue-400 ở đây CHÍNH LÀ #60a5fa user đã chọn). */
   --success: var(--blue-400);
-  /* "Nhập Excel"/btn-exclude — Sky từng dùng tạm, nhưng --primary GIỜ CŨNG
-     Xanh dương (--blue-800) nên 2 nút luôn đứng cạnh nhau trên MỌI trang
-     (Nhân sự/Sự cố/Roadmap/Yêu cầu tính năng/4 bảng Tính năng số hoá) sẽ
-     trùng họ màu — đổi hẳn sang Cyan (họ màu riêng, không trùng Primary/
-     Danger/Edit-Hổ phách/Export-Cam ở bất kỳ trang nào có đủ cả 2 nút). */
-  --warning: var(--cyan-700);
+  /* "Nhập Excel"/btn-exclude — qua Sky rồi Cyan (lúc đó né trùng với
+     Primary cũng Xanh dương). Nay "+Thêm..." đã tách riêng sang Đỏ thẫm
+     (.tbl-add-btn), hết trùng họ với Primary -> user yêu cầu trả lại
+     Xanh dương nhạt. Dùng --blue-500 (không phải --blue-400 = --success,
+     để tránh trùng với nút "Tăng KI" — cùng xuất hiện ở 1 dòng bảng Nhân
+     sự khi cả Hạ KI lẫn Tăng KI đều chưa bật). */
+  --warning: var(--blue-500);
   --header-bg: var(--red-600);
 
   --delete: var(--red-600);
@@ -981,7 +982,7 @@ button.btn-export:hover { background: var(--orange-300); }
 /* Nút "Không tính đi muộn" / "Bỏ Không tính đi muộn" ở tab Chấm công và Nội
    quy — cần nổi bật rõ vì tác động trực tiếp đến số liệu tổng hợp. */
 button.btn-exclude { background: var(--warning); border-color: var(--warning); color: #fff; }
-button.btn-exclude:hover { background: var(--cyan-800); border-color: var(--cyan-800); }
+button.btn-exclude:hover { background: var(--blue-700); border-color: var(--blue-700); }
 button.btn-restore { background: var(--success); border-color: var(--success); color: #fff; }
 button.btn-restore:hover { background: #3b82f6; border-color: #3b82f6; }
 
@@ -2144,7 +2145,7 @@ select.tm-phanloai-select.status-default {
 /* Nút "Chia đều tỷ lệ" — màu riêng, tách biệt hẳn với primary (olive) và
    các nút hành động khác trong dialog để nổi bật hơn. */
 button.btn-split-even { background: var(--warning); border-color: var(--warning); color: #fff; }
-button.btn-split-even:hover { background: var(--sky-700); border-color: var(--sky-700); }
+button.btn-split-even:hover { background: var(--blue-700); border-color: var(--blue-700); }
 
 /* Bảng "Nhân sự tham gia" — toàn bộ tiêu đề cột căn giữa. */
 #task-member-table th { text-align: center; }
