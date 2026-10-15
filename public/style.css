@@ -2050,7 +2050,7 @@ button.btn-split-even:hover { background: #b48f3e; border-color: #b48f3e; }
 .home-combo-axis-label { font-size: 10.5px; fill: var(--muted); font-weight: 600; }
 .home-combo-xlabel { font-size: 11px; fill: var(--text); font-weight: 600; }
 .home-combo-barvalue { font-size: 9.5px; fill: #fff; font-weight: 700; }
-.home-vbar-callout { background: var(--bg); border-radius: 10px; padding: 10px 16px; text-align: center; flex-shrink: 0; }
+.home-vbar-callout { background: var(--delete-light); border-radius: 10px; padding: 10px 16px; text-align: center; flex-shrink: 0; }
 .home-vbar-callout .big { font-size: 1.3rem; font-weight: 800; }
 .home-vbar-callout .small { font-size: 0.72rem; color: var(--muted); }
 .home-legend-line-icon { display: inline-flex; align-items: center; }
