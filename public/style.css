@@ -816,11 +816,12 @@ button.btn-view:hover { background: var(--stone-200); }
 button.btn-move-month { background: var(--rose-600); border-color: var(--rose-600); color: #fff; }
 button.btn-move-month:hover { background: #be123c; border-color: #be123c; }
 
-/* Nút "Cột hiển thị" — tách riêng màu (Xám) với .btn-edit (Tan, "File mẫu")
-   và .btn-export (San hô, "Xuất Excel") cũng ở thanh công cụ này, để 3 nút
-   cạnh nhau không trùng màu. */
-button.btn-col-menu { background: var(--stone-200); border-color: var(--stone-400); color: var(--stone-700); }
-button.btn-col-menu:hover { background: var(--stone-300); }
+/* Nút "Cột hiển thị" — user yêu cầu đổi sang XANH DƯƠNG nhạt theo ảnh mẫu:
+   nền --blue-100, viền --blue-400, chữ --blue-800 (cùng công thức nền-nhạt/
+   viền-vừa/chữ-đậm với .btn-edit). Vẫn tách riêng màu với .btn-edit (Tan,
+   "File mẫu") và .btn-export (San hô, "Xuất Excel") ở cùng thanh công cụ. */
+button.btn-col-menu { background: var(--blue-100); border-color: var(--blue-400); color: var(--blue-800); }
+button.btn-col-menu:hover { background: var(--blue-300); border-color: var(--blue-400); }
 button.btn-move-month:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 
 /* Cụm "Thao tác với N task đã chọn" — 1 nút mở menu xổ xuống, gom các thao
@@ -970,8 +971,8 @@ th input[type="checkbox"]:checked {
 .task-warning-chip.active { outline: 2px solid currentColor; }
 button.btn-no-score { background: var(--yellow-100); border-color: var(--yellow-300); color: var(--yellow-800); }
 button.btn-no-score:hover { background: var(--yellow-300); }
-/* Tách riêng họ màu San hô (Rose) với .btn-col-menu (Xám) và .btn-edit
-   ("File mẫu", Tan) đứng CẠNH NHAU trên cùng 1 thanh công cụ — 3 nút
+/* Tách riêng họ màu San hô (Rose) với .btn-col-menu (Xanh dương nhạt) và
+   .btn-edit ("File mẫu", Tan) đứng CẠNH NHAU trên cùng 1 thanh công cụ — 3 nút
    trung tính cần 3 họ màu khác nhau để không trùng (yêu cầu user). */
 button.btn-export { background: var(--orange-100); border-color: var(--orange-300); color: var(--orange-800); }
 button.btn-export:hover { background: var(--orange-300); }
