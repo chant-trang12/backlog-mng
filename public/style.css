@@ -2410,10 +2410,12 @@ button.btn-split-even:hover { background: var(--sky-700); border-color: var(--sk
   margin-right: 6px;
 }
 
+/* Đổi khỏi var(--primary) (nay Xanh dương) sang Đỏ thẫm (--red-800) riêng,
+   theo yêu cầu user — cùng tinh thần tách nav/tab/select/checkbox trước đó. */
 .progress-bar > span {
   display: block;
   height: 100%;
-  background: var(--primary);
+  background: var(--red-800);
 }
 
 .muted { color: var(--muted); }
