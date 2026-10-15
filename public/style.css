@@ -740,29 +740,26 @@ button {
 button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 button.primary:hover { background: var(--primary-hover); }
 /* Nút "+Thêm.../+Tạo.../+Nhập..." (thêm bản ghi mới) hầu hết nằm NGAY TRÊN
-   1 bảng có header Đỏ tươi — Xanh dương (--primary) của .primary đứng
-   cạnh đó bị chê "không hài hoà" (user gửi ảnh). Tách riêng nhóm nút này
-   (.tbl-add-btn, gắn kèm class primary ở mọi nút "+..." trong index.html)
-   sang Đỏ thẫm (--red-800) — cùng họ màu với header nhưng đậm hơn, hài
-   hoà mà vẫn phân biệt được với chính header. "Lưu" (submit form, không
-   đứng cạnh header bảng) vẫn giữ nguyên .primary Xanh dương. 2 nút đã có
-   override ID riêng (add-task-btn/create-period-btn, để tránh trùng màu
-   nút cạnh nó trong CÙNG 1 dòng) giữ nguyên, không bị rule này đè (ID có
-   độ ưu tiên cao hơn). */
-button.primary.tbl-add-btn { background: var(--red-800); border-color: var(--red-800); }
-button.primary.tbl-add-btn:hover { background: var(--red-900); border-color: var(--red-900); }
+   1 bảng có header Đỏ tươi — sau vài vòng đổi (Xanh dương -> Đỏ thẫm đậm)
+   user chốt SAN HÔ PASTEL (nền --red-200, viền --red-300, chữ --red-800 —
+   cùng chuẩn nền-nhạt/chữ-đậm với .btn-edit/.btn-restore) hài hoà với
+   header đỏ mà không nặng nề như nền đậm. "Lưu" (submit form, không đứng
+   cạnh header bảng) vẫn giữ nguyên .primary. 2 nút đã có override ID riêng
+   (add-task-btn/create-period-btn) giữ cơ chế override, tránh trùng màu nút
+   cạnh nó trong CÙNG 1 dòng. */
+button.primary.tbl-add-btn { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
+button.primary.tbl-add-btn:hover { background: var(--red-300); border-color: var(--red-300); }
 /* "+ Nhập task mới" (Backlog) đứng CẠNH "Nhập Excel"/"Xuất Excel"/"File
-   mẫu" trên CÙNG 1 thanh công cụ — override riêng ID này, nay theo dải
-   màu San hô->Đỏ thẫm user gửi (đỏ hồng vừa, khác --warning "Nhập Excel"
-   nhạt hơn). */
-#add-task-btn.primary { background: #cc4f55; border-color: #cc4f55; }
-#add-task-btn.primary:hover { background: #a83e42; border-color: #a83e42; }
+   mẫu" trên CÙNG 1 thanh công cụ — override riêng ID này, cùng san hô
+   pastel như các nút "+..." khác (vẫn khác tông --warning "Nhập Excel"
+   vàng nhạt cạnh nó). */
+#add-task-btn.primary { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
+#add-task-btn.primary:hover { background: var(--red-300); border-color: var(--red-300); }
 /* "+ Tạo tháng mới" đứng CẠNH "Xóa tháng này" (.danger, đỏ tươi — GIỮ
    NGUYÊN, đây là xóa thật theo Quy tắc 9.1). Override riêng ID này sang
-   Đỏ thẫm (brick, cùng dải San hô->Đỏ thẫm user gửi) — tách biệt rõ với
-   đỏ tươi của nút "Xóa tháng này" cạnh nó. */
-#create-period-btn.primary { background: #8a3a3c; border-color: #8a3a3c; }
-#create-period-btn.primary:hover { background: #6e2e30; border-color: #6e2e30; }
+   san hô pastel — tương phản rõ với đỏ tươi đậm của "Xóa tháng này" cạnh nó. */
+#create-period-btn.primary { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
+#create-period-btn.primary:hover { background: var(--red-300); border-color: var(--red-300); }
 button.danger { background: var(--delete); border-color: var(--delete); color: #fff; }
 button.danger:hover { background: var(--delete-hover); border-color: var(--delete-hover); }
 button.small { padding: 4px 8px; font-size: 0.8rem; }
