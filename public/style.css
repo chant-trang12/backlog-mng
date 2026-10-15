@@ -756,10 +756,12 @@ button.primary.tbl-add-btn:hover { background: var(--primary-hover); border-colo
 #add-task-btn.primary { background: var(--primary); border-color: var(--primary); }
 #add-task-btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 /* "+ Tạo tháng mới" đứng CẠNH "Xóa tháng này" (.danger, đỏ tươi — GIỮ
-   NGUYÊN, đây là xóa thật theo Quy tắc 9.1). Override riêng ID này sang
-   san hô vừa — tương phản rõ với đỏ tươi đậm của "Xóa tháng này" cạnh nó. */
-#create-period-btn.primary { background: var(--primary); border-color: var(--primary); }
-#create-period-btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+   NGUYÊN, đây là xóa thật theo Quy tắc 9.1). Override riêng ID này sang KEM
+   VÀNG viền hổ phách theo ảnh user gửi (nền --amber-100, viền --amber-300,
+   chữ --amber-800 — cùng công thức .btn-edit): tách biệt rõ với cả đỏ tươi
+   của "Xóa tháng này" lẫn san hô của các nút "+..." khác. */
+#create-period-btn.primary { background: var(--amber-100); border-color: var(--amber-300); color: var(--amber-800); }
+#create-period-btn.primary:hover { background: var(--amber-300); border-color: var(--amber-300); }
 button.danger { background: var(--delete); border-color: var(--delete); color: #fff; }
 button.danger:hover { background: var(--delete-hover); border-color: var(--delete-hover); }
 button.small { padding: 4px 8px; font-size: 0.8rem; }
