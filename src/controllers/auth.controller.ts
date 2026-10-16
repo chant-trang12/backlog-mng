@@ -12,10 +12,33 @@ import { computeScope } from "../services/scope.util.js";
 import { isSessionExpired } from "../session.config.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 
+// Đăng nhập đang chờ IdP được dùng lại trong khoảng này (người dùng nhập mật
+// khẩu ở IdP có thể mất vài chục giây).
+const PENDING_LOGIN_TTL_MS = 5 * 60 * 1000;
+
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!isSsoEnabled()) {
       res.redirect("/");
+      return;
+    }
+
+    // Đã đăng nhập hợp lệ -> không cần vòng qua IdP nữa.
+    if (req.session?.user && !isSessionExpired(req.session)) {
+      res.redirect("/");
+      return;
+    }
+
+    // Chống race: giao diện có thể gọi /auth/login 2 lần gần như cùng lúc (vd
+    // /auth/me chưa đăng nhập + 1 API trả 401 cùng chuyển hướng). Nếu mỗi
+    // request tự sinh state mới và ghi đè vào phiên thì (a) trình duyệt đi theo
+    // URL của request này nhưng phiên giữ state của request kia -> "Invalid SSO
+    // state", (b) request chậm hơn lưu lại phiên cũ sau khi /auth/callback đã
+    // ghi user -> mất đăng nhập, lặp vô hạn. Có đăng nhập đang chờ còn mới thì
+    // dùng lại đúng URL (cùng state/PKCE), KHÔNG sửa phiên.
+    const pending = req.session?.pendingLogin;
+    if (pending && req.session?.state && req.session?.codeVerifier && Date.now() - pending.at < PENDING_LOGIN_TTL_MS) {
+      res.redirect(pending.url);
       return;
     }
 
@@ -25,6 +48,7 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
     if (req.session) {
       req.session.state = state;
       req.session.codeVerifier = codeVerifier;
+      req.session.pendingLogin = { url, at: Date.now() };
     }
 
     res.redirect(url);
@@ -93,6 +117,7 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
       req.session.lastSeen = req.session.loginAt;
       delete req.session.state;
       delete req.session.codeVerifier;
+      delete req.session.pendingLogin;
     }
 
     const returnTo = req.session?.returnTo || "/";

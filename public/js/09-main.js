@@ -157,7 +157,10 @@ async function checkAuth() {
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {
-        window.location.href = "/auth/login";
+        if (!window.__redirectingToLogin) {
+          window.__redirectingToLogin = true;
+          window.location.href = "/auth/login";
+        }
         return;
       }
       const sidebarUser = document.getElementById("sidebar-user");

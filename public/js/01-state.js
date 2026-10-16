@@ -718,7 +718,12 @@ async function api(path, options) {
   if (res.status === 401) {
     const body = await res.json().catch(() => ({}));
     if (body.loginUrl) {
-      window.location.href = body.loginUrl;
+      // Chỉ chuyển hướng 1 lần — nhiều API cùng 401 một lúc không được kích hoạt
+      // nhiều lần /auth/login (mỗi lần sinh 1 state SSO riêng, ghi đè lẫn nhau).
+      if (!window.__redirectingToLogin) {
+        window.__redirectingToLogin = true;
+        window.location.href = body.loginUrl;
+      }
       return null;
     }
   }

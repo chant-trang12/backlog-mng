@@ -15,6 +15,9 @@ declare module "express-session" {
     user?: AuthUser;
     codeVerifier?: string;
     state?: string;
+    // Đăng nhập đang chờ IdP (url authorize + mốc tạo) — để nhiều request
+    // /auth/login đến liền nhau dùng CHUNG 1 state thay vì ghi đè lẫn nhau.
+    pendingLogin?: { url: string; at: number };
     returnTo?: string;
     // ATTT Session: mốc thời gian đăng nhập (loginAt — không bị hoạt động
     // kéo dài, dùng cho absolute timeout) và lần tương tác gần nhất
