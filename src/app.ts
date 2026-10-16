@@ -166,6 +166,17 @@ export function createApp() {
   // 9.2 — xem scope.util.ts); requireWrite chặn role "viewer" khỏi mọi
   // request ghi (POST/PUT/PATCH/DELETE) trên TOÀN BỘ /api bên dưới; Quản lý
   // User riêng chỉ "admin" mới vào được (requireAdmin).
+  // ATTT (Browser Cache Weakness, WSTG-ATHN-06) + lỗi "sửa xong giao diện không đổi":
+  // mọi trả lời /api là dữ liệu riêng của người dùng và thay đổi liên tục —
+  // KHÔNG được trình duyệt/proxy (IIS, ARR) lưu và dùng lại. Thiếu Cache-Control
+  // thì GET danh sách ngay sau PUT có thể nhận lại bản cũ. Đặt TRƯỚC requireAuth để
+  // cả trả lời 401/403 cũng không bị cache.
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+  });
   app.use("/api", requireAuth);
   // ATTT (Stored XSS): strip ký tự "<"/">" khỏi mọi request ghi trước khi vào
   // bất kỳ handler nghiệp vụ nào — xem middleware/sanitize.middleware.ts.
