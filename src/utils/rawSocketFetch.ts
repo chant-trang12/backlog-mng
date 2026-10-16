@@ -36,6 +36,31 @@ function readHeaders(headerText: string): { status: number; statusText: string; 
   return { status, statusText, headers };
 }
 
+/**
+ * Giải mã body `Transfer-Encoding: chunked` (HTTP/1.1). rawSocketFetch tự đọc
+ * socket nên phải tự giải mã — không thì body còn nguyên các dòng độ-dài-chunk
+ * và JSON.parse lỗi ("Unexpected non-whitespace character after JSON"). IdP
+ * (Kestrel/Keycloak) đứng sau reverse proxy hay trả chunked thay vì
+ * Content-Length.
+ */
+export function decodeChunkedBody(data: Buffer): Buffer {
+  const parts: Buffer[] = [];
+  let pos = 0;
+  while (pos < data.length) {
+    const lineEnd = data.indexOf("\r\n", pos, "latin1");
+    if (lineEnd < 0) break;
+    // Bỏ phần chunk-extension (sau dấu ;) nếu có.
+    const sizeText = data.toString("latin1", pos, lineEnd).split(";")[0].trim();
+    const size = parseInt(sizeText, 16);
+    if (!Number.isFinite(size)) break;
+    if (size === 0) break; // chunk cuối (trailer, nếu có, bị bỏ qua)
+    const start = lineEnd + 2;
+    parts.push(data.subarray(start, start + size));
+    pos = start + size + 2; // bỏ CRLF sau dữ liệu chunk
+  }
+  return Buffer.concat(parts);
+}
+
 function bodyToString(body: unknown): string | undefined {
   if (body == null) return undefined;
   if (typeof body === "string") return body;
@@ -167,9 +192,14 @@ export async function rawSocketFetch(
           if (settled) return;
           settled = true;
           init?.signal?.removeEventListener("abort", onAbort);
-          const body = Buffer.concat(bodyChunks);
+          let body = Buffer.concat(bodyChunks) as Buffer<ArrayBuffer>;
           const headers = new Headers();
           if (headersParsed) {
+            if ((headersParsed.headers["transfer-encoding"] ?? "").toLowerCase().includes("chunked")) {
+              body = Buffer.from(decodeChunkedBody(body));
+              delete headersParsed.headers["transfer-encoding"];
+              headersParsed.headers["content-length"] = String(body.length);
+            }
             for (const [k, v] of Object.entries(headersParsed.headers)) headers.set(k, v);
             // Debug logging — visible only when SSO_DEBUG=1
             if (process.env.SSO_DEBUG === "1") {
