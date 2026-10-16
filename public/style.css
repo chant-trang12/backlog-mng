@@ -819,10 +819,10 @@ button.btn-progress { background: var(--orange-100); border-color: var(--orange-
 button.btn-progress:hover { background: var(--orange-300); }
 button.btn-member { background: var(--pink-100); border-color: var(--pink-300); color: var(--pink-800); }
 button.btn-member:hover { background: var(--pink-300); }
-/* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — tông
-   trung tính (không mang ý nghĩa sửa/xóa như Sửa/Xóa cạnh nó). */
-button.btn-view { background: var(--stone-100); border-color: var(--stone-300); color: var(--stone-600); }
-button.btn-view:hover { background: var(--stone-200); }
+/* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — Sky
+   nhạt, khác hẳn Sửa (Hổ phách)/Xóa (Đỏ) cạnh nó (user: đổi khỏi xám). */
+button.btn-view { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
+button.btn-view:hover { background: var(--sky-300); }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 /* KHÔNG dùng var(--primary) (nay Xanh dương đậm) — nút này xuất hiện CÙNG
