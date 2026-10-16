@@ -171,6 +171,16 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
 export async function logoutHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    // Chống vòng lặp đăng xuất: nếu OIDC_LOGOUT_URI (post_logout_redirect_uri)
+    // trỏ về chính /auth/logout, IdP sau khi đăng xuất sẽ gọi lại route này —
+    // lúc đó phiên đã bị hủy (không còn user) nên chỉ cần về trang chủ, KHÔNG
+    // chuyển tiếp lên IdP lần nữa (nếu không sẽ lặp vô hạn giữa 2 bên).
+    if (!req.session?.user) {
+      res.clearCookie("connect.sid");
+      res.redirect("/");
+      return;
+    }
+
     const baseUrl = getRequestBaseUrl(req);
     const logoutUrl = await getLogoutUrl(baseUrl);
 
