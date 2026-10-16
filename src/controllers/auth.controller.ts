@@ -9,7 +9,7 @@ import {
 } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
-import { isSessionExpired } from "../session.config.js";
+import { clearSessionCookie, countSessionCookies, isSessionExpired } from "../session.config.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 import { sendHtmlError, wantsHtmlPage } from "../utils/errorPage.js";
 
@@ -109,13 +109,13 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
       // no_cookie = trình duyệt không gửi cookie phiên; no_state_in_session = phiên
       // có nhưng không còn state (đã dùng/hết hạn/khác phiên); state_mismatch = state
       // trong URL khác state đã lưu (2 lần đăng nhập đè nhau).
-      const reason = !/(?:^|;\s*)connect\.sid=/.test(req.headers.cookie ?? "")
+      const reason = countSessionCookies(req.headers.cookie) === 0
         ? "no_cookie"
         : !expectedState || !codeVerifier
           ? "no_state_in_session"
           : "state_mismatch";
       console.warn(
-        `[SSO] callback không hợp lệ: reason=${reason} pid=${process.pid} sid=${String(req.sessionID ?? "").slice(0, 6)} ` +
+        `[SSO] callback không hợp lệ: reason=${reason} pid=${process.pid} sessionCookies=${countSessionCookies(req.headers.cookie)} sid=${String(req.sessionID ?? "").slice(0, 6)} ` +
           `retry=${hasLoginRetryCookie(req)} host=${req.get("host")} xfp=${req.get("x-forwarded-proto") ?? "-"}`,
       );
       // Tự thử lại ĐÚNG 1 lần: state lệch thường do 2 request /auth/login song
@@ -229,7 +229,7 @@ export async function logoutHandler(req: Request, res: Response, next: NextFunct
     // lúc đó phiên đã bị hủy (không còn user) nên chỉ cần về trang chủ, KHÔNG
     // chuyển tiếp lên IdP lần nữa (nếu không sẽ lặp vô hạn giữa 2 bên).
     if (!req.session?.user) {
-      res.clearCookie("connect.sid");
+      clearSessionCookie(res);
       res.redirect("/");
       return;
     }
@@ -261,7 +261,7 @@ export async function logoutHandler(req: Request, res: Response, next: NextFunct
         if (err) {
           console.error("Error destroying session:", err);
         }
-        res.clearCookie("connect.sid");
+        clearSessionCookie(res);
         res.redirect(logoutUrl);
       });
     } else {

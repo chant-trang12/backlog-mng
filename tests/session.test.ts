@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import express from "express";
 import session from "express-session";
+import { sessionCookieName } from "../src/session.config.js";
 
 // Bật SSO cho requireAuth/meHandler chạy nhánh session thật (mặc định test
 // env SSO tắt -> requireAuth no-op, không kiểm tra được hết hạn phiên).
@@ -109,7 +110,7 @@ describe("ATTT: Session không hết hạn — idle/absolute timeout ở phía s
     const app = buildTestApp();
     const { agent, loginRes } = await login(app);
     const setCookie = loginRes.headers["set-cookie"]?.[0] ?? "";
-    expect(setCookie).toContain("connect.sid=");
+    expect(setCookie).toContain(`${sessionCookieName()}=`);
     expect(setCookie).toContain("HttpOnly");
     expect(setCookie).toContain("SameSite=Lax");
     // express-session xuất hạn cookie dạng Expires (tương đương Max-Age về

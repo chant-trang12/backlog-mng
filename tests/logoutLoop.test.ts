@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { sessionCookieName } from "../src/session.config.js";
 import { logoutHandler } from "../src/controllers/auth.controller.js";
 
 // Khi OIDC_LOGOUT_URI = .../auth/logout, IdP đưa trình duyệt quay lại
@@ -26,6 +27,6 @@ describe("logoutHandler — không lặp vô hạn khi đã đăng xuất", () =
       throw new Error("không được gọi next(err)");
     }) as any);
     expect(calls.redirect).toBe("/");
-    expect(calls.cleared).toBe("connect.sid");
+    expect(calls.cleared).toBe(sessionCookieName());
   });
 });

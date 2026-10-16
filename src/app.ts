@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSessionOptions, isSessionExpired } from "./session.config.js";
+import { buildSessionOptions, clearSessionCookie, isSessionExpired } from "./session.config.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
@@ -147,7 +147,7 @@ export function createApp() {
     if (sess?.user && !isSessionExpired(sess)) return next();
     if (sess?.user) {
       sess.destroy(() => {
-        res.clearCookie("connect.sid");
+        clearSessionCookie(res);
         res.redirect("/auth/login");
       });
       return;

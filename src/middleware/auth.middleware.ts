@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { isSsoEnabled } from "../services/auth.service.js";
 import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js";
 import { computeScope } from "../services/scope.util.js";
-import { isSessionExpired, touchSession } from "../session.config.js";
+import { clearSessionCookie, countSessionCookies, isSessionExpired, touchSession } from "../session.config.js";
 import { resolveModuleAndAction } from "./actionLog.middleware.js";
 import { getRolePermission } from "../services/permission.service.js";
 
@@ -46,7 +46,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     if (isSessionExpired(req.session)) {
       logUnauthenticated(req, "expired");
       req.session.destroy(() => {
-        res.clearCookie("connect.sid");
+        clearSessionCookie(res);
         respondUnauthenticated(req, res);
       });
       return;
@@ -75,13 +75,14 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 // và "phiên hết hạn" (expired). pid để nhận ra có NHIỀU tiến trình Node cùng nhận
 // request (mỗi tiến trình có bộ nhớ phiên riêng).
 function hasSessionCookie(req: Request): boolean {
-  return /(?:^|;\s*)connect\.sid=/.test(req.headers.cookie ?? "");
+  return countSessionCookies(req.headers.cookie) > 0;
 }
 
 function logUnauthenticated(req: Request, reason: string): void {
   if (!req.originalUrl.startsWith("/api")) return; // chỉ log API; điều hướng trang không ồn
   console.warn(
     `[AUTH] 401 reason=${reason} path=${req.originalUrl.split("?")[0]} pid=${process.pid} ` +
+      `sessionCookies=${countSessionCookies(req.headers.cookie)} legacySid=${/(?:^|;\s*)connect\.sid=/.test(req.headers.cookie ?? "")} ` +
       `sid=${String(req.sessionID ?? "").slice(0, 6)} xfp=${req.get("x-forwarded-proto") ?? "-"} host=${req.get("host")}`,
   );
 }
