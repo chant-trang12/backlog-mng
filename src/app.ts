@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dbDebug } from "./middleware/dbDebug.middleware.js";
 import { buildSessionOptions, clearSessionCookie, isSessionExpired } from "./session.config.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -177,6 +178,7 @@ export function createApp() {
     res.setHeader("Expires", "0");
     next();
   });
+  app.use("/api", dbDebug);
   app.use("/api", requireAuth);
   // ATTT (Stored XSS): strip ký tự "<"/">" khỏi mọi request ghi trước khi vào
   // bất kỳ handler nghiệp vụ nào — xem middleware/sanitize.middleware.ts.
