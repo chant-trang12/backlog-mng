@@ -1994,10 +1994,9 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 /* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
 /* Badge "trung tính/mặc định" dùng chung rất nhiều nơi (trạng thái "Chưa
    thực hiện", ưu tiên "Thấp", "Dùng chung", role viewer, badge "Mã..."...)
-   — trước nền xám + CHỮ ĐỎ THÂM (var(--maroon)) nhìn lệch tông, nên đổi
-   hẳn sang xám-chữ-xám thuần (Stone, khớp .tm-info-badge) cho đúng nghĩa
-   "trung tính", không ngả màu thương hiệu (user phản hồi). */
-.status-default { background: var(--stone-200); color: var(--stone-700); }
+   — qua Stone (xám thuần) rồi vẫn bị chê là "xám", đổi hẳn sang Hổ phách
+   nhạt cho có màu sắc rõ hơn thay vì xám (user yêu cầu lần 2). */
+.status-default { background: var(--amber-100); color: var(--amber-800); }
 
 /* Badge thông tin tĩnh "% Đánh giá"/"Tổng đã phân bổ" (dialog "Nhân sự
    tham gia") — trước dùng CHUNG class .status-hoan-thanh/.status-default
