@@ -105,6 +105,19 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     const codeVerifier = req.session?.codeVerifier;
 
     if (!expectedState || !codeVerifier || queryState !== expectedState) {
+      // Log chẩn đoán (không chứa bí mật): vì sao callback bị coi là không hợp lệ.
+      // no_cookie = trình duyệt không gửi cookie phiên; no_state_in_session = phiên
+      // có nhưng không còn state (đã dùng/hết hạn/khác phiên); state_mismatch = state
+      // trong URL khác state đã lưu (2 lần đăng nhập đè nhau).
+      const reason = !/(?:^|;\s*)connect\.sid=/.test(req.headers.cookie ?? "")
+        ? "no_cookie"
+        : !expectedState || !codeVerifier
+          ? "no_state_in_session"
+          : "state_mismatch";
+      console.warn(
+        `[SSO] callback không hợp lệ: reason=${reason} sid=${String(req.sessionID ?? "").slice(0, 6)} ` +
+          `retry=${hasLoginRetryCookie(req)} host=${req.get("host")} xfp=${req.get("x-forwarded-proto") ?? "-"}`,
+      );
       // Tự thử lại ĐÚNG 1 lần: state lệch thường do 2 request /auth/login song
       // song khi chưa có cookie (mỗi request 1 phiên riêng), bấm Back/F5 trên
       // trang callback, hoặc 2 tab đăng nhập — IdP lúc này vẫn còn phiên nên
