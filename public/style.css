@@ -140,6 +140,10 @@ body {
 h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 .subtitle { margin: 0; color: var(--muted); font-size: 0.85rem; }
 
+/* Logo thay cho text "Quản lý nhiệm vụ" ở đầu sidebar — chiều cao khớp
+   dòng chữ h1 cũ (clamp ~17-21px), width auto giữ tỉ lệ gốc của SVG. */
+.sidebar-logo { display: block; height: 28px; width: auto; margin: 0 0 4px; }
+
 .app-shell {
   display: flex;
   min-height: 100vh;
@@ -218,11 +222,18 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 }
 .dept-trigger[aria-expanded="true"] .dept-trigger-chev { transform: rotate(180deg); }
 
+/* right:0 trước đây ép panel đúng bằng bề rộng trigger (sidebar hẹp,
+   ~184-220px) -> tên phòng dài phải xuống 4-5 dòng (user: muốn 1 dòng).
+   Bỏ right:0, cho panel tự nới rộng theo nội dung dài nhất (width:
+   max-content), tràn ra NGOÀI sidebar vào vùng nội dung chính — vẫn neo
+   trái theo trigger, chỉ chặn trần max-width để không vỡ màn hình hẹp. */
 .dept-panel {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  right: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(360px, calc(100vw - 32px));
   z-index: 60;
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -256,15 +267,19 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 }
 .dept-option:hover { background: var(--bg); }
 .dept-option.active { background: color-mix(in srgb, var(--red-600) 16%, transparent); }
-/* 1 dòng, cắt "…" khi dài — giữ panel gọn. Tên đầy đủ xem ở tooltip .dept-tip. */
+/* Trước cắt "…" + chỉ xem tên đầy đủ qua tooltip hover — user yêu cầu
+   hiện ĐỦ TEXT ngay trong list, không bắt phải rê chuột. Cho xuống dòng
+   thay vì ellipsis (showDeptTip() vẫn còn nhưng giờ hầu như không trigger
+   nữa vì text không còn tràn, vô hại). */
+/* 1 dòng, KHÔNG cắt "…" — panel (.dept-panel) đã tự nới rộng theo tên dài
+   nhất (width:max-content) nên không cần xuống dòng hay cắt chữ nữa
+   (user: "chỉ hiển thị trong 1 dòng thôi"). */
 .dept-option-name {
   flex: 1 1 auto;
   min-width: 0;
   font-size: 0.88rem;
   font-weight: 600;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .dept-option-check { flex: 0 0 auto; color: var(--red-600); font-weight: 800; opacity: 0; }
 .dept-option.active .dept-option-check { opacity: 1; }
@@ -804,10 +819,10 @@ button.btn-progress { background: var(--orange-100); border-color: var(--orange-
 button.btn-progress:hover { background: var(--orange-300); }
 button.btn-member { background: var(--pink-100); border-color: var(--pink-300); color: var(--pink-800); }
 button.btn-member:hover { background: var(--pink-300); }
-/* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — tông
-   trung tính (không mang ý nghĩa sửa/xóa như Sửa/Xóa cạnh nó). */
-button.btn-view { background: var(--stone-100); border-color: var(--stone-300); color: var(--stone-600); }
-button.btn-view:hover { background: var(--stone-200); }
+/* Nút "Xem chi tiết" trong cột Action của bảng Tính năng số hoá — Sky
+   nhạt, khác hẳn Sửa (Hổ phách)/Xóa (Đỏ) cạnh nó (user: đổi khỏi xám). */
+button.btn-view { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
+button.btn-view:hover { background: var(--sky-300); }
 
 /* Nút hành động trên thanh công cụ Danh sách nhiệm vụ — nền màu để nổi bật. */
 /* KHÔNG dùng var(--primary) (nay Xanh dương đậm) — nút này xuất hiện CÙNG
@@ -1977,7 +1992,11 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
 }
 
 /* Trạng thái — trong họ olive đậm/hổ phách/xanh lá sage để đồng bộ tổng thể. */
-.status-default { background: var(--border); color: var(--maroon); }
+/* Badge "trung tính/mặc định" dùng chung rất nhiều nơi (trạng thái "Chưa
+   thực hiện", ưu tiên "Thấp", "Dùng chung", role viewer, badge "Mã..."...)
+   — qua Stone (xám thuần) rồi vẫn bị chê là "xám", đổi hẳn sang Hổ phách
+   nhạt cho có màu sắc rõ hơn thay vì xám (user yêu cầu lần 2). */
+.status-default { background: var(--amber-100); color: var(--amber-800); }
 
 /* Badge thông tin tĩnh "% Đánh giá"/"Tổng đã phân bổ" (dialog "Nhân sự
    tham gia") — trước dùng CHUNG class .status-hoan-thanh/.status-default
@@ -1997,7 +2016,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    (badge Trạng thái thật ở các bảng, không đổi). */
 .tm-total-badge-ok { background: var(--blue-100); color: var(--blue-800); }
 .tm-total-badge-over { background: var(--red-200); color: var(--red-700); }
-.status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
+/* Trước cùng tông vàng/hổ phách với .status-default ("Chưa thực hiện") —
+   2 trạng thái liền kề trong cùng cột nhìn na ná (user gửi ảnh) — đổi
+   sang Cam để tách rõ. */
+.status-dang-thuc-hien { background: var(--orange-100); color: var(--orange-800); }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
 /* Badge "Đã trừ điểm" (cột hành động bảng "Nhân sự tham gia", 04-tasks.js) —
@@ -2048,7 +2070,9 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    loại quản lý ở Cấu hình), giữ màu cố định riêng. Các phân loại khác lấy màu
    theo palette động ở app.js (TAG_PALETTE/PHAN_LOAI_PALETTE, áp qua style="..."). */
 .tinh-chat-ton { background: #e3e9d5; color: var(--maroon); }
-.tinh-chat-khong-tinh-diem { background: var(--border); color: var(--muted); }
+/* Thêm viền — nền hồng nhạt của badge dễ hoà lẫn vào nền hồng của card
+   chứa nó (user phản hồi, ảnh "Việc cần xử lý gấp"). */
+.tinh-chat-khong-tinh-diem { background: var(--pink-100); color: var(--pink-800); border: 1px solid var(--pink-300); }
 .tinh-chat-da-chuyen { background: #d6ebf5; color: #1f5f80; }
 /* "NV năm" — task được Roadmap năm tự động đưa vào backlog (cùng kiểu giá
    trị hệ thống như "Nhiệm vụ tồn" ở trên), màu xanh lá đồng bộ với badge
@@ -2191,6 +2215,12 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
    Vẫn cùng chuẩn nhạt của trang: nền pastel 88% light, chữ đậm cùng họ màu
    (giống các .status-badge). Thứ tự khớp TEAM_BAR_HEX (08-home.js) và
    .team-bar-N bên dưới. */
+/* Viền chung cho mọi badge team-color-N (36 slot, border-color = chính
+   màu chữ của từng badge qua currentColor — khỏi phải khai 36 giá trị
+   riêng) — nền pastel nhạt dễ hoà vào card cùng tông (user phản hồi, ảnh
+   "NVPS"/"NVTT" trên nền hồng), thêm viền để tách bạch rõ ràng. */
+[class*="team-color-"] { border: 1px solid currentColor; }
+
 .team-badge { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); }
 .team-color-0 { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); } /* đỏ hồng */
 .team-color-1 { background: hsl(140, 45%, 88%); color: hsl(140, 42%, 28%); } /* lục */

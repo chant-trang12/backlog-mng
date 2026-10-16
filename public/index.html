@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quản lý nhiệm vụ</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Progress & Evaluation Management</title>
+  <link rel="icon" type="image/png" href="favicon-idc.png" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>Quản lý nhiệm vụ</h1>
+        <img src="logo-viettel-idc.svg" alt="Quản lý nhiệm vụ" title="Quản lý nhiệm vụ" class="sidebar-logo" />
         <div class="dept-switcher" id="dept-switcher">
           <button type="button" class="dept-trigger" id="dept-trigger" aria-haspopup="true" aria-expanded="false">
             <span class="dept-mono" id="dept-trigger-mono">--</span>
@@ -31,7 +31,7 @@
         <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Team &amp; Nhân sự</button>
         <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg>Roadmap năm</button>
         <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
-        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Quản lý tính năng số hoá</button>
+        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Tính năng số hóa</button>
         <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình</button>
         <button class="nav-item" data-page="action-logs"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg>Nhật ký hoạt động</button>
         <button class="nav-item" data-page="hdsd"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg>HDSD</button>
@@ -430,7 +430,7 @@
                     <th style="min-width:90px" data-col="phan_loai">Phân loại</th>
                     <th style="min-width:90px" id="task-table-team-th" data-col="team">Team</th>
                     <th style="min-width:280px">Nhiệm vụ</th>
-                    <th style="min-width:280px" data-col="dod">DoD</th>
+                    <th style="min-width:560px" data-col="dod">DoD</th>
                     <th style="min-width:110px" data-col="deadline">Deadline</th>
                     <th style="min-width:110px" data-col="hoan_thanh">% Hoàn thành</th>
                     <th style="min-width:110px" data-col="trang_thai">Trạng thái</th>

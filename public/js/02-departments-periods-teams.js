@@ -127,7 +127,7 @@ function renderDeptSwitcher() {
       .join("") +
     `<div class="dept-panel-sep"></div>` +
     `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1" title="Quản lý phòng ban">
-      <span class="dept-mono" style="background:var(--border);color:var(--muted)"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span>
+      <span class="dept-mono" style="background:var(--amber-100);color:var(--amber-800)"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span>
       <span class="dept-option-name">Quản lý phòng ban…</span>
     </button>`;
 
