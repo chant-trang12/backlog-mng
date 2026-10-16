@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
+import { randomBytes } from "node:crypto";
 import { ScopeForbiddenError } from "../services/scope.util.js";
+import { sendHtmlError, wantsHtmlPage } from "../utils/errorPage.js";
 
 // Dịch lỗi ràng buộc DB thô (SQLite/MSSQL) thành thông báo tiếng Việt gọn —
 // áp dụng chung cho MỌI bảng thay vì phải bắt lỗi thủ công ở từng service.
@@ -18,35 +20,44 @@ function friendlyDbError(message: string): { message: string; status: number } |
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
-  console.error("[ERROR]", err);
+  // Mã tham chiếu để đối chiếu log server với lỗi người dùng báo (không lộ chi tiết).
+  const errorId = randomBytes(4).toString("hex");
+  console.error(`[ERROR] id=${errorId}`, err);
   const e = err as any;
   const rawMessage = e instanceof Error ? e.message : "Internal server error";
   const friendly = friendlyDbError(rawMessage);
-  const message = friendly?.message ?? rawMessage;
   const statusCode =
     friendly?.status ??
     (err instanceof ScopeForbiddenError ? 403 : res.statusCode && res.statusCode >= 400 ? res.statusCode : 500);
 
-  const payload: Record<string, unknown> = { error: message };
+  // ATTT (Improper Error Handling / Information Exposure, WSTG-ERRH): lỗi hệ
+  // thống (5xx) KHÔNG trả nguyên message/cause của lỗi nội bộ (SQL, đường dẫn,
+  // địa chỉ IdP, gợi ý debug...) ra màn hình người dùng ở production — chỉ
+  // một thông báo chung + mã tham chiếu. Lỗi 4xx (validate/quyền) vẫn trả
+  // message vì đó là câu chữ chủ đích cho người dùng.
+  const hideDetails = statusCode >= 500 && process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+  const message = hideDetails
+    ? `Đã xảy ra lỗi hệ thống. Vui lòng thử lại hoặc liên hệ quản trị viên (mã lỗi: ${errorId}).`
+    : (friendly?.message ?? rawMessage);
 
-  // Surface the underlying cause so the client can see WHY the request failed.
-  if (process.env.NODE_ENV !== "test" && e?.cause) {
+  if (wantsHtmlPage(req)) {
+    sendHtmlError(res, statusCode, message);
+    return;
+  }
+
+  const payload: Record<string, unknown> = { error: message };
+  if (hideDetails) payload.errorId = errorId;
+
+  // Chỉ khi chạy development mới đính kèm nguyên nhân gốc để dễ debug.
+  if (process.env.NODE_ENV === "development" && e?.cause) {
     const cause = e.cause;
     if (cause instanceof Response) {
-      // openid-client attaches the failed Response as cause
       const ct = cause.headers.get("content-type") ?? "(none)";
       payload.cause = `HTTP ${cause.status} ${cause.statusText} (content-type=${ct})`;
-      // Include a short body preview when it's an error (helps debug "unexpected content-type")
-      if (!cause.ok) {
-        cause.text().then((body) => {
-          // We can't change statusCode here (response already sent), but log for debugging
-          console.error(`[ERROR] Failed response body (${cause.status}, ct=${ct}):`, body.substring(0, 500));
-        }).catch(() => {});
-      }
     } else {
       payload.cause = cause instanceof Error ? cause.message : String(cause);
     }

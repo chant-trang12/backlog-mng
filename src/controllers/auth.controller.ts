@@ -11,10 +11,21 @@ import { getUserBySsoSub, upsertUserFromSso } from "../services/user.service.js"
 import { computeScope } from "../services/scope.util.js";
 import { isSessionExpired } from "../session.config.js";
 import { recordActionLog } from "../services/actionLog.service.js";
+import { sendHtmlError, wantsHtmlPage } from "../utils/errorPage.js";
 
 // Đăng nhập đang chờ IdP được dùng lại trong khoảng này (người dùng nhập mật
 // khẩu ở IdP có thể mất vài chục giây).
 const PENDING_LOGIN_TTL_MS = 5 * 60 * 1000;
+
+// Lỗi trong luồng đăng nhập: trình duyệt điều hướng thẳng -> trang HTML thân
+// thiện; API/fetch (Accept không phải HTML) -> JSON như cũ.
+function respondAuthError(req: Request, res: Response, status: number, message: string): void {
+  if (wantsHtmlPage(req)) {
+    sendHtmlError(res, status, message);
+    return;
+  }
+  res.status(status).json({ error: message });
+}
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -67,10 +78,9 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     const { state: queryState, error, error_description } = req.query;
 
     if (error) {
-      res.status(400).json({
-        error: "SSO Login Error",
-        details: error_description || error,
-      });
+      // Chi tiết lỗi từ IdP chỉ ghi log server, không hiện thẳng cho người dùng.
+      console.error("[SSO] IdP trả lỗi ở callback:", error, error_description);
+      respondAuthError(req, res, 400, "Đăng nhập SSO không thành công. Vui lòng thử đăng nhập lại.");
       return;
     }
 
@@ -78,7 +88,7 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     const codeVerifier = req.session?.codeVerifier;
 
     if (!expectedState || !codeVerifier || queryState !== expectedState) {
-      res.status(400).json({ error: "Invalid SSO state or session expired. Please try logging in again." });
+      respondAuthError(req, res, 400, "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.");
       return;
     }
 

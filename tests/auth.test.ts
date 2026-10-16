@@ -102,7 +102,7 @@ describe("Authentication & SSO Integration", () => {
       const app = createApp();
       const res = await request(app).get("/auth/callback?code=abc&state=invalid-state");
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Invalid SSO state/i);
+      expect(res.body.error).toMatch(/Phiên đăng nhập không hợp lệ/);
     });
 
     it("allows access and sets req.user + req.appUser when user is in session", async () => {
