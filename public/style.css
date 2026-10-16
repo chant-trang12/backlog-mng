@@ -2215,11 +2215,11 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
    Vẫn cùng chuẩn nhạt của trang: nền pastel 88% light, chữ đậm cùng họ màu
    (giống các .status-badge). Thứ tự khớp TEAM_BAR_HEX (08-home.js) và
    .team-bar-N bên dưới. */
-/* Viền chung cho mọi badge team-color-N (36 slot, border-color = chính
-   màu chữ của từng badge qua currentColor — khỏi phải khai 36 giá trị
-   riêng) — nền pastel nhạt dễ hoà vào card cùng tông (user phản hồi, ảnh
-   "NVPS"/"NVTT" trên nền hồng), thêm viền để tách bạch rõ ràng. */
-[class*="team-color-"] { border: 1px solid currentColor; }
+/* Viền riêng cho badge team "NVPS" — user yêu cầu BỎ viền chung ở mọi
+   team-color-N (lần sửa trước), CHỈ team này mới cần (gắn qua
+   teamColorClass() ở 01-state.js khi tên team === "NVPS"). currentColor
+   tự khớp đúng màu chữ của badge, không cần biết trước slot nào. */
+.team-badge-bordered { border: 1px solid currentColor; }
 
 .team-badge { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); }
 .team-color-0 { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); } /* đỏ hồng */

@@ -476,9 +476,14 @@ function teamColorSlotFor(teamName) {
   }
   return teamColorSlotCache.map.get(teamName);
 }
+// User phản hồi: badge team "NVPS" (nền pastel nhạt) hoà vào nền card
+// cùng tông — CHỈ riêng team này cần thêm viền (.team-badge-bordered,
+// style.css), KHÔNG áp cho mọi team-color-N khác (đã thử ở lần sửa
+// trước, user yêu cầu bỏ lại).
 function teamColorClass(teamName) {
   const slot = teamColorSlotFor(teamName);
-  return slot === undefined ? "status-default" : `team-color-${slot}`;
+  const base = slot === undefined ? "status-default" : `team-color-${slot}`;
+  return teamName === "NVPS" ? `${base} team-badge-bordered` : base;
 }
 
 // Mỗi Nhóm tiêu chí (trang Cấu hình → Cấu hình → Nhóm) 1 màu riêng — cùng cơ
