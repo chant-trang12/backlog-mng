@@ -2016,7 +2016,10 @@ td[contenteditable="true"]:focus { outline: 2px solid var(--primary); outline-of
    (badge Trạng thái thật ở các bảng, không đổi). */
 .tm-total-badge-ok { background: var(--blue-100); color: var(--blue-800); }
 .tm-total-badge-over { background: var(--red-200); color: var(--red-700); }
-.status-dang-thuc-hien { background: #ffeab0; color: #7a4e12; }
+/* Trước cùng tông vàng/hổ phách với .status-default ("Chưa thực hiện") —
+   2 trạng thái liền kề trong cùng cột nhìn na ná (user gửi ảnh) — đổi
+   sang Cam để tách rõ. */
+.status-dang-thuc-hien { background: var(--orange-100); color: var(--orange-800); }
 .status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
 .status-huy { background: var(--delete-light); color: var(--delete); }
 /* Badge "Đã trừ điểm" (cột hành động bảng "Nhân sự tham gia", 04-tasks.js) —
