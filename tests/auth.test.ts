@@ -98,11 +98,18 @@ describe("Authentication & SSO Integration", () => {
       expect(req.session.returnTo).toBe("/dashboard");
     });
 
-    it("rejects /auth/callback with invalid or missing state", async () => {
+    it("/auth/callback state lệch: lần đầu tự chuyển về /auth/login (thử lại 1 lần), lần sau báo lỗi", async () => {
       const app = createApp();
-      const res = await request(app).get("/auth/callback?code=abc&state=invalid-state");
-      expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Phiên đăng nhập không hợp lệ/);
+      const first = await request(app).get("/auth/callback?code=abc&state=invalid-state");
+      expect(first.status).toBe(302);
+      expect(first.headers.location).toBe("/auth/login");
+      expect(String(first.headers["set-cookie"])).toMatch(/backlog_login_retry=1/);
+
+      const second = await request(app)
+        .get("/auth/callback?code=abc&state=invalid-state")
+        .set("Cookie", "backlog_login_retry=1");
+      expect(second.status).toBe(400);
+      expect(second.body.error).toMatch(/Phiên đăng nhập không hợp lệ/);
     });
 
     it("allows access and sets req.user + req.appUser when user is in session", async () => {

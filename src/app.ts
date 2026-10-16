@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSessionOptions } from "./session.config.js";
+import { buildSessionOptions, isSessionExpired } from "./session.config.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
@@ -134,6 +134,27 @@ export function createApp() {
 
   // Limit JSON payload size
   app.use(express.json({ limit: "1mb" }));
+
+  // Cổng trang (SSO bật): trang HTML chính CHỈ phục vụ khi đã đăng nhập hợp lệ,
+  // ngược lại chuyển hướng ngay ở phía server tới /auth/login. Trước đây "/"
+  // luôn được trả về rồi JavaScript mới tự chuyển hướng — phụ thuộc cả vào
+  // cache lẫn JS để không lộ giao diện/không lặp. JS/CSS/icon vẫn công khai
+  // (không chứa dữ liệu; dữ liệu nghiệp vụ luôn qua /api có requireAuth).
+  app.get(["/", "/index.html"], (req, res, next) => {
+    if (!isSsoEnabled()) return next();
+    const sess = req.session;
+    res.setHeader("Cache-Control", "no-store");
+    if (sess?.user && !isSessionExpired(sess)) return next();
+    if (sess?.user) {
+      sess.destroy(() => {
+        res.clearCookie("connect.sid");
+        res.redirect("/auth/login");
+      });
+      return;
+    }
+    res.redirect("/auth/login");
+  });
+
   app.use(express.static(path.join(__dirname, "../public")));
 
   // Public health and auth routes

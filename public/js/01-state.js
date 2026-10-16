@@ -710,6 +710,69 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// ---- Chuyển hướng đăng nhập có cầu chì chống lặp ----
+// Mọi chỗ cần đưa người dùng về /auth/login phải gọi redirectToLogin(). (1) Chỉ
+// chuyển hướng 1 lần mỗi lần tải trang — nhiều API cùng 401 một lúc không được
+// kích hoạt nhiều /auth/login (mỗi lần sinh 1 state SSO riêng, ghi đè nhau).
+// (2) Cầu chì: chuyển hướng quá LOGIN_REDIRECT_MAX lần trong
+// LOGIN_REDIRECT_WINDOW_MS (dấu hiệu vòng lặp đăng nhập vô hạn) thì DỪNG và hiện
+// thông báo thay vì treo trình duyệt; bộ đếm xóa khi đăng nhập thành công.
+const LOGIN_REDIRECT_KEY = "backlog.loginRedirects";
+const LOGIN_REDIRECT_MAX = 3;
+const LOGIN_REDIRECT_WINDOW_MS = 30000;
+
+function clearLoginRedirects() {
+  try {
+    sessionStorage.removeItem(LOGIN_REDIRECT_KEY);
+  } catch {
+    /* sessionStorage có thể bị chặn — bỏ qua */
+  }
+}
+
+function showLoginLoopError() {
+  const box = document.createElement("div");
+  box.style.cssText =
+    "max-width:480px;margin:15vh auto;padding:28px 32px;font-family:system-ui,sans-serif;background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.12);text-align:center";
+  const title = document.createElement("h2");
+  title.textContent = "Không đăng nhập được";
+  const msg = document.createElement("p");
+  msg.textContent =
+    "Hệ thống phát hiện vòng lặp đăng nhập nên đã dừng lại. Hãy bấm nút bên dưới để đăng xuất rồi đăng nhập lại. Nếu vẫn lỗi, vui lòng liên hệ quản trị viên.";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = "Đăng xuất và thử lại";
+  btn.style.cssText = "padding:8px 18px;border:0;border-radius:6px;background:#e60028;color:#fff;font-size:15px;cursor:pointer";
+  btn.addEventListener("click", () => {
+    clearLoginRedirects();
+    window.location.href = "/auth/logout";
+  });
+  box.append(title, msg, btn);
+  document.body.replaceChildren(box);
+}
+
+function redirectToLogin(url) {
+  if (window.__redirectingToLogin) return;
+  window.__redirectingToLogin = true;
+  const now = Date.now();
+  let times = [];
+  try {
+    times = JSON.parse(sessionStorage.getItem(LOGIN_REDIRECT_KEY) || "[]").filter((t) => now - t < LOGIN_REDIRECT_WINDOW_MS);
+  } catch {
+    times = [];
+  }
+  if (times.length >= LOGIN_REDIRECT_MAX) {
+    showLoginLoopError();
+    return;
+  }
+  times.push(now);
+  try {
+    sessionStorage.setItem(LOGIN_REDIRECT_KEY, JSON.stringify(times));
+  } catch {
+    /* bỏ qua */
+  }
+  window.location.href = url || "/auth/login";
+}
+
 async function api(path, options) {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -718,12 +781,7 @@ async function api(path, options) {
   if (res.status === 401) {
     const body = await res.json().catch(() => ({}));
     if (body.loginUrl) {
-      // Chỉ chuyển hướng 1 lần — nhiều API cùng 401 một lúc không được kích hoạt
-      // nhiều lần /auth/login (mỗi lần sinh 1 state SSO riêng, ghi đè lẫn nhau).
-      if (!window.__redirectingToLogin) {
-        window.__redirectingToLogin = true;
-        window.location.href = body.loginUrl;
-      }
+      redirectToLogin(body.loginUrl);
       return null;
     }
   }

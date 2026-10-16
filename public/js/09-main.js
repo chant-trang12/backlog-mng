@@ -157,12 +157,10 @@ async function checkAuth() {
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {
-        if (!window.__redirectingToLogin) {
-          window.__redirectingToLogin = true;
-          window.location.href = "/auth/login";
-        }
+        redirectToLogin("/auth/login");
         return;
       }
+      clearLoginRedirects(); // đăng nhập thành công -> reset cầu chì chống lặp
       const sidebarUser = document.getElementById("sidebar-user");
       const userName = document.getElementById("user-name");
       const userEmail = document.getElementById("user-email");

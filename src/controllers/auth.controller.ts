@@ -27,6 +27,23 @@ function respondAuthError(req: Request, res: Response, status: number, message: 
   res.status(status).json({ error: message });
 }
 
+// Cookie đánh dấu "đã tự thử đăng nhập lại 1 lần" (xem callbackHandler).
+const LOGIN_RETRY_COOKIE = "backlog_login_retry";
+
+function hasLoginRetryCookie(req: Request): boolean {
+  return new RegExp(`(?:^|;\\s*)${LOGIN_RETRY_COOKIE}=1(?:;|$)`).test(req.headers.cookie ?? "");
+}
+
+function loginRetryCookieOptions() {
+  return {
+    path: "/auth",
+    maxAge: 60 * 1000,
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.COOKIE_SECURE === "true",
+  };
+}
+
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!isSsoEnabled()) {
@@ -88,6 +105,18 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
     const codeVerifier = req.session?.codeVerifier;
 
     if (!expectedState || !codeVerifier || queryState !== expectedState) {
+      // Tự thử lại ĐÚNG 1 lần: state lệch thường do 2 request /auth/login song
+      // song khi chưa có cookie (mỗi request 1 phiên riêng), bấm Back/F5 trên
+      // trang callback, hoặc 2 tab đăng nhập — IdP lúc này vẫn còn phiên nên
+      // đăng nhập lại là xong ngay, người dùng không phải thấy trang lỗi. Cookie
+      // đánh dấu ngắn hạn chặn việc thử lại lặp vô hạn: lần 2 vẫn lệch thì mới
+      // hiện lỗi.
+      if (!hasLoginRetryCookie(req)) {
+        res.cookie(LOGIN_RETRY_COOKIE, "1", loginRetryCookieOptions());
+        res.redirect("/auth/login");
+        return;
+      }
+      res.clearCookie(LOGIN_RETRY_COOKIE, { path: "/auth" });
       respondAuthError(req, res, 400, "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.");
       return;
     }
@@ -130,6 +159,7 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
       delete req.session.pendingLogin;
     }
 
+    res.clearCookie(LOGIN_RETRY_COOKIE, { path: "/auth" });
     const returnTo = req.session?.returnTo || "/";
     if (req.session) {
       delete req.session.returnTo;
