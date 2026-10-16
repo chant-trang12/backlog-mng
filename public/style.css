@@ -140,6 +140,10 @@ body {
 h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 .subtitle { margin: 0; color: var(--muted); font-size: 0.85rem; }
 
+/* Logo thay cho text "Quản lý nhiệm vụ" ở đầu sidebar — chiều cao khớp
+   dòng chữ h1 cũ (clamp ~17-21px), width auto giữ tỉ lệ gốc của SVG. */
+.sidebar-logo { display: block; height: 28px; width: auto; margin: 0 0 4px; }
+
 .app-shell {
   display: flex;
   min-height: 100vh;
