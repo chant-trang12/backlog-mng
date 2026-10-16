@@ -115,7 +115,7 @@ export async function callbackHandler(req: Request, res: Response, next: NextFun
           ? "no_state_in_session"
           : "state_mismatch";
       console.warn(
-        `[SSO] callback không hợp lệ: reason=${reason} sid=${String(req.sessionID ?? "").slice(0, 6)} ` +
+        `[SSO] callback không hợp lệ: reason=${reason} pid=${process.pid} sid=${String(req.sessionID ?? "").slice(0, 6)} ` +
           `retry=${hasLoginRetryCookie(req)} host=${req.get("host")} xfp=${req.get("x-forwarded-proto") ?? "-"}`,
       );
       // Tự thử lại ĐÚNG 1 lần: state lệch thường do 2 request /auth/login song

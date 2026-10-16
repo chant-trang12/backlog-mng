@@ -6,7 +6,7 @@ const port = process.env.PORT ?? 3001;
 const app = createApp();
 
 const server = app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+  console.log(`Server listening on http://localhost:${port} (pid=${process.pid}, cwd=${process.cwd()}, NODE_ENV=${process.env.NODE_ENV ?? "-"})`);
 });
 
 async function shutdown(signal: string) {

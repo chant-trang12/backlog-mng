@@ -44,6 +44,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   const user = req.session?.user;
   if (user) {
     if (isSessionExpired(req.session)) {
+      logUnauthenticated(req, "expired");
       req.session.destroy(() => {
         res.clearCookie("connect.sid");
         respondUnauthenticated(req, res);
@@ -64,7 +65,25 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return next();
   }
 
+  logUnauthenticated(req, hasSessionCookie(req) ? "no_user_in_session" : "no_cookie");
   respondUnauthenticated(req, res);
+}
+
+// Log chẩn đoán (không chứa bí mật) mỗi lần /api trả 401 khi SSO bật: giúp phân
+// biệt "trình duyệt/proxy không gửi cookie" (no_cookie), "có cookie nhưng phiên
+// không có người dùng — phiên lưu ở tiến trình khác/đã mất" (no_user_in_session)
+// và "phiên hết hạn" (expired). pid để nhận ra có NHIỀU tiến trình Node cùng nhận
+// request (mỗi tiến trình có bộ nhớ phiên riêng).
+function hasSessionCookie(req: Request): boolean {
+  return /(?:^|;\s*)connect\.sid=/.test(req.headers.cookie ?? "");
+}
+
+function logUnauthenticated(req: Request, reason: string): void {
+  if (!req.originalUrl.startsWith("/api")) return; // chỉ log API; điều hướng trang không ồn
+  console.warn(
+    `[AUTH] 401 reason=${reason} path=${req.originalUrl.split("?")[0]} pid=${process.pid} ` +
+      `sid=${String(req.sessionID ?? "").slice(0, 6)} xfp=${req.get("x-forwarded-proto") ?? "-"} host=${req.get("host")}`,
+  );
 }
 
 /** Trả 401 (API) hoặc redirect trang login (navigation) — dùng chung cho
