@@ -18,8 +18,15 @@ import {
   exportDigitalFeatureIntToExcel,
   importDigitalFeatureIntFromWorkbook,
 } from "../services/digitalFeatureIntegration-import.service.js";
+import { isDigitalFeatureIdInScope } from "../services/digitalFeature.service.js";
+import type { DataScope } from "../services/scope.util.js";
 
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
+
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2).
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Whitelist payload — digital_feature_id cố tình bỏ (lấy từ path để không
 // đổi được module cha khi sửa dòng).
@@ -30,12 +37,18 @@ function intPayload(req: Request) {
 export async function listDigitalFeatureIntegrationsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   res.json(await listDigitalFeatureIntegrations(featureId));
 }
 
 export async function createDigitalFeatureIntegrationHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const payload = intPayload(req) as unknown as CreateDigitalFeatureIntegrationInput;
   if (!payload.huong || !String(payload.huong).trim()) {
     return res.status(400).json({ error: "Trường 'huong' là bắt buộc" });
@@ -53,6 +66,10 @@ export async function createDigitalFeatureIntegrationHandler(req: Request, res: 
 export async function updateDigitalFeatureIntegrationHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureIntegration(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
+  }
   try {
     const updated = await updateDigitalFeatureIntegration(id, intPayload(req));
     if (!updated) return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
@@ -65,6 +82,10 @@ export async function updateDigitalFeatureIntegrationHandler(req: Request, res: 
 export async function deleteDigitalFeatureIntegrationHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureIntegration(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
+  }
   const ok = await deleteDigitalFeatureIntegration(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
   res.status(204).send();
@@ -92,6 +113,9 @@ export async function downloadDigitalFeatureIntTemplateHandler(_req: Request, re
 export async function importDigitalFeatureIntegrationsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = req.body;
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return res.status(400).json({ error: "Không nhận được nội dung file" });
@@ -110,6 +134,9 @@ export async function importDigitalFeatureIntegrationsHandler(req: Request, res:
 export async function exportDigitalFeatureIntegrationsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = await exportDigitalFeatureIntToExcel(featureId);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="tich-hop-su-kien.xlsx"`);
@@ -121,6 +148,8 @@ export async function getDigitalFeatureIntegrationHandler(req: Request, res: Res
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const item = await getDigitalFeatureIntegration(id);
-  if (!item) return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
+  if (!item || !(await isDigitalFeatureIdInScope(scopeOf(req), item.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy luồng tích hợp" });
+  }
   res.json(item);
 }

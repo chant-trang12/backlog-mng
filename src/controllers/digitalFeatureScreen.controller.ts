@@ -15,8 +15,15 @@ import {
   exportDigitalFeatureScreensToExcel,
   importDigitalFeatureScreensFromWorkbook,
 } from "../services/digitalFeatureScreen-import.service.js";
+import { isDigitalFeatureIdInScope } from "../services/digitalFeature.service.js";
+import type { DataScope } from "../services/scope.util.js";
 
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
+
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2).
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Whitelist payload — digital_feature_id cố tình bỏ (lấy từ path để không
 // đổi được module cha khi sửa dòng).
@@ -27,12 +34,18 @@ function screenPayload(req: Request) {
 export async function listDigitalFeatureScreensHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   res.json(await listDigitalFeatureScreens(featureId));
 }
 
 export async function createDigitalFeatureScreenHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const payload = screenPayload(req) as unknown as CreateDigitalFeatureScreenInput;
   if (!payload.ten_man_hinh || !String(payload.ten_man_hinh).trim()) {
     return res.status(400).json({ error: "Trường 'ten_man_hinh' là bắt buộc" });
@@ -51,6 +64,10 @@ export async function createDigitalFeatureScreenHandler(req: Request, res: Respo
 export async function updateDigitalFeatureScreenHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureScreen(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy màn hình" });
+  }
   try {
     const updated = await updateDigitalFeatureScreen(id, screenPayload(req));
     if (!updated) return res.status(404).json({ error: "Không tìm thấy màn hình" });
@@ -63,6 +80,10 @@ export async function updateDigitalFeatureScreenHandler(req: Request, res: Respo
 export async function deleteDigitalFeatureScreenHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureScreen(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy màn hình" });
+  }
   const ok = await deleteDigitalFeatureScreen(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy màn hình" });
   res.status(204).send();
@@ -90,6 +111,9 @@ export async function downloadDigitalFeatureScreenTemplateHandler(_req: Request,
 export async function importDigitalFeatureScreensHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = req.body;
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return res.status(400).json({ error: "Không nhận được nội dung file" });
@@ -108,6 +132,9 @@ export async function importDigitalFeatureScreensHandler(req: Request, res: Resp
 export async function exportDigitalFeatureScreensHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = await exportDigitalFeatureScreensToExcel(featureId);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="man-hinh-phan-quyen.xlsx"`);
@@ -119,6 +146,8 @@ export async function getDigitalFeatureScreenHandler(req: Request, res: Response
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const item = await getDigitalFeatureScreen(id);
-  if (!item) return res.status(404).json({ error: "Không tìm thấy màn hình" });
+  if (!item || !(await isDigitalFeatureIdInScope(scopeOf(req), item.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy màn hình" });
+  }
   res.json(item);
 }

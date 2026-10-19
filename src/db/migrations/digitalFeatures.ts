@@ -1,9 +1,16 @@
 import { db } from "../connection.js";
 
 // "Quản lý tính năng số hoá" — danh sách các tính năng/nghiệp vụ cần quản
-// lý việc số hoá (menu mới dưới Roadmap năm). Danh mục DÙNG CHUNG toàn hệ
-// thống (không gắn phòng ban, không lọc quyền xem — mọi người thấy toàn bộ
-// danh sách, ghi/sửa/xóa qua requireWrite dùng chung).
+// lý việc số hoá (menu mới dưới Roadmap năm).
+//
+// [Quy tắc 9.2] department_id — "ai đã Thêm/Import dòng này" (giống
+// feature_requests.department_id), gán tự động ở service theo req.dataScope
+// của người thao tác, KHÔNG nhận từ client. Phòng bị giới hạn chỉ
+// thấy/sửa/xóa được dòng department_id = phòng mình HOẶC department_id
+// NULL (dữ liệu cũ import trước khi có cột này — coi là "dùng chung", vẫn
+// hiển thị/sửa được cho mọi phòng để không mất quyền truy cập đột ngột —
+// xem isDigitalFeatureInScope() ở scope.util.ts). admin/phòng full-access
+// (scope.all) luôn thấy/sửa toàn bộ.
 export async function migrateDigitalFeatureTables(): Promise<void> {
   if (!(await db.schema.hasTable("digital_features"))) {
     await db.schema.createTable("digital_features", (table) => {
@@ -24,6 +31,14 @@ export async function migrateDigitalFeatureTables(): Promise<void> {
       table.text("chuyen_dau_ra_toi");
       table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
       table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+    });
+  }
+
+  // Phạm vi phòng ban (Quy tắc 9.2) — thêm sau, NULL = dữ liệu cũ/phòng
+  // full-access, xem comment đầu file.
+  if (!(await db.schema.hasColumn("digital_features", "department_id"))) {
+    await db.schema.alterTable("digital_features", (table) => {
+      table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
     });
   }
 

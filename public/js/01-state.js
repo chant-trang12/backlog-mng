@@ -41,6 +41,7 @@ const state = {
   positionOptions: [],
   systemOptions: [],
   objectiveOptions: [],
+  loaiYeuCauOptions: [], // danh mục "Loại yêu cầu" của Yêu cầu tính năng (/api/loai-yeu-cau) — KHÁC objectiveOptions (Mục tiêu), xem 10-feature-requests.js
   memberParticipationOptions: [],
   featureRequests: [],
   digitalFeatures: [], // danh sách tính năng số hoá (trang "Quản lý tính năng số hoá")

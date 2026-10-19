@@ -659,6 +659,13 @@ function openFrDetailDialog(r) {
   document.getElementById("fr-detail-dialog").showModal();
 }
 
+// Danh mục "Loại yêu cầu" riêng của Yêu cầu tính năng (loai_yeu_cau_options
+// — xem comment ở src/db/migrations/featureRequests.ts), KHÔNG dùng chung
+// Mục tiêu (objectiveOptions) — nạp 1 lần lúc khởi động app (09-main.js).
+async function loadLoaiYeuCau() {
+  state.loaiYeuCauOptions = await api("/api/loai-yeu-cau");
+}
+
 // ---- Thêm/Sửa yêu cầu ----
 
 function openFeatureRequestDialog(item) {
@@ -679,12 +686,12 @@ function openFeatureRequestDialog(item) {
     [...heThongNames, ...extra].map((h) => `<option value="${h}">${h}</option>`).join("");
   heThongSelect.value = item?.he_thong ?? "";
 
-  // Danh mục Loại yêu cầu lấy từ Cấu hình > Mục tiêu (state.objectiveOptions
-  // — cùng danh mục Roadmap năm đang dùng cho cột "Mục tiêu", xem
-  // loadObjective() ở 06-config.js) — cùng cách xử lý "giá trị cũ đã bị
-  // xóa khỏi danh mục" như Hệ thống ở trên.
+  // Danh mục Loại yêu cầu lấy từ state.loaiYeuCauOptions (/api/loai-yeu-cau,
+  // bảng loai_yeu_cau_options — danh mục RIÊNG, KHÁC Mục tiêu của Roadmap,
+  // xem loadLoaiYeuCau() ở trên) — cùng cách xử lý "giá trị cũ đã bị xóa
+  // khỏi danh mục" như Hệ thống ở trên.
   const loaiSelect = document.getElementById("fr-loai-yeu-cau");
-  const loaiNames = state.objectiveOptions.map((m) => m.ten_muc_tieu);
+  const loaiNames = state.loaiYeuCauOptions.map((o) => o.ten_loai);
   const loaiExtra = item?.loai_yeu_cau && !loaiNames.includes(item.loai_yeu_cau) ? [item.loai_yeu_cau] : [];
   loaiSelect.innerHTML =
     `<option value="">-- Không chọn --</option>` +

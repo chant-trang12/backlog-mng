@@ -5,6 +5,7 @@ import type {
   DigitalFeatureFilters,
   UpdateDigitalFeatureInput,
 } from "../types/digitalFeature.js";
+import { isDigitalFeatureInScope, type DataScope } from "./scope.util.js";
 
 // Các cột text của bảng digital_features — dùng chung cho insert/update
 // (service) và whitelist controller.
@@ -32,6 +33,17 @@ export async function getDigitalFeature(id: number): Promise<DigitalFeature | un
   return (row as DigitalFeature) ?? undefined;
 }
 
+// Dùng ở các controller tab con (Màn hình/Danh mục/Đối tượng dữ liệu/Tích
+// hợp — nhận digital_feature_id qua path "/digital-features/:id/...") để
+// chặn IDOR: đoán ID tính năng của phòng khác rồi liệt kê/import/export/
+// thêm dữ liệu con vào đó. false khi tính năng không tồn tại hoặc ngoài
+// phạm vi phòng ban (Quy tắc 9.2).
+export async function isDigitalFeatureIdInScope(scope: DataScope, featureId: number): Promise<boolean> {
+  const feature = await getDigitalFeature(featureId);
+  if (!feature) return false;
+  return isDigitalFeatureInScope(scope, feature.department_id);
+}
+
 /** Mã đang được dùng bởi dòng khác ĐANG HIỂN THỊ (không tính dòng đã xóa mềm). */
 async function isMaTaken(ma: string, excludeId?: number): Promise<boolean> {
   const query = db("digital_features")
@@ -50,8 +62,21 @@ async function nextMa(): Promise<string> {
   return `TNSH-${String(next).padStart(3, "0")}`;
 }
 
-export async function listDigitalFeatures(filters: DigitalFeatureFilters = {}): Promise<DigitalFeature[]> {
+// departmentId: null = không lọc (scope.all, gọi từ listDigitalFeaturesHandler
+// khi req.dataScope.all=true, hoặc gọi nội bộ — VD check trùng Mã/Module lúc
+// import — cần thấy TOÀN BỘ bất kể phòng ban). Khi có giá trị: chỉ trả dòng
+// department_id = đúng phòng đó HOẶC department_id NULL (dữ liệu cũ, dùng
+// chung — xem comment isDigitalFeatureInScope() ở scope.util.ts).
+export async function listDigitalFeatures(
+  filters: DigitalFeatureFilters = {},
+  departmentId: number | null = null,
+): Promise<DigitalFeature[]> {
   const query = db("digital_features").where({ is_deleted: false }).select("*").orderBy("id", "asc");
+  if (departmentId != null) {
+    query.andWhere((qb) => {
+      qb.whereNull("department_id").orWhere("department_id", departmentId);
+    });
+  }
   const search = filters.search?.trim();
   if (search) {
     // Tìm từ khóa trên toàn bộ cột text — giống ô Tìm kiếm ở các bảng khác.
@@ -80,6 +105,7 @@ export async function createDigitalFeature(input: CreateDigitalFeatureInput): Pr
     .insert({
       ma,
       module: input.module.trim(),
+      department_id: input.department_id ?? null,
       don_vi_chu_tri: input.don_vi_chu_tri ?? null,
       don_vi_phoi_hop: input.don_vi_phoi_hop ?? null,
       giai_doan: input.giai_doan ?? null,
@@ -125,15 +151,20 @@ export async function deleteDigitalFeature(id: number): Promise<boolean> {
   return affected > 0;
 }
 
-// Xóa nhiều tính năng theo checkbox đã chọn trên bảng (chỉ admin — chặn ở
-// route qua requireAdmin, xem app.ts). Digital features dùng chung toàn hệ
-// thống nên không cần lọc phạm vi phòng ban như deleteFeatureRequests().
-export async function deleteDigitalFeatures(ids: number[]): Promise<number> {
+// Xóa nhiều tính năng theo checkbox đã chọn trên bảng (admin/subadmin —
+// chặn ở route qua requireAdminOrSubAdmin, xem app.ts). departmentId: null =
+// không lọc (scope.all); có giá trị thì chỉ xóa được dòng thuộc đúng phòng
+// đó hoặc dòng department_id NULL (dữ liệu cũ, dùng chung) — subadmin bị
+// giới hạn phòng ban không xóa được dòng của phòng khác (Quy tắc 9.2).
+export async function deleteDigitalFeatures(ids: number[], departmentId: number | null = null): Promise<number> {
   const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
   if (validIds.length === 0) return 0;
-  const count = await db("digital_features")
-    .whereIn("id", validIds)
-    .where({ is_deleted: false })
-    .update({ is_deleted: true, deleted_at: db.fn.now() });
+  const query = db("digital_features").whereIn("id", validIds).where({ is_deleted: false });
+  if (departmentId != null) {
+    query.andWhere((qb) => {
+      qb.whereNull("department_id").orWhere("department_id", departmentId);
+    });
+  }
+  const count = await query.update({ is_deleted: true, deleted_at: db.fn.now() });
   return Number(count);
 }

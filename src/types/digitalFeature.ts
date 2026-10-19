@@ -2,6 +2,11 @@ export interface DigitalFeature {
   id: number;
   ma: string | null;
   module: string;
+  // Phạm vi phòng ban (Quy tắc 9.2) — phòng đã Thêm/Import dòng này; NULL =
+  // dữ liệu cũ, xem isDigitalFeatureInScope() ở scope.util.ts. KHÔNG liên
+  // quan "Đơn vị chủ trì" bên dưới (field đó là text tự do, tên đơn vị
+  // nghiệp vụ trên biểu mẫu Excel, không khớp danh sách phòng ban hệ thống).
+  department_id: number | null;
   don_vi_chu_tri: string | null;
   don_vi_phoi_hop: string | null;
   giai_doan: string | null;
