@@ -204,6 +204,7 @@ async function checkAuth() {
         loadDepartmentConfig(),
         loadSystem(),
         loadObjective(),
+        loadLoaiYeuCau(),
         loadMemberParticipation(),
         loadRoadmap(),
         refreshFeatureRequestNavBadge(),
