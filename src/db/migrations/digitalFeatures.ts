@@ -42,6 +42,31 @@ export async function migrateDigitalFeatureTables(): Promise<void> {
     });
   }
 
+  // "Đơn vị phối hợp" dạng phòng ban THẬT (nhiều phòng/1 tính năng) — bảng
+  // nối riêng, KHÔNG dùng chung cột text don_vi_phoi_hop ở trên (dữ liệu cũ
+  // import trước đây là tên đơn vị nghiệp vụ tự do, VD "BP.ĐTMS", không
+  // khớp danh sách phòng ban thật nên giữ nguyên hiển thị, không migrate
+  // ngược). Dòng NÀO có ít nhất 1 bản ghi ở bảng này thì FE ưu tiên hiển
+  // thị theo đây thay vì don_vi_phoi_hop; phòng có mặt trong bảng này cũng
+  // được coi như "trong phạm vi xem" của tính năng đó (Quy tắc 9.2, xem
+  // isDigitalFeatureInScope() ở scope.util.ts) — giống cơ chế department_id
+  // (chủ trì) + target_department_id (đích) ở feature_requests, nhưng cho
+  // phép NHIỀU phòng đích cùng lúc nên cần bảng riêng thay vì 1 cột.
+  if (!(await db.schema.hasTable("digital_feature_coop_departments"))) {
+    await db.schema.createTable("digital_feature_coop_departments", (table) => {
+      table.increments("id").primary();
+      table
+        .integer("digital_feature_id")
+        .notNullable()
+        .references("id")
+        .inTable("digital_features")
+        .onDelete("CASCADE");
+      table.integer("department_id").notNullable().references("id").inTable("departments").onDelete("CASCADE");
+      table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      table.unique(["digital_feature_id", "department_id"]);
+    });
+  }
+
   // Xóa mềm — digital_features không có UNIQUE riêng nên chỉ cần thêm cột
   // (xem comment đầy đủ ở migrateSoftDeleteCore, core.ts).
   if (!(await db.schema.hasColumn("digital_features", "is_deleted"))) {

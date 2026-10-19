@@ -1160,8 +1160,12 @@
                 <input id="df-don-vi-chu-tri" style="width:100%" />
               </div>
               <div>
-                <label for="df-don-vi-phoi-hop">Đơn vị phối hợp</label>
-                <input id="df-don-vi-phoi-hop" style="width:100%" />
+                <label for="df-don-vi-phoi-hop">Đơn vị phối hợp <span class="muted" style="font-weight:400">(chọn phòng ban — giữ Ctrl/Cmd để chọn nhiều)</span></label>
+                <select id="df-don-vi-phoi-hop" multiple size="4" style="width:100%"></select>
+                <!-- Dữ liệu cũ import trước khi có cột phòng ban thật — chỉ
+                     hiển thị tham khảo, không sửa được bằng ô chọn ở trên
+                     (xem comment migrations/digitalFeatures.ts). -->
+                <div id="df-don-vi-phoi-hop-legacy" class="muted" style="font-size:12px;margin-top:2px"></div>
               </div>
             </div>
             <div class="field-row">

@@ -20,6 +20,21 @@ function dfFull(text) {
   return `<div>${value.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>`;
 }
 
+// "Đơn vị phối hợp" — ưu tiên hiển thị theo coop_department_ids (phòng ban
+// thật, xem comment migrations/digitalFeatures.ts) nếu dòng đã có; dòng cũ
+// (chưa ai chọn lại) coop_department_ids rỗng -> fallback text tự do
+// don_vi_phoi_hop import trước đây. Trả null nếu không có gì để hiện.
+function dfCoopDisplayText(item) {
+  const ids = item?.coop_department_ids ?? [];
+  if (ids.length > 0) {
+    return ids
+      .map((id) => state.departments.find((d) => d.id === id)?.name)
+      .filter(Boolean)
+      .join(", ");
+  }
+  return item?.don_vi_phoi_hop || null;
+}
+
 // Ký hiệu quyền quy ước (một ô có thể gộp nhiều chữ cái, VD "CEA") — khớp
 // bảng ký hiệu trong tài liệu mô tả (V xem, C tạo, E sửa, D hủy, A duyệt,
 // X xuất, S cấu hình).
@@ -59,7 +74,7 @@ function filteredDigitalFeatures() {
         r.ma,
         r.module,
         r.don_vi_chu_tri,
-        r.don_vi_phoi_hop,
+        dfCoopDisplayText(r),
         r.giai_doan,
         r.tn_mh,
         r.muc_tieu_nghiep_vu,
@@ -266,7 +281,7 @@ function renderDigitalFeatures() {
       <td data-col="ma" ${colHidden("ma")}>${r.ma ? `<span class="status-badge status-default status-badge-wrap" title="Mã tính năng">${r.ma.replace(/</g, "&lt;")}</span>` : `<span class="muted">—</span>`}</td>
       <td>${dfClamp(r.module)}</td>
       <td data-col="don_vi_chu_tri" ${colHidden("don_vi_chu_tri")}>${dfClamp(r.don_vi_chu_tri)}</td>
-      <td data-col="don_vi_phoi_hop" ${colHidden("don_vi_phoi_hop")}>${dfClamp(r.don_vi_phoi_hop)}</td>
+      <td data-col="don_vi_phoi_hop" ${colHidden("don_vi_phoi_hop")}>${dfClamp(dfCoopDisplayText(r))}</td>
       <td data-col="giai_doan" ${colHidden("giai_doan")}>${dfClamp(r.giai_doan)}</td>
       <td data-col="tn_mh" ${colHidden("tn_mh")}>${dfClamp(r.tn_mh)}</td>
       <td data-col="muc_tieu_nghiep_vu" ${colHidden("muc_tieu_nghiep_vu")}>${dfClamp(r.muc_tieu_nghiep_vu)}</td>
@@ -357,7 +372,15 @@ function openDigitalFeatureDialog(id) {
   document.getElementById("df-ma").disabled = !!item; // mã không cho sửa sau khi tạo (mã là nhận diện)
   document.getElementById("df-module").value = item?.module ?? "";
   document.getElementById("df-don-vi-chu-tri").value = item?.don_vi_chu_tri ?? "";
-  document.getElementById("df-don-vi-phoi-hop").value = item?.don_vi_phoi_hop ?? "";
+  const coopSelect = document.getElementById("df-don-vi-phoi-hop");
+  const coopIds = new Set(item?.coop_department_ids ?? []);
+  coopSelect.innerHTML = state.departments
+    .map((d) => `<option value="${d.id}" ${coopIds.has(d.id) ? "selected" : ""}>${d.name}</option>`)
+    .join("");
+  // Dòng cũ chưa ai chọn lại (coop_department_ids rỗng) nhưng có text tự do
+  // import trước đây — hiện tham khảo bên dưới ô chọn (xem comment đầu file).
+  const legacyEl = document.getElementById("df-don-vi-phoi-hop-legacy");
+  legacyEl.textContent = coopIds.size === 0 && item?.don_vi_phoi_hop ? `Dữ liệu cũ (import): ${item.don_vi_phoi_hop}` : "";
   document.getElementById("df-giai-doan").value = item?.giai_doan ?? "";
   document.getElementById("df-tn-mh").value = item?.tn_mh ?? "";
   document.getElementById("df-muc-tieu").value = item?.muc_tieu_nghiep_vu ?? "";
@@ -375,7 +398,7 @@ document.getElementById("digital-feature-form")?.addEventListener("submit", asyn
   const body = {
     module: document.getElementById("df-module").value.trim(),
     don_vi_chu_tri: document.getElementById("df-don-vi-chu-tri").value.trim() || undefined,
-    don_vi_phoi_hop: document.getElementById("df-don-vi-phoi-hop").value.trim() || undefined,
+    coop_department_ids: [...document.getElementById("df-don-vi-phoi-hop").selectedOptions].map((o) => Number(o.value)),
     giai_doan: document.getElementById("df-giai-doan").value.trim() || undefined,
     tn_mh: document.getElementById("df-tn-mh").value.trim() || undefined,
     muc_tieu_nghiep_vu: document.getElementById("df-muc-tieu").value.trim() || undefined,
@@ -436,7 +459,7 @@ function setDfInfoCell(id, value) {
 
 function renderDigitalFeatureInfo(item) {
   setDfInfoCell("df-info-don-vi-chu-tri", item.don_vi_chu_tri);
-  setDfInfoCell("df-info-don-vi-phoi-hop", item.don_vi_phoi_hop);
+  setDfInfoCell("df-info-don-vi-phoi-hop", dfCoopDisplayText(item));
   setDfInfoCell("df-info-vai-tro-pbdkd", item.vai_tro_pbdkd);
   setDfInfoCell("df-info-giai-doan", item.giai_doan);
   setDfInfoCell("df-info-muc-tieu", item.muc_tieu_nghiep_vu);
