@@ -2255,6 +2255,12 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
    riêng) — nền pastel nhạt dễ hoà vào card cùng tông (user phản hồi, ảnh
    "NVPS"/"NVTT" trên nền hồng), thêm viền để tách bạch rõ ràng. */
 [class*="team-color-"] { border: 1px solid currentColor; }
+/* Badge "Nhóm" (Cấu hình > Nhóm: chấm tròn màu + Tiêu chí: badge tên nhóm)
+   dùng lại đúng bảng màu team-color-N nhưng KHÔNG cần viền như badge team —
+   nền các màu này đủ tương phản trên card trắng, viền thêm vào bị thừa
+   (user phản hồi kèm ảnh chụp). 2 class (.status-badge.group-badge-no-
+   border) để thắng specificity rule viền chung ở trên bất kể thứ tự file. */
+.status-badge.group-badge-no-border { border: none; }
 
 .team-badge { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); }
 .team-color-0 { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); } /* đỏ hồng */
