@@ -113,6 +113,14 @@ function renderDeptSwitcher() {
     el.deptTrigger.title = "";
   }
 
+  // "Quản lý phòng ban…" chỉ mở được Cấu hình (role !== admin không được
+  // vào, xem checkAuth() ở 09-main.js) — nút này gọi thẳng
+  // document.querySelector('.nav-item[data-page="config"]').click(), BỎ
+  // QUA thuộc tính hidden của nút nav (click() vẫn chạy handler dù nút
+  // đang ẩn) nên phải tự chặn ở đây, không chỉ dựa vào nav bị ẩn. Cùng điều
+  // kiện với configNav: SSO tắt (dev/test) hiện sẵn cho tiện; SSO bật thì
+  // chỉ admin thấy.
+  const canOpenConfig = !document.body.dataset.role || document.body.dataset.role === "admin";
   el.deptPanel.innerHTML =
     `<div class="dept-panel-title">Chuyển phòng ban</div>` +
     state.departments
@@ -125,11 +133,13 @@ function renderDeptSwitcher() {
       </button>`,
       )
       .join("") +
-    `<div class="dept-panel-sep"></div>` +
-    `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1" title="Quản lý phòng ban">
+    (canOpenConfig
+      ? `<div class="dept-panel-sep"></div>` +
+        `<button type="button" class="dept-option dept-option-manage" role="menuitem" data-dept-manage="1" title="Quản lý phòng ban">
       <span class="dept-mono" style="background:var(--amber-100);color:var(--amber-800)"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg></span>
       <span class="dept-option-name">Quản lý phòng ban…</span>
-    </button>`;
+    </button>`
+      : "");
 
   el.deptPanel.querySelectorAll("[data-dept-id]").forEach((btn) => {
     const dept = state.departments.find((d) => d.id === Number(btn.dataset.deptId));
@@ -138,13 +148,15 @@ function renderDeptSwitcher() {
     btn.addEventListener("mouseleave", hideDeptTip);
   });
   const manageBtn = el.deptPanel.querySelector("[data-dept-manage]");
-  manageBtn.addEventListener("mouseenter", () => showDeptTip(manageBtn, "Quản lý phòng ban"));
-  manageBtn.addEventListener("mouseleave", hideDeptTip);
-  manageBtn.addEventListener("click", () => {
-    closeDeptPanel();
-    document.querySelector('.nav-item[data-page="config"]')?.click();
-    document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
-  });
+  if (manageBtn) {
+    manageBtn.addEventListener("mouseenter", () => showDeptTip(manageBtn, "Quản lý phòng ban"));
+    manageBtn.addEventListener("mouseleave", hideDeptTip);
+    manageBtn.addEventListener("click", () => {
+      closeDeptPanel();
+      document.querySelector('.nav-item[data-page="config"]')?.click();
+      document.querySelector('#config-subnav .pill[data-tab="phongban"]')?.click();
+    });
+  }
 
   applyDeptModeSidebarNav();
 }
