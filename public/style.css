@@ -1423,6 +1423,41 @@ th {
 #dfmd-table td:nth-child(2),
 #dfdo-table td:nth-child(2),
 #dfint-table td:nth-child(2) { text-align: center; }
+
+/* Cột checkbox + STT — ĐỨNG RIÊNG khỏi "vertical-align: middle" chung của
+   cả bảng (các rule "#X-table td { vertical-align: middle; }" ở trên):
+   mọi bảng cho phép text xuống dòng (DoD/Nhiệm vụ/Ghi chú/Mô tả nhiều
+   dòng) đều có thể có hàng cao bất thường — nếu checkbox/STT cũng
+   vertical-align:middle thì bị trôi xuống GIỮA hàng cao đó, trông như lệch
+   hẳn khỏi dòng dữ liệu của nó khi hàng kế tiếp cao bình thường (user phản
+   hồi kèm ảnh chụp, lặp lại ở MỌI bảng có cột checkbox trong hệ thống).
+   Ghim lại đúng mép trên, luôn ngang hàng với dòng đầu tiên của nội dung —
+   đặt SAU để thắng nhờ specificity cao hơn (nth-child) bất kể thứ tự file.
+   fr-table dùng [data-col="stt"] cho STT (không phải nth-child) vì bảng
+   cho ẩn cột tuỳ ý, xem comment "Dùng [data-col=...] thay vì nth-child" ở
+   trên — nhưng checkbox luôn là cột 1 cố định (không cho ẩn) nên vẫn dùng
+   nth-child(1) được. noiquy-table/attendance-table không cần (white-space:
+   nowrap, không bao giờ xuống dòng nên hàng luôn cao đều). */
+#task-table td:nth-child(1),
+#task-table td:nth-child(2),
+#member-table td:nth-child(1),
+#member-table td:nth-child(2),
+#roadmap-table td:nth-child(1),
+#roadmap-table td:nth-child(2),
+#df-table td:nth-child(1),
+#df-table td:nth-child(2),
+#dfs-table td:nth-child(1),
+#dfs-table td:nth-child(2),
+#dfmd-table td:nth-child(1),
+#dfmd-table td:nth-child(2),
+#dfdo-table td:nth-child(1),
+#dfdo-table td:nth-child(2),
+#dfint-table td:nth-child(1),
+#dfint-table td:nth-child(2),
+#fr-table td:nth-child(1),
+#fr-table td[data-col="stt"] {
+  vertical-align: top;
+}
 /* Pill Mã danh mục — mã dài (nhiều mã gộp "A / B / C") xuống dòng trong ô
    thay vì kéo giãn cột ngang; mã đơn vẫn nguyên 1 dòng (JS đổi "-" thành
    non-breaking hyphen, break chỉ xảy ra tại khoảng trắng). */
