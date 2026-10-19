@@ -374,7 +374,15 @@ function frActionsHtml(r, side) {
   // khoá nội dung, tránh sửa sau khi bên kia đã hành động). Khác với "Tạo
   // mới" (mọi quyền kể cả viewer), Sửa vẫn là PUT nên cần quyền ghi —
   // write-action ẩn với viewer.
-  if (side === "proposer" && r.trang_thai === "Chờ duyệt") {
+  //
+  // Dùng thẳng r.department_id thay vì side==="proposer": side chỉ trả về
+  // 1 trong 2 giá trị (ưu tiên "target" khi department_id === target_
+  // department_id, xem frViewerSide()) nên đơn vị TỰ tạo yêu cầu cho CHÍNH
+  // mình (department_id = target_department_id = phòng đang xem) trước đây
+  // bị side="target" nuốt mất, không bao giờ vào được nhánh "proposer" ->
+  // không thấy nút Sửa/Xóa dù đúng là bên đề xuất. Vẫn đúng ý "chỉ bên đề
+  // xuất" vì r.department_id luôn là phòng đề xuất.
+  if (r.department_id === state.currentDepartmentId && r.trang_thai === "Chờ duyệt") {
     actions += `<button class="small btn-edit write-action edit-fr-btn" data-id="${id}">Sửa</button>`;
     actions += `<button class="small btn-delete delete-fr-btn" data-id="${id}">Xóa</button>`;
   }
