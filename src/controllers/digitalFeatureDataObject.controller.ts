@@ -18,8 +18,15 @@ import {
   exportDigitalFeatureDoToExcel,
   importDigitalFeatureDoFromWorkbook,
 } from "../services/digitalFeatureDataObject-import.service.js";
+import { isDigitalFeatureIdInScope } from "../services/digitalFeature.service.js";
+import type { DataScope } from "../services/scope.util.js";
 
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
+
+// Phạm vi phòng ban của người gọi (Quy tắc 9.2).
+function scopeOf(req: Request): DataScope {
+  return req.dataScope ?? { all: true, departmentId: null };
+}
 
 // Whitelist payload — digital_feature_id cố tình bỏ (lấy từ path để không
 // đổi được module cha khi sửa dòng).
@@ -30,12 +37,18 @@ function doPayload(req: Request) {
 export async function listDigitalFeatureDataObjectsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   res.json(await listDigitalFeatureDataObjects(featureId));
 }
 
 export async function createDigitalFeatureDataObjectHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const payload = doPayload(req) as unknown as CreateDigitalFeatureDataObjectInput;
   if (!payload.ten_doi_tuong || !String(payload.ten_doi_tuong).trim()) {
     return res.status(400).json({ error: "Trường 'ten_doi_tuong' là bắt buộc" });
@@ -53,6 +66,10 @@ export async function createDigitalFeatureDataObjectHandler(req: Request, res: R
 export async function updateDigitalFeatureDataObjectHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureDataObject(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
+  }
   try {
     const updated = await updateDigitalFeatureDataObject(id, doPayload(req));
     if (!updated) return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
@@ -65,6 +82,10 @@ export async function updateDigitalFeatureDataObjectHandler(req: Request, res: R
 export async function deleteDigitalFeatureDataObjectHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getDigitalFeatureDataObject(id);
+  if (!existing || !(await isDigitalFeatureIdInScope(scopeOf(req), existing.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
+  }
   const ok = await deleteDigitalFeatureDataObject(id);
   if (!ok) return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
   res.status(204).send();
@@ -92,6 +113,9 @@ export async function downloadDigitalFeatureDoTemplateHandler(_req: Request, res
 export async function importDigitalFeatureDataObjectsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = req.body;
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     return res.status(400).json({ error: "Không nhận được nội dung file" });
@@ -110,6 +134,9 @@ export async function importDigitalFeatureDataObjectsHandler(req: Request, res: 
 export async function exportDigitalFeatureDataObjectsHandler(req: Request, res: Response) {
   const featureId = parsePositiveInt(req.params.id);
   if (!Number.isFinite(featureId)) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!(await isDigitalFeatureIdInScope(scopeOf(req), featureId))) {
+    return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  }
   const buffer = await exportDigitalFeatureDoToExcel(featureId);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="doi-tuong-du-lieu-vong-doi.xlsx"`);
@@ -121,6 +148,8 @@ export async function getDigitalFeatureDataObjectHandler(req: Request, res: Resp
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const item = await getDigitalFeatureDataObject(id);
-  if (!item) return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
+  if (!item || !(await isDigitalFeatureIdInScope(scopeOf(req), item.digital_feature_id))) {
+    return res.status(404).json({ error: "Không tìm thấy đối tượng dữ liệu" });
+  }
   res.json(item);
 }

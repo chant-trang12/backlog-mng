@@ -112,3 +112,16 @@ export function isFeatureRequestInScope(
   if (scope.departmentId == null) return false;
   return fr.department_id === scope.departmentId || fr.target_department_id === scope.departmentId;
 }
+
+// Tính năng số hoá (digital_features) — khác isDepartmentInScope() thông
+// thường ở chỗ department_id=NULL (dòng import trước khi có cột phân
+// quyền này) được coi là "dùng chung", mọi phòng đều thấy/sửa được, chứ
+// KHÔNG bị ép thành "ngoài phạm vi" như dữ liệu mồ côi ở các bảng khác —
+// theo đúng yêu cầu giữ nguyên quyền truy cập dữ liệu cũ khi bật tính năng
+// lọc phòng ban này. department_id có giá trị (dòng mới Thêm/Import sau khi
+// có cột) thì lọc đúng 1 phòng như isDepartmentInScope().
+export function isDigitalFeatureInScope(scope: DataScope, departmentId: number | null): boolean {
+  if (scope.all) return true;
+  if (departmentId == null) return true;
+  return departmentId === scope.departmentId;
+}

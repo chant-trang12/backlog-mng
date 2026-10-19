@@ -81,7 +81,15 @@ export interface DigitalFeatureImportResult {
   skipped: { row: number; label: string; reason: string }[];
 }
 
-export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise<DigitalFeatureImportResult> {
+// departmentId: phòng ban của người import (Quy tắc 9.2) — gán cho MỌI
+// dòng mới tạo trong lần import này (null = scope.all, dữ liệu "dùng
+// chung", xem comment isDigitalFeatureInScope() ở scope.util.ts). Chặn
+// trùng Mã/Module vẫn xét TOÀN BỘ hệ thống (không chỉ phòng mình) — 1 Mã
+// chỉ nên tồn tại 1 nơi dù phòng nào thêm.
+export async function importDigitalFeaturesFromWorkbook(
+  buffer: Buffer,
+  departmentId: number | null = null,
+): Promise<DigitalFeatureImportResult> {
   const { headers, rows } = await parseFirstSheet(buffer);
   const col = (keys: readonly string[]) => pickColumn(headers, keys as unknown as string[]);
 
@@ -96,7 +104,8 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
   // Mã + Module đã dùng trong file này + đang hiển thị trong hệ thống — để
   // chặn trùng: Mã trùng hoặc nội dung (Module) trùng với dòng đã có thì bỏ
   // qua, kể cả trùng nội bộ trong cùng file (ví dụ import lại file cũ: dòng
-  // có Mã bị chặn theo Mã, dòng Mã trống bị chặn theo Module).
+  // có Mã bị chặn theo Mã, dòng Mã trống bị chặn theo Module). Xét TOÀN BỘ
+  // hệ thống (không truyền departmentId) — không phải chỉ phòng đang import.
   const seenMa = new Set<string>();
   const seenModule = new Set<string>();
   const existing = await listDigitalFeatures();
@@ -137,6 +146,7 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
     await createDigitalFeature({
       ma: ma || undefined, // trống -> tự sinh TNSH-xxx
       module: moduleValue,
+      department_id: departmentId,
       don_vi_chu_tri: val(row, col(KEYS.don_vi_chu_tri)) || undefined,
       don_vi_phoi_hop: val(row, col(KEYS.don_vi_phoi_hop)) || undefined,
       giai_doan: val(row, col(KEYS.giai_doan)) || undefined,
@@ -153,8 +163,11 @@ export async function importDigitalFeaturesFromWorkbook(buffer: Buffer): Promise
   return result;
 }
 
-export async function exportDigitalFeaturesToExcel(filters: DigitalFeatureFilters = {}): Promise<ExcelJS.Buffer> {
-  const items = await listDigitalFeatures(filters);
+export async function exportDigitalFeaturesToExcel(
+  filters: DigitalFeatureFilters = {},
+  departmentId: number | null = null,
+): Promise<ExcelJS.Buffer> {
+  const items = await listDigitalFeatures(filters, departmentId);
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "backlog-manager";
