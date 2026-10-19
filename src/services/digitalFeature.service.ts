@@ -28,9 +28,48 @@ function cleanText(value: unknown): string | null {
   return text ? text : null;
 }
 
+export async function getCoopDepartmentIds(featureId: number): Promise<number[]> {
+  const rows = await db("digital_feature_coop_departments").where({ digital_feature_id: featureId }).select("department_id");
+  return rows.map((r: any) => Number(r.department_id));
+}
+
+// Đồng bộ danh sách phòng phối hợp = departmentIds (xoá bản ghi không còn,
+// thêm bản ghi mới) — đơn giản hơn so sánh diff, bảng nối nhỏ nên chấp
+// nhận được. undefined ở input (client không gửi field) nghĩa là "không
+// đổi", KHÔNG gọi hàm này — phân biệt với mảng rỗng [] ("gỡ hết phòng phối
+// hợp"), xem createDigitalFeature/updateDigitalFeature bên dưới.
+async function setCoopDepartments(featureId: number, departmentIds: number[]): Promise<void> {
+  const validIds = [...new Set(departmentIds.filter((id) => Number.isInteger(id) && id > 0))];
+  await db("digital_feature_coop_departments").where({ digital_feature_id: featureId }).del();
+  if (validIds.length === 0) return;
+  await db("digital_feature_coop_departments").insert(
+    validIds.map((department_id) => ({ digital_feature_id: featureId, department_id })),
+  );
+}
+
+// Gắn coop_department_ids cho 1 danh sách tính năng đã có (1 query duy
+// nhất, tránh N+1) — dùng ở listDigitalFeatures().
+async function attachCoopDepartmentIds(rows: DigitalFeature[]): Promise<DigitalFeature[]> {
+  if (rows.length === 0) return rows;
+  const ids = rows.map((r) => r.id);
+  const links = await db("digital_feature_coop_departments")
+    .whereIn("digital_feature_id", ids)
+    .select("digital_feature_id", "department_id");
+  const byFeature = new Map<number, number[]>();
+  for (const link of links as any[]) {
+    const fid = Number(link.digital_feature_id);
+    const arr = byFeature.get(fid) ?? [];
+    arr.push(Number(link.department_id));
+    byFeature.set(fid, arr);
+  }
+  return rows.map((r) => ({ ...r, coop_department_ids: byFeature.get(r.id) ?? [] }));
+}
+
 export async function getDigitalFeature(id: number): Promise<DigitalFeature | undefined> {
   const row = await db("digital_features").where({ id, is_deleted: false }).first();
-  return (row as DigitalFeature) ?? undefined;
+  if (!row) return undefined;
+  const coop_department_ids = await getCoopDepartmentIds(id);
+  return { ...(row as DigitalFeature), coop_department_ids };
 }
 
 // Dùng ở các controller tab con (Màn hình/Danh mục/Đối tượng dữ liệu/Tích
@@ -41,7 +80,7 @@ export async function getDigitalFeature(id: number): Promise<DigitalFeature | un
 export async function isDigitalFeatureIdInScope(scope: DataScope, featureId: number): Promise<boolean> {
   const feature = await getDigitalFeature(featureId);
   if (!feature) return false;
-  return isDigitalFeatureInScope(scope, feature.department_id);
+  return isDigitalFeatureInScope(scope, feature.department_id, feature.coop_department_ids);
 }
 
 /** Mã đang được dùng bởi dòng khác ĐANG HIỂN THỊ (không tính dòng đã xóa mềm). */
@@ -65,8 +104,10 @@ async function nextMa(): Promise<string> {
 // departmentId: null = không lọc (scope.all, gọi từ listDigitalFeaturesHandler
 // khi req.dataScope.all=true, hoặc gọi nội bộ — VD check trùng Mã/Module lúc
 // import — cần thấy TOÀN BỘ bất kể phòng ban). Khi có giá trị: chỉ trả dòng
-// department_id = đúng phòng đó HOẶC department_id NULL (dữ liệu cũ, dùng
-// chung — xem comment isDigitalFeatureInScope() ở scope.util.ts).
+// department_id = đúng phòng đó, HOẶC department_id NULL (dữ liệu cũ, dùng
+// chung), HOẶC đang có mặt trong digital_feature_coop_departments ("Đơn vị
+// phối hợp" dạng phòng ban thật) — xem comment isDigitalFeatureInScope() ở
+// scope.util.ts.
 export async function listDigitalFeatures(
   filters: DigitalFeatureFilters = {},
   departmentId: number | null = null,
@@ -74,7 +115,13 @@ export async function listDigitalFeatures(
   const query = db("digital_features").where({ is_deleted: false }).select("*").orderBy("id", "asc");
   if (departmentId != null) {
     query.andWhere((qb) => {
-      qb.whereNull("department_id").orWhere("department_id", departmentId);
+      qb.whereNull("department_id")
+        .orWhere("department_id", departmentId)
+        .orWhereExists(
+          db("digital_feature_coop_departments")
+            .whereRaw("digital_feature_coop_departments.digital_feature_id = digital_features.id")
+            .andWhere("digital_feature_coop_departments.department_id", departmentId),
+        );
     });
   }
   const search = filters.search?.trim();
@@ -93,7 +140,8 @@ export async function listDigitalFeatures(
   if (filters.don_vi_chu_tri?.trim()) {
     query.andWhereRaw("LOWER(don_vi_chu_tri) = ?", [filters.don_vi_chu_tri.trim().toLowerCase()]);
   }
-  return (await query) as DigitalFeature[];
+  const rows = (await query) as DigitalFeature[];
+  return attachCoopDepartmentIds(rows);
 }
 
 export async function createDigitalFeature(input: CreateDigitalFeatureInput): Promise<DigitalFeature> {
@@ -117,7 +165,10 @@ export async function createDigitalFeature(input: CreateDigitalFeatureInput): Pr
       updated_at: db.fn.now(),
     })
     .returning("*");
-  return created as DigitalFeature;
+  if (input.coop_department_ids !== undefined) {
+    await setCoopDepartments(created.id, input.coop_department_ids);
+  }
+  return (await getDigitalFeature(created.id)) as DigitalFeature;
 }
 
 export async function updateDigitalFeature(
@@ -141,6 +192,9 @@ export async function updateDigitalFeature(
   if (update.module != null) update.module = String(update.module).trim();
   const affected = await db("digital_features").where({ id }).update(update);
   if (!affected) return undefined;
+  if (input.coop_department_ids !== undefined) {
+    await setCoopDepartments(id, input.coop_department_ids);
+  }
   return getDigitalFeature(id);
 }
 
@@ -154,15 +208,22 @@ export async function deleteDigitalFeature(id: number): Promise<boolean> {
 // Xóa nhiều tính năng theo checkbox đã chọn trên bảng (admin/subadmin —
 // chặn ở route qua requireAdminOrSubAdmin, xem app.ts). departmentId: null =
 // không lọc (scope.all); có giá trị thì chỉ xóa được dòng thuộc đúng phòng
-// đó hoặc dòng department_id NULL (dữ liệu cũ, dùng chung) — subadmin bị
-// giới hạn phòng ban không xóa được dòng của phòng khác (Quy tắc 9.2).
+// đó, dòng department_id NULL (dữ liệu cũ, dùng chung), hoặc dòng đang có
+// phòng này ở "Đơn vị phối hợp" — subadmin bị giới hạn phòng ban không xóa
+// được dòng ngoài phạm vi (Quy tắc 9.2, cùng logic isDigitalFeatureInScope()).
 export async function deleteDigitalFeatures(ids: number[], departmentId: number | null = null): Promise<number> {
   const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
   if (validIds.length === 0) return 0;
   const query = db("digital_features").whereIn("id", validIds).where({ is_deleted: false });
   if (departmentId != null) {
     query.andWhere((qb) => {
-      qb.whereNull("department_id").orWhere("department_id", departmentId);
+      qb.whereNull("department_id")
+        .orWhere("department_id", departmentId)
+        .orWhereExists(
+          db("digital_feature_coop_departments")
+            .whereRaw("digital_feature_coop_departments.digital_feature_id = digital_features.id")
+            .andWhere("digital_feature_coop_departments.department_id", departmentId),
+        );
     });
   }
   const count = await query.update({ is_deleted: true, deleted_at: db.fn.now() });

@@ -9,6 +9,12 @@ export interface DigitalFeature {
   department_id: number | null;
   don_vi_chu_tri: string | null;
   don_vi_phoi_hop: string | null;
+  // "Đơn vị phối hợp" dạng phòng ban THẬT (có thể nhiều phòng) — bảng nối
+  // digital_feature_coop_departments, xem comment ở migrations/digitalFeatures.ts.
+  // Rỗng = dòng cũ/chưa ai chọn lại, FE hiển thị fallback don_vi_phoi_hop
+  // (text tự do) ở trên; khác rỗng thì các phòng này cũng nằm trong phạm vi
+  // xem (Quy tắc 9.2, xem isDigitalFeatureInScope() ở scope.util.ts).
+  coop_department_ids: number[];
   giai_doan: string | null;
   tn_mh: string | null;
   muc_tieu_nghiep_vu: string | null;
@@ -19,11 +25,18 @@ export interface DigitalFeature {
   updated_at?: string;
 }
 
-export type CreateDigitalFeatureInput = Partial<Omit<DigitalFeature, "id" | "created_at" | "updated_at">> & {
+export type CreateDigitalFeatureInput = Partial<
+  Omit<DigitalFeature, "id" | "created_at" | "updated_at" | "coop_department_ids">
+> & {
   module: string;
+  coop_department_ids?: number[];
 };
 
-export type UpdateDigitalFeatureInput = Partial<Omit<DigitalFeature, "id" | "created_at" | "updated_at">>;
+export type UpdateDigitalFeatureInput = Partial<
+  Omit<DigitalFeature, "id" | "created_at" | "updated_at" | "coop_department_ids">
+> & {
+  coop_department_ids?: number[];
+};
 
 /** Bộ lọc danh sách (dùng cho cả API list lẫn xuất Excel). */
 export interface DigitalFeatureFilters {

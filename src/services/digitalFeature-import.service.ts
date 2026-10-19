@@ -3,8 +3,22 @@ import {
   createDigitalFeature,
   listDigitalFeatures,
 } from "./digitalFeature.service.js";
-import type { DigitalFeatureFilters } from "../types/digitalFeature.js";
+import type { DigitalFeature, DigitalFeatureFilters } from "../types/digitalFeature.js";
 import { buildTemplateWorkbook, parseFirstSheet, pickColumn } from "./workbook.util.js";
+import { listDepartments } from "./department.service.js";
+
+// "Đơn vị phối hợp" dạng phòng ban thật (coop_department_ids) nếu dòng đã
+// có; dòng cũ (chưa ai chọn lại) fallback text tự do import trước đây —
+// khớp cách hiển thị ở FE (dfCoopDisplayText() trong 13-digital-features.js).
+function coopDisplayText(item: DigitalFeature, deptNameById: Map<number, string>): string {
+  if (item.coop_department_ids.length > 0) {
+    return item.coop_department_ids
+      .map((id) => deptNameById.get(id))
+      .filter((n): n is string => !!n)
+      .join(", ");
+  }
+  return item.don_vi_phoi_hop ?? "";
+}
 
 // ===== Import/Export Excel "Quản lý tính năng số hoá" =====
 // Cột khớp 1-1 với bảng dữ liệu hiển thị (trừ STT — chỉ để đánh số, bỏ qua
@@ -168,6 +182,7 @@ export async function exportDigitalFeaturesToExcel(
   departmentId: number | null = null,
 ): Promise<ExcelJS.Buffer> {
   const items = await listDigitalFeatures(filters, departmentId);
+  const deptNameById = new Map((await listDepartments()).map((d) => [d.id, d.name]));
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "backlog-manager";
@@ -192,7 +207,7 @@ export async function exportDigitalFeaturesToExcel(
       item.ma ?? "",
       item.module ?? "",
       item.don_vi_chu_tri ?? "",
-      item.don_vi_phoi_hop ?? "",
+      coopDisplayText(item, deptNameById),
       item.giai_doan ?? "",
       item.tn_mh ?? "",
       item.muc_tieu_nghiep_vu ?? "",

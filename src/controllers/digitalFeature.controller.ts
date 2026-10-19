@@ -42,9 +42,22 @@ function filtersFromQuery(req: Request): DigitalFeatureFilters {
   };
 }
 
-// Quy tắc 9.2 — chỉ trả dòng thuộc phòng đang xem (department_id) hoặc dòng
-// dùng chung (department_id NULL, dữ liệu cũ) — xem isDigitalFeatureInScope().
-// scope.all (admin/phòng full-access) thấy toàn bộ.
+// "Đơn vị phối hợp" dạng phòng ban thật — client gửi mảng id phòng ban hợp
+// lệ (đây là lựa chọn của người dùng trên form, giống target_department_id
+// ở Yêu cầu tính năng, KHÔNG phải trường tự suy ra theo scope nên nhận
+// thẳng từ body). undefined (field không có trong body) = "không đổi"; []
+// = "gỡ hết phòng phối hợp" — 2 trường hợp phân biệt được ở service.
+function coopDepartmentIdsFromBody(req: Request): number[] | undefined {
+  const raw = (req.body as any)?.coop_department_ids;
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) return [];
+  return raw.map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
+}
+
+// Quy tắc 9.2 — chỉ trả dòng thuộc phòng đang xem (department_id), dòng
+// dùng chung (department_id NULL, dữ liệu cũ), hoặc dòng có phòng đang xem
+// ở "Đơn vị phối hợp" — xem isDigitalFeatureInScope(). scope.all (admin/
+// phòng full-access) thấy toàn bộ.
 export async function listDigitalFeaturesHandler(req: Request, res: Response) {
   const scope = scopeOf(req);
   res.json(await listDigitalFeatures(filtersFromQuery(req), scope.all ? null : scope.departmentId));
@@ -54,7 +67,7 @@ export async function getDigitalFeatureHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const item = await getDigitalFeature(id);
-  if (!item || !isDigitalFeatureInScope(scopeOf(req), item.department_id)) {
+  if (!item || !isDigitalFeatureInScope(scopeOf(req), item.department_id, item.coop_department_ids)) {
     return res.status(404).json({ error: "Không tìm thấy tính năng" });
   }
   res.json(item);
@@ -71,6 +84,7 @@ export async function createDigitalFeatureHandler(req: Request, res: Response) {
   // dữ liệu "dùng chung", khớp hành vi dữ liệu cũ.
   const scope = scopeOf(req);
   payload.department_id = scope.all ? null : scope.departmentId;
+  payload.coop_department_ids = coopDepartmentIdsFromBody(req);
   try {
     const created = await createDigitalFeature(payload);
     res.status(201).json(created);
@@ -84,10 +98,11 @@ export async function updateDigitalFeatureHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const existing = await getDigitalFeature(id);
-  if (!existing || !isDigitalFeatureInScope(scopeOf(req), existing.department_id)) {
+  if (!existing || !isDigitalFeatureInScope(scopeOf(req), existing.department_id, existing.coop_department_ids)) {
     return res.status(404).json({ error: "Không tìm thấy tính năng" });
   }
   const payload = pickFields(req.body, DIGITAL_FEATURE_FIELDS) as unknown as UpdateDigitalFeatureInput;
+  payload.coop_department_ids = coopDepartmentIdsFromBody(req);
   try {
     const updated = await updateDigitalFeature(id, payload);
     if (!updated) return res.status(404).json({ error: "Không tìm thấy tính năng" });
@@ -101,7 +116,7 @@ export async function deleteDigitalFeatureHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
   const existing = await getDigitalFeature(id);
-  if (!existing || !isDigitalFeatureInScope(scopeOf(req), existing.department_id)) {
+  if (!existing || !isDigitalFeatureInScope(scopeOf(req), existing.department_id, existing.coop_department_ids)) {
     return res.status(404).json({ error: "Không tìm thấy tính năng" });
   }
   const ok = await deleteDigitalFeature(id);

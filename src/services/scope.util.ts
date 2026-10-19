@@ -119,9 +119,16 @@ export function isFeatureRequestInScope(
 // KHÔNG bị ép thành "ngoài phạm vi" như dữ liệu mồ côi ở các bảng khác —
 // theo đúng yêu cầu giữ nguyên quyền truy cập dữ liệu cũ khi bật tính năng
 // lọc phòng ban này. department_id có giá trị (dòng mới Thêm/Import sau khi
-// có cột) thì lọc đúng 1 phòng như isDepartmentInScope().
-export function isDigitalFeatureInScope(scope: DataScope, departmentId: number | null): boolean {
+// có cột) thì lọc đúng 1 phòng (chủ trì) HOẶC nằm trong coopDepartmentIds
+// ("Đơn vị phối hợp" dạng phòng ban thật — xem comment ở
+// migrations/digitalFeatures.ts) — mọi phòng phối hợp cũng được xem.
+export function isDigitalFeatureInScope(
+  scope: DataScope,
+  departmentId: number | null,
+  coopDepartmentIds: number[] = [],
+): boolean {
   if (scope.all) return true;
   if (departmentId == null) return true;
-  return departmentId === scope.departmentId;
+  if (departmentId === scope.departmentId) return true;
+  return scope.departmentId != null && coopDepartmentIds.includes(scope.departmentId);
 }
