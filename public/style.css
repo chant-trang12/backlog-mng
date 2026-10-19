@@ -2250,17 +2250,11 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
    Vẫn cùng chuẩn nhạt của trang: nền pastel 88% light, chữ đậm cùng họ màu
    (giống các .status-badge). Thứ tự khớp TEAM_BAR_HEX (08-home.js) và
    .team-bar-N bên dưới. */
-/* Viền chung cho mọi badge team-color-N (36 slot, border-color = chính
-   màu chữ của từng badge qua currentColor — khỏi phải khai 36 giá trị
-   riêng) — nền pastel nhạt dễ hoà vào card cùng tông (user phản hồi, ảnh
-   "NVPS"/"NVTT" trên nền hồng), thêm viền để tách bạch rõ ràng. */
-[class*="team-color-"] { border: 1px solid currentColor; }
-/* Badge "Nhóm" (Cấu hình > Nhóm: chấm tròn màu + Tiêu chí: badge tên nhóm)
-   dùng lại đúng bảng màu team-color-N nhưng KHÔNG cần viền như badge team —
-   nền các màu này đủ tương phản trên card trắng, viền thêm vào bị thừa
-   (user phản hồi kèm ảnh chụp). 2 class (.status-badge.group-badge-no-
-   border) để thắng specificity rule viền chung ở trên bất kể thứ tự file. */
-.status-badge.group-badge-no-border { border: none; }
+/* Viền chung cho mọi badge team-color-N từng thêm ở đây (36 slot, qua
+   currentColor) để tách khỏi nền card cùng tông — user phản hồi sau đó là
+   KHÔNG muốn viền ở bất kỳ badge team-color-N nào nữa (ảnh chụp cột
+   "Team" vẫn thấy viền sau khi đã bỏ riêng cho badge "Nhóm"), nên bỏ hẳn
+   rule viền chung này thay vì chỉ trừ riêng từng nhóm badge. */
 
 .team-badge { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); }
 .team-color-0 { background: hsl(0, 45%, 88%); color: hsl(0, 42%, 28%); } /* đỏ hồng */

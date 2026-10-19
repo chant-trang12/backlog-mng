@@ -43,7 +43,7 @@ function renderCriteria() {
           : `<span class="status-badge tieuchi-scope-rieng">Riêng phòng này</span>`;
       const mainRow = `
     <tr data-id="${c.id}">
-      <td><span class="status-badge group-badge-no-border ${groupColorClass(c.nhom)}">${c.nhom}</span></td>
+      <td><span class="status-badge ${groupColorClass(c.nhom)}">${c.nhom}</span></td>
       <td>${c.ten_tieu_chi}</td>
       <td style="white-space:pre-wrap">${c.cach_tinh_diem ?? ""}</td>
       <td>${scopeBadge}</td>
@@ -534,7 +534,7 @@ function renderGroupConfig() {
     <tr data-id="${n.id}">
       <td>
         <div class="row" style="flex-wrap:nowrap;gap:8px;align-items:center">
-          <span class="status-badge group-badge-no-border ${groupColorClass(n.ten_nhom)}">&nbsp;</span>
+          <span class="status-badge ${groupColorClass(n.ten_nhom)}">&nbsp;</span>
           <input class="inline-cell-input nhom-name-input" data-id="${n.id}" value="${n.ten_nhom}" style="flex:1" />
         </div>
       </td>
