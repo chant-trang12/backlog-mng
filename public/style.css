@@ -1198,11 +1198,52 @@ th {
   padding-bottom: 16px;
 }
 
-/* Riêng bảng Nhiệm vụ (Backlog): phía trên còn có thanh cuộn ngang giả
-   .table-scroll-top (~30px) nữa nên chừa dư hơn mọi bảng khác, để thanh
-   phân trang vẫn nằm gọn trong viewport. */
+/* Bảng Nhiệm vụ (Backlog) — BỎ giới hạn chiều cao (khác mọi bảng khác
+   trong app): user muốn luôn thấy đủ 20 dòng/trang, không bị "co dúm"
+   cuộn trong khung nhỏ cố định — trang tự cuộn thay thế. Vẫn CẦN "ghim
+   tiêu đề" khi cuộn (khác #permissions-table-wrap — bảng tra cứu ít dòng,
+   chấp nhận mất ghim) nên bù lại bằng .floating-table-header (tiêu đề
+   "giả" nổi cố định, xem setupFloatingTableHeader() ở 01-state.js) thay vì
+   th{position:sticky} (không còn tác dụng khi .table-wrap hết là vùng
+   cuộn dọc riêng — xem comment .table-wrap phía trên). */
 #task-table-wrap {
-  max-height: calc(100vh - 210px);
+  max-height: none;
+}
+#task-table th {
+  position: static;
+}
+
+/* Tiêu đề "giả" nổi (floating header) — bản sao <thead> thật, position:
+   fixed ở mép trên viewport, chỉ hiện khi <thead> thật đã cuộn khỏi khung
+   nhìn (setupFloatingTableHeader(), 01-state.js). Thay thế cho th{position:
+   sticky} (không còn dùng được khi bỏ max-height khỏi .table-wrap — xem
+   comment #task-table-wrap phía trên): .table-wrap cần overflow-x:auto để
+   cuộn ngang bảng nhiều cột, mà overflow-x:auto buộc trình duyệt tính
+   overflow-y thành "auto" theo sau (CSS box model), biến .table-wrap
+   thành vùng cuộn riêng — sticky lúc đó chỉ ghim được TRONG vùng cuộn đó,
+   không ghim theo trang nữa (đã kiểm chứng thực nghiệm bằng headless
+   Chrome, không chỉ suy đoán). overflow:hidden để cắt phần bảng giả tràn
+   ra ngoài khung nhìn ngang; nội dung bên trong dịch ngang qua transform
+   để khớp đúng vị trí cuộn ngang của bảng thật (không phải 1 vùng cuộn
+   overflow:auto độc lập, tránh 2 thanh cuộn ngang chồng nhau). */
+.floating-table-header {
+  position: fixed;
+  top: 0;
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  background: var(--header-bg);
+}
+.floating-table-header table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.floating-table-header th {
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Bảng "Phân quyền" (Cấu hình) — bỏ giới hạn chiều cao riêng (khác mọi

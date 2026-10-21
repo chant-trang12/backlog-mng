@@ -800,3 +800,87 @@ async function api(path, options) {
   return res.json();
 }
 
+// Tiêu đề bảng "giả" nổi (floating header) — bù lại cho th{position:
+// sticky} khi .table-wrap bị bỏ max-height (hiện đủ N dòng/trang thay vì
+// co cụm cuộn trong khung nhỏ cố định, user yêu cầu) khiến sticky thường
+// không còn tác dụng (xem comment #task-table-wrap, style.css). Gọi 1 lần
+// cho mỗi bảng cần ghim tiêu đề sau khi bỏ max-height (hiện mới áp dụng
+// cho bảng Nhiệm vụ — setupTaskScrollTopSync(), 04-tasks.js — các bảng
+// khác vẫn dùng th{position:sticky} + .table-wrap có max-height như cũ,
+// chưa đổi). Dùng IntersectionObserver theo dõi <thead> thật: rời khỏi
+// khung nhìn phía TRÊN (scroll xuống) -> hiện bản sao nổi; quay lại khung
+// nhìn (scroll lên) -> ẩn. Đồng bộ bề rộng từng cột (đo width thật, không
+// suy luận từ CSS vì table-layout:auto) + vị trí cuộn ngang (transform,
+// KHÔNG phải 1 vùng overflow:auto riêng — tránh 2 thanh cuộn ngang chồng
+// nhau) với bảng thật mỗi khi đổi kích thước/cuộn.
+function setupFloatingTableHeader(wrapId, tableId) {
+  const wrap = document.getElementById(wrapId);
+  const table = document.getElementById(tableId);
+  const thead = table?.querySelector("thead");
+  if (!wrap || !table || !thead) return;
+
+  const floatWrap = document.createElement("div");
+  floatWrap.className = "floating-table-header";
+  floatWrap.hidden = true;
+  const floatTable = document.createElement("table");
+  floatTable.setAttribute("aria-hidden", "true");
+  const floatThead = thead.cloneNode(true);
+  // Chỉ để XEM, không tương tác — bỏ id (tránh trùng id với bảng thật,
+  // VD #task-select-all, có thể khiến code khác getElementById nhầm) và vô
+  // hiệu hoá checkbox/input bên trong (nếu có, VD checkbox "Chọn tất cả").
+  floatThead.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+  floatThead.querySelectorAll("input, button, select").forEach((el) => (el.disabled = true));
+  floatTable.appendChild(floatThead);
+  floatWrap.appendChild(floatTable);
+  floatWrap.style.pointerEvents = "none";
+  document.body.appendChild(floatWrap);
+
+  function syncWidths() {
+    const realThs = thead.querySelectorAll("th");
+    const floatThs = floatThead.querySelectorAll("th");
+    let total = 0;
+    realThs.forEach((th, i) => {
+      const w = th.getBoundingClientRect().width;
+      total += w;
+      if (floatThs[i]) floatThs[i].style.width = `${w}px`;
+    });
+    floatTable.style.width = `${total}px`;
+  }
+
+  function syncPosition() {
+    const r = wrap.getBoundingClientRect();
+    floatWrap.style.left = `${r.left}px`;
+    floatWrap.style.width = `${r.width}px`;
+  }
+
+  function syncScroll() {
+    floatTable.style.transform = `translateX(${-wrap.scrollLeft}px)`;
+  }
+
+  wrap.addEventListener("scroll", syncScroll);
+  window.addEventListener("resize", () => {
+    syncWidths();
+    syncPosition();
+  });
+  new ResizeObserver(() => {
+    syncWidths();
+    syncPosition();
+  }).observe(table);
+
+  new IntersectionObserver(
+    ([entry]) => {
+      // <thead> thật rời khung nhìn PHÍA TRÊN (cuộn xuống) -> hiện tiêu đề
+      // giả; còn thấy được (kể cả đã cuộn QUÁ xuống dưới, top >= 0 là vẫn
+      // trong/dưới khung nhìn) -> ẩn.
+      const hide = entry.isIntersecting || entry.boundingClientRect.top >= 0;
+      floatWrap.hidden = hide;
+      if (!hide) {
+        syncWidths();
+        syncPosition();
+        syncScroll();
+      }
+    },
+    { threshold: 0 },
+  ).observe(thead);
+}
+
