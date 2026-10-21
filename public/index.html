@@ -513,7 +513,7 @@
               <label for="member-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="member-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="member-table-wrap">
               <table id="member-table">
                 <thead>
                   <tr>
@@ -562,7 +562,7 @@
               <h2 style="margin:0">Tuân thủ Quy trình và Kế hoạch chung</h2>
               <button id="add-compliance-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="compliance-table-wrap">
               <table id="compliance-table">
                 <thead>
                   <tr>
@@ -607,7 +607,7 @@
               <label for="noiquy-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="noiquy-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="noiquy-table-wrap">
               <table id="noiquy-table">
                 <thead>
                   <tr>
@@ -644,7 +644,7 @@
               <h2 style="margin:0">Đào tạo nội bộ và Chứng chỉ quốc tế</h2>
               <button id="add-training-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="training-table-wrap">
               <table id="training-table">
                 <thead>
                   <tr>
@@ -683,7 +683,7 @@
               <h2 style="margin:0">Hỗ trợ</h2>
               <button id="add-support-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="support-table-wrap">
               <table id="support-table">
                 <thead>
                   <tr>
@@ -722,7 +722,7 @@
               <h2 style="margin:0">Đánh giá</h2>
               <button id="add-danhgia-btn" class="write-action primary tbl-add-btn">+ Thêm Đánh giá</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="danhgia-table-wrap">
               <table id="danhgia-table">
                 <thead>
                   <tr>
@@ -770,7 +770,7 @@
               <label for="attendance-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="attendance-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="attendance-table-wrap">
               <table id="attendance-table">
                 <thead id="attendance-thead"></thead>
                 <tbody id="attendance-tbody"></tbody>
@@ -816,7 +816,7 @@
                 <button id="add-incident-btn" class="write-action primary tbl-add-btn">+ Thêm sự cố</button>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="incident-table-wrap">
               <table id="incident-table">
                 <thead>
                   <!-- min-width từng cột: chia theo loại nội dung — cột mô tả
@@ -878,7 +878,7 @@
               <h2 style="margin:0">Hỗ trợ ticket</h2>
               <button id="add-ticket-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="ticket-table-wrap">
               <table id="ticket-table">
                 <thead>
                   <tr>
@@ -917,7 +917,7 @@
               <h2 style="margin:0">Tỉ lệ khởi tạo</h2>
               <button id="add-creation-rate-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="creation-rate-table-wrap">
               <table id="creation-rate-table">
                 <thead>
                   <tr>
@@ -979,7 +979,7 @@
               <label for="roadmap-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="roadmap-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="roadmap-table-wrap">
               <table id="roadmap-table">
                 <thead>
                   <tr>
@@ -2200,7 +2200,7 @@
 
           <section class="card">
             <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
-            <div class="table-wrap">
+            <div class="table-wrap" id="users-config-table-wrap">
               <table id="users-config-table">
                 <thead><tr><th>Họ và tên</th><th>Username</th><th>Email</th><th style="width:150px">Quyền</th><th style="width:160px">Phòng ban</th><th style="width:120px">Trạng thái</th><th style="width:160px">Đăng nhập gần nhất</th><th style="width:100px"></th></tr></thead>
                 <tbody id="users-config-tbody"></tbody>
@@ -2290,7 +2290,7 @@
               <button id="add-department-btn" class="primary tbl-add-btn">+ Thêm phòng</button>
             </div>
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
-            <div class="table-wrap">
+            <div class="table-wrap" id="department-config-table-wrap">
               <table id="department-config-table">
                 <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:150px">Cách tính KPI</th><th style="width:110px">Xem full</th><th style="width:140px"></th></tr></thead>
                 <tbody id="department-config-tbody"></tbody>
@@ -2554,7 +2554,7 @@
                 <p class="muted" style="margin:6px 0 0">Đăng nhập/đăng xuất + mọi hành động thêm/sửa/xóa/chuyển dữ liệu trên toàn hệ thống. Mặc định chỉ hiện 90 ngày gần nhất — lọc theo ngày để xem xa hơn.</p>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="al-table-wrap">
               <table id="al-table">
                 <thead>
                   <tr>

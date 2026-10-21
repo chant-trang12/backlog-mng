@@ -1198,19 +1198,73 @@ th {
   padding-bottom: 16px;
 }
 
-/* Bảng Nhiệm vụ (Backlog) — BỎ giới hạn chiều cao (khác mọi bảng khác
-   trong app): user muốn luôn thấy đủ 20 dòng/trang, không bị "co dúm"
-   cuộn trong khung nhỏ cố định — trang tự cuộn thay thế. Vẫn CẦN "ghim
-   tiêu đề" khi cuộn (khác #permissions-table-wrap — bảng tra cứu ít dòng,
-   chấp nhận mất ghim) nên bù lại bằng .floating-table-header (tiêu đề
-   "giả" nổi cố định, xem setupFloatingTableHeader() ở 01-state.js) thay vì
-   th{position:sticky} (không còn tác dụng khi .table-wrap hết là vùng
-   cuộn dọc riêng — xem comment .table-wrap phía trên). */
-#task-table-wrap {
+/* Mọi bảng dữ liệu CÓ PHÂN TRANG (20/50/100 dòng/trang) — BỎ giới hạn
+   chiều cao (khác #permissions-table-wrap/#menu-visibility-table-wrap —
+   2 bảng tra cứu không phân trang, ít dòng, giữ nguyên hành vi cũ chấp
+   nhận mất ghim): user muốn luôn thấy đủ cả trang dữ liệu (VD 20 dòng),
+   không bị "co dúm" cuộn trong khung nhỏ cố định — trang tự cuộn thay
+   thế. Vẫn CẦN "ghim tiêu đề" khi cuộn nên bù lại bằng
+   .floating-table-header (tiêu đề "giả" nổi cố định, đồng bộ JS — xem
+   setupFloatingTableHeader() ở 01-state.js, gọi 1 lần/bảng ở file JS
+   tương ứng) thay vì th{position:sticky; top:0} (không còn tác dụng khi
+   .table-wrap hết là vùng cuộn dọc riêng — xem comment .table-wrap phía
+   trên).
+   CHỈ bỏ "top" (tắt ghim dọc), GIỮ NGUYÊN "position: sticky" — khác với
+   cách làm ban đầu (position: static) đã bị lỗi: 1 số bảng (Nhiệm vụ,
+   Roadmap năm...) còn dùng position:sticky cho TIÊU ĐỀ của các cột cố
+   định khi cuộn NGANG (VD checkbox/STT/Tag.../Team, xem "#task-table
+   th:nth-child(1-6)" ở trên) — set hẳn position:static xóa luôn freeze
+   ngang của tiêu đề (dù phần dữ liệu <td> vẫn freeze bình thường), lệch
+   hẳn với dữ liệu khi cuộn ngang TRƯỚC lúc cuộn dọc đủ xa để tiêu đề nổi
+   thay thế (đã phát hiện qua headless Chrome, không chỉ suy đoán — lúc
+   top=-37px tức tiêu đề trôi mất trong khi ô dữ liệu vẫn đứng yên ở
+   263px). "top: auto" vô hiệu hoá ĐÚNG MỘT chiều ghim dọc, giữ nguyên
+   chiều ghim ngang (left) cho các cột có khai left riêng. */
+#task-table-wrap,
+#member-table-wrap,
+#compliance-table-wrap,
+#noiquy-table-wrap,
+#training-table-wrap,
+#support-table-wrap,
+#danhgia-table-wrap,
+#attendance-table-wrap,
+#incident-table-wrap,
+#ticket-table-wrap,
+#creation-rate-table-wrap,
+#roadmap-table-wrap,
+#df-table-wrap,
+#dfs-table-wrap,
+#dfmd-table-wrap,
+#dfdo-table-wrap,
+#dfint-table-wrap,
+#fr-table-wrap,
+#users-config-table-wrap,
+#department-config-table-wrap,
+#al-table-wrap {
   max-height: none;
 }
-#task-table th {
-  position: static;
+#task-table th,
+#member-table th,
+#compliance-table th,
+#noiquy-table th,
+#training-table th,
+#support-table th,
+#danhgia-table th,
+#attendance-table th,
+#incident-table th,
+#ticket-table th,
+#creation-rate-table th,
+#roadmap-table th,
+#df-table th,
+#dfs-table th,
+#dfmd-table th,
+#dfdo-table th,
+#dfint-table th,
+#fr-table th,
+#users-config-table th,
+#department-config-table th,
+#al-table th {
+  top: auto;
 }
 
 /* Tiêu đề "giả" nổi (floating header) — bản sao <thead> thật, position:

@@ -824,47 +824,74 @@ function setupFloatingTableHeader(wrapId, tableId) {
   floatWrap.hidden = true;
   const floatTable = document.createElement("table");
   floatTable.setAttribute("aria-hidden", "true");
-  const floatThead = thead.cloneNode(true);
-  // Chỉ để XEM, không tương tác — bỏ id (tránh trùng id với bảng thật,
-  // VD #task-select-all, có thể khiến code khác getElementById nhầm) và vô
-  // hiệu hoá checkbox/input bên trong (nếu có, VD checkbox "Chọn tất cả").
-  floatThead.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
-  floatThead.querySelectorAll("input, button, select").forEach((el) => (el.disabled = true));
-  floatTable.appendChild(floatThead);
   floatWrap.appendChild(floatTable);
   floatWrap.style.pointerEvents = "none";
   document.body.appendChild(floatWrap);
 
-  function syncWidths() {
-    const realThs = thead.querySelectorAll("th");
-    const floatThs = floatThead.querySelectorAll("th");
+  // Dựng LẠI <thead> giả MỖI LẦN chuẩn bị hiện (không phải 1 lần duy nhất
+  // lúc gọi hàm) — 1 số bảng có menu "Cột hiển thị" (ẩn/hiện cột tuỳ chọn,
+  // VD task-table) hoặc <thead> dựng động theo dữ liệu (VD cột Excel import
+  // của attendance-table — bảng đó KHÔNG gọi hàm này, xem comment style.css)
+  // nên <thead> thật có thể đổi sau lúc trang tải xong; clone 1 lần duy
+  // nhất sẽ "đứng hình" sai cột/độ rộng cũ khi người dùng đổi cột rồi mới
+  // cuộn xuống. Rebuild rẻ (so sánh với phải lắng nghe mọi nguồn có thể
+  // đổi <thead>), chỉ chạy khi thật sự chuẩn bị hiện ra.
+  function rebuildAndSync() {
+    floatTable.innerHTML = "";
+    const floatThead = thead.cloneNode(true);
+    // Chỉ để XEM, không tương tác — bỏ id (tránh trùng id với bảng thật,
+    // VD #task-select-all, có thể khiến code khác getElementById nhầm) và
+    // vô hiệu hoá checkbox/input bên trong (VD checkbox "Chọn tất cả").
+    floatThead.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+    floatThead.querySelectorAll("input, button, select").forEach((el) => (el.disabled = true));
+    floatTable.appendChild(floatThead);
+
+    const realThs = [...thead.querySelectorAll("th")].filter((th) => !th.hidden);
+    const floatThs = [...floatThead.querySelectorAll("th")].filter((th) => !th.hidden);
     let total = 0;
     realThs.forEach((th, i) => {
+      const cs = getComputedStyle(th);
       const w = th.getBoundingClientRect().width;
       total += w;
-      if (floatThs[i]) floatThs[i].style.width = `${w}px`;
+      const floatTh = floatThs[i];
+      if (!floatTh) return;
+      floatTh.style.width = `${w}px`;
+      // Cột "đóng băng" khi cuộn ngang (checkbox/STT/Tên...) ở bảng thật
+      // dùng position:sticky + left:Npx (CSS theo id bảng, VD "#task-table
+      // td:nth-child(1)") — bản sao KHÔNG mang id đó nên không tự thừa
+      // hưởng được, phải chép thẳng style đã tính (computed) sang. Nhờ
+      // floatWrap cuộn ngang THẬT (scrollLeft, không phải transform) nên
+      // sticky ở đây hoạt động đúng y hệt bảng thật, không bị trôi lệch
+      // khỏi cột dữ liệu tương ứng khi cuộn ngang lúc tiêu đề giả đang hiện.
+      if (cs.position === "sticky") {
+        floatTh.style.position = "sticky";
+        floatTh.style.left = cs.left;
+        floatTh.style.zIndex = cs.zIndex;
+        floatTh.style.background = cs.backgroundColor;
+      }
     });
     floatTable.style.width = `${total}px`;
-  }
 
-  function syncPosition() {
     const r = wrap.getBoundingClientRect();
     floatWrap.style.left = `${r.left}px`;
     floatWrap.style.width = `${r.width}px`;
+    floatWrap.scrollLeft = wrap.scrollLeft;
   }
 
   function syncScroll() {
-    floatTable.style.transform = `translateX(${-wrap.scrollLeft}px)`;
+    floatWrap.scrollLeft = wrap.scrollLeft;
   }
 
   wrap.addEventListener("scroll", syncScroll);
+  // Cuộn ngang/đổi kích thước KHI tiêu đề giả đang hiện — đồng bộ lại vị
+  // trí/bề rộng (không rebuild lại <thead>, đủ cho co giãn cửa sổ thông
+  // thường; đổi cột tuỳ chọn trong lúc đang hiện là trường hợp hiếm, chấp
+  // nhận chỉ cập nhật đúng khi ẩn/hiện lại tiêu đề giả lần sau).
   window.addEventListener("resize", () => {
-    syncWidths();
-    syncPosition();
+    if (!floatWrap.hidden) rebuildAndSync();
   });
   new ResizeObserver(() => {
-    syncWidths();
-    syncPosition();
+    if (!floatWrap.hidden) rebuildAndSync();
   }).observe(table);
 
   new IntersectionObserver(
@@ -874,11 +901,7 @@ function setupFloatingTableHeader(wrapId, tableId) {
       // trong/dưới khung nhìn) -> ẩn.
       const hide = entry.isIntersecting || entry.boundingClientRect.top >= 0;
       floatWrap.hidden = hide;
-      if (!hide) {
-        syncWidths();
-        syncPosition();
-        syncScroll();
-      }
+      if (!hide) rebuildAndSync();
     },
     { threshold: 0 },
   ).observe(thead);

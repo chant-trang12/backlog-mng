@@ -1952,3 +1952,13 @@ document.getElementById("dfint-import-input")?.addEventListener("change", async 
   new ResizeObserver(syncSpacer).observe(real);
   syncSpacer();
 })();
+
+// Tiêu đề cột "giả" nổi cho 5 bảng Tính năng số hoá — bù lại sticky header
+// sau khi bỏ max-height khỏi .table-wrap tương ứng (xem comment style.css
+// + setupFloatingTableHeader(), 01-state.js). Dựng lại <thead> giả mỗi lần
+// chuẩn bị hiện nên vẫn khớp đúng cột khi đổi tuỳ chọn "Cột hiển thị".
+setupFloatingTableHeader("df-table-wrap", "df-table");
+setupFloatingTableHeader("dfs-table-wrap", "dfs-table");
+setupFloatingTableHeader("dfmd-table-wrap", "dfmd-table");
+setupFloatingTableHeader("dfdo-table-wrap", "dfdo-table");
+setupFloatingTableHeader("dfint-table-wrap", "dfint-table");

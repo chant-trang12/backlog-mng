@@ -127,3 +127,9 @@ document.getElementById("al-filter-search")?.addEventListener("input", () => {
     loadActionLogs().catch((err) => showToast(err.message));
   });
 });
+
+// Tiêu đề cột "giả" nổi — bù lại sticky header sau khi bỏ max-height khỏi
+// #al-table-wrap (xem comment style.css + setupFloatingTableHeader(),
+// 01-state.js) để bảng luôn hiện đủ N dòng/trang, không co cụm cuộn trong
+// khung nhỏ cố định.
+setupFloatingTableHeader("al-table-wrap", "al-table");

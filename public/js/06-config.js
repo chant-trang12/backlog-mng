@@ -1284,3 +1284,10 @@ el.addMemberParticipationBtn.addEventListener("click", async () => {
   }
 });
 
+
+// Tiêu đề cột "giả" nổi — bù lại sticky header sau khi bỏ max-height khỏi
+// #users-config-table-wrap/#department-config-table-wrap (xem comment
+// style.css + setupFloatingTableHeader(), 01-state.js) để bảng luôn hiện
+// đủ N dòng/trang, không co cụm cuộn trong khung nhỏ cố định.
+setupFloatingTableHeader("users-config-table-wrap", "users-config-table");
+setupFloatingTableHeader("department-config-table-wrap", "department-config-table");
