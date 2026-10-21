@@ -1134,20 +1134,24 @@ function renderMenuVisibilityConfig() {
   empty.hidden = departments.length > 0;
   document.getElementById("menu-visibility-table-wrap").hidden = departments.length === 0;
 
+  // Mục menu ở HÀNG TIÊU ĐỀ (cột), phòng ban xuống theo chiều dọc (hàng) —
+  // ngược với Ma trận phân quyền theo Role ở trên (role ít, cố định 5
+  // dòng) vì số phòng ban có thể nhiều, kéo ngang bất tiện hơn kéo dọc
+  // (user phản hồi kèm ảnh chụp).
   theadRow.innerHTML =
-    `<th style="min-width:170px">Mục menu</th>` +
-    departments.map((d) => `<th style="min-width:120px;text-align:center">${d.name}</th>`).join("");
+    `<th style="min-width:170px">Phòng ban</th>` +
+    menuItems.map((item) => `<th style="min-width:110px;text-align:center">${item.label}</th>`).join("");
 
   const isVisible = (menuKey, deptId) => rows.find((r) => r.menu_key === menuKey && r.department_id === deptId)?.is_visible ?? true;
 
-  tbody.innerHTML = menuItems
+  tbody.innerHTML = departments
     .map(
-      (item) => `
+      (d) => `
     <tr>
-      <td style="font-weight:600">${item.label}</td>
-      ${departments
+      <td style="font-weight:600">${d.name}</td>
+      ${menuItems
         .map(
-          (d) => `
+          (item) => `
         <td style="text-align:center">
           <input type="checkbox" class="menu-visibility-checkbox" data-menu="${item.key}" data-dept="${d.id}" ${isVisible(item.key, d.id) ? "checked" : ""} title="Hiện mục &quot;${item.label}&quot; cho phòng &quot;${d.name}&quot;" />
         </td>`,
