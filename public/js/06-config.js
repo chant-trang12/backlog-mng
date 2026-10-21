@@ -995,21 +995,31 @@ function renderUsersConfig() {
 });
 
 // ---- Cấu hình > Phân quyền (chỉ Admin thấy được, xem checkAuth()/
-// #config-permissions-pill) — tick Add/Edit cho Editor/BGĐ/Viewer theo
-// từng Chức năng, PUT /api/role-permissions có hiệu lực NGAY cho mọi
+// #config-permissions-pill) — tick Read/Add/Edit cho Editor/BGĐ/Viewer
+// theo từng Chức năng, PUT /api/role-permissions có hiệu lực NGAY cho mọi
 // request sau đó (requireWrite đọc thẳng DB, không cache) — không cần
-// deploy lại. Read/Delete không hiện checkbox (Read luôn mở cho mọi role
-// đã đăng nhập; Delete tuyệt đối chỉ Admin — Quy tắc 9.1, xem
-// auth.middleware.ts). Role "admin" luôn hiện đủ 4 cột, không có ô tick
-// (toàn quyền, bypass trước khi tra bảng role_permissions).
+// deploy lại. CẢ 4 cột Read/Add/Delete/Edit đều hiện checkbox (đồng bộ
+// giao diện, dễ tick/bỏ tick) nhưng KHÔNG PHẢI cột nào cũng sửa được:
+// - Read: sửa được thật — tắt = ẩn mục menu trái tương ứng + chặn mở
+//   trang đó cho role đó (xem checkAuth(), 09-main.js + requireRead,
+//   auth.middleware.ts).
+// - Delete: LUÔN xám/khoá — Quy tắc 9.1 (chỉ Admin được xóa), không cấu
+//   hình được qua màn này dù hiện dạng checkbox.
+// - Add/Edit: sửa được, TRỪ "Nhiệm vụ — Chấm điểm" (không có "Thêm mới")
+//   và "Trang chủ" (dashboard tổng hợp, không có Thêm/Sửa) — xám/khoá.
+// Role "admin"/"subadmin" luôn hiện đủ 4 ô checked + khoá (toàn quyền,
+// bypass trước khi tra bảng role_permissions).
 const PERMISSIONS_ROLE_LABELS = { admin: "Admin", subadmin: "Sub-Admin", editor: "Editor", bgd: "BGĐ", viewer: "Viewer" };
 // subadmin dùng CHUNG màu với admin (status-hoan-thanh) — "tương tự
 // admin" ở mọi chỗ khác, chỉ khác đúng 1 điểm (không vào Cấu hình, xem
 // dòng "Không truy cập" riêng bên dưới) nên cố ý nhóm chung 1 tông màu.
 const PERMISSIONS_ROLE_CLASS = { admin: "status-hoan-thanh", subadmin: "status-hoan-thanh", editor: "status-dang-thuc-hien", bgd: "status-tru-diem", viewer: "status-default" };
 // "Nhiệm vụ — Chấm điểm" không có khái niệm "Thêm mới" (chỉ sửa điểm 1
-// task đã có sẵn) — ẩn hẳn checkbox Add cho chức năng này, mọi role.
-const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem"]);
+// task đã có sẵn); "Trang chủ" không có Thêm/Sửa nào (dashboard tổng hợp)
+// — khoá checkbox Add cho 2 chức năng này, mọi role.
+const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem", "trang_chu"]);
+// "Trang chủ" cũng không có Sửa — chỉ cột Đọc có ý nghĩa với chức năng này.
+const PERMISSIONS_NO_EDIT = new Set(["trang_chu"]);
 
 async function loadPermissionsConfig() {
   const tbody = document.getElementById("permissions-config-tbody");
@@ -1019,12 +1029,13 @@ async function loadPermissionsConfig() {
   renderPermissionsConfig();
 }
 
-function permissionCellHtml(functionKey, role, op, checked, disabled) {
-  if (disabled) {
-    return `<td style="text-align:center"><span class="muted">—</span></td>`;
-  }
+// disabled=true -> checkbox khoá cứng (Quy tắc 9.1 ở Delete, hoặc chức
+// năng không có Thêm/Sửa) — vẫn hiện checkbox (đồng bộ giao diện với các
+// cột sửa được) nhưng không bấm được, title giải thích lý do.
+function permissionCellHtml(functionKey, role, op, checked, disabled, title) {
   return `<td style="text-align:center">
-    <input type="checkbox" class="permission-cell-checkbox" data-function="${functionKey}" data-role="${role}" data-op="${op}" ${checked ? "checked" : ""} />
+    <input type="checkbox" class="permission-cell-checkbox" data-function="${functionKey}" data-role="${role}" data-op="${op}"
+      ${checked ? "checked" : ""} ${disabled ? "disabled" : ""} ${title ? `title="${title}"` : ""} />
   </td>`;
 }
 
@@ -1033,11 +1044,13 @@ function renderPermissionsConfig() {
   if (!tbody || !state.permissionsConfig) return;
   const { functions, rows } = state.permissionsConfig;
   const rowFor = (fnKey, role) => rows.find((r) => r.function_key === fnKey && r.role === role);
+  const DELETE_TITLE = "Quy tắc 9.1 — chỉ Admin được xóa, không cấu hình được";
 
   tbody.innerHTML = functions
     .map((fn) => {
       const roleOrder = ["admin", "subadmin", "editor", "bgd", "viewer"];
       const noAdd = PERMISSIONS_NO_ADD.has(fn.key);
+      const noEdit = PERMISSIONS_NO_EDIT.has(fn.key);
       return roleOrder
         .map((role, i) => {
           const fnCell =
@@ -1046,27 +1059,28 @@ function renderPermissionsConfig() {
               : "";
           const roleBadge = `<span class="status-badge ${PERMISSIONS_ROLE_CLASS[role]}">${PERMISSIONS_ROLE_LABELS[role]}</span>`;
           if (role === "admin" || role === "subadmin") {
-            // Admin/Sub-Admin toàn quyền ở 7 Chức năng này, không có dòng
-            // trong role_permissions — hiện tĩnh, không cho sửa (bypass hẳn
-            // requireWrite, sửa ở đây vô nghĩa). Khác biệt DUY NHẤT của
-            // Sub-Admin (không vào được màn hình Cấu hình) không thể hiện
-            // được ở BẢNG NÀY vì chính nó nằm trong Cấu hình — xem ghi chú
-            // đầu trang.
+            // Admin/Sub-Admin toàn quyền ở 8 Chức năng này, không có dòng
+            // trong role_permissions — hiện tĩnh checked + khoá (bypass
+            // hẳn requireWrite/requireRead, sửa ở đây vô nghĩa). Khác biệt
+            // DUY NHẤT của Sub-Admin (không vào được màn hình Cấu hình)
+            // không thể hiện được ở BẢNG NÀY vì chính nó nằm trong Cấu
+            // hình — xem ghi chú đầu trang.
+            const lockedCb = (checked = true) => `<input type="checkbox" checked disabled />`;
             return `<tr>${fnCell}
               <td>${roleBadge}</td>
-              <td style="text-align:center"><span class="status-badge status-hoan-thanh">R</span></td>
-              ${noAdd ? `<td style="text-align:center"><span class="muted">—</span></td>` : `<td style="text-align:center"><span class="status-badge status-hoan-thanh">A</span></td>`}
-              <td style="text-align:center"><span class="status-badge status-hoan-thanh">D</span></td>
-              <td style="text-align:center"><span class="status-badge status-hoan-thanh">E</span></td>
+              <td style="text-align:center">${lockedCb()}</td>
+              <td style="text-align:center">${noAdd ? `<input type="checkbox" disabled />` : lockedCb()}</td>
+              <td style="text-align:center">${lockedCb()}</td>
+              <td style="text-align:center">${noEdit ? `<input type="checkbox" disabled />` : lockedCb()}</td>
             </tr>`;
           }
           const row = rowFor(fn.key, role);
           return `<tr>${fnCell}
             <td>${roleBadge}</td>
-            <td style="text-align:center"><span class="status-badge status-hoan-thanh">R</span></td>
+            ${permissionCellHtml(fn.key, role, "can_read", row?.can_read, false)}
             ${permissionCellHtml(fn.key, role, "can_add", row?.can_add, noAdd)}
-            <td style="text-align:center"><span class="muted" title="Quy tắc 9.1 — chỉ Admin được xóa, không cấu hình được">—</span></td>
-            ${permissionCellHtml(fn.key, role, "can_edit", row?.can_edit, false)}
+            ${permissionCellHtml(fn.key, role, "can_delete", false, true, DELETE_TITLE)}
+            ${permissionCellHtml(fn.key, role, "can_edit", row?.can_edit, noEdit)}
           </tr>`;
         })
         .join("");
@@ -1074,6 +1088,7 @@ function renderPermissionsConfig() {
     .join("");
 
   tbody.querySelectorAll(".permission-cell-checkbox").forEach((cb) => {
+    if (cb.disabled) return; // Delete/Add(no-add)/Edit(no-edit) — hiện cho đủ giao diện, không gắn listener
     cb.addEventListener("change", async () => {
       const { function: functionKey, role, op } = cb.dataset;
       cb.disabled = true;
@@ -1084,6 +1099,78 @@ function renderPermissionsConfig() {
         });
         showToast("Đã cập nhật quyền — có hiệu lực ngay.", "success");
         await loadPermissionsConfig();
+      } catch (err) {
+        showToast(err.message);
+        cb.checked = !cb.checked;
+      } finally {
+        cb.disabled = false;
+      }
+    });
+  });
+}
+
+// ---- Cấu hình > Phân quyền theo phòng ban (ẩn/hiện menu trái theo phòng
+// ban, cùng tab "Phân quyền" với ma trận Role ở trên) — PUT
+// /api/menu-visibility có hiệu lực từ lần đăng nhập/tải lại trang kế tiếp
+// (meHandler đọc bảng department_menu_visibility mỗi lần /auth/me, xem
+// auth.controller.ts). KHÔNG áp dụng cho Admin/Sub-Admin — bảng chỉ hiện
+// matrix cho các phòng ban, không có cột role (role_permissions mới là nơi
+// cấu hình theo role, bảng này cấu hình theo PHÒNG BAN, áp cho editor/bgd/
+// viewer thuộc phòng đó, loại trừ admin/subadmin ở chính phòng đó).
+async function loadMenuVisibilityConfig() {
+  const tbody = document.getElementById("menu-visibility-tbody");
+  if (!tbody) return;
+  const data = await api("/api/menu-visibility");
+  state.menuVisibilityConfig = data;
+  renderMenuVisibilityConfig();
+}
+
+function renderMenuVisibilityConfig() {
+  const theadRow = document.getElementById("menu-visibility-thead-row");
+  const tbody = document.getElementById("menu-visibility-tbody");
+  const empty = document.getElementById("menu-visibility-empty");
+  if (!theadRow || !tbody || !state.menuVisibilityConfig) return;
+  const { menuItems, departments, rows } = state.menuVisibilityConfig;
+  empty.hidden = departments.length > 0;
+  document.getElementById("menu-visibility-table-wrap").hidden = departments.length === 0;
+
+  // Mục menu ở HÀNG TIÊU ĐỀ (cột), phòng ban xuống theo chiều dọc (hàng) —
+  // ngược với Ma trận phân quyền theo Role ở trên (role ít, cố định 5
+  // dòng) vì số phòng ban có thể nhiều, kéo ngang bất tiện hơn kéo dọc
+  // (user phản hồi kèm ảnh chụp).
+  theadRow.innerHTML =
+    `<th style="min-width:170px">Phòng ban</th>` +
+    menuItems.map((item) => `<th style="min-width:110px;text-align:center">${item.label}</th>`).join("");
+
+  const isVisible = (menuKey, deptId) => rows.find((r) => r.menu_key === menuKey && r.department_id === deptId)?.is_visible ?? true;
+
+  tbody.innerHTML = departments
+    .map(
+      (d) => `
+    <tr>
+      <td style="font-weight:600">${d.name}</td>
+      ${menuItems
+        .map(
+          (item) => `
+        <td style="text-align:center">
+          <input type="checkbox" class="menu-visibility-checkbox" data-menu="${item.key}" data-dept="${d.id}" ${isVisible(item.key, d.id) ? "checked" : ""} title="Hiện mục &quot;${item.label}&quot; cho phòng &quot;${d.name}&quot;" />
+        </td>`,
+        )
+        .join("")}
+    </tr>`,
+    )
+    .join("");
+
+  tbody.querySelectorAll(".menu-visibility-checkbox").forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      cb.disabled = true;
+      try {
+        await api("/api/menu-visibility", {
+          method: "PUT",
+          body: JSON.stringify({ department_id: Number(cb.dataset.dept), menu_key: cb.dataset.menu, is_visible: cb.checked }),
+        });
+        showToast("Đã cập nhật — có hiệu lực từ lần đăng nhập/tải lại trang kế tiếp.", "success");
+        await loadMenuVisibilityConfig();
       } catch (err) {
         showToast(err.message);
         cb.checked = !cb.checked;
@@ -1197,3 +1284,10 @@ el.addMemberParticipationBtn.addEventListener("click", async () => {
   }
 });
 
+
+// Tiêu đề cột "giả" nổi — bù lại sticky header sau khi bỏ max-height khỏi
+// #users-config-table-wrap/#department-config-table-wrap (xem comment
+// style.css + setupFloatingTableHeader(), 01-state.js) để bảng luôn hiện
+// đủ N dòng/trang, không co cụm cuộn trong khung nhỏ cố định.
+setupFloatingTableHeader("users-config-table-wrap", "users-config-table");
+setupFloatingTableHeader("department-config-table-wrap", "department-config-table");

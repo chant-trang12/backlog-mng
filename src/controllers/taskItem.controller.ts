@@ -134,7 +134,12 @@ export async function listTreoViecHandler(req: Request, res: Response) {
   if (!Number.isFinite(periodId) || periodId <= 0) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  // Fix: trước đây luôn truyền null (bỏ qua ?department_id= client gửi) —
+  // scope.all (admin/phòng full-access) thì KHÔNG lọc gì cả, mọi phòng
+  // ban trộn chung 1 danh sách dù đang xem đúng 1 phòng cụ thể qua bộ
+  // chuyển phòng ban.
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
   if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listTreoViec(periodId, departmentId));
 }

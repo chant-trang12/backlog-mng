@@ -52,7 +52,12 @@ export async function createIncidentHandler(req: Request, res: Response) {
 }
 
 export async function listIncidentsHandler(req: Request, res: Response) {
-  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  // Fix: trước đây luôn truyền null (bỏ qua ?department_id= client gửi) —
+  // scope.all (admin/phòng full-access) thì KHÔNG lọc gì cả, mọi phòng
+  // ban trộn chung 1 danh sách dù đang xem đúng 1 phòng cụ thể qua bộ
+  // chuyển phòng ban (user phản hồi: tạo ở phòng A, phòng B vẫn thấy).
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
   if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listIncidents(departmentId));
 }

@@ -1792,4 +1792,9 @@ function setupTaskScrollTopSync() {
   window.addEventListener("resize", syncWidth);
 }
 setupTaskScrollTopSync();
+// Tiêu đề cột "giả" nổi — bù lại sticky header sau khi bỏ max-height khỏi
+// #task-table-wrap (xem comment style.css + setupFloatingTableHeader(),
+// 01-state.js) để bảng luôn hiện đủ 20 dòng/trang, không co cụm cuộn
+// trong khung nhỏ cố định.
+setupFloatingTableHeader("task-table-wrap", "task-table");
 

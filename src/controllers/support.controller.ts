@@ -58,7 +58,12 @@ export async function listSupportRecordsHandler(req: Request, res: Response) {
   if (!period) {
     return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
   }
-  const departmentId = resolveListDepartmentId(scopeOf(req), null);
+  // Fix: trước đây luôn truyền null (bỏ qua ?department_id= client gửi) —
+  // scope.all (admin/phòng full-access) thì KHÔNG lọc gì cả, mọi phòng
+  // ban trộn chung 1 danh sách dù đang xem đúng 1 phòng cụ thể qua bộ
+  // chuyển phòng ban (user phản hồi: tạo ở phòng A, phòng B vẫn thấy).
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(scopeOf(req), requestedDepartmentId);
   if (departmentId === SCOPE_EMPTY) return res.json([]);
   res.json(await listSupportRecords(periodId, departmentId));
 }

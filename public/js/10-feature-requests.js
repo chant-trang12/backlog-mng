@@ -1131,3 +1131,10 @@ function setupFrScrollTopSync() {
   window.addEventListener("resize", syncWidth);
 }
 setupFrScrollTopSync();
+
+// Tiêu đề cột "giả" nổi — bù lại sticky header sau khi bỏ max-height khỏi
+// #fr-table-wrap (xem comment style.css + setupFloatingTableHeader(),
+// 01-state.js) để bảng luôn hiện đủ N dòng/trang, không co cụm cuộn trong
+// khung nhỏ cố định. Dựng lại <thead> giả mỗi lần chuẩn bị hiện nên vẫn
+// khớp đúng cột khi đổi tuỳ chọn "Cột hiển thị".
+setupFloatingTableHeader("fr-table-wrap", "fr-table");

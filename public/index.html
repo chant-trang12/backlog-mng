@@ -513,7 +513,7 @@
               <label for="member-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="member-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="member-table-wrap">
               <table id="member-table">
                 <thead>
                   <tr>
@@ -562,7 +562,7 @@
               <h2 style="margin:0">Tuân thủ Quy trình và Kế hoạch chung</h2>
               <button id="add-compliance-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="compliance-table-wrap">
               <table id="compliance-table">
                 <thead>
                   <tr>
@@ -607,7 +607,7 @@
               <label for="noiquy-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="noiquy-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="noiquy-table-wrap">
               <table id="noiquy-table">
                 <thead>
                   <tr>
@@ -644,7 +644,7 @@
               <h2 style="margin:0">Đào tạo nội bộ và Chứng chỉ quốc tế</h2>
               <button id="add-training-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="training-table-wrap">
               <table id="training-table">
                 <thead>
                   <tr>
@@ -683,7 +683,7 @@
               <h2 style="margin:0">Hỗ trợ</h2>
               <button id="add-support-btn" class="write-action primary tbl-add-btn">+ Thêm mới</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="support-table-wrap">
               <table id="support-table">
                 <thead>
                   <tr>
@@ -722,7 +722,7 @@
               <h2 style="margin:0">Đánh giá</h2>
               <button id="add-danhgia-btn" class="write-action primary tbl-add-btn">+ Thêm Đánh giá</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="danhgia-table-wrap">
               <table id="danhgia-table">
                 <thead>
                   <tr>
@@ -770,7 +770,7 @@
               <label for="attendance-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="attendance-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="attendance-table-wrap">
               <table id="attendance-table">
                 <thead id="attendance-thead"></thead>
                 <tbody id="attendance-tbody"></tbody>
@@ -816,7 +816,7 @@
                 <button id="add-incident-btn" class="write-action primary tbl-add-btn">+ Thêm sự cố</button>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="incident-table-wrap">
               <table id="incident-table">
                 <thead>
                   <!-- min-width từng cột: chia theo loại nội dung — cột mô tả
@@ -878,7 +878,7 @@
               <h2 style="margin:0">Hỗ trợ ticket</h2>
               <button id="add-ticket-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="ticket-table-wrap">
               <table id="ticket-table">
                 <thead>
                   <tr>
@@ -917,7 +917,7 @@
               <h2 style="margin:0">Tỉ lệ khởi tạo</h2>
               <button id="add-creation-rate-btn" class="write-action primary tbl-add-btn">+ Thêm dữ liệu</button>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="creation-rate-table-wrap">
               <table id="creation-rate-table">
                 <thead>
                   <tr>
@@ -979,7 +979,7 @@
               <label for="roadmap-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="roadmap-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="roadmap-table-wrap">
               <table id="roadmap-table">
                 <thead>
                   <tr>
@@ -2200,7 +2200,7 @@
 
           <section class="card">
             <h2 style="margin:0">Quản lý User &amp; Phân quyền</h2>
-            <div class="table-wrap">
+            <div class="table-wrap" id="users-config-table-wrap">
               <table id="users-config-table">
                 <thead><tr><th>Họ và tên</th><th>Username</th><th>Email</th><th style="width:150px">Quyền</th><th style="width:160px">Phòng ban</th><th style="width:120px">Trạng thái</th><th style="width:160px">Đăng nhập gần nhất</th><th style="width:100px"></th></tr></thead>
                 <tbody id="users-config-tbody"></tbody>
@@ -2238,7 +2238,7 @@
                 <thead>
                   <tr>
                     <th style="min-width:170px">Chức năng</th>
-                    <th style="min-width:220px">Mô tả</th>
+                    <th style="min-width:110px">Mô tả</th>
                     <th style="min-width:90px">Role</th>
                     <th style="width:70px;text-align:center">Read</th>
                     <th style="width:70px;text-align:center">Add</th>
@@ -2249,6 +2249,27 @@
                 <tbody id="permissions-config-tbody"></tbody>
               </table>
             </div>
+          </section>
+
+          <!-- Phân quyền theo phòng ban — ẩn/hiện TỪNG mục menu trái cho
+               TỪNG phòng ban, CÓ HIỆU LỰC NGAY (department_menu_visibility,
+               đọc bởi meHandler mỗi lần đăng nhập/tải lại trang). KHÔNG áp
+               dụng cho Admin/Sub-Admin ở bất kỳ phòng ban nào (2 role này
+               luôn thấy đủ menu) — xem renderMenuVisibilityConfig(), 06-config.js. -->
+          <section class="card" style="margin-top:20px">
+            <h2 style="margin:0">Phân quyền theo phòng ban</h2>
+            <p class="muted" style="margin:8px 0 0">Ẩn/hiện mục menu bên trái cho từng phòng ban — không áp dụng cho Admin/Sub-Admin (luôn thấy đủ menu ở mọi phòng ban).</p>
+            <div class="table-wrap" id="menu-visibility-table-wrap" style="margin-top:14px">
+              <table id="menu-visibility-table">
+                <thead>
+                  <tr id="menu-visibility-thead-row">
+                    <th style="min-width:170px">Phòng ban</th>
+                  </tr>
+                </thead>
+                <tbody id="menu-visibility-tbody"></tbody>
+              </table>
+            </div>
+            <p class="muted" id="menu-visibility-empty" hidden style="padding:16px;text-align:center">Chưa có phòng ban nào — thêm phòng ban ở tab "Phòng ban" trước.</p>
           </section>
           </div>
 
@@ -2269,7 +2290,7 @@
               <button id="add-department-btn" class="primary tbl-add-btn">+ Thêm phòng</button>
             </div>
             <p class="muted" style="margin:12px 0">Mỗi phòng có nhiều team. Team (và nhân sự / task / CSKH qua đó) thuộc đúng 1 phòng. Chọn phòng đang làm việc ở góc trên trái. Tháng backlog dùng chung mọi phòng.</p>
-            <div class="table-wrap">
+            <div class="table-wrap" id="department-config-table-wrap">
               <table id="department-config-table">
                 <thead><tr><th style="width:60px">STT</th><th>Tên phòng</th><th style="width:120px">Mã</th><th style="width:120px">Số team</th><th style="width:130px">Dùng tiêu chí chung</th><th style="width:150px">Cách tính KPI</th><th style="width:110px">Xem full</th><th style="width:140px"></th></tr></thead>
                 <tbody id="department-config-tbody"></tbody>
@@ -2533,7 +2554,7 @@
                 <p class="muted" style="margin:6px 0 0">Đăng nhập/đăng xuất + mọi hành động thêm/sửa/xóa/chuyển dữ liệu trên toàn hệ thống. Mặc định chỉ hiện 90 ngày gần nhất — lọc theo ngày để xem xa hơn.</p>
               </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="al-table-wrap">
               <table id="al-table">
                 <thead>
                   <tr>
@@ -3153,8 +3174,10 @@
     <div class="dialog-body">
       <h2 style="margin:0">Công việc tham gia: <span id="member-task-detail-name"></span></h2>
       <p class="muted" style="margin:0">Danh sách task đã gán nhân sự này ở Backlog (popup "Nhân sự tham gia") trong tháng đang chọn.</p>
-      <p class="muted" style="margin:0">Cách tính cột Điểm: nếu đã ghi đè tay (Điểm cá nhân) thì lấy đúng giá trị đó. Nếu chưa, task <strong>Thực hiện chính</strong> (hoặc chưa phân loại) lấy thẳng % Đánh giá; task <strong>Hỗ trợ</strong> nhân thêm Tỷ lệ đóng góp (Tỷ lệ đóng góp × % Đánh giá). Task chưa chấm điểm thì để trống.</p>
-      <p class="muted" style="margin:0">"Điểm cá nhân (Tính theo task)" ở bảng Nhân sự = trung bình cột Điểm của các task Thực hiện chính, cộng thêm điểm các task Hỗ trợ (không còn trừ khoản "Trừ điểm cá nhân" nào — các khoản trừ nay chỉ tính vào cột "Điểm cá nhân (Mặc định)").</p>
+      <ul class="muted" style="margin:0;padding-left:20px">
+        <li>"Điểm cá nhân (Tính theo task)" ở bảng = trung bình cột Điểm của các task <strong>Thực hiện chính</strong>, cộng thêm điểm các task <strong>Hỗ trợ</strong> (task Thực hiện chính (hoặc chưa phân loại) lấy thẳng % Đánh giá; task Hỗ trợ nhân thêm Tỷ lệ đóng góp (Tỷ lệ đóng góp × % Đánh giá). Task chưa chấm điểm thì để trống).</li>
+        <li>"Điểm cá nhân (Mặc định)": Mặc định mỗi nhân sự/tháng có 100 điểm, các cách tính Trừ điểm cá nhân sẽ được tính cho cột này.</li>
+      </ul>
       <div class="table-wrap">
         <table id="member-task-detail-table">
           <thead>

@@ -12,6 +12,8 @@ import { computeScope } from "../services/scope.util.js";
 import { clearSessionCookie, countSessionCookies, isSessionExpired } from "../session.config.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 import { sendHtmlError, wantsHtmlPage } from "../utils/errorPage.js";
+import { computeHiddenMenuKeysByRole, computeHiddenMenuKeysByDepartment } from "../services/menu.service.js";
+import type { AppRole } from "../types/user.js";
 
 // Đăng nhập đang chờ IdP được dùng lại trong khoảng này (người dùng nhập mật
 // khẩu ở IdP có thể mất vài chục giây).
@@ -203,12 +205,28 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   let userId: number | null = null;
   let departmentId: number | null = null;
   let scope: { all: boolean; departmentId: number | null } = { all: true, departmentId: null };
+  // hiddenMenuKeys — mục menu trái (data-page) FE phải ẩn + chặn chuyển
+  // sang cho tài khoản này: hợp nhất 2 nguồn (Cấu hình → Phân quyền → can_
+  // read theo Chức năng, VÀ Phân quyền theo phòng ban) — chỉ GỢI Ý HIỂN
+  // THỊ như role/scope ở trên, không phải chặn thật (Trang chủ/HDSD vốn
+  // không có API riêng để chặn server; các Chức năng còn lại chặn thật ở
+  // requireWrite cho ghi + DataScope cho đọc theo phòng ban như cũ). Chỉ
+  // tính khi SSO bật + đã xác định role (ssoEnabled=false hoặc role=null
+  // -> mảng rỗng, khớp hành vi "không phân quyền UI khi không có SSO").
+  let hiddenMenuKeys: string[] = [];
   if (user) {
     const appUser = await getUserBySsoSub(user.id);
     role = appUser?.role ?? null;
     userId = appUser?.id ?? null;
     departmentId = appUser?.department_id ?? null;
     scope = await computeScope(appUser);
+    if (ssoEnabled && role) {
+      const [byRole, byDept] = await Promise.all([
+        computeHiddenMenuKeysByRole(role as AppRole),
+        computeHiddenMenuKeysByDepartment(role as AppRole, departmentId),
+      ]);
+      hiddenMenuKeys = [...new Set([...byRole, ...byDept])];
+    }
   }
 
   res.json({
@@ -219,6 +237,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     userId,
     departmentId,
     scope,
+    hiddenMenuKeys,
   });
 }
 

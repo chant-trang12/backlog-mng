@@ -1,14 +1,20 @@
 import { db } from "../db/database.js";
 import type { AppRole } from "../types/user.js";
 
-// 7 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
+// 8 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
 // khớp 1-1 với "module" mà resolveModuleAndAction() (actionLog.middleware.ts)
 // suy ra từ path, TRỪ "nhiem_vu_cham_diem" (route riêng PUT /tasks/:id/grade,
-// tách khỏi "nhiem_vu" ngay trong requireWrite — xem auth.middleware.ts).
-// Cố ý KHÔNG gồm Cấu hình/Quản lý User/Nhật ký hoạt động (vẫn admin-only
-// tuyệt đối qua requireAdmin, không cấu hình được) và Trang chủ (không có
-// thao tác ghi nào).
+// tách khỏi "nhiem_vu" ngay trong requireWrite — xem auth.middleware.ts) và
+// "trang_chu" (không có API/module riêng — dashboard tổng hợp từ module
+// khác, chỉ can_read có ý nghĩa, xem NO_ADD_EDIT_FUNCTIONS bên dưới). Cố ý
+// KHÔNG gồm Cấu hình/Quản lý User/Nhật ký hoạt động (vẫn admin-only tuyệt
+// đối qua requireAdmin, không cấu hình được qua màn này).
 export const PERMISSION_FUNCTIONS = [
+  {
+    key: "trang_chu",
+    label: "Trang chủ",
+    desc: "Trang tổng hợp (dashboard) — chỉ cột Đọc có ý nghĩa: tắt = ẩn mục \"Trang chủ\" khỏi menu trái cho role đó.",
+  },
   {
     key: "nhiem_vu",
     label: "Nhiệm vụ",
@@ -47,6 +53,12 @@ export const PERMISSION_FUNCTIONS = [
 ] as const;
 export type PermissionFunctionKey = (typeof PERMISSION_FUNCTIONS)[number]["key"];
 const FUNCTION_KEYS = new Set<string>(PERMISSION_FUNCTIONS.map((f) => f.key));
+
+// Chức năng không có khái niệm "Thêm mới"/"Sửa" (dashboard tổng hợp, không
+// phải 1 bảng dữ liệu CRUD riêng) — FE ẩn 2 checkbox này, server cũng chặn
+// luôn để admin không lỡ bật nhầm qua gọi API trực tiếp (can_add/can_edit
+// luôn bị ép về false dù client gửi gì, xem updateRolePermission bên dưới).
+const NO_ADD_EDIT_FUNCTIONS = new Set<string>(["trang_chu"]);
 
 // 3 role cấu hình được qua màn này — "admin" luôn toàn quyền (bypass trước
 // khi requireWrite tra bảng, xem auth.middleware.ts), không có dòng riêng.
@@ -117,10 +129,11 @@ export async function updateRolePermission(
   }
 
   const existing = await db("role_permissions").where({ function_key: functionKey, role }).first();
+  const noAddEdit = NO_ADD_EDIT_FUNCTIONS.has(functionKey);
   const next = {
     can_read: input.can_read ?? (existing ? !!existing.can_read : true),
-    can_add: input.can_add ?? (existing ? !!existing.can_add : false),
-    can_edit: input.can_edit ?? (existing ? !!existing.can_edit : false),
+    can_add: noAddEdit ? false : input.can_add ?? (existing ? !!existing.can_add : false),
+    can_edit: noAddEdit ? false : input.can_edit ?? (existing ? !!existing.can_edit : false),
   };
   if (existing) {
     await db("role_permissions").where({ id: existing.id }).update({ ...next, updated_at: db.fn.now() });

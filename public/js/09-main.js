@@ -18,6 +18,12 @@ const pages = {
 
 document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
+    // Chặn cả đường vòng .click() trực tiếp (bỏ qua thuộc tính hidden của
+    // nút) từ nơi khác trong code, VD nút "Quản lý phòng ban…" ở dept-
+    // switcher từng gọi configNav.click() bất kể bị ẩn hay chưa (lỗ hổng
+    // đã vá riêng ở 02-departments-periods-teams.js, chặn thêm ở đây cho
+    // MỌI mục menu, không chỉ "Cấu hình") — xem checkAuth() ở trên.
+    if (btn.hidden || state.hiddenMenuKeys?.has(btn.dataset.page)) return;
     document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     Object.entries(pages).forEach(([key, section]) => {
@@ -146,14 +152,37 @@ async function checkAuth() {
     if (usersPill) usersPill.hidden = data.ssoEnabled && data.role !== "admin";
     const permissionsPill = document.getElementById("config-permissions-pill");
     if (permissionsPill) permissionsPill.hidden = data.ssoEnabled && data.role !== "admin";
-    const configNav = document.querySelector('.nav-item[data-page="config"]');
-    if (configNav) configNav.hidden = data.ssoEnabled && data.role !== "admin";
-    // Nhật ký hoạt động KHÔNG phải 1 tab trong Cấu hình (nav riêng) nên
-    // subadmin ("tương tự admin", chỉ bị chặn khỏi Cấu hình) vẫn thấy được
-    // — khác với usersPill/permissionsPill/configNav ở trên (role !== "admin"
-    // đã đúng chủ ý chặn cả subadmin, vì đó đều là Cấu hình).
-    const actionLogNav = document.querySelector('.nav-item[data-page="action-logs"]');
-    if (actionLogNav) actionLogNav.hidden = data.ssoEnabled && data.role !== "admin" && data.role !== "subadmin";
+
+    // Ẩn mục menu trái: hợp nhất 2 nguồn — (a) rào chắn cứng có sẵn cho
+    // Cấu hình/Nhật ký hoạt động (chỉ admin/subadmin, không đổi được qua
+    // UI), (b) state.hiddenMenuKeys từ server (Cấu hình → Phân quyền: can_
+    // read theo Chức năng CHO role hiện tại, VÀ Phân quyền theo phòng ban —
+    // xem meHandler, auth.controller.ts). Admin/Sub-Admin không bao giờ có
+    // mặt trong (b) (server đã loại trừ, xem computeHiddenMenuKeysBy*
+    // trong menu.service.ts). state.hiddenMenuKeys dùng lại ở nav click
+    // handler bên dưới để chặn luôn các đường vòng kiểu .click() trực tiếp
+    // (giống lỗ hổng "Quản lý phòng ban" đã vá trước đây).
+    state.hiddenMenuKeys = new Set(data.hiddenMenuKeys ?? []);
+    const hardHidden = {
+      config: data.ssoEnabled && data.role !== "admin",
+      // Nhật ký hoạt động KHÔNG phải 1 tab trong Cấu hình (nav riêng) nên
+      // subadmin ("tương tự admin", chỉ bị chặn khỏi Cấu hình) vẫn thấy
+      // được — khác với config ở trên (role !== "admin" đã đúng chủ ý
+      // chặn cả subadmin, vì đó đều là Cấu hình).
+      "action-logs": data.ssoEnabled && data.role !== "admin" && data.role !== "subadmin",
+    };
+    document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
+      const key = btn.dataset.page;
+      btn.hidden = !!hardHidden[key] || state.hiddenMenuKeys.has(key);
+    });
+    // Đang đứng ở 1 trang vừa bị ẩn (VD admin vừa tắt quyền Đọc/ẩn theo
+    // phòng ban ở phiên trước, lần load lại này mới áp dụng) -> tự chuyển
+    // về Trang chủ thay vì để trang đó hiện trống/lỗi do thiếu dữ liệu.
+    const activeBtn = document.querySelector(".nav-item.active");
+    if (activeBtn?.hidden) {
+      const homeBtn = document.querySelector('.nav-item[data-page="home"]');
+      if (homeBtn && !homeBtn.hidden) homeBtn.click();
+    }
 
     if (data.ssoEnabled) {
       if (!data.authenticated) {

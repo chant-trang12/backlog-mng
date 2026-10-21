@@ -21,7 +21,10 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
     });
     if (pill.dataset.tab === "phongban") loadDepartmentConfig().catch((err) => showToast(err.message));
     if (pill.dataset.tab === "users") loadUsersConfig().catch((err) => showToast(err.message));
-    if (pill.dataset.tab === "permissions") loadPermissionsConfig().catch((err) => showToast(err.message));
+    if (pill.dataset.tab === "permissions") {
+      loadPermissionsConfig().catch((err) => showToast(err.message));
+      loadMenuVisibilityConfig().catch((err) => showToast(err.message));
+    }
   });
 });
 
@@ -242,7 +245,7 @@ function incidentCellHtml(col, value) {
 }
 
 async function loadIncidents() {
-  state.incidents = await api("/api/incidents");
+  state.incidents = await api(`/api/incidents${deptParam("?")}`);
   renderIncidents();
 }
 
@@ -634,7 +637,7 @@ async function loadComplianceRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.complianceRecords = await api(`/api/compliance-records?period_id=${state.currentPeriodId}`);
+  state.complianceRecords = await api(`/api/compliance-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderComplianceRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -769,7 +772,7 @@ async function loadTrainingRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.trainingRecords = await api(`/api/training-records?period_id=${state.currentPeriodId}`);
+  state.trainingRecords = await api(`/api/training-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderTrainingRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -911,7 +914,7 @@ async function loadSupportRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.supportRecords = await api(`/api/support-records?period_id=${state.currentPeriodId}`);
+  state.supportRecords = await api(`/api/support-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderSupportRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -1061,7 +1064,7 @@ async function loadEvaluationRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.evaluationRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}`);
+  state.evaluationRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderEvaluationRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -1583,7 +1586,7 @@ el.unmarkExcludedAttendanceBtn.addEventListener("click", async () => {
 // -- Hỗ trợ ticket --
 
 async function loadTickets() {
-  state.tickets = await api("/api/tickets");
+  state.tickets = await api(`/api/tickets${deptParam("?")}`);
   renderTickets();
 }
 
@@ -1687,7 +1690,7 @@ el.ticketForm.addEventListener("submit", async (e) => {
 // -- Tỉ lệ khởi tạo --
 
 async function loadCreationRates() {
-  state.creationRates = await api("/api/creation-rates");
+  state.creationRates = await api(`/api/creation-rates${deptParam("?")}`);
   renderCreationRates();
 }
 
@@ -1786,3 +1789,21 @@ el.creationRateForm.addEventListener("submit", async (e) => {
   }
 });
 
+
+// Tiêu đề cột "giả" nổi cho các bảng trong "Team & Nhân sự"/CSKH — bù lại
+// sticky header sau khi bỏ max-height khỏi .table-wrap tương ứng (xem
+// comment style.css + setupFloatingTableHeader(), 01-state.js) để mỗi
+// bảng luôn hiện đủ N dòng/trang, không co cụm cuộn trong khung nhỏ cố định.
+setupFloatingTableHeader("compliance-table-wrap", "compliance-table");
+setupFloatingTableHeader("noiquy-table-wrap", "noiquy-table");
+setupFloatingTableHeader("training-table-wrap", "training-table");
+setupFloatingTableHeader("support-table-wrap", "support-table");
+setupFloatingTableHeader("danhgia-table-wrap", "danhgia-table");
+// attendance-table: <thead id="attendance-thead"> dựng lại động theo cột
+// Excel import (renderAttendanceThead()) — setupFloatingTableHeader() vẫn
+// dùng được vì dựng LẠI bản sao <thead> mỗi lần chuẩn bị hiện ra (không
+// clone 1 lần duy nhất), luôn bắt đúng cột hiện có tại thời điểm đó.
+setupFloatingTableHeader("attendance-table-wrap", "attendance-table");
+setupFloatingTableHeader("incident-table-wrap", "incident-table");
+setupFloatingTableHeader("ticket-table-wrap", "ticket-table");
+setupFloatingTableHeader("creation-rate-table-wrap", "creation-rate-table");

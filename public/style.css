@@ -94,8 +94,11 @@
      chuyển thành màu trong ảnh". Danger/Header-bg/nav-menu/tab/select/
      checkbox/year-stepper vẫn giữ Đỏ tươi — đã tách riêng từ trước,
      không liên quan "nút xanh blue". */
-  --primary: #e88080;
-  --primary-hover: #cc4f55;
+  /* User phản hồi: nút "Lưu" (.primary) màu San hô nhạt quá, cần đậm hơn —
+     chuyển --primary sang đúng mức San hô trước đây dùng cho hover, kéo
+     --primary-hover xuống thêm 1 nấc (cùng họ màu, không đổi hue). */
+  --primary: #cc4f55;
+  --primary-hover: #a83d47;
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
   /* Success ("Tăng KI"/"Đánh dấu Đã xử lý") đậm hơn Warning để không
@@ -1195,11 +1198,106 @@ th {
   padding-bottom: 16px;
 }
 
-/* Riêng bảng Nhiệm vụ (Backlog): phía trên còn có thanh cuộn ngang giả
-   .table-scroll-top (~30px) nữa nên chừa dư hơn mọi bảng khác, để thanh
-   phân trang vẫn nằm gọn trong viewport. */
-#task-table-wrap {
-  max-height: calc(100vh - 210px);
+/* Mọi bảng dữ liệu CÓ PHÂN TRANG (20/50/100 dòng/trang) — BỎ giới hạn
+   chiều cao (khác #permissions-table-wrap/#menu-visibility-table-wrap —
+   2 bảng tra cứu không phân trang, ít dòng, giữ nguyên hành vi cũ chấp
+   nhận mất ghim): user muốn luôn thấy đủ cả trang dữ liệu (VD 20 dòng),
+   không bị "co dúm" cuộn trong khung nhỏ cố định — trang tự cuộn thay
+   thế. Vẫn CẦN "ghim tiêu đề" khi cuộn nên bù lại bằng
+   .floating-table-header (tiêu đề "giả" nổi cố định, đồng bộ JS — xem
+   setupFloatingTableHeader() ở 01-state.js, gọi 1 lần/bảng ở file JS
+   tương ứng) thay vì th{position:sticky; top:0} (không còn tác dụng khi
+   .table-wrap hết là vùng cuộn dọc riêng — xem comment .table-wrap phía
+   trên).
+   CHỈ bỏ "top" (tắt ghim dọc), GIỮ NGUYÊN "position: sticky" — khác với
+   cách làm ban đầu (position: static) đã bị lỗi: 1 số bảng (Nhiệm vụ,
+   Roadmap năm...) còn dùng position:sticky cho TIÊU ĐỀ của các cột cố
+   định khi cuộn NGANG (VD checkbox/STT/Tag.../Team, xem "#task-table
+   th:nth-child(1-6)" ở trên) — set hẳn position:static xóa luôn freeze
+   ngang của tiêu đề (dù phần dữ liệu <td> vẫn freeze bình thường), lệch
+   hẳn với dữ liệu khi cuộn ngang TRƯỚC lúc cuộn dọc đủ xa để tiêu đề nổi
+   thay thế (đã phát hiện qua headless Chrome, không chỉ suy đoán — lúc
+   top=-37px tức tiêu đề trôi mất trong khi ô dữ liệu vẫn đứng yên ở
+   263px). "top: auto" vô hiệu hoá ĐÚNG MỘT chiều ghim dọc, giữ nguyên
+   chiều ghim ngang (left) cho các cột có khai left riêng. */
+#task-table-wrap,
+#member-table-wrap,
+#compliance-table-wrap,
+#noiquy-table-wrap,
+#training-table-wrap,
+#support-table-wrap,
+#danhgia-table-wrap,
+#attendance-table-wrap,
+#incident-table-wrap,
+#ticket-table-wrap,
+#creation-rate-table-wrap,
+#roadmap-table-wrap,
+#df-table-wrap,
+#dfs-table-wrap,
+#dfmd-table-wrap,
+#dfdo-table-wrap,
+#dfint-table-wrap,
+#fr-table-wrap,
+#users-config-table-wrap,
+#department-config-table-wrap,
+#al-table-wrap {
+  max-height: none;
+}
+#task-table th,
+#member-table th,
+#compliance-table th,
+#noiquy-table th,
+#training-table th,
+#support-table th,
+#danhgia-table th,
+#attendance-table th,
+#incident-table th,
+#ticket-table th,
+#creation-rate-table th,
+#roadmap-table th,
+#df-table th,
+#dfs-table th,
+#dfmd-table th,
+#dfdo-table th,
+#dfint-table th,
+#fr-table th,
+#users-config-table th,
+#department-config-table th,
+#al-table th {
+  top: auto;
+}
+
+/* Tiêu đề "giả" nổi (floating header) — bản sao <thead> thật, position:
+   fixed ở mép trên viewport, chỉ hiện khi <thead> thật đã cuộn khỏi khung
+   nhìn (setupFloatingTableHeader(), 01-state.js). Thay thế cho th{position:
+   sticky} (không còn dùng được khi bỏ max-height khỏi .table-wrap — xem
+   comment #task-table-wrap phía trên): .table-wrap cần overflow-x:auto để
+   cuộn ngang bảng nhiều cột, mà overflow-x:auto buộc trình duyệt tính
+   overflow-y thành "auto" theo sau (CSS box model), biến .table-wrap
+   thành vùng cuộn riêng — sticky lúc đó chỉ ghim được TRONG vùng cuộn đó,
+   không ghim theo trang nữa (đã kiểm chứng thực nghiệm bằng headless
+   Chrome, không chỉ suy đoán). overflow:hidden để cắt phần bảng giả tràn
+   ra ngoài khung nhìn ngang; nội dung bên trong dịch ngang qua transform
+   để khớp đúng vị trí cuộn ngang của bảng thật (không phải 1 vùng cuộn
+   overflow:auto độc lập, tránh 2 thanh cuộn ngang chồng nhau). */
+.floating-table-header {
+  position: fixed;
+  top: 0;
+  overflow: hidden;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  background: var(--header-bg);
+}
+.floating-table-header table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.floating-table-header th {
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Bảng "Phân quyền" (Cấu hình) — bỏ giới hạn chiều cao riêng (khác mọi
@@ -2574,12 +2672,15 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
   margin-right: 6px;
 }
 
-/* Đổi khỏi var(--primary) (nay Xanh dương) sang Đỏ thẫm (--red-800) riêng,
-   theo yêu cầu user — cùng tinh thần tách nav/tab/select/checkbox trước đó. */
+/* Đổi từ Xanh dương (--blue-600) sang Xanh lá — user gửi tiếp 1 ô màu mẫu
+   (xanh lá nhạt) ngay sau khi đổi xanh dương, xác nhận muốn đúng màu này
+   cho thanh tiến độ "% Hoàn thành". Không có token --green-* sẵn trong
+   palette (toàn hệ thống đang theo họ San hô/Đỏ/Xanh dương) nên khai hex
+   riêng, chỉ dùng cho progress-bar. */
 .progress-bar > span {
   display: block;
   height: 100%;
-  background: var(--red-800);
+  background: #85ca85;
 }
 
 .muted { color: var(--muted); }
