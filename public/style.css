@@ -2577,12 +2577,12 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
   margin-right: 6px;
 }
 
-/* Đổi khỏi var(--primary) (nay Xanh dương) sang Đỏ thẫm (--red-800) riêng,
-   theo yêu cầu user — cùng tinh thần tách nav/tab/select/checkbox trước đó. */
+/* Đổi từ Đỏ thẫm (--red-800) sang Xanh dương (--blue-600) — user phản hồi
+   kèm ảnh chụp cột "% Hoàn thành" cần đổi màu cho hợp style chung. */
 .progress-bar > span {
   display: block;
   height: 100%;
-  background: var(--red-800);
+  background: var(--blue-600);
 }
 
 .muted { color: var(--muted); }
