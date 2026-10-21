@@ -94,8 +94,11 @@
      chuyển thành màu trong ảnh". Danger/Header-bg/nav-menu/tab/select/
      checkbox/year-stepper vẫn giữ Đỏ tươi — đã tách riêng từ trước,
      không liên quan "nút xanh blue". */
-  --primary: #e88080;
-  --primary-hover: #cc4f55;
+  /* User phản hồi: nút "Lưu" (.primary) màu San hô nhạt quá, cần đậm hơn —
+     chuyển --primary sang đúng mức San hô trước đây dùng cho hover, kéo
+     --primary-hover xuống thêm 1 nấc (cùng họ màu, không đổi hue). */
+  --primary: #cc4f55;
+  --primary-hover: #a83d47;
   --danger: var(--red-600);
   --danger-hover: var(--red-700);
   /* Success ("Tăng KI"/"Đánh dấu Đã xử lý") đậm hơn Warning để không
