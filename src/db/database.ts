@@ -50,6 +50,7 @@ import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { migrateGradeDeductionsTable } from "./migrations/gradeDeductions.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
+import { migrateMenuVisibility } from "./migrations/menuVisibility.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
 
 let initPromise: Promise<void> | null = null;
@@ -150,6 +151,9 @@ export async function initDatabase(): Promise<void> {
     // Màn "Phân quyền" (Cấu hình) — seed ma trận quyền mặc định khớp đúng
     // hành vi hardcode trước đây, requireWrite đọc bảng này từ giờ.
     await migrateRolePermissions();
+    // "Phân quyền theo phòng ban" (ẩn/hiện menu trái theo phòng ban) — cần
+    // bảng departments đã có sẵn (migrateDepartments ở trên).
+    await migrateMenuVisibility();
   })();
 
   return initPromise;

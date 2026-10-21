@@ -2250,6 +2250,27 @@
               </table>
             </div>
           </section>
+
+          <!-- Phân quyền theo phòng ban — ẩn/hiện TỪNG mục menu trái cho
+               TỪNG phòng ban, CÓ HIỆU LỰC NGAY (department_menu_visibility,
+               đọc bởi meHandler mỗi lần đăng nhập/tải lại trang). KHÔNG áp
+               dụng cho Admin/Sub-Admin ở bất kỳ phòng ban nào (2 role này
+               luôn thấy đủ menu) — xem renderMenuVisibilityConfig(), 06-config.js. -->
+          <section class="card">
+            <h2 style="margin:0">Phân quyền theo phòng ban</h2>
+            <p class="muted" style="margin:8px 0 0">Ẩn/hiện mục menu bên trái cho từng phòng ban — không áp dụng cho Admin/Sub-Admin (luôn thấy đủ menu ở mọi phòng ban).</p>
+            <div class="table-wrap" id="menu-visibility-table-wrap" style="margin-top:14px">
+              <table id="menu-visibility-table">
+                <thead>
+                  <tr id="menu-visibility-thead-row">
+                    <th style="min-width:170px">Mục menu</th>
+                  </tr>
+                </thead>
+                <tbody id="menu-visibility-tbody"></tbody>
+              </table>
+            </div>
+            <p class="muted" id="menu-visibility-empty" hidden style="padding:16px;text-align:center">Chưa có phòng ban nào — thêm phòng ban ở tab "Phòng ban" trước.</p>
+          </section>
           </div>
 
           <div id="config-tab-phongban" hidden>

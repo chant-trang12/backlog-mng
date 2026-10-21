@@ -21,7 +21,10 @@ document.querySelectorAll("#config-subnav .pill").forEach((pill) => {
     });
     if (pill.dataset.tab === "phongban") loadDepartmentConfig().catch((err) => showToast(err.message));
     if (pill.dataset.tab === "users") loadUsersConfig().catch((err) => showToast(err.message));
-    if (pill.dataset.tab === "permissions") loadPermissionsConfig().catch((err) => showToast(err.message));
+    if (pill.dataset.tab === "permissions") {
+      loadPermissionsConfig().catch((err) => showToast(err.message));
+      loadMenuVisibilityConfig().catch((err) => showToast(err.message));
+    }
   });
 });
 

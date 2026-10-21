@@ -8,6 +8,11 @@ const state = {
   // Chỉ dùng để ĐIỀU KHIỂN HIỂN THỊ (khoá bộ chuyển phòng ban); chặn thật
   // luôn nằm ở server (attachScope/scope.util.ts) dù FE có bị bypass.
   userScope: { all: true, departmentId: null },
+  // Mục menu trái (data-page) bị ẩn cho tài khoản hiện tại — gộp từ Cấu
+  // hình → Phân quyền (can_read theo Chức năng) + Phân quyền theo phòng
+  // ban, xem checkAuth() ở 09-main.js. Rỗng khi SSO tắt hoặc chưa load
+  // xong /auth/me.
+  hiddenMenuKeys: new Set(),
   departments: [],
   currentDepartmentId: null,
   periods: [],
@@ -62,6 +67,7 @@ const state = {
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   permissionsConfig: null, // { functions, roles, rows } từ GET /api/role-permissions — Cấu hình > Phân quyền
+  menuVisibilityConfig: null, // { menuItems, departments, rows } từ GET /api/menu-visibility — Cấu hình > Phân quyền theo phòng ban
   departmentConfigTeamCounts: [], // toàn bộ team của kỳ đang chọn — cache để tính lại cột "Số team" mỗi lần render (kể cả khi chỉ đổi trang, không tải lại)
   actionLogs: [], // Nhật ký hoạt động đã tải theo bộ lọc hiện tại (server đã lọc sẵn, FE chỉ phân trang)
   actionLogUsers: [], // toàn bộ user (GET /api/users) — đổ vào dropdown lọc "Người thực hiện"

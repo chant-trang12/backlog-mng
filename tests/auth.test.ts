@@ -31,6 +31,7 @@ describe("Authentication & SSO Integration", () => {
         userId: null,
         departmentId: null,
         scope: { all: true, departmentId: null },
+        hiddenMenuKeys: [],
       });
     });
 

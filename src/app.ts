@@ -30,6 +30,7 @@ import featureRequestRoutes from "./routes/featureRequest.routes.js";
 import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
+import menuRoutes from "./routes/menu.routes.js";
 import { attachScope, requireAdmin, requireAdminOrSubAdmin, requireAuth, requireWrite } from "./middleware/auth.middleware.js";
 import { actionLogMiddleware } from "./middleware/actionLog.middleware.js";
 import { sanitizeWriteInput } from "./middleware/sanitize.middleware.js";
@@ -208,6 +209,9 @@ export function createApp() {
   // tab của màn hình Cấu hình — đây chính là ranh giới subadmin không vào
   // được), cùng cách scope tiền tố route như /api/users ở trên.
   app.use("/api/role-permissions", requireAdmin);
+  // "Phân quyền theo phòng ban" (ẩn/hiện menu trái theo phòng ban) — cùng
+  // tab Cấu hình → Phân quyền, chỉ Admin THẬT (giống role-permissions).
+  app.use("/api/menu-visibility", requireAdmin);
   // Xóa nhiều Yêu cầu tính năng (checkbox trên bảng) — thao tác nghiệp vụ
   // bình thường trên trang Yêu cầu tính năng, KHÔNG phải màn hình Cấu
   // hình, nên subadmin vẫn làm được (requireAdminOrSubAdmin) — cùng cách
@@ -233,6 +237,7 @@ export function createApp() {
   app.use("/api", userRoutes);
   app.use("/api", actionLogRoutes);
   app.use("/api", permissionRoutes);
+  app.use("/api", menuRoutes);
   app.use("/api", departmentRoutes);
   app.use("/api", periodRoutes);
   app.use("/api", teamRoutes);
