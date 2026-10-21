@@ -2577,12 +2577,15 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
   margin-right: 6px;
 }
 
-/* Đổi từ Đỏ thẫm (--red-800) sang Xanh dương (--blue-600) — user phản hồi
-   kèm ảnh chụp cột "% Hoàn thành" cần đổi màu cho hợp style chung. */
+/* Đổi từ Xanh dương (--blue-600) sang Xanh lá — user gửi tiếp 1 ô màu mẫu
+   (xanh lá nhạt) ngay sau khi đổi xanh dương, xác nhận muốn đúng màu này
+   cho thanh tiến độ "% Hoàn thành". Không có token --green-* sẵn trong
+   palette (toàn hệ thống đang theo họ San hô/Đỏ/Xanh dương) nên khai hex
+   riêng, chỉ dùng cho progress-bar. */
 .progress-bar > span {
   display: block;
   height: 100%;
-  background: var(--blue-600);
+  background: #5cb85c;
 }
 
 .muted { color: var(--muted); }
