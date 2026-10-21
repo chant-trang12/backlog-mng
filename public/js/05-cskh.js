@@ -245,7 +245,7 @@ function incidentCellHtml(col, value) {
 }
 
 async function loadIncidents() {
-  state.incidents = await api("/api/incidents");
+  state.incidents = await api(`/api/incidents${deptParam("?")}`);
   renderIncidents();
 }
 
@@ -637,7 +637,7 @@ async function loadComplianceRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.complianceRecords = await api(`/api/compliance-records?period_id=${state.currentPeriodId}`);
+  state.complianceRecords = await api(`/api/compliance-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderComplianceRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -772,7 +772,7 @@ async function loadTrainingRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.trainingRecords = await api(`/api/training-records?period_id=${state.currentPeriodId}`);
+  state.trainingRecords = await api(`/api/training-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderTrainingRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -914,7 +914,7 @@ async function loadSupportRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.supportRecords = await api(`/api/support-records?period_id=${state.currentPeriodId}`);
+  state.supportRecords = await api(`/api/support-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderSupportRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -1064,7 +1064,7 @@ async function loadEvaluationRecords() {
     syncHomeFromCurrentIfNeeded();
     return;
   }
-  state.evaluationRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}`);
+  state.evaluationRecords = await api(`/api/danh-gia-records?period_id=${state.currentPeriodId}${deptParam()}`);
   renderEvaluationRecords();
   syncHomeFromCurrentIfNeeded();
 }
@@ -1586,7 +1586,7 @@ el.unmarkExcludedAttendanceBtn.addEventListener("click", async () => {
 // -- Hỗ trợ ticket --
 
 async function loadTickets() {
-  state.tickets = await api("/api/tickets");
+  state.tickets = await api(`/api/tickets${deptParam("?")}`);
   renderTickets();
 }
 
@@ -1690,7 +1690,7 @@ el.ticketForm.addEventListener("submit", async (e) => {
 // -- Tỉ lệ khởi tạo --
 
 async function loadCreationRates() {
-  state.creationRates = await api("/api/creation-rates");
+  state.creationRates = await api(`/api/creation-rates${deptParam("?")}`);
   renderCreationRates();
 }
 
