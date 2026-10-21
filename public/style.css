@@ -431,6 +431,14 @@ td > .icon:only-child { margin-right: 0; }
 }
 
 .nav-item:hover { background: var(--bg); }
+/* Menu trái bị ẨN theo phân quyền (Cấu hình → Phân quyền: Ma trận Role
+   can_read=false / Phân quyền theo phòng ban is_visible=false — 09-main.js
+   đặt btn.hidden=true) PHẢI biến mất hoàn toàn khỏi sidebar, không chỉ
+   bị chặn click. Bắt buộc phải có rule tường minh này: .nav-item ở trên có
+   display:flex — CSS của trang luôn đè rule mặc định [hidden]{display:none}
+   của trình duyệt, nên thiếu rule này thì menu bị ẩn vẫn hiện nguyên (chỉ
+   bấm không được, user phản hồi kèm mô tả). */
+.nav-item[hidden] { display: none; }
 /* User: "menu này tôi không yêu cầu đổi, trả về màu đỏ tươi" — menu
    sidebar active KHÔNG theo --primary (nay Xanh dương) nữa, cố định lại
    Đỏ tươi (--red-600) dù --primary đổi màu khác trong tương lai. */
