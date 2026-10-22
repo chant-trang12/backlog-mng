@@ -167,12 +167,20 @@ function renderTasks() {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
+    // Bảng trống (sớm return, không chạy tới syncTaskStickyOffsets() ở
+    // cuối hàm) vẫn phải đo lại — nếu không, cột "Nhiệm vụ" giữ nguyên
+    // offset mặc định trong CSS (356px, tính cho cột Team VẪN HIỆN) dù
+    // Team vừa bị ẩn (phòng tính KPI theo task) -> hở 1 khoảng trắng đúng
+    // bằng bề rộng Team giữa "Phân loại" và "Nhiệm vụ" (user phản hồi kèm
+    // ảnh chụp, chỉ xảy ra khi đang trống dữ liệu).
+    syncTaskStickyOffsets();
     return;
   }
   if (state.tasks.length === 0) {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Không có task nào khớp bộ lọc.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
+    syncTaskStickyOffsets(); // cùng lý do ở nhánh trên
     return;
   }
 
