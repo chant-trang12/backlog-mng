@@ -50,6 +50,43 @@
       <main>
         <!-- ---- Trang Home ---- -->
         <div id="page-home">
+          <!-- Khối chào mừng đầu trang — ngày hôm nay + tên người dùng +
+               2 nút tắt (Tạo yêu cầu / Xem danh sách Yêu cầu tính năng) bên
+               trái; vòng tròn % hoàn thành THÁNG đang chọn (tái dùng đúng
+               số liệu donut "Nhiệm vụ theo Trạng thái" bên dưới, không phải
+               khái niệm "tuần" mới) + 3 nhiệm vụ quá hạn lâu nhất bên phải
+               — xem renderHomeHero(), 08-home.js. -->
+          <section class="card home-hero-card" style="margin-bottom:20px">
+            <div class="home-hero-grid">
+              <div class="home-hero-left">
+                <div class="home-hero-date"><span class="home-hero-dot" aria-hidden="true"></span><span id="home-hero-date-text"></span></div>
+                <h1 class="home-hero-title">Chào mừng trở lại<span id="home-hero-name-wrap">, <span class="home-hero-name" id="home-hero-name"></span></span></h1>
+                <p class="muted home-hero-subtitle">Giao việc, theo dõi tiến độ và đánh giá kết quả của cả nhóm — tất cả ở một nơi.</p>
+                <div class="row" style="margin-top:4px">
+                  <button type="button" id="home-hero-create-fr-btn" class="primary">Tạo yêu cầu</button>
+                  <button type="button" id="home-hero-view-fr-btn">Xem danh sách yêu cầu tính năng</button>
+                </div>
+              </div>
+              <div class="home-hero-progress-card">
+                <div class="home-hero-progress-top">
+                  <div class="home-hero-ring-wrap">
+                    <svg class="home-hero-ring" viewBox="0 0 100 100" aria-hidden="true">
+                      <circle class="home-hero-ring-bg" cx="50" cy="50" r="42"></circle>
+                      <circle class="home-hero-ring-fg" id="home-hero-ring-fg" cx="50" cy="50" r="42"></circle>
+                    </svg>
+                    <div class="home-hero-ring-label" id="home-hero-ring-pct">0%</div>
+                  </div>
+                  <div>
+                    <div class="home-hero-progress-title">Tiến độ tháng này</div>
+                    <div class="muted" id="home-hero-progress-sub">0 / 0 nhiệm vụ đã xong</div>
+                  </div>
+                </div>
+                <div class="home-hero-divider"></div>
+                <ul class="home-hero-task-list" id="home-hero-task-list"></ul>
+              </div>
+            </div>
+          </section>
+
           <div class="row-split" style="margin-bottom:20px">
             <!-- min-width (không chỉ flex-basis 160px) — ở độ rộng màn hình
                  vừa phải, card này bị co lại quá hẹp (basis 160px < nội

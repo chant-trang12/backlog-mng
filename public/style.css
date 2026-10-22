@@ -555,6 +555,124 @@ main {
   flex: 1 1 420px;
 }
 
+/* ---- Khối chào mừng đầu Trang chủ (home-hero) ---- */
+.home-hero-card { padding: clamp(20px, 2vw, 32px); }
+.home-hero-grid {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.home-hero-left {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.home-hero-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.home-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex: 0 0 auto;
+}
+.home-hero-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  line-height: 1.2;
+  color: var(--text);
+}
+.home-hero-name { color: var(--primary); }
+.home-hero-subtitle { margin: 0; max-width: 46ch; }
+
+.home-hero-progress-card {
+  flex: 1 1 320px;
+  max-width: 400px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.home-hero-progress-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.home-hero-ring-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+}
+.home-hero-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.home-hero-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+.home-hero-ring-fg {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 10;
+  stroke-linecap: round;
+  /* stroke-dasharray/offset set qua JS theo % thật — xem renderHomeHero(),
+     08-home.js (chu vi đường tròn r=42 ~ 263.9). */
+  transition: stroke-dashoffset 0.4s ease;
+}
+.home-hero-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.home-hero-progress-title { font-weight: 600; }
+.home-hero-divider { height: 1px; background: var(--border); }
+.home-hero-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.home-hero-task-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+.home-hero-task-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--red-600);
+}
+.home-hero-task-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-hero-task-overdue {
+  flex: 0 0 auto;
+  color: var(--red-600);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.home-hero-task-list-empty { color: var(--muted); font-size: 0.88rem; }
+
 label { font-size: 0.85rem; color: var(--muted); display: block; margin-bottom: 4px; }
 
 input, select, textarea {

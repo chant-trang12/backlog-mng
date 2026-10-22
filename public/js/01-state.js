@@ -1,5 +1,6 @@
 const state = {
   currentUserId: null, // id cục bộ (bảng users) của người đang đăng nhập — xem checkAuth()
+  currentUserName: null, // Họ và Tên (hoặc username) người đang đăng nhập — khối chào mừng ở Trang chủ, xem checkAuth()
   // Phạm vi phòng ban (Quy tắc 9.2) của người đang đăng nhập — lấy từ
   // /auth/me (xem checkAuth()). all=true: không giới hạn (admin, hoặc
   // phòng đang gán được đánh dấu "Xem full"). all=false: chỉ được

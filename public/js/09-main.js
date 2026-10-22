@@ -129,6 +129,7 @@ async function checkAuth() {
     if (!res.ok) return;
     const data = await res.json();
     state.currentUserId = data.userId ?? null; // id cục bộ (bảng users) — dùng để tự nhận "chính mình" ở Quản lý User
+    state.currentUserName = data.user?.name || data.user?.username || null; // khối chào mừng ở Trang chủ — xem renderHomeHero(), 08-home.js
     if (data.scope) state.userScope = data.scope;
 
     // Gắn role lên <body> để CSS tự ẩn nút Thêm/Sửa/Xóa mà role hiện tại

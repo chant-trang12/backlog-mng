@@ -66,6 +66,7 @@ function renderHomeDashboard() {
     .sort((a, b) => b.value - a.value);
 
   renderHomeTaskStatCard(filteredTasks);
+  renderHomeHero(filteredTasks);
 
   if (theoTask) {
     // Ranking nhân sự (không chia team) — lấy thẳng từ KPI theo Task, đã
@@ -290,6 +291,75 @@ const HOME_STAT_STATUS_HEX = {
   "Hoàn thành": "#cc4f55",
   Hủy: "#8a3a3c",
 };
+
+// Thứ + ngày/tháng hôm nay, kiểu "Thứ Năm, 22 tháng 10" — dùng cho khối
+// chào mừng đầu Trang chủ (renderHomeHero() bên dưới).
+const HOME_HERO_WEEKDAYS = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+function homeHeroTodayText() {
+  const now = new Date();
+  return `${HOME_HERO_WEEKDAYS[now.getDay()]}, ${now.getDate()} tháng ${now.getMonth() + 1}`;
+}
+
+// Lấy TÊN (không phải họ và tên đầy đủ) để chào — quy ước Việt Nam, tên
+// riêng là từ CUỐI CÙNG trong Họ và Tên đầy đủ.
+function homeHeroFirstName(fullName) {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
+// Khối chào mừng đầu Trang chủ: ngày hôm nay + tên người dùng (trống khi
+// SSO tắt/chưa đăng nhập — vẫn hiện câu chào chung); vòng tròn % hoàn
+// thành THÁNG đang chọn (TÁI DÙNG đúng `tasks` đã lọc Tháng/Team của
+// renderHomeDashboard(), KHÔNG phải khái niệm "tuần" riêng — user đã chốt
+// dùng luôn số liệu tháng để khỏi phát sinh logic/dữ liệu mới); 3 nhiệm vụ
+// đang quá hạn LÂU NHẤT (deadline xa nhất so với hôm nay, isTaskOverdue()
+// dùng chung với card cảnh báo ở Backlog — 02-departments-periods-teams.js).
+function renderHomeHero(tasks) {
+  const dateEl = document.getElementById("home-hero-date-text");
+  if (!dateEl) return; // chưa render trang Home (lần đầu load ở trang khác)
+  dateEl.textContent = homeHeroTodayText();
+
+  const nameWrap = document.getElementById("home-hero-name-wrap");
+  const firstName = homeHeroFirstName(state.currentUserName);
+  nameWrap.hidden = !firstName;
+  if (firstName) document.getElementById("home-hero-name").textContent = firstName;
+
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.trang_thai === "Hoàn thành").length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  document.getElementById("home-hero-ring-pct").textContent = `${pct}%`;
+  document.getElementById("home-hero-progress-sub").textContent = `${completed} / ${total} nhiệm vụ đã xong`;
+  const circumference = 2 * Math.PI * 42; // r=42, khớp SVG viewBox 0 0 100 100
+  const ringFg = document.getElementById("home-hero-ring-fg");
+  ringFg.style.strokeDasharray = `${circumference}`;
+  ringFg.style.strokeDashoffset = `${circumference * (1 - pct / 100)}`;
+
+  const today = todayDateOnly();
+  const overdue = tasks
+    .filter(isTaskOverdue)
+    .map((t) => ({ task: t, days: Math.round((today - parseTaskDeadline(t.deadline)) / 86400000) }))
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 3);
+  const listEl = document.getElementById("home-hero-task-list");
+  listEl.innerHTML = overdue.length
+    ? overdue
+        .map(
+          ({ task, days }) => `
+      <li>
+        <span class="home-hero-task-dot"></span>
+        <span class="home-hero-task-name" title="${(task.nhiem_vu ?? "").replace(/"/g, "&quot;")}">${task.nhiem_vu ?? ""}</span>
+        <span class="home-hero-task-overdue">Quá hạn ${days} ngày</span>
+      </li>`,
+        )
+        .join("")
+    : `<li class="home-hero-task-list-empty">Không có nhiệm vụ nào quá hạn 🎉</li>`;
+}
+
+document.getElementById("home-hero-create-fr-btn")?.addEventListener("click", () => openFeatureRequestDialog(null));
+document.getElementById("home-hero-view-fr-btn")?.addEventListener("click", () => {
+  document.querySelector('.nav-item[data-page="feature-requests"]')?.click();
+});
 
 // Tổng số đầu việc + số lượng theo Trạng thái, đúng theo điều kiện tìm kiếm
 // Tháng/Team đang chọn ở Home — vẽ dạng donut giống "Phân bổ nhân sự theo Team".
