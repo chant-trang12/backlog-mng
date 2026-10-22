@@ -556,10 +556,12 @@ main {
 }
 
 /* ---- Khối chào mừng đầu Trang chủ (home-hero) ---- */
-/* Chiều cao +50% so với bản đầu (232px -> ~350px, user phản hồi kèm ảnh
-   chụp) — min-height thay vì chỉ tăng padding, để khối luôn đủ cao kể cả
-   khi nội dung ngắn (VD chưa đăng nhập, ẩn phần tên). */
-.home-hero-card { padding: clamp(28px, 3vw, 44px); min-height: 350px; box-sizing: border-box; }
+/* min-height cố định (350px, lần sửa trước) để lại khoảng trắng thừa rất
+   lớn ở cột trái khi màn hình hẹp hơn (2 cột dồn xuống 2 hàng, user phản
+   hồi kèm ảnh chụp "thừa khoảng trống quá nhiều") — bỏ hẳn, để khối cao
+   theo ĐÚNG nội dung thật (không còn vùng trắng chết), chỉ giữ padding
+   rộng rãi hơn bản gốc cho thoáng. */
+.home-hero-card { padding: clamp(24px, 2.4vw, 36px); box-sizing: border-box; }
 .home-hero-grid {
   display: flex;
   gap: 32px;
