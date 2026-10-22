@@ -2819,7 +2819,7 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 .progress-bar > span {
   display: block;
   height: 100%;
-  background: #85ca85;
+  background: var(--sky-300);
 }
 
 .muted { color: var(--muted); }
