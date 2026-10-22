@@ -462,7 +462,11 @@ td > .icon:only-child { margin-right: 0; }
   line-height: 18px;
   text-align: center;
 }
-.nav-item.active .nav-badge { box-shadow: 0 0 0 2px var(--red-600); }
+/* Nền badge (--delete = --red-600) trùng hệt nền .nav-item.active (cũng
+   --red-600) — chấm số gần như biến mất khi đang chọn đúng mục "Yêu cầu
+   tính năng" (user phản hồi kèm ảnh chụp). Đảo màu: nền trắng/chữ đỏ khi
+   active, nổi rõ trên nền đỏ thay vì chỉ có viền 2px cùng tông (vô hình). */
+.nav-item.active .nav-badge { background: #fff; color: var(--red-600); }
 /* Nhãn "💡 Yêu cầu tính năng" đã khá dài so với bề rộng sidebar — chừa
    thêm chỗ bên phải để không bị chấm đỏ đè lên chữ. */
 .nav-item[data-page="feature-requests"] { padding-right: 32px; }
