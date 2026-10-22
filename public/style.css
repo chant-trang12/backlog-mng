@@ -625,7 +625,7 @@ main {
 .home-hero-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
 .home-hero-ring-fg {
   fill: none;
-  stroke: var(--primary);
+  stroke: var(--sky-300);
   stroke-width: 10;
   stroke-linecap: round;
   /* stroke-dasharray/offset set qua JS theo % thật — xem renderHomeHero(),
