@@ -652,9 +652,21 @@ function openFrDetailDialog(r) {
   document.getElementById("fr-detail-hieu-qua-khi-thuc-hien").textContent = r.hieu_qua_khi_thuc_hien || "—";
   document.getElementById("fr-detail-ket-qua").textContent = r.ket_qua_mong_muon || "Không có.";
 
+  // ghi_chu_xu_ly dùng chung cho 2 trường hợp: lý do Từ chối (nhập ở dialog
+  // Từ chối) VÀ ghi chú import từ cột "Ghi chú" của file Excel (yêu cầu còn
+  // "Chờ duyệt"/"Đã duyệt", chưa hề bị từ chối). Trước đây luôn gắn nhãn +
+  // màu đỏ cảnh báo "Lý do từ chối" bất kể trạng thái -> file import có cột
+  // Ghi chú nhưng CHƯA từ chối vẫn bị hiển thị nhầm thành "Lý do từ chối".
+  // Chỉ gắn nhãn/màu "Lý do từ chối" khi đúng là đã Từ chối; còn lại hiển
+  // thị trung tính là "Ghi chú xử lý".
   const ghiChuWrap = document.getElementById("fr-detail-ghi-chu-wrap");
+  const ghiChuLabelEl = document.getElementById("fr-detail-ghi-chu-label");
+  const ghiChuTextEl = document.getElementById("fr-detail-ghi-chu");
   if (r.ghi_chu_xu_ly && r.ghi_chu_xu_ly.trim()) {
-    document.getElementById("fr-detail-ghi-chu").textContent = r.ghi_chu_xu_ly;
+    const isRejected = r.trang_thai === "Từ chối";
+    ghiChuLabelEl.textContent = isRejected ? "Lý do từ chối" : "Ghi chú xử lý";
+    ghiChuTextEl.textContent = r.ghi_chu_xu_ly;
+    ghiChuTextEl.classList.toggle("fr-detail-quote-warn", isRejected);
     ghiChuWrap.hidden = false;
   } else {
     ghiChuWrap.hidden = true;
