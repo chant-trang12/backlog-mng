@@ -912,6 +912,10 @@ button.primary.tbl-add-btn:hover { background: var(--primary-hover); border-colo
    của "Xóa tháng này" lẫn san hô của các nút "+..." khác. */
 #create-period-btn.primary { background: var(--amber-100); border-color: var(--amber-300); color: var(--amber-800); }
 #create-period-btn.primary:hover { background: var(--amber-300); border-color: var(--amber-300); }
+/* "Tạo yêu cầu" ở khối chào mừng Trang chủ — Đỏ tươi riêng theo ảnh user
+   gửi (--red-600), khác san hô --primary của các nút ".primary" còn lại. */
+#home-hero-create-fr-btn.primary { background: var(--red-600); border-color: var(--red-600); }
+#home-hero-create-fr-btn.primary:hover { background: var(--red-700); border-color: var(--red-700); }
 button.danger { background: var(--delete); border-color: var(--delete); color: #fff; }
 button.danger:hover { background: var(--delete-hover); border-color: var(--delete-hover); }
 button.small { padding: 4px 8px; font-size: 0.8rem; }
