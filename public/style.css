@@ -2636,7 +2636,14 @@ button.btn-split-even:hover { background: #b83f44; border-color: #b83f44; }
 
 .home-stat-groups { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
 .home-stat-list-empty { font-size: 0.8rem; color: var(--muted); }
-.home-donut-wrap { position: relative; flex-shrink: 0; }
+/* flex-basis co giãn (home-stat-card: flex:1.4 1 200px) có thể làm khung
+   hẹp hơn 220px (kích thước cố định của donut) ở 1 số bề rộng màn hình
+   trung gian — khi đó margin:0 auto (set inline ở 08-home.js) không còn
+   đủ chỗ để canh giữa, auto-margin quy về 0 khiến donut dồn sát 1 bên
+   (lệch khung). Giới hạn max-width + cho cao tự co theo tỉ lệ vuông để
+   donut luôn canh giữa, chỉ thu nhỏ khi khung thực sự hẹp hơn 220px. */
+.home-donut-wrap { position: relative; flex-shrink: 0; max-width: 100%; aspect-ratio: 1 / 1; height: auto !important; }
+.home-donut-wrap svg { width: 100%; height: 100%; display: block; }
 .home-donut-center {
   position: absolute;
   inset: 0;
