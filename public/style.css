@@ -556,7 +556,10 @@ main {
 }
 
 /* ---- Khối chào mừng đầu Trang chủ (home-hero) ---- */
-.home-hero-card { padding: clamp(20px, 2vw, 32px); }
+/* Chiều cao +50% so với bản đầu (232px -> ~350px, user phản hồi kèm ảnh
+   chụp) — min-height thay vì chỉ tăng padding, để khối luôn đủ cao kể cả
+   khi nội dung ngắn (VD chưa đăng nhập, ẩn phần tên). */
+.home-hero-card { padding: clamp(28px, 3vw, 44px); min-height: 350px; box-sizing: border-box; }
 .home-hero-grid {
   display: flex;
   gap: 32px;
@@ -602,7 +605,8 @@ main {
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: center;
+  gap: 18px;
 }
 .home-hero-progress-top {
   display: flex;
