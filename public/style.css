@@ -146,6 +146,18 @@ h1 { margin: 0 0 4px; font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.3rem); }
 /* Logo thay cho text "Quản lý nhiệm vụ" ở đầu sidebar — chiều cao khớp
    dòng chữ h1 cũ (clamp ~17-21px), width auto giữ tỉ lệ gốc của SVG. */
 .sidebar-logo { display: block; height: 28px; width: auto; margin: 0 0 4px; }
+/* Bấm logo -> về Trang chủ (xem 09-main.js) — reset style <button> để nhìn
+   y hệt <img> cũ, chỉ thêm con trỏ/trạng thái hover nhẹ báo bấm được. */
+.sidebar-logo-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.sidebar-logo-btn:hover,
+.sidebar-logo-btn:focus-visible { opacity: 0.8; }
 
 .app-shell {
   display: flex;
@@ -1823,7 +1835,10 @@ th {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  /* Màu accent thay vì xám (--muted) — tiêu đề từng trường (Loại yêu cầu,
+     Ưu tiên...) quá chìm so với nội dung, khó phân biệt ở popup Chi tiết
+     nhiều trường. */
+  color: var(--primary);
   margin-bottom: 3px;
 }
 

@@ -10,6 +10,10 @@ import { isDepartmentInScope, type DataScope } from "./scope.util.js";
 //   "Tiêu đề"                             -> feature_requests.tieu_de
 //                                            (bắt buộc ở DB — nếu trống tự
 //                                            lấy từ Hoạt động/Đề xuất/Mô tả)
+//   "Loại yêu cầu"                        -> feature_requests.loai_yeu_cau
+//                                            (danh mục Cấu hình > Loại yêu
+//                                            cầu — không khớp danh mục vẫn
+//                                            lưu nguyên text, không chặn)
 //   "Phòng ban thực hiện"                 -> feature_requests.target_department_id
 //                                            (CHÍNH LÀ "Phòng ban đích" của
 //                                            form — khớp theo tên/mã phòng;
@@ -34,6 +38,7 @@ import { isDepartmentInScope, type DataScope } from "./scope.util.js";
 export const FEATURE_REQUEST_IMPORT_HEADERS = [
   "STT",
   "Tiêu đề",
+  "Loại yêu cầu",
   "Lĩnh Vực",
   "Mảng",
   "Hoạt động/nghiệp vụ",
@@ -59,6 +64,7 @@ export const PRIORITIES = ["Thấp", "Trung bình", "Cao", "Khẩn cấp"];
 
 const KEYS = {
   tieu_de: ["tieu de"],
+  loai_yeu_cau: ["loai yeu cau"],
   linh_vuc: ["linh vuc"],
   mang: ["mang"],
   hoat_dong: ["hoat dong/nghiep vu", "hoat dong nghiep vu", "hoat dong", "nghiep vu"],
@@ -88,9 +94,11 @@ export interface ImportFeatureRequestsResult {
 export function buildFeatureRequestImportTemplate(opts?: {
   departments?: string[];
   heThong?: string[];
+  loaiYeuCau?: string[];
 }): Promise<ExcelJS.Buffer> {
   const departments = opts?.departments ?? [];
   const heThong = opts?.heThong ?? [];
+  const loaiYeuCau = opts?.loaiYeuCau ?? [];
   return buildTemplateWorkbook(
     "Yêu cầu tính năng",
     FEATURE_REQUEST_IMPORT_HEADERS.map((header) => ({
@@ -101,6 +109,7 @@ export function buildFeatureRequestImportTemplate(opts?: {
       [
         1,
         "Trình ký văn bản điện tử",
+        loaiYeuCau[0] ?? "",
         "Hành chính",
         "Văn bản - Quản lý điều hành",
         "Soạn thảo, trình ký và phát hành công văn",
@@ -124,6 +133,7 @@ export function buildFeatureRequestImportTemplate(opts?: {
       [
         2,
         "Tiếp nhận yêu cầu CSKH trực tuyến",
+        loaiYeuCau[1] ?? loaiYeuCau[0] ?? "",
         "Kinh doanh",
         "Chăm sóc khách hàng",
         "Tiếp nhận và phân loại yêu cầu hỗ trợ từ khách hàng",
@@ -146,10 +156,11 @@ export function buildFeatureRequestImportTemplate(opts?: {
       ],
     ],
     [
-      { column: 11, options: heThong }, // Hệ thống cần cải tiến (nếu có) — danh mục Cấu hình > Hệ thống
-      { column: 17, options: [...PRIORITIES] }, // Ưu tiên
-      { column: 18, options: departments }, // Đơn vị đề xuất
-      { column: 19, options: departments }, // Phòng ban thực hiện = Phòng ban đích
+      { column: 3, options: loaiYeuCau }, // Loại yêu cầu — danh mục Cấu hình > Loại yêu cầu
+      { column: 12, options: heThong }, // Hệ thống cần cải tiến (nếu có) — danh mục Cấu hình > Hệ thống
+      { column: 18, options: [...PRIORITIES] }, // Ưu tiên
+      { column: 19, options: departments }, // Đơn vị đề xuất
+      { column: 20, options: departments }, // Phòng ban thực hiện = Phòng ban đích
     ],
   );
 }
@@ -288,6 +299,7 @@ export async function importFeatureRequestsFromWorkbook(
       // ("" thỏa NOT NULL); hiển thị "—" ở bảng, gán sau qua Sửa nếu cần.
       he_thong: val(row, col("he_thong")),
       tieu_de: tieuDe,
+      loai_yeu_cau: val(row, col("loai_yeu_cau")) || undefined,
       mo_ta: moTa || undefined,
       department_id: deptId,
       target_department_id: targetId,

@@ -11,7 +11,9 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <img src="logo-viettel-idc.svg" alt="Quản lý nhiệm vụ" title="Quản lý nhiệm vụ" class="sidebar-logo" />
+        <button type="button" id="sidebar-logo-btn" class="sidebar-logo-btn" title="Về Trang chủ">
+          <img src="logo-viettel-idc.svg" alt="Quản lý nhiệm vụ" class="sidebar-logo" />
+        </button>
         <div class="dept-switcher" id="dept-switcher">
           <button type="button" class="dept-trigger" id="dept-trigger" aria-haspopup="true" aria-expanded="false">
             <span class="dept-mono" id="dept-trigger-mono">--</span>
@@ -1778,8 +1780,14 @@
                 </select>
               </div>
               <div>
-                <label for="fr-filter-target-dept">Phòng ban đích</label>
-                <select id="fr-filter-target-dept">
+                <label for="fr-filter-quy">Quý thực hiện</label>
+                <select id="fr-filter-quy">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
+                <label for="fr-filter-don-vi">Đơn vị đề xuất</label>
+                <select id="fr-filter-don-vi">
                   <option value="">Tất cả</option>
                 </select>
               </div>
@@ -1823,6 +1831,10 @@
                 <button id="download-fr-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
                 <button id="import-fr-btn" class="btn-exclude"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Nhập Excel</button>
                 <input type="file" id="fr-import-input" accept=".xlsx,.xlsm" hidden />
+                <!-- Xuất Excel — xuất ĐÚNG danh sách đang hiển thị trên màn hình
+                     (đã áp bộ lọc + từ khoá, không phân trang), xem
+                     exportFeatureRequests() ở 10-feature-requests.js. -->
+                <button id="export-fr-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Xuất Excel</button>
                 <button id="add-feature-request-btn" class="primary tbl-add-btn">+ Thêm yêu cầu</button>
               </div>
             </div>
@@ -1849,6 +1861,7 @@
                     <!-- Cột "Tiêu đề" không cho ẩn (giống cột "Nhiệm vụ" ở bảng
                          Nhiệm vụ) — cần luôn thấy để biết đang xem dòng nào. -->
                     <th style="min-width:200px">Tiêu đề</th>
+                    <th style="min-width:130px" data-col="loai_yeu_cau">Loại yêu cầu</th>
                     <th style="min-width:90px" data-col="linh_vuc">Lĩnh vực</th>
                     <th style="min-width:100px" data-col="mang">Mảng</th>
                     <th style="min-width:170px" data-col="hoat_dong">Hoạt động/nghiệp vụ</th>

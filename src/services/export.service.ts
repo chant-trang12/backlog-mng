@@ -3,6 +3,7 @@ import type { Period, Task } from "../types/backlog.js";
 import { getPeriod } from "./period.service.js";
 import { listTasks } from "./task.service.js";
 import { listRoadmapItems } from "./roadmap.service.js";
+import type { FeatureRequestWithDept } from "../types/featureRequest.js";
 
 // 1.5 Xuất Excel theo mẫu "Backlog theo team" (xem ảnh mẫu đính kèm yêu cầu):
 // hàng tiêu đề nền đỏ mận (maroon) chữ trắng, cột Trạng thái/% Hoàn thành tô
@@ -232,6 +233,132 @@ export async function exportRoadmapToExcel(filter: {
   sheet.autoFilter = {
     from: { row: headerRow, column: 1 },
     to: { row: headerRow, column: ROADMAP_TOTAL_COLUMNS },
+  };
+  sheet.views = [{ state: "frozen", ySplit: headerRow }];
+
+  return workbook.xlsx.writeBuffer();
+}
+
+// ---- Xuất Excel "Yêu cầu tính năng" — dùng chung style (màu tiêu đề) với
+// 2 export trên. Đủ ĐÚNG các cột đang hiển thị ở #fr-table (index.html),
+// theo đúng thứ tự trái sang phải, + cột "Loại yêu cầu" (ngay sau Tiêu đề —
+// xem yêu cầu thêm cột này ở bảng). Danh sách dòng do controller truyền
+// vào ĐÃ được lọc đúng theo bộ lọc + từ khoá đang áp dụng trên màn hình
+// (xem exportFeatureRequestsHandler — nhận ids từ FE, FE tự tính từ
+// filteredFeatureRequests() y hệt dữ liệu đang hiển thị, không phân trang).
+const FR_HEADERS = [
+  "STT", "Tiêu đề", "Loại yêu cầu", "Lĩnh vực", "Mảng", "Hoạt động/nghiệp vụ",
+  "Quy trình số hóa", "Mã quy trình", "Bước số hóa",
+  "Mô tả từng bước đang thực hiện", "Vấn đề tồn tại",
+  "Hệ thống cần cải tiến (nếu có)", "Đề xuất quy trình/nghiệp vụ",
+  "Hiệu quả khi thực hiện", "Thời gian mong muốn thực hiện", "Quý thực hiện",
+  "Kế hoạch software", "Kết quả mong muốn", "Ưu tiên", "Đơn vị đề xuất",
+  "Nhân sự đầu mối", "Ghi chú", "Trạng thái",
+];
+const FR_TOTAL_COLUMNS = FR_HEADERS.length;
+const FR_COLUMN_WIDTHS = [
+  6, 30, 16, 14, 14, 22, 16, 14, 16, 30, 24, 20, 24, 22, 16, 14, 20, 26, 12, 20, 16, 20, 16,
+];
+
+// Quý thực hiện — khớp CHÍNH XÁC frQuarterOf() ở 10-feature-requests.js
+// (không lưu DB, chỉ suy từ "Thời gian mong muốn thực hiện").
+const FR_QUARTER_LABELS = ["Quý I", "Quý II", "Quý III", "Quý IV"];
+function frQuarterOf(value: string | null): string {
+  if (!value) return "";
+  const m = /^(\d{4})-(\d{1,2})/.exec(value);
+  if (!m) return "";
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return "";
+  return `${FR_QUARTER_LABELS[Math.floor((month - 1) / 3)]}/${m[1]}`;
+}
+
+// Nhãn trạng thái phụ thuộc phòng đang xem (bên đề xuất/đích thấy nhãn khác
+// nhau) — khớp CHÍNH XÁC frStatusLabel()/frViewerSide() ở
+// 10-feature-requests.js, để cột "Trạng thái" trong file export giống hệt
+// badge trạng thái đang hiển thị trên màn hình của đúng phòng đang xem.
+function frStatusLabelForExport(r: FeatureRequestWithDept, viewerDepartmentId: number | null): string {
+  const side =
+    r.target_department_id === viewerDepartmentId
+      ? "target"
+      : r.department_id === viewerDepartmentId
+        ? "proposer"
+        : null;
+  if (r.trang_thai === "Từ chối") return "Từ chối yêu cầu";
+  if (r.trang_thai === "Đã duyệt") return side === "target" ? "Đã duyệt" : "Đã tiếp nhận yêu cầu";
+  return side === "target" ? "Chờ duyệt" : "Đã gửi yêu cầu";
+}
+
+export async function exportFeatureRequestsToExcel(
+  rows: FeatureRequestWithDept[],
+  viewerDepartmentId: number | null,
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("Yêu cầu tính năng");
+  sheet.columns = FR_COLUMN_WIDTHS.map((width) => ({ width }));
+
+  sheet.mergeCells(1, 1, 1, FR_TOTAL_COLUMNS);
+  const titleCell = sheet.getCell(1, 1);
+  titleCell.value = "Yêu cầu tính năng";
+  titleCell.font = { bold: true, size: 14 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  fillCell(titleCell, TITLE_FILL);
+  sheet.getRow(1).height = 24;
+
+  const headerRow = 3;
+  FR_HEADERS.forEach((label, i) => {
+    const cell = sheet.getCell(headerRow, i + 1);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, HEADER_FILL);
+    cell.border = THIN_BORDER;
+  });
+  sheet.getRow(headerRow).height = 22;
+
+  let rowIndex = headerRow + 1;
+  rows.forEach((r, i) => {
+    const values: (string | number)[] = [
+      i + 1,
+      r.tieu_de,
+      r.loai_yeu_cau ?? "",
+      r.linh_vuc ?? "",
+      r.mang ?? "",
+      r.hoat_dong_nghiep_vu ?? "",
+      r.quy_trinh_so_hoa ?? "",
+      r.ma_quy_trinh ?? "",
+      r.buoc_so_hoa ?? "",
+      r.mo_ta ?? "",
+      r.van_de_ton_tai ?? "",
+      r.he_thong ?? "",
+      r.de_xuat_quy_trinh ?? "",
+      r.hieu_qua_khi_thuc_hien ?? "",
+      formatDate(r.thoi_gian_mong_muon),
+      frQuarterOf(r.thoi_gian_mong_muon),
+      r.ke_hoach_software ?? "",
+      r.ket_qua_mong_muon ?? "",
+      r.do_uu_tien,
+      r.department_name ?? "",
+      r.nguoi_de_xuat ?? "",
+      r.ghi_chu_xu_ly ?? "",
+      frStatusLabelForExport(r, viewerDepartmentId),
+    ];
+
+    values.forEach((val, colIdx) => {
+      const cell = sheet.getCell(rowIndex, colIdx + 1);
+      cell.value = val;
+      cell.alignment = { wrapText: true, vertical: "top" };
+      cell.border = THIN_BORDER;
+    });
+
+    rowIndex += 1;
+  });
+
+  sheet.autoFilter = {
+    from: { row: headerRow, column: 1 },
+    to: { row: headerRow, column: FR_TOTAL_COLUMNS },
   };
   sheet.views = [{ state: "frozen", ySplit: headerRow }];
 

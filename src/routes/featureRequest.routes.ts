@@ -7,6 +7,7 @@ import {
   deleteSelectedFeatureRequestsHandler,
   downloadFeatureRequestAttachmentHandler,
   downloadFeatureRequestTemplateHandler,
+  exportFeatureRequestsHandler,
   getFeatureRequestHandler,
   importFeatureRequestsHandler,
   linkFeatureRequestToBacklogHandler,
@@ -39,6 +40,13 @@ router.post(
 // không phải route theo id). Chỉ admin gọi tới được — xem requireAdmin
 // scope theo tiền tố "/api/feature-requests/delete-selected" ở app.ts.
 router.post("/feature-requests/delete-selected", deleteSelectedFeatureRequestsHandler);
+// Xuất Excel — nhận "ids" (danh sách đang hiển thị ở FE, đã lọc theo bộ lọc
+// + từ khoá hiện tại) qua query string. Cố ý dùng GET (không phải POST):
+// đây là thao tác ĐỌC (chỉ xuất lại đúng dữ liệu người dùng đã xem được),
+// không phải ghi — nếu để POST sẽ bị requireWrite (app.ts) hiểu nhầm thành
+// "Thêm" và đòi quyền can_add, trong khi editor/viewer chỉ xem (can_read)
+// cũng phải xuất được. Đặt trước "/:id" vì "export" không phải số.
+router.get("/feature-requests/export", exportFeatureRequestsHandler);
 router.get("/feature-requests/:id", getFeatureRequestHandler);
 router.put("/feature-requests/:id", updateFeatureRequestHandler);
 router.delete("/feature-requests/:id", deleteFeatureRequestHandler);

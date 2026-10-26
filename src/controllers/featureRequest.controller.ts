@@ -24,6 +24,7 @@ import { PRIORITIES } from "../services/featureRequest-import.service.js";
 import { detectAttachmentMime, validateAttachmentFile } from "../utils/fileValidation.js";
 import { listDepartments } from "../services/department.service.js";
 import { listHeThong } from "../services/hethong.service.js";
+import { exportFeatureRequestsToExcel } from "../services/export.service.js";
 
 // ATTT Mass Assignment: whitelist trường biểu mẫu của Yêu cầu tính năng
 // (khớp form FE + import) — KHÔNG gồm trang_thai/id/linked_* và các trường
@@ -439,16 +440,52 @@ export async function linkFeatureRequestToRoadmapHandler(req: Request, res: Resp
   res.json(updated);
 }
 
+// GET /api/feature-requests/export?department_id=X&ids=1,2,3 — xem lý do
+// dùng GET thay vì POST ở comment trên route (featureRequest.routes.ts).
+// Nhận "ids" từ FE thay vì tự lọc lại ở server: bảng Yêu cầu tính năng lọc
+// HOÀN TOÀN ở client (filteredFeatureRequests() — trạng thái/hệ thống/quý/
+// đơn vị đề xuất/từ khoá), server không biết các điều kiện đó. Cách chắc
+// chắn nhất để file xuất ra "đủ dữ liệu hiển thị trên màn hình" (dù có lọc
+// hay không) là để FE tự tính danh sách đang hiển thị rồi gửi đúng id đó
+// lên — server chỉ cần XÁC THỰC từng id có thực sự nằm trong phạm vi xem
+// (department_id/target_department_id) của người gọi hay không (lọc qua
+// listFeatureRequests(departmentId) đã có sẵn, không viết lại điều kiện
+// scope ở đây — tránh sót như các endpoint từng bị rò rỉ dữ liệu).
+export async function exportFeatureRequestsHandler(req: Request, res: Response) {
+  const idsParam = typeof req.query.ids === "string" ? req.query.ids : "";
+  const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const departmentId = resolveListDepartmentId(
+    scopeOf(req),
+    Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
+  );
+  const scopedRows = departmentId === SCOPE_EMPTY ? [] : await listFeatureRequests(departmentId);
+  const byId = new Map(scopedRows.map((r) => [r.id, r]));
+  const orderedIds = idsParam
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((id) => Number.isFinite(id));
+  const rows = orderedIds.map((id: number) => byId.get(id)).filter((r): r is NonNullable<typeof r> => !!r);
+
+  const buffer = await exportFeatureRequestsToExcel(rows, typeof departmentId === "number" ? departmentId : null);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="yeu-cau-tinh-nang.xlsx"`);
+  res.send(Buffer.from(buffer));
+}
+
 // ---- Import Excel theo biểu mẫu Quy trình số hóa ----
 
 // GET /api/feature-requests/import-template — file .xlsx mẫu (18 cột đúng
 // biểu mẫu), có dropdown chọn Hệ thống cần cải tiến (danh mục Cấu hình >
 // Hệ thống), Ưu tiên + Đơn vị đề xuất (danh mục phòng ban).
 export async function downloadFeatureRequestTemplateHandler(_req: Request, res: Response) {
-  const [departments, heThong] = await Promise.all([listDepartments(), listHeThong()]);
+  const [departments, heThong, loaiYeuCau] = await Promise.all([listDepartments(), listHeThong(), listLoaiYeuCau()]);
   const buffer = await buildFeatureRequestImportTemplate({
     departments: departments.map((d) => d.name),
     heThong: heThong.map((h) => h.ten_he_thong),
+    loaiYeuCau: loaiYeuCau.map((o) => o.ten_loai),
   });
   res.setHeader(
     "Content-Type",

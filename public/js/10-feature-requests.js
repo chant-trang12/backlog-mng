@@ -43,6 +43,7 @@ const FR_PRIORITY_CLASS = {
 // hành động (Duyệt/Từ chối/Đưa vào...) không cho ẩn.
 const FR_TOGGLEABLE_COLUMNS = [
   { key: "stt", label: "STT" },
+  { key: "loai_yeu_cau", label: "Loại yêu cầu" },
   { key: "linh_vuc", label: "Lĩnh vực" },
   { key: "mang", label: "Mảng" },
   { key: "hoat_dong", label: "Hoạt động/nghiệp vụ" },
@@ -174,7 +175,8 @@ async function loadFeatureRequests() {
     if (!frIds.has(id)) state.selectedFeatureRequestIds.delete(id);
   });
   populateFrHeThongFilter();
-  populateFrTargetDeptFilter();
+  populateFrQuarterFilter();
+  populateFrDonViDeXuatFilter();
   frPagination.reset();
   renderFeatureRequestTable();
   updateFeatureRequestNavBadge(countPendingFeatureRequestsForTarget(state.featureRequests));
@@ -228,8 +230,28 @@ function populateFrHeThongFilter() {
   select.value = heThongSet.has(current) ? current : "";
 }
 
-function populateFrTargetDeptFilter() {
-  const select = document.getElementById("fr-filter-target-dept");
+// "Quý thực hiện" không lưu DB (suy từ thoi_gian_mong_muon — xem frQuarterOf
+// bên dưới) nên không thể populate theo kiểu "giá trị DB khác nhau" như Hệ
+// thống; tính thẳng tập quý/năm đang có mặt trong dữ liệu hiện tại.
+function populateFrQuarterFilter() {
+  const select = document.getElementById("fr-filter-quy");
+  if (!select) return;
+  const current = select.value;
+  const quarterSet = new Set(state.featureRequests.map((r) => frQuarterOf(r.thoi_gian_mong_muon)).filter(Boolean));
+  // Sắp theo thời gian (năm tăng dần, trong năm theo quý I->IV) thay vì
+  // alphabet — "Quý I/2027" phải đứng SAU "Quý IV/2026".
+  const sorted = Array.from(quarterSet).sort((a, b) => {
+    const [qa, ya] = a.split("/");
+    const [qb, yb] = b.split("/");
+    if (ya !== yb) return Number(ya) - Number(yb);
+    return FR_QUARTER_LABELS.indexOf(qa) - FR_QUARTER_LABELS.indexOf(qb);
+  });
+  select.innerHTML = `<option value="">Tất cả</option>` + sorted.map((q) => `<option value="${q}">${q}</option>`).join("");
+  select.value = quarterSet.has(current) ? current : "";
+}
+
+function populateFrDonViDeXuatFilter() {
+  const select = document.getElementById("fr-filter-don-vi");
   if (!select) return;
   const current = select.value;
   select.innerHTML =
@@ -242,11 +264,13 @@ function filteredFeatureRequests() {
   const term = (document.getElementById("fr-filter-search")?.value ?? "").trim().toLowerCase();
   const status = document.getElementById("fr-filter-status")?.value ?? "";
   const heThong = document.getElementById("fr-filter-he-thong")?.value ?? "";
-  const targetDept = document.getElementById("fr-filter-target-dept")?.value ?? "";
+  const quy = document.getElementById("fr-filter-quy")?.value ?? "";
+  const donVi = document.getElementById("fr-filter-don-vi")?.value ?? "";
   return state.featureRequests.filter((r) => {
     if (status && r.trang_thai !== status) return false;
     if (heThong && r.he_thong !== heThong) return false;
-    if (targetDept && String(r.target_department_id ?? "") !== targetDept) return false;
+    if (quy && frQuarterOf(r.thoi_gian_mong_muon) !== quy) return false;
+    if (donVi && String(r.department_id ?? "") !== donVi) return false;
     if (
       term &&
       // Tìm trong TOÀN BỘ dữ liệu của yêu cầu (giống ô "Tìm kiếm" ở bảng
@@ -254,6 +278,7 @@ function filteredFeatureRequests() {
       // thị trên bảng + phòng đề xuất/đích + trạng thái + mức ưu tiên.
       ![
         r.tieu_de,
+        r.loai_yeu_cau,
         r.mo_ta,
         r.he_thong,
         r.nguoi_de_xuat,
@@ -527,6 +552,7 @@ function renderFeatureRequestTable() {
        <td><input type="checkbox" class="fr-row-checkbox" ${state.selectedFeatureRequestIds.has(r.id) ? "checked" : ""} /></td>
        <td data-col="stt" ${colHidden("stt")}>${pageStart + i + 1}</td>
        <td>${frClamp(r.tieu_de)}</td>
+       <td data-col="loai_yeu_cau" ${colHidden("loai_yeu_cau")}>${frClamp(r.loai_yeu_cau)}</td>
        <td data-col="linh_vuc" ${colHidden("linh_vuc")}>${frClamp(r.linh_vuc)}</td>
        <td data-col="mang" ${colHidden("mang")}>${frClamp(r.mang)}</td>
        <td data-col="hoat_dong" ${colHidden("hoat_dong")}>${hoatDongCell}</td>
@@ -1043,12 +1069,27 @@ function frResetPageAndRender() {
 document.getElementById("fr-filter-search")?.addEventListener("input", frResetPageAndRender);
 document.getElementById("fr-filter-status")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-he-thong")?.addEventListener("change", frResetPageAndRender);
-document.getElementById("fr-filter-target-dept")?.addEventListener("change", frResetPageAndRender);
+document.getElementById("fr-filter-quy")?.addEventListener("change", frResetPageAndRender);
+document.getElementById("fr-filter-don-vi")?.addEventListener("change", frResetPageAndRender);
 
 // ---- Import Excel biểu mẫu Quy trình số hóa ----
 
 document.getElementById("download-fr-template-btn")?.addEventListener("click", () => {
   window.location.href = `/api/feature-requests/import-template${deptParam("?")}`;
+});
+
+// Xuất Excel — xuất ĐÚNG danh sách đang hiển thị trên màn hình: tính lại
+// filteredFeatureRequests() (đã áp mọi bộ lọc + từ khoá hiện tại, KHÔNG
+// phân trang — đủ dữ liệu dù đang xem trang 1/N) rồi chỉ gửi ids lên, để
+// server tự tra đúng những dòng đó (xem exportFeatureRequestsHandler —
+// cũng tự kiểm tra lại phạm vi phòng ban, không tin ids FE gửi tuỳ ý).
+document.getElementById("export-fr-btn")?.addEventListener("click", () => {
+  const ids = filteredFeatureRequests().map((r) => r.id);
+  if (ids.length === 0) {
+    showToast("Không có dữ liệu để xuất.");
+    return;
+  }
+  window.location.href = `/api/feature-requests/export?ids=${ids.join(",")}${deptParam()}`;
 });
 
 document.getElementById("import-fr-btn")?.addEventListener("click", () => {

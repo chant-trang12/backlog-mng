@@ -16,6 +16,13 @@ const pages = {
   hdsd: document.getElementById("page-hdsd"),
 };
 
+// Bấm logo (góc trên sidebar) -> về Trang chủ, y hệt bấm mục menu "Trang
+// chủ" — click thẳng vào nav-item đó để dùng lại nguyên logic hiện có (ẩn/
+// hiện trang, tải lại dữ liệu, chặn khi bị ẩn menu...), không viết lại.
+document.getElementById("sidebar-logo-btn")?.addEventListener("click", () => {
+  document.querySelector('.nav-item[data-page="home"]')?.click();
+});
+
 document.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
     // Chặn cả đường vòng .click() trực tiếp (bỏ qua thuộc tính hidden của
