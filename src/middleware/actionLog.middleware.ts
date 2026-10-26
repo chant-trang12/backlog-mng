@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { db } from "../db/database.js";
 import { recordActionLog } from "../services/actionLog.service.js";
 import type { ActionLogType } from "../types/actionLog.js";
+import { MENU_ITEMS } from "../services/menu.service.js";
 
 // Ghi Action Log TỰ ĐỘNG cho mọi request ghi (POST/PUT/PATCH/DELETE) tới
 // /api — 1 middleware chung, không phải sửa tay từng service/controller
@@ -90,6 +91,7 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "phan-loai-nhan-su": { module: "Cấu hình", entity: "Phân loại nhân sự", table: "phan_loai_nhan_su_options", nameColumn: "ten_phan_loai" },
   "tieu-chi": { module: "Cấu hình", entity: "Tiêu chí", table: "tieu_chi_configs", nameColumn: "ten_tieu_chi" },
   "ranking-config": { module: "Cấu hình", entity: "Ranking team" },
+  "menu-visibility": { module: "Cấu hình", entity: "Phân quyền menu theo phòng ban" },
 };
 
 // Route lồng dạng "/<root>/:id/<subResource>" (VD /tasks/:id/members,
@@ -410,6 +412,17 @@ async function buildDescription(req: Request): Promise<{ module: string | null; 
     // id trên URL là id tính năng cha -> chính là tên chi tiết của mô tả.
     const parent = await resolveEntityName("digital_features", "module", segments[1]);
     if (parent) detail = ` — Tính năng số hoá "${parent}"`;
+  } else if (root === "menu-visibility") {
+    // PUT /api/menu-visibility — body {department_id, menu_key, is_visible},
+    // không có "tên" riêng -> ghép rõ Phòng ban + mục menu + Hiện/Ẩn thay vì
+    // chỉ hiện "Cập nhật menu-visibility" chung chung.
+    const b = (body ?? {}) as Record<string, unknown>;
+    const deptName = await resolveEntityName("departments", "name", String(b.department_id ?? ""));
+    const menuLabel = MENU_ITEMS.find((m) => m.key === b.menu_key)?.label ?? String(b.menu_key ?? "");
+    const visibleText = b.is_visible ? "Hiện" : "Ẩn";
+    // Tên phòng ban trong DB đã có sẵn tiền tố "Phòng ..." -> không ghép
+    // thêm "Phòng" nữa tránh lặp ("Phòng Phòng Công nghệ thông tin").
+    detail = ` — ${deptName || "Phòng ban #?"} — "${menuLabel}": ${visibleText}`;
   } else {
     const snippet = req.method !== "DELETE" ? pickNameSnippet(body) : "";
     const resolved = snippet || (await resolveEntityName(nameLookup?.table, nameLookup?.nameColumn, idSegment));
