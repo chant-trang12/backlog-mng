@@ -36,12 +36,14 @@ function alBuildQuery() {
   const action = document.getElementById("al-filter-action")?.value;
   const module_ = document.getElementById("al-filter-module")?.value;
   const userId = document.getElementById("al-filter-user")?.value;
+  const departmentId = document.getElementById("al-filter-department")?.value;
   const from = document.getElementById("al-filter-from")?.value;
   const to = document.getElementById("al-filter-to")?.value;
   if (search) params.set("q", search);
   if (action) params.set("action", action);
   if (module_) params.set("module", module_);
   if (userId) params.set("user_id", userId);
+  if (departmentId) params.set("department_id", departmentId);
   if (from) params.set("date_from", from);
   if (to) params.set("date_to", to);
   const qs = params.toString();
@@ -76,6 +78,16 @@ async function loadActionLogUsers() {
   } catch {
     // Không phải Admin -> im lặng bỏ qua.
   }
+}
+
+function loadActionLogDepartments() {
+  const select = document.getElementById("al-filter-department");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML =
+    `<option value="">Tất cả</option>` +
+    state.departments.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
+  select.value = state.departments.some((d) => String(d.id) === current) ? current : "";
 }
 
 async function loadActionLogs() {
@@ -122,7 +134,7 @@ document.getElementById("al-filter-search")?.addEventListener("input", () => {
   clearTimeout(alSearchDebounceTimer);
   alSearchDebounceTimer = setTimeout(() => loadActionLogs().catch((err) => showToast(err.message)), 350);
 });
-["al-filter-action", "al-filter-module", "al-filter-user", "al-filter-from", "al-filter-to"].forEach((id) => {
+["al-filter-action", "al-filter-module", "al-filter-user", "al-filter-department", "al-filter-from", "al-filter-to"].forEach((id) => {
   document.getElementById(id)?.addEventListener("change", () => {
     loadActionLogs().catch((err) => showToast(err.message));
   });

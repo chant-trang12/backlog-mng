@@ -49,6 +49,7 @@ export async function recordActionLog(input: ActionLogInput): Promise<void> {
 export async function listActionLogs(filter: ListActionLogsFilter): Promise<ActionLog[]> {
   const query = db("action_logs");
   if (filter.user_id != null) query.where({ user_id: filter.user_id });
+  if (filter.department_id != null) query.where({ department_id: filter.department_id });
   if (filter.action) query.where({ action: filter.action });
   if (filter.module) query.where({ module: filter.module });
   if (filter.q) {

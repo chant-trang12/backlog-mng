@@ -6,6 +6,7 @@ import { ACTION_LOG_TYPES, type ActionLogType } from "../types/actionLog.js";
 // Chỉ Admin gọi được (requireAdmin mount ở app.ts, giống /api/users).
 export async function listActionLogsHandler(req: Request, res: Response) {
   const userId = req.query.user_id != null ? Number(req.query.user_id) : undefined;
+  const departmentId = req.query.department_id != null ? Number(req.query.department_id) : undefined;
   const action =
     typeof req.query.action === "string" && (ACTION_LOG_TYPES as string[]).includes(req.query.action)
       ? (req.query.action as ActionLogType)
@@ -20,6 +21,7 @@ export async function listActionLogsHandler(req: Request, res: Response) {
 
   const rows = await listActionLogs({
     user_id: Number.isFinite(userId) ? userId : undefined,
+    department_id: Number.isFinite(departmentId) ? departmentId : undefined,
     action,
     module: moduleFilter,
     q,

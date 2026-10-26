@@ -54,6 +54,7 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
     // Admin dùng, tránh gọi API thừa cho editor/viewer).
     if (btn.dataset.page === "action-logs") {
+      loadActionLogDepartments();
       Promise.all([loadActionLogModules(), loadActionLogUsers(), loadActionLogs()]).catch((err) =>
         showToast(err.message),
       );

@@ -42,6 +42,7 @@ export interface ActionLogInput {
 
 export interface ListActionLogsFilter {
   user_id?: number;
+  department_id?: number;
   action?: ActionLogType;
   module?: string;
   q?: string;
