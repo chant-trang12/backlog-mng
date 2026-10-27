@@ -266,11 +266,13 @@ function filteredFeatureRequests() {
   const heThong = document.getElementById("fr-filter-he-thong")?.value ?? "";
   const quy = document.getElementById("fr-filter-quy")?.value ?? "";
   const donVi = document.getElementById("fr-filter-don-vi")?.value ?? "";
+  const uuTien = document.getElementById("fr-filter-uu-tien")?.value ?? "";
   return state.featureRequests.filter((r) => {
     if (status && r.trang_thai !== status) return false;
     if (heThong && r.he_thong !== heThong) return false;
     if (quy && frQuarterOf(r.thoi_gian_mong_muon) !== quy) return false;
     if (donVi && String(r.department_id ?? "") !== donVi) return false;
+    if (uuTien && r.do_uu_tien !== uuTien) return false;
     if (
       term &&
       // Tìm trong TOÀN BỘ dữ liệu của yêu cầu (giống ô "Tìm kiếm" ở bảng
@@ -1071,6 +1073,7 @@ document.getElementById("fr-filter-status")?.addEventListener("change", frResetP
 document.getElementById("fr-filter-he-thong")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-quy")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-don-vi")?.addEventListener("change", frResetPageAndRender);
+document.getElementById("fr-filter-uu-tien")?.addEventListener("change", frResetPageAndRender);
 
 // ---- Import Excel biểu mẫu Quy trình số hóa ----
 
