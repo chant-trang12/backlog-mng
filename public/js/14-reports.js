@@ -21,7 +21,10 @@ const RPFR_PRIORITY_META = [
   { key: "Khẩn cấp", color: "#620915" },
   { key: "Cao", color: "#ee0033" },
   { key: "Trung bình", color: "#f9b3b7" },
-  { key: "Thấp", color: "#fef3c7" },
+  // "Thấp" đổi sang XANH DA TRỜI NHẠT + vẽ NÉT ĐỨT (user yêu cầu kèm ảnh
+  // chụp màu) — dashed:true áp cho cả đường trong biểu đồ lẫn ô màu legend
+  // (repeating-linear-gradient giả nét đứt) để 2 nơi khớp nhau.
+  { key: "Thấp", color: "#64b5f6", dashed: true },
 ];
 // Bảng màu cho ô vuông "Theo loại yêu cầu" — loai_yeu_cau là danh mục cấu
 // hình được (Cấu hình > Loại yêu cầu), số lượng giá trị không cố định nên
@@ -203,7 +206,12 @@ function renderRpfrTrendChart(rows) {
   document.getElementById("rpfr-trend-sub").textContent = `Số yêu cầu theo tháng, năm ${year}`;
 
   document.getElementById("rpfr-trend-legend").innerHTML = RPFR_PRIORITY_META.map(
-    (m) => `<span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:${m.color}"></span>${m.key}</span>`,
+    (m) =>
+      `<span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="${
+        m.dashed
+          ? `background:repeating-linear-gradient(90deg,${m.color} 0 4px,transparent 4px 7px)`
+          : `background:${m.color}`
+      }"></span>${m.key}</span>`,
   ).join("");
 
   const seriesByPriority = new Map(RPFR_PRIORITY_META.map((m) => [m.key, new Array(12).fill(0)]));
@@ -234,7 +242,9 @@ function renderRpfrTrendChart(rows) {
 
   const linesSvg = RPFR_PRIORITY_META.map((m) => {
     const pts = seriesByPriority.get(m.key).map((v, i) => `${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(" L ");
-    return `<path d="M ${pts}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    return `<path d="M ${pts}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"${
+      m.dashed ? ' stroke-dasharray="7 5"' : ""
+    }/>`;
   }).join("");
 
   let xLabels = "";
