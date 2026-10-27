@@ -193,31 +193,33 @@ function renderRpfrStatusDonut(rows) {
   });
 }
 
-// Xu hướng tiếp nhận và hoàn thành — 12 tháng của năm đang lọc (hoặc năm
-// gần nhất có dữ liệu nếu đang "Tất cả các năm"). "Tiếp nhận" đếm theo
-// created_at; "Hoàn thành" đếm theo updated_at của các yêu cầu ĐÃ duyệt
-// (không có cột ngày duyệt riêng — updated_at là xấp xỉ gần nhất hiện có).
+// Xu hướng tiếp nhận và độ ưu tiên — 12 tháng của năm đang lọc (hoặc năm
+// gần nhất có dữ liệu nếu đang "Tất cả các năm"), MỖI MỨC ƯU TIÊN 1 đường
+// riêng (đếm theo created_at + do_uu_tien) — khớp đúng ý nghĩa "tiếp nhận"
+// (không phải "hoàn thành" suy diễn qua updated_at như trước, do_uu_tien
+// là trường thật lưu sẵn). Dùng lại ĐÚNG màu RPFR_PRIORITY_META.
 function renderRpfrTrendChart(rows) {
   const yearFilter = document.getElementById("rpfr-filter-year")?.value;
   const year = yearFilter || (rows[0] ? Number(String(rows[0].created_at).slice(0, 4)) : new Date().getFullYear());
   document.getElementById("rpfr-trend-sub").textContent = `Số yêu cầu theo tháng, năm ${year}`;
 
-  const tiepNhan = new Array(12).fill(0);
-  const hoanThanh = new Array(12).fill(0);
+  document.getElementById("rpfr-trend-legend").innerHTML = RPFR_PRIORITY_META.map(
+    (m) => `<span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:${m.color}"></span>${m.key}</span>`,
+  ).join("");
+
+  const seriesByPriority = new Map(RPFR_PRIORITY_META.map((m) => [m.key, new Array(12).fill(0)]));
   rows.forEach((r) => {
-    if (r.created_at && String(r.created_at).slice(0, 4) === String(year)) {
-      const m = Number(String(r.created_at).slice(5, 7)) - 1;
-      if (m >= 0 && m < 12) tiepNhan[m] += 1;
-    }
-    if (r.trang_thai === "Đã duyệt" && r.updated_at && String(r.updated_at).slice(0, 4) === String(year)) {
-      const m = Number(String(r.updated_at).slice(5, 7)) - 1;
-      if (m >= 0 && m < 12) hoanThanh[m] += 1;
-    }
+    if (!r.created_at || String(r.created_at).slice(0, 4) !== String(year)) return;
+    const m = Number(String(r.created_at).slice(5, 7)) - 1;
+    if (m < 0 || m > 11) return;
+    const series = seriesByPriority.get(r.do_uu_tien);
+    if (series) series[m] += 1;
   });
 
   const w = 640, h = 220, padL = 26, padB = 22, padT = 10, padR = 10;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const maxVal = Math.max(1, ...tiepNhan, ...hoanThanh);
+  const allValues = [...seriesByPriority.values()].flat();
+  const maxVal = Math.max(1, ...allValues);
   const yMax = Math.max(2, Math.ceil(maxVal / 2) * 2);
   const xStep = plotW / 11;
   const xAt = (i) => padL + xStep * i;
@@ -231,9 +233,10 @@ function renderRpfrTrendChart(rows) {
     yLabels += `<text x="${padL - 6}" y="${(y + 4).toFixed(1)}" font-size="11" fill="var(--muted)" text-anchor="end">${Math.round(v)}</text>`;
   }
 
-  const tnPts = tiepNhan.map((v, i) => `${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(" L ");
-  const htPts = hoanThanh.map((v, i) => `${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(" L ");
-  const areaPath = `M ${xAt(0).toFixed(1)},${yAt(0).toFixed(1)} L ${tnPts} L ${xAt(11).toFixed(1)},${yAt(0).toFixed(1)} Z`;
+  const linesSvg = RPFR_PRIORITY_META.map((m) => {
+    const pts = seriesByPriority.get(m.key).map((v, i) => `${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`).join(" L ");
+    return `<path d="M ${pts}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join("");
 
   let xLabels = "";
   for (let i = 0; i < 12; i++) {
@@ -243,9 +246,7 @@ function renderRpfrTrendChart(rows) {
   document.getElementById("rpfr-trend-chart").innerHTML = `
     <svg viewBox="0 0 ${w} ${h}" width="100%" height="220" preserveAspectRatio="xMidYMid meet">
       ${gridSvg}${yLabels}
-      <path d="${areaPath}" fill="#fcd9db" opacity="0.7"/>
-      <path d="M ${tnPts}" fill="none" stroke="#ee0033" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <path d="M ${htPts}" fill="none" stroke="#7dd3fc" stroke-width="2.5" stroke-dasharray="6 5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${linesSvg}
       ${xLabels}
     </svg>`;
 }

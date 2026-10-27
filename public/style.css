@@ -1669,11 +1669,10 @@ th {
    thái và số liệu bị kéo quá xa, nhìn rời rạc, mất thẩm mỹ. */
 .rpfr-donut-legend { flex: 1 1 180px; min-width: 180px; max-width: 220px; }
 
-/* Xu hướng tiếp nhận/hoàn thành */
-.rpfr-trend-legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-.rpfr-trend-legend-item { display: flex; align-items: center; gap: 6px; }
-.rpfr-trend-swatch { width: 14px; height: 2px; border-radius: 2px; background: currentColor; display: inline-block; }
-.rpfr-trend-swatch-dashed { background: none; border-top: 2px dashed; height: 0; }
+/* Xu hướng tiếp nhận và độ ưu tiên — 4 đường, 1 màu/mức ưu tiên */
+.rpfr-trend-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; color: var(--muted); }
+.rpfr-trend-legend-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.rpfr-trend-swatch { width: 14px; height: 2px; border-radius: 2px; display: inline-block; }
 
 /* Phòng ban × trạng thái (bảng nhiệt) */
 .rpfr-heat-legend { display: flex; align-items: center; gap: 3px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
