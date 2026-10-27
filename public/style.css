@@ -1711,7 +1711,8 @@ th {
 .rpfr-waffle > span { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
 .rpfr-waffle-legend { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; }
 .rpfr-waffle-legend-item { display: flex; align-items: center; gap: 8px; }
-.rpfr-waffle-legend-item strong { margin-left: auto; }
+/* Số đếm nằm ngay sau nhãn (gap 8px) — trước đây strong có margin-left:auto
+   đẩy số sang mép phải panel, cách xa nhãn trông rời rạc (user phản hồi). */
 
 /* Hệ thống cần cải tiến (thanh slider + chấm) */
 .rpfr-dot-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.85rem; }
