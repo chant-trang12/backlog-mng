@@ -1646,6 +1646,12 @@ th {
 .fr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 0.78rem; color: var(--muted); }
 .fr-legend-item { display: flex; align-items: center; gap: 6px; }
 
+/* Legend của cột "Theo quý thực hiện" (Báo cáo > Yêu cầu tính năng) — trước
+   đây div.rpfr-legend không có rule nào, mỗi .fr-legend-item là block chiếm
+   trọn bề rộng nên 4 mục dồn thành CỘT DỌC (user phản hồi kèm ảnh chụp) —
+   cho thành HÀNG NGANG, xuống dòng khi hẹp, đồng bộ kiểu .fr-legend ở trên. */
+.rpfr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.78rem; color: var(--muted); }
+
 /* ---- Báo cáo - Thống kê > Yêu cầu tính năng (14-reports.js) ---- */
 /* #reports-tab-fr KHÔNG phải .card (không như các tab khác, VD
    #team-tab-nhansu — luôn bọc trong <section class="card">, có padding
