@@ -185,10 +185,18 @@ function renderTasks() {
   }
 
   const pageItems = taskPagination.slice(state.tasks);
+  // STT hiển thị = vị trí dòng trong danh sách ĐANG XEM (đã lọc + phân
+  // trang), không phải tasks.stt lưu DB — khớp đúng cách bảng Yêu cầu tính
+  // năng/Roadmap đang làm (pageStart + i + 1). tasks.stt vẫn giữ nguyên ở
+  // DB (dùng cho thứ tự sắp xếp + cột STT khi Xuất Excel cả tháng, không
+  // qua bộ lọc/phân trang của màn hình này) — chỉ đổi CÁCH HIỂN THỊ ở đây,
+  // để STT luôn liên tục 1,2,3... dù đang lọc hay vừa xóa 1 dòng (trước đây
+  // hiện thẳng tasks.stt nên lọc/xóa xong vẫn thấy STT bị hở số).
+  const pageStart = (taskPagination.page - 1) * taskPagination.pageSize;
 
   const colHidden = (key) => (isTaskColHidden(key) || (key === "team" && hideTeamColumn) ? "hidden" : "");
   el.taskTbody.innerHTML = pageItems
-    .map((t) => {
+    .map((t, i) => {
       const statusClass = STATUS_CLASS[t.trang_thai] || "status-default";
       // Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" -> tô nền
       // hàng để nổi bật ngay trong danh sách, không cần bấm lọc ở banner
@@ -197,7 +205,7 @@ function renderTasks() {
       return `
     <tr data-id="${t.id}" class="${urgentRowClass.trim()}" title="${t.co_viec_xu_ly_gap ? "Có nhân sự đang bị đánh dấu Việc cần xử lý gấp" : ""}">
       <td><input type="checkbox" class="task-row-checkbox" ${state.selectedTaskIds.has(t.id) ? "checked" : ""} /></td>
-      <td data-col="stt" ${colHidden("stt")}>${t.stt}</td>
+      <td data-col="stt" ${colHidden("stt")}>${pageStart + i + 1}</td>
       <td data-col="tag" ${colHidden("tag")}>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
       <td data-col="phan_loai" ${colHidden("phan_loai")}>${renderNatureBadges(t.tinh_chat)}</td>
       <td data-col="team" ${colHidden("team")}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
@@ -312,19 +320,20 @@ function renderTasks() {
   syncTaskStickyOffsets();
 }
 
-// 6 cột đầu (checkbox/STT/Tag/Phân loại/Team/Nhiệm vụ) của #task-table cố
-// định khi cuộn ngang (xem CSS "left: var(--task-col2-left...)") — đo ĐÚNG
-// width thật đã render của 5 cột đầu, giống syncMemberStickyOffsets() ở
-// 03-members.js. Cột Team bị ẩn (hidden) ở phòng ban tính KPI theo task thì
-// width đo được tự động là 0, nên các cột sau nó tự co lại đúng vị trí mà
-// không cần code riêng cho từng cách tính KPI.
+// 5 cột đầu (checkbox/STT/Tag/Phân loại/Team) của #task-table cố định khi
+// cuộn ngang (xem CSS "left: var(--task-col2-left...)") — cột "Nhiệm vụ"
+// (thứ 6) KHÔNG cố định nữa (bỏ theo yêu cầu). Đo ĐÚNG width thật đã render
+// của 4 cột đầu (checkbox/STT/Tag/Phân loại), giống syncMemberStickyOffsets()
+// ở 03-members.js. Cột Team bị ẩn (hidden) ở phòng ban tính KPI theo task
+// thì width đo được của chính nó tự động là 0 (không ảnh hưởng offset các
+// cột đứng trước nó trong 4 cột đo ở đây).
 function syncTaskStickyOffsets() {
   const table = document.getElementById("task-table");
   const ths = table?.querySelectorAll("thead th");
   if (!table || !ths || ths.length < 6) return;
   let left = 0;
   const lefts = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 4; i++) {
     left += ths[i].getBoundingClientRect().width;
     lefts.push(left);
   }
@@ -332,7 +341,6 @@ function syncTaskStickyOffsets() {
   table.style.setProperty("--task-col3-left", `${lefts[1]}px`);
   table.style.setProperty("--task-col4-left", `${lefts[2]}px`);
   table.style.setProperty("--task-col5-left", `${lefts[3]}px`);
-  table.style.setProperty("--task-col6-left", `${lefts[4]}px`);
 }
 window.addEventListener("resize", () => syncTaskStickyOffsets());
 
