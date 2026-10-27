@@ -2209,8 +2209,20 @@
         </dialog>
 
 
-        <!-- ---- Trang Báo cáo - Thống kê (đang để trắng, nội dung bổ sung sau) ---- -->
-        <div id="page-reports" hidden></div>
+        <!-- ---- Trang Báo cáo - Thống kê — 2 tab đang để trắng, nội dung bổ
+             sung sau (xem data-tab click handler ở 05-cskh.js, cùng cụm các
+             subnav khác). ---- -->
+        <div id="page-reports" hidden>
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="reports-subnav">
+            <span class="pill active" data-tab="fr">Yêu cầu tính năng</span>
+            <span class="pill" data-tab="task">Nhiệm vụ</span>
+          </div>
+
+          <div id="reports-tab-fr"></div>
+          <div id="reports-tab-task" hidden></div>
+          </div>
+        </div>
 
         <!-- ---- Trang Cấu hình ---- -->
         <div id="page-config" hidden>

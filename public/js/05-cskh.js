@@ -55,6 +55,16 @@ document.querySelectorAll("#home-subnav .pill").forEach((pill) => {
   });
 });
 
+document.querySelectorAll("#reports-subnav .pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    document.querySelectorAll("#reports-subnav .pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    ["fr", "task"].forEach((tab) => {
+      document.getElementById(`reports-tab-${tab}`).hidden = tab !== pill.dataset.tab;
+    });
+  });
+});
+
 // -- Sự cố --
 
 // Bộ cột chi tiết bảng Sự cố — KHỚP thứ tự thead #incident-table (sau
