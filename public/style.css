@@ -1663,7 +1663,7 @@ th {
 /* Donut trạng thái */
 /* Donut dùng chung class .home-donut-* (Trang chủ, style.css ở trên) — chỉ
    cần định vị + chừa chỗ cho legend bên cạnh ở đây. */
-.rpfr-donut-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.rpfr-donut-row { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
 .rpfr-donut-legend { flex: 1 1 180px; min-width: 180px; }
 
 /* Xu hướng tiếp nhận/hoàn thành */
