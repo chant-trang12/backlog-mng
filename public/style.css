@@ -1574,6 +1574,16 @@ th {
 }
 .fr-stats-panel h3 { margin: 0 0 12px; font-size: 0.95rem; }
 
+/* Danh sách thanh ngang (đơn vị đề xuất/quý thực hiện) có thể dài tuỳ dữ
+   liệu thực tế (nhiều đơn vị đề xuất, nhiều quý) — giới hạn chiều cao rồi
+   cuộn dọc BÊN TRONG, không để khung card (và cả 3 khung cùng hàng trong
+   grid, vốn cao bằng nhau) giãn nở theo số dòng. */
+#fr-dept-bar-list,
+#fr-quy-bar-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .fr-stacked-bar {
   display: flex;
   height: 10px;
