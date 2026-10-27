@@ -36,19 +36,20 @@ const FR_PRIORITY_CLASS = {
 };
 
 // ---- Thống kê tổng quan (renderFeatureRequestStats) ----
-// Màu khớp ĐÚNG badge đã dùng cho cùng trường đó trên chính bảng này
-// (frStatusBadgeClass/FR_PRIORITY_CLASS ở trên) — không bịa bảng màu riêng
-// cho khung thống kê, tránh 1 giá trị có 2 màu khác nhau ở 2 chỗ.
+// Màu đơn sắc (gradient nhạt -> đậm trong CHÍNH thang đỏ --red-100..900 có
+// sẵn của app, gồm cả --maroon/--pink-rose) theo đúng style mẫu user gửi —
+// khác với badge nhiều màu (xanh/vàng/đỏ) trên bảng chi tiết, 2 khung này
+// CỐ Ý dùng 1 tông để nhìn như 1 bộ biểu đồ thống nhất.
 const FR_REPORT_STATUS_META = [
-  { key: "Chờ duyệt", color: "#fdba74" }, // orange-300, khớp status-dang-thuc-hien
-  { key: "Đã duyệt", color: "#8bbf6f" }, // khớp family xanh của status-hoan-thanh
-  { key: "Từ chối", color: "#ee0033" }, // red-600, khớp status-huy
+  { key: "Chờ duyệt", color: "#fcd9db" }, // red-200
+  { key: "Đã duyệt", color: "#ef404a" }, // red-500
+  { key: "Từ chối", color: "#620915" }, // red-900 / --maroon
 ];
 const FR_REPORT_PRIORITY_META = [
-  { key: "Khẩn cấp", color: "#ee0033" },
-  { key: "Cao", color: "#fdba74" },
-  { key: "Trung bình", color: "#8bbf6f" },
-  { key: "Thấp", color: "#fcd34d" }, // amber-300, khớp status-default
+  { key: "Khẩn cấp", color: "#620915" }, // red-900 / --maroon
+  { key: "Cao", color: "#c4132b" }, // red-700
+  { key: "Trung bình", color: "#f2666e" }, // red-400
+  { key: "Thấp", color: "#fcd9db" }, // red-200
 ];
 
 // ---- Cấu hình cột hiển thị ở bảng Yêu cầu tính năng ----
