@@ -52,7 +52,7 @@ const FR_REPORT_PRIORITY_META = [
   { key: "Khẩn cấp", color: "#620915" }, // red-900 / --maroon
   { key: "Cao", color: "#ee0033" }, // red-600
   { key: "Trung bình", color: "#f9b3b7" }, // red-300
-  { key: "Thấp", color: "#fef5f6" }, // red-100
+  { key: "Thấp", color: "#fef3c7" }, // amber-100 — kem nhạt theo ảnh mẫu, thay vì hồng nhạt
 ];
 
 // ---- Cấu hình cột hiển thị ở bảng Yêu cầu tính năng ----
