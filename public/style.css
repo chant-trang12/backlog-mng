@@ -1563,7 +1563,7 @@ th {
 /* Chỉ nhãn (VD "Tổng yêu cầu") căn phải — số liệu + dòng phụ bên dưới giữ
    căn trái như cũ, không áp text-align:right cho cả thẻ. */
 .fr-stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; text-align: right; }
-.fr-stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.fr-stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; color: var(--red-600); }
 .fr-stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
 
 .fr-stats-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
