@@ -141,14 +141,28 @@ function renderEmpty() {
   el.emptyState.hidden = false;
 }
 
-// Task thay thế (tạo khi Xin Hủy nhiệm vụ) — liên kết tới task gốc đã hủy,
-// hiển thị TÁCH BIỆT với DoD (không chèn vào DoD, DoD luôn là nội dung
-// thật, sửa/xóa tự do bình thường — xem updateTask, task.service.ts).
+// Liên kết "Xin Hủy nhiệm vụ" ↔ nhiệm vụ thay thế — hiển thị TÁCH BIỆT với
+// DoD (không chèn vào DoD, DoD luôn là nội dung thật, sửa/xóa tự do bình
+// thường — xem updateTask, task.service.ts), gắn ở cột "Nhiệm vụ" cho dễ
+// thấy ngay. 2 chiều độc lập (1 task có thể vừa là thay thế cho task A, vừa
+// sau đó bị chính nó hủy/thay bởi task B — hiện đủ cả 2 note nếu có):
+// - thay_cho_task_id: task NÀY là bản thay thế cho 1 task đã hủy trước đó.
+// - thay_the_task_id: task NÀY đã hủy và được 1 task khác thay thế.
 function renderReplacementInfoNote(t) {
-  if (!t.thay_cho_task_id) return "";
-  const original = state.tasksAll.find((x) => x.id === t.thay_cho_task_id);
-  if (!original) return "";
-  return `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy #${original.stt}: "${original.nhiem_vu}".</div>`;
+  let html = "";
+  if (t.thay_cho_task_id) {
+    const original = state.tasksAll.find((x) => x.id === t.thay_cho_task_id);
+    if (original) {
+      html += `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy #${original.stt}: "${original.nhiem_vu}".</div>`;
+    }
+  }
+  if (t.thay_the_task_id) {
+    const replacement = state.tasksAll.find((x) => x.id === t.thay_the_task_id);
+    if (replacement) {
+      html += `<div class="auto-cancel-note">Đã được thay thế bởi nhiệm vụ #${replacement.stt}: "${replacement.nhiem_vu}".</div>`;
+    }
+  }
+  return html;
 }
 
 function renderTasks() {
@@ -201,8 +215,8 @@ function renderTasks() {
       <td data-col="tag" ${colHidden("tag")}>${t.tag ? `<span ${tagBadgeAttrs(t.tag)}>${t.tag}</span>` : ""}</td>
       <td data-col="phan_loai" ${colHidden("phan_loai")}>${renderNatureBadges(t.tinh_chat)}</td>
       <td data-col="team" ${colHidden("team")}><span class="status-badge ${teamColorClass(t.team)}">${t.team}</span></td>
-      <td>${t.nhiem_vu}</td>
-      <td data-col="dod" ${colHidden("dod")}>${(t.dod ?? "").replace(/\n/g, "<br/>")}${renderReplacementInfoNote(t)}</td>
+      <td>${t.nhiem_vu}${renderReplacementInfoNote(t)}</td>
+      <td data-col="dod" ${colHidden("dod")}>${(t.dod ?? "").replace(/\n/g, "<br/>")}</td>
       <td data-col="deadline" ${colHidden("deadline")}>${formatDateDisplay(t.deadline)}</td>
       <td data-col="hoan_thanh" ${colHidden("hoan_thanh")}>
         <span class="progress-bar"><span style="width:${Math.min(100, Math.max(0, t.phan_tram_hoan_thanh))}%"></span></span>${t.phan_tram_hoan_thanh}%

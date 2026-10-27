@@ -1832,21 +1832,18 @@ th {
 }
 .cell-graded-at { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 
-/* Ghi chú hệ thống tự tạo khi "Xin Hủy nhiệm vụ" (DoD task thay thế, Nội
-   dung đánh giá task bị hủy — xem renderCellWithAutoNote, 04-tasks.js) —
-   ô nhỏ/mờ kiểu "disabled" để phân biệt rõ với nội dung tự nhập tay, chữ
-   bé hơn nội dung thường. Vẫn sửa được bình thường qua dialog Sửa/Chấm
-   điểm — đây chỉ là cách hiển thị ở bảng danh sách, không khóa dữ liệu. */
+/* Ghi chú liên kết "Xin Hủy nhiệm vụ" ↔ nhiệm vụ thay thế — gắn ở cột
+   "Nhiệm vụ" (renderReplacementInfoNote, 04-tasks.js). Nền xanh dương để
+   nổi bật, tách rõ khỏi nội dung Nhiệm vụ tự nhập ngay phía trên. */
 .auto-cancel-note {
-  background: var(--bg);
-  border: 1px dashed var(--border);
+  background: var(--sky-100);
+  border: 1px solid var(--sky-300);
   border-radius: 6px;
   padding: 6px 8px;
   margin-top: 4px;
   font-size: 0.78rem;
   line-height: 1.4;
-  color: var(--muted);
-  cursor: not-allowed;
+  color: var(--sky-800);
 }
 /* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
    nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
