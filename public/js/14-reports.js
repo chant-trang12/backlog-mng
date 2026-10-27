@@ -71,10 +71,6 @@ function rpfrFilteredRows() {
 
 function renderReportsFr() {
   if (!rpfrAllRows) return;
-  const dept = state.departments.find((d) => d.id === state.currentDepartmentId);
-  document.getElementById("rpfr-subtitle").textContent =
-    `Số liệu chung của tất cả phòng ban gửi đề xuất tới ${dept ? dept.name : "phòng đang xem"}`;
-
   const rows = rpfrFilteredRows();
   renderRpfrStatCards(rows);
   renderRpfrStatusDonut(rows);
