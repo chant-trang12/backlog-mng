@@ -104,6 +104,13 @@ export async function migrateRolePermissions(): Promise<void> {
     ["bgd", true, false, false],
     ["viewer", true, false, false],
   ]);
+  // "Báo cáo - Thống kê" — cùng kiểu với "trang_chu" (chỉ can_read có ý
+  // nghĩa, trang hiện đang để trắng chờ bổ sung nội dung sau).
+  addSeed("bao_cao_thong_ke", [
+    ["editor", true, false, false],
+    ["bgd", true, false, false],
+    ["viewer", true, false, false],
+  ]);
 
   if (seed.length > 0) {
     await db("role_permissions").insert(seed);

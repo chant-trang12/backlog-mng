@@ -17,6 +17,7 @@ export const MENU_ITEMS = [
   { key: "roadmap", label: "Roadmap năm", function_key: "roadmap" },
   { key: "feature-requests", label: "Yêu cầu tính năng", function_key: "yeu_cau_tinh_nang" },
   { key: "digital-features", label: "Tính năng số hoá", function_key: "quan_ly_tinh_nang_so_hoa" },
+  { key: "reports", label: "Báo cáo - Thống kê", function_key: "bao_cao_thong_ke" },
   { key: "config", label: "Cấu hình", function_key: null },
   { key: "action-logs", label: "Nhật ký hoạt động", function_key: null },
   { key: "hdsd", label: "HDSD", function_key: null },

@@ -1,14 +1,14 @@
 import { db } from "../db/database.js";
 import type { AppRole } from "../types/user.js";
 
-// 8 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
+// 9 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
 // khớp 1-1 với "module" mà resolveModuleAndAction() (actionLog.middleware.ts)
 // suy ra từ path, TRỪ "nhiem_vu_cham_diem" (route riêng PUT /tasks/:id/grade,
-// tách khỏi "nhiem_vu" ngay trong requireWrite — xem auth.middleware.ts) và
-// "trang_chu" (không có API/module riêng — dashboard tổng hợp từ module
-// khác, chỉ can_read có ý nghĩa, xem NO_ADD_EDIT_FUNCTIONS bên dưới). Cố ý
-// KHÔNG gồm Cấu hình/Quản lý User/Nhật ký hoạt động (vẫn admin-only tuyệt
-// đối qua requireAdmin, không cấu hình được qua màn này).
+// tách khỏi "nhiem_vu" ngay trong requireWrite — xem auth.middleware.ts),
+// "trang_chu" và "bao_cao_thong_ke" (không có API/module riêng — trang tổng
+// hợp/thống kê, chỉ can_read có ý nghĩa, xem NO_ADD_EDIT_FUNCTIONS bên
+// dưới). Cố ý KHÔNG gồm Cấu hình/Quản lý User/Nhật ký hoạt động (vẫn
+// admin-only tuyệt đối qua requireAdmin, không cấu hình được qua màn này).
 export const PERMISSION_FUNCTIONS = [
   {
     key: "trang_chu",
@@ -50,6 +50,11 @@ export const PERMISSION_FUNCTIONS = [
     label: "Quản lý tính năng số hoá",
     desc: "Danh mục tính năng số hoá + 4 bảng con (Màn hình, Tích hợp, Đối tượng dữ liệu, Dữ liệu chủ).",
   },
+  {
+    key: "bao_cao_thong_ke",
+    label: "Báo cáo - Thống kê",
+    desc: "Trang Báo cáo - Thống kê — chỉ cột Đọc có ý nghĩa: tắt = ẩn mục \"Báo cáo - Thống kê\" khỏi menu trái cho role đó.",
+  },
 ] as const;
 export type PermissionFunctionKey = (typeof PERMISSION_FUNCTIONS)[number]["key"];
 const FUNCTION_KEYS = new Set<string>(PERMISSION_FUNCTIONS.map((f) => f.key));
@@ -58,7 +63,7 @@ const FUNCTION_KEYS = new Set<string>(PERMISSION_FUNCTIONS.map((f) => f.key));
 // phải 1 bảng dữ liệu CRUD riêng) — FE ẩn 2 checkbox này, server cũng chặn
 // luôn để admin không lỡ bật nhầm qua gọi API trực tiếp (can_add/can_edit
 // luôn bị ép về false dù client gửi gì, xem updateRolePermission bên dưới).
-const NO_ADD_EDIT_FUNCTIONS = new Set<string>(["trang_chu"]);
+const NO_ADD_EDIT_FUNCTIONS = new Set<string>(["trang_chu", "bao_cao_thong_ke"]);
 
 // 3 role cấu hình được qua màn này — "admin" luôn toàn quyền (bypass trước
 // khi requireWrite tra bảng, xem auth.middleware.ts), không có dòng riêng.

@@ -10,6 +10,7 @@ const pages = {
   // icon "Xem chi tiết" ở bảng danh sách, 13-digital-features.js). Nằm
   // trong `pages` để khi user bấm sang mục menu khác, trang này tự ẩn.
   "digital-feature-detail": document.getElementById("page-digital-feature-detail"),
+  reports: document.getElementById("page-reports"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),
