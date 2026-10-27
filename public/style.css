@@ -1558,10 +1558,11 @@ th {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
-  text-align: right;
 }
 .fr-stat-card.fr-stat-highlight { background: var(--delete-light); border-color: var(--red-300); }
-.fr-stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+/* Chỉ nhãn (VD "Tổng yêu cầu") căn phải — số liệu + dòng phụ bên dưới giữ
+   căn trái như cũ, không áp text-align:right cho cả thẻ. */
+.fr-stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; text-align: right; }
 .fr-stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
 .fr-stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
 
