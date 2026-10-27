@@ -1664,7 +1664,10 @@ th {
 /* Donut dùng chung class .home-donut-* (Trang chủ, style.css ở trên) — chỉ
    cần định vị + chừa chỗ cho legend bên cạnh ở đây. */
 .rpfr-donut-row { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
-.rpfr-donut-legend { flex: 1 1 180px; min-width: 180px; }
+/* max-width chặn legend giãn hết bề ngang panel khi xuống dòng riêng (dưới
+   donut, khung hẹp) — không có giới hạn thì khoảng cách giữa tên trạng
+   thái và số liệu bị kéo quá xa, nhìn rời rạc, mất thẩm mỹ. */
+.rpfr-donut-legend { flex: 1 1 180px; min-width: 180px; max-width: 220px; }
 
 /* Xu hướng tiếp nhận/hoàn thành */
 .rpfr-trend-legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
