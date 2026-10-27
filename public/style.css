@@ -1586,19 +1586,18 @@ th {
   overflow-y: auto;
 }
 
-/* Thanh pill bo tròn 2 đầu, nền hồng nhạt — khớp ảnh mẫu user gửi (thay vì
-   thanh bo góc nhẹ, nền xám trước đó). Nền hồng nhạt (--red-200) tự nhiên
-   đủ tương phản với mọi mốc màu trong gradient đơn sắc, kể cả mốc nhạt
-   nhất ("Thấp"), nên không cần viền phân định như trước nữa. */
+/* Mỗi dải màu là 1 khối bo nhẹ RIÊNG, có khoảng cách với dải cạnh nó —
+   khớp đúng ảnh mẫu user gửi (không nối liền thành 1 viên pill, không bo
+   tròn quá — xem phản hồi "không đúng mẫu... giữa các dải màu có 1 khoảng
+   cách, và không bo tròn quá"). Nền card trắng tự lộ ra ở khoảng cách giữa
+   các dải, không cần tô nền riêng cho .fr-stacked-bar nữa. */
 .fr-stacked-bar {
   display: flex;
+  gap: 4px;
   height: 12px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--red-200);
   margin-bottom: 12px;
 }
-.fr-stacked-bar > span { display: block; height: 100%; }
+.fr-stacked-bar > span { display: block; height: 100%; border-radius: 4px; }
 
 .fr-stat-list-row {
   display: flex;
@@ -1623,10 +1622,12 @@ th {
   font-size: 0.85rem;
 }
 .fr-bar-label { flex: 0 0 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fr-bar-track { flex: 1; height: 12px; border-radius: 999px; background: var(--red-200); overflow: hidden; }
-.fr-bar-fill { display: block; height: 100%; border-radius: 999px; background: var(--red-600); }
-.fr-bar-stacked { display: flex; height: 100%; border-radius: 999px; overflow: hidden; }
-.fr-bar-stacked > span { display: block; height: 100%; }
+.fr-bar-track { flex: 1; height: 12px; border-radius: 6px; background: var(--red-200); overflow: hidden; }
+.fr-bar-fill { display: block; height: 100%; border-radius: 6px; background: var(--red-600); }
+/* Nhiều mức ưu tiên trong CÙNG 1 quý — mỗi mức 1 khối RIÊNG có khoảng
+   cách, giống .fr-stacked-bar ở trên (không nối liền/bo tròn quá). */
+.fr-bar-stacked { display: flex; gap: 4px; height: 100%; }
+.fr-bar-stacked > span { display: block; height: 100%; border-radius: 4px; }
 .fr-bar-value { flex: 0 0 28px; text-align: right; font-weight: 700; }
 
 .fr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 0.78rem; color: var(--muted); }
