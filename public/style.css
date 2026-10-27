@@ -1564,7 +1564,7 @@ th {
 .fr-stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
 .fr-stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
 
-.fr-stats-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.fr-stats-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .fr-stats-panel {
   background: var(--card-bg);
   border: 1px solid var(--border);
