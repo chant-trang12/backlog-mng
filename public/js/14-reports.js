@@ -281,7 +281,7 @@ function renderRpfrQuyChart(rows) {
   }
   const totals = entries.map(([, b]) => Object.values(b).reduce((a, c) => a + c, 0));
   const maxTotal = Math.max(...totals);
-  el.innerHTML = `<div class="rpfr-vbar-row">${entries
+  el.innerHTML = `<div class="rpfr-vbar-row"><div class="rpfr-vbar-axis"></div>${entries
     .map(([quy, bucket]) => {
       const total = Object.values(bucket).reduce((a, c) => a + c, 0);
       const stackHeight = maxTotal ? Math.max(6, (total / maxTotal) * 160) : 0;
@@ -428,7 +428,7 @@ function renderRpfrDeptCompletion(rows) {
     return;
   }
   const maxPct = Math.max(1, ...entries.map(([, p]) => p));
-  el.innerHTML = `<div class="rpfr-vbar-row">${entries
+  el.innerHTML = `<div class="rpfr-vbar-row"><div class="rpfr-vbar-axis"></div>${entries
     .map(([name, pct]) => {
       const height = Math.max(4, (pct / 100) * 160);
       const opacity = 0.35 + 0.65 * (pct / maxPct);

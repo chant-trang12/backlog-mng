@@ -1683,25 +1683,25 @@ th {
 .rpfr-heat-legend span:nth-child(4) { background: #ee0033; }
 .rpfr-heat-legend span:nth-child(5) { background: #620915; }
 .rpfr-heat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-.rpfr-heat-table th { font-weight: 600; color: var(--muted); font-size: 0.74rem; padding: 4px 6px; text-align: center; }
-.rpfr-heat-table th:first-child { text-align: left; }
+.rpfr-heat-table th { font-weight: 600; color: #fff; font-size: 0.74rem; padding: 4px 6px; text-align: center; }
 .rpfr-heat-table td { text-align: center; padding: 8px 6px; border-radius: 6px; font-weight: 700; color: var(--text); }
 .rpfr-heat-table td.rpfr-heat-dark { color: #fff; }
 .rpfr-heat-rowlabel { text-align: left !important; font-weight: 400 !important; color: var(--text) !important; background: none !important; white-space: nowrap; }
 .rpfr-heat-total { background: none !important; color: var(--text) !important; }
 
 /* Cột dọc dùng chung cho "Theo quý thực hiện" + "Tỉ lệ hoàn thành theo phòng ban" */
-.rpfr-vbar-row { display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
-.rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; justify-content: flex-end; }
+.rpfr-vbar-row { position: relative; display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
+.rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; justify-content: flex-end; position: relative; z-index: 1; }
 .rpfr-vbar-value { font-weight: 700; font-size: 0.85rem; }
-/* border-bottom trên CHÍNH cột (không phải cả hàng) — mọi cột đã bottom-
-   align với nhau (.rpfr-vbar-row align-items:flex-end + .rpfr-vbar-col
-   justify-content:flex-end) nên các border này tự xếp thẳng hàng, tạo
-   thành 1 trục X liền mạch chạy suốt bề ngang biểu đồ. */
-.rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; border-bottom: 1px solid var(--border); }
+.rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; }
 .rpfr-vbar-stack > span { display: block; width: 100%; }
-.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; border-bottom: 1px solid var(--border); }
-.rpfr-vbar-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; }
+/* height cố định để tính đúng vị trí .rpfr-vbar-axis bên dưới (18px nhãn +
+   6px gap cột = 24px tính từ đáy hàng). */
+.rpfr-vbar-label { height: 18px; line-height: 18px; font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+/* Trục X — 1 đường DUY NHẤT chạy suốt bề ngang biểu đồ, đặt tuyệt đối thay
+   vì border riêng từng cột (dễ mờ/lệch khi cột cao thấp khác nhau). */
+.rpfr-vbar-axis { position: absolute; left: 0; right: 0; bottom: 24px; height: 2px; background: var(--stone-400); pointer-events: none; }
 
 /* Theo loại yêu cầu (waffle) */
 .rpfr-waffle { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
