@@ -1762,8 +1762,54 @@
 
         <!-- ---- Trang Yêu cầu tính năng ---- -->
         <div id="page-feature-requests" hidden>
+          <!-- Thống kê tổng quan — tính trên TOÀN BỘ danh sách đang xem được
+               (state.featureRequests, không theo bộ lọc/từ khoá bên dưới) để
+               luôn cho bức tranh tổng thể ổn định dù người dùng đang lọc
+               bảng xem gì — xem renderFeatureRequestStats(),
+               10-feature-requests.js. Khung RIÊNG, đứng TRƯỚC "Tìm kiếm"
+               (user yêu cầu, không nhét chung card nào). -->
           <section class="card">
-            <h2>Bộ lọc</h2>
+            <div class="fr-stats-cards" id="fr-stats-cards">
+              <div class="fr-stat-card fr-stat-highlight">
+                <div class="fr-stat-label">Tổng yêu cầu</div>
+                <div class="fr-stat-value" id="fr-stat-total">0</div>
+                <div class="fr-stat-sub" id="fr-stat-total-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Chờ duyệt</div>
+                <div class="fr-stat-value" id="fr-stat-cho-duyet">0</div>
+                <div class="fr-stat-sub" id="fr-stat-cho-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Đã duyệt</div>
+                <div class="fr-stat-value" id="fr-stat-da-duyet">0</div>
+                <div class="fr-stat-sub" id="fr-stat-da-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Ưu tiên cao</div>
+                <div class="fr-stat-value" id="fr-stat-uu-tien-cao">0</div>
+              </div>
+            </div>
+            <div class="fr-stats-panels">
+              <div class="fr-stats-panel">
+                <h3>Theo trạng thái</h3>
+                <div class="fr-stacked-bar" id="fr-status-stacked-bar"></div>
+                <div id="fr-status-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Theo đơn vị đề xuất</h3>
+                <div id="fr-dept-bar-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Theo quý thực hiện và ưu tiên</h3>
+                <div class="fr-legend" id="fr-quy-legend"></div>
+                <div id="fr-quy-bar-list"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Tìm kiếm</h2>
             <div class="row">
               <div>
                 <label for="fr-filter-status">Trạng thái</label>
@@ -1801,52 +1847,6 @@
                   <option value="Cao">Cao</option>
                   <option value="Khẩn cấp">Khẩn cấp</option>
                 </select>
-              </div>
-            </div>
-          </section>
-
-          <!-- Thống kê tổng quan — tính trên TOÀN BỘ danh sách đang xem được
-               (state.featureRequests, không theo bộ lọc/từ khoá bên dưới) để
-               luôn cho bức tranh tổng thể ổn định dù người dùng đang lọc
-               bảng xem gì — xem renderFeatureRequestStats(),
-               10-feature-requests.js. Khung RIÊNG, nằm giữa "Bộ lọc" và
-               "Yêu cầu tính năng" (user yêu cầu, không nhét chung card nào). -->
-          <section class="card">
-            <div class="fr-stats-cards" id="fr-stats-cards">
-              <div class="fr-stat-card fr-stat-highlight">
-                <div class="fr-stat-label">Tổng yêu cầu</div>
-                <div class="fr-stat-value" id="fr-stat-total">0</div>
-                <div class="fr-stat-sub" id="fr-stat-total-sub"></div>
-              </div>
-              <div class="fr-stat-card">
-                <div class="fr-stat-label">Chờ duyệt</div>
-                <div class="fr-stat-value" id="fr-stat-cho-duyet">0</div>
-                <div class="fr-stat-sub" id="fr-stat-cho-duyet-sub"></div>
-              </div>
-              <div class="fr-stat-card">
-                <div class="fr-stat-label">Đã duyệt</div>
-                <div class="fr-stat-value" id="fr-stat-da-duyet">0</div>
-                <div class="fr-stat-sub" id="fr-stat-da-duyet-sub"></div>
-              </div>
-              <div class="fr-stat-card">
-                <div class="fr-stat-label">Ưu tiên cao</div>
-                <div class="fr-stat-value" id="fr-stat-uu-tien-cao">0</div>
-              </div>
-            </div>
-            <div class="fr-stats-panels">
-              <div class="fr-stats-panel">
-                <h3>Theo trạng thái</h3>
-                <div class="fr-stacked-bar" id="fr-status-stacked-bar"></div>
-                <div id="fr-status-list"></div>
-              </div>
-              <div class="fr-stats-panel">
-                <h3>Theo đơn vị đề xuất</h3>
-                <div id="fr-dept-bar-list"></div>
-              </div>
-              <div class="fr-stats-panel">
-                <h3>Theo quý thực hiện và ưu tiên</h3>
-                <div class="fr-legend" id="fr-quy-legend"></div>
-                <div id="fr-quy-bar-list"></div>
               </div>
             </div>
           </section>
