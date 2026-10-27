@@ -153,13 +153,13 @@ function renderReplacementInfoNote(t) {
   if (t.thay_cho_task_id) {
     const original = state.tasksAll.find((x) => x.id === t.thay_cho_task_id);
     if (original) {
-      html += `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy #${original.stt}: "${original.nhiem_vu}".</div>`;
+      html += `<div class="auto-cancel-note">Thay thế cho nhiệm vụ đã hủy: "${original.nhiem_vu}".</div>`;
     }
   }
   if (t.thay_the_task_id) {
     const replacement = state.tasksAll.find((x) => x.id === t.thay_the_task_id);
     if (replacement) {
-      html += `<div class="auto-cancel-note">Đã được thay thế bởi nhiệm vụ #${replacement.stt}: "${replacement.nhiem_vu}".</div>`;
+      html += `<div class="auto-cancel-note">Đã được thay thế bởi nhiệm vụ: "${replacement.nhiem_vu}".</div>`;
     }
   }
   return html;
@@ -619,7 +619,7 @@ function openTaskDialog(task) {
   const originalTask = task?.thay_cho_task_id ? state.tasksAll.find((t) => t.id === task.thay_cho_task_id) : null;
   replacementInfoEl.hidden = !originalTask;
   if (originalTask) {
-    replacementInfoEl.textContent = `Thay thế cho nhiệm vụ đã hủy #${originalTask.stt}: "${originalTask.nhiem_vu}".`;
+    replacementInfoEl.textContent = `Thay thế cho nhiệm vụ đã hủy: "${originalTask.nhiem_vu}".`;
   }
   document.getElementById("f-deadline").value = formatDateInput(task?.deadline);
   document.getElementById("f-dau-moi-phoi-hop").value = task?.dau_moi_phoi_hop ?? "";
