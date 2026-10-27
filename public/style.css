@@ -1845,6 +1845,14 @@ th {
   line-height: 1.4;
   color: var(--sky-800);
 }
+/* Note "Nhiệm vụ đã Xin hủy." (không có task thay thế) — đổi màu khác với
+   note liên kết thay thế ở trên để không bị nhầm 2 loại note, đồng màu với
+   badge trạng thái "Hủy" (.status-huy) cho nhất quán ý nghĩa trong cả app. */
+.auto-cancel-note-huy {
+  background: var(--delete-light);
+  border-color: var(--red-300);
+  color: var(--delete);
+}
 /* File đính kèm ở bảng Yêu cầu tính năng — cột riêng, không chiếm quá
    nhiều chỗ dù tên file dài (cắt bớt, xem đủ tên qua title=""). */
 .fr-attachment-chip {

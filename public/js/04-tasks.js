@@ -165,7 +165,7 @@ function renderReplacementInfoNote(t) {
       html += `<div class="auto-cancel-note">Đã được thay thế bởi nhiệm vụ: "${replacement.nhiem_vu}".</div>`;
     }
   } else if (t.trang_thai === "Hủy") {
-    html += `<div class="auto-cancel-note">Nhiệm vụ đã Xin hủy.</div>`;
+    html += `<div class="auto-cancel-note auto-cancel-note-huy">Nhiệm vụ đã Xin hủy.</div>`;
   }
   return html;
 }
