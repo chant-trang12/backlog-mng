@@ -167,20 +167,12 @@ function renderTasks() {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Chưa có task nào trong tháng này.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
-    // Bảng trống (sớm return, không chạy tới syncTaskStickyOffsets() ở
-    // cuối hàm) vẫn phải đo lại — nếu không, cột "Nhiệm vụ" giữ nguyên
-    // offset mặc định trong CSS (356px, tính cho cột Team VẪN HIỆN) dù
-    // Team vừa bị ẩn (phòng tính KPI theo task) -> hở 1 khoảng trắng đúng
-    // bằng bề rộng Team giữa "Phân loại" và "Nhiệm vụ" (user phản hồi kèm
-    // ảnh chụp, chỉ xảy ra khi đang trống dữ liệu).
-    syncTaskStickyOffsets();
     return;
   }
   if (state.tasks.length === 0) {
     el.taskTbody.innerHTML = `<tr><td colspan="${colCount}" class="muted" style="text-align:center;padding:16px">Không có task nào khớp bộ lọc.</td></tr>`;
     updateTaskSelectionUI();
     taskPagination.slice(state.tasks);
-    syncTaskStickyOffsets(); // cùng lý do ở nhánh trên
     return;
   }
 
@@ -317,32 +309,7 @@ function renderTasks() {
   });
 
   updateTaskSelectionUI();
-  syncTaskStickyOffsets();
 }
-
-// 5 cột đầu (checkbox/STT/Tag/Phân loại/Team) của #task-table cố định khi
-// cuộn ngang (xem CSS "left: var(--task-col2-left...)") — cột "Nhiệm vụ"
-// (thứ 6) KHÔNG cố định nữa (bỏ theo yêu cầu). Đo ĐÚNG width thật đã render
-// của 4 cột đầu (checkbox/STT/Tag/Phân loại), giống syncMemberStickyOffsets()
-// ở 03-members.js. Cột Team bị ẩn (hidden) ở phòng ban tính KPI theo task
-// thì width đo được của chính nó tự động là 0 (không ảnh hưởng offset các
-// cột đứng trước nó trong 4 cột đo ở đây).
-function syncTaskStickyOffsets() {
-  const table = document.getElementById("task-table");
-  const ths = table?.querySelectorAll("thead th");
-  if (!table || !ths || ths.length < 6) return;
-  let left = 0;
-  const lefts = [];
-  for (let i = 0; i < 4; i++) {
-    left += ths[i].getBoundingClientRect().width;
-    lefts.push(left);
-  }
-  table.style.setProperty("--task-col2-left", `${lefts[0]}px`);
-  table.style.setProperty("--task-col3-left", `${lefts[1]}px`);
-  table.style.setProperty("--task-col4-left", `${lefts[2]}px`);
-  table.style.setProperty("--task-col5-left", `${lefts[3]}px`);
-}
-window.addEventListener("resize", () => syncTaskStickyOffsets());
 
 function updateTaskSelectionUI() {
   const visible = state.tasks;

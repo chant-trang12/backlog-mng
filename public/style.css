@@ -1528,57 +1528,9 @@ th {
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* Bảng Backlog (#task-table) — cố định 5 cột đầu (checkbox, STT, Tag, Phân
-   loại, Team) khi cuộn ngang, áp dụng cho mọi cách tính KPI theo phòng ban
-   (kể cả phòng theo_task ẩn cột Team — width đo thật là 0 khi cột bị hidden
-   nên các offset sau tự co lại đúng, không cần code riêng). Cột "Nhiệm vụ"
-   (nth-child 6) KHÔNG cố định nữa (yêu cầu bỏ cố định). left của cột 2-5 do
-   JS đo width thật đã render (table-layout: auto nên width khai ở HTML chỉ
-   là gợi ý) — xem syncTaskStickyOffsets() trong 04-tasks.js. */
-#task-table td:nth-child(1),
-#task-table td:nth-child(2),
-#task-table td:nth-child(3),
-#task-table td:nth-child(4),
-#task-table td:nth-child(5) {
-  position: sticky;
-  z-index: 1;
-  background: var(--card-bg);
-}
-#task-table th:nth-child(1),
-#task-table th:nth-child(2),
-#task-table th:nth-child(3),
-#task-table th:nth-child(4),
-#task-table th:nth-child(5) {
-  z-index: 3;
-}
-#task-table td:nth-child(1),
-#task-table th:nth-child(1) { left: 0; }
-#task-table td:nth-child(2),
-#task-table th:nth-child(2) { left: var(--task-col2-left, 36px); }
-#task-table td:nth-child(3),
-#task-table th:nth-child(3) { left: var(--task-col3-left, 86px); }
-#task-table td:nth-child(4),
-#task-table th:nth-child(4) { left: var(--task-col4-left, 176px); }
-#task-table td:nth-child(5),
-#task-table th:nth-child(5) {
-  left: var(--task-col5-left, 266px);
-  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
-}
-#task-table tbody tr:hover td:nth-child(1),
-#task-table tbody tr:hover td:nth-child(2),
-#task-table tbody tr:hover td:nth-child(3),
-#task-table tbody tr:hover td:nth-child(4),
-#task-table tbody tr:hover td:nth-child(5) { background: var(--bg); }
-#task-table tbody tr.row-highlighted td:nth-child(1),
-#task-table tbody tr.row-highlighted td:nth-child(2),
-#task-table tbody tr.row-highlighted td:nth-child(3),
-#task-table tbody tr.row-highlighted td:nth-child(4),
-#task-table tbody tr.row-highlighted td:nth-child(5) { background: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
-#task-table tbody tr.row-highlighted:hover td:nth-child(1),
-#task-table tbody tr.row-highlighted:hover td:nth-child(2),
-#task-table tbody tr.row-highlighted:hover td:nth-child(3),
-#task-table tbody tr.row-highlighted:hover td:nth-child(4),
-#task-table tbody tr.row-highlighted:hover td:nth-child(5) { background: color-mix(in srgb, var(--red-600) 22%, var(--card-bg)); }
+/* Bảng Backlog (#task-table) — KHÔNG cố định cột nào khi cuộn ngang (đã bỏ
+   theo yêu cầu, trước đó cố định 6 rồi 5 cột đầu; đã xóa luôn
+   syncTaskStickyOffsets() ở 04-tasks.js vì không còn offset nào cần đo). */
 
 #task-table th { text-align: center; }
 #task-table td { vertical-align: middle; }
@@ -1586,23 +1538,11 @@ th {
 #task-table tbody tr.row-highlighted { background: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
 #task-table tbody tr.row-highlighted:hover { background: color-mix(in srgb, var(--red-600) 22%, var(--card-bg)); }
 
-/* Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — tô nền hàng
-   (sắc đỏ đất nhạt, cùng tông với .home-urgent-card ở Trang chủ) để nổi
-   bật ngay trong Danh sách nhiệm vụ, không phải bấm chip cảnh báo mới
-   thấy. Cần set lại trên từng ô cột dính (nth-child 1-5, giống
-   .row-highlighted ở trên) vì position:sticky cần nền riêng của ô, không
-   kế thừa được nền của <tr> (nền mặc định var(--card-bg) đã set ở rule
-   #task-table td:nth-child phía trên). */
-#task-table tbody tr.task-row-urgent td:nth-child(1),
-#task-table tbody tr.task-row-urgent td:nth-child(2),
-#task-table tbody tr.task-row-urgent td:nth-child(3),
-#task-table tbody tr.task-row-urgent td:nth-child(4),
-#task-table tbody tr.task-row-urgent td:nth-child(5) { background: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
-#task-table tbody tr.task-row-urgent:hover td:nth-child(1),
-#task-table tbody tr.task-row-urgent:hover td:nth-child(2),
-#task-table tbody tr.task-row-urgent:hover td:nth-child(3),
-#task-table tbody tr.task-row-urgent:hover td:nth-child(4),
-#task-table tbody tr.task-row-urgent:hover td:nth-child(5) { background: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
+/* Task có nhân sự đang bị đánh dấu "Việc cần xử lý gấp" — tô nền hàng (sắc
+   đỏ đất nhạt, cùng tông với .home-urgent-card ở Trang chủ) để nổi bật ngay
+   trong Danh sách nhiệm vụ, không phải bấm chip cảnh báo mới thấy. Không
+   còn cột nào sticky trong bảng này nữa nên chỉ cần set ở cấp <tr> — td
+   không có background riêng sẽ tự để lộ nền của tr. */
 #task-table tbody tr.task-row-urgent { background: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
 #task-table tbody tr.task-row-urgent:hover { background: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
 
