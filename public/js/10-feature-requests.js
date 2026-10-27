@@ -406,16 +406,25 @@ function renderFeatureRequestStats() {
   const deptList = [...deptCounts.entries()].sort((a, b) => b[1] - a[1]);
   const maxDept = deptList.length ? deptList[0][1] : 0;
   const deptListEl = document.getElementById("fr-dept-bar-list");
+  // fill (đã có) + remain (phần còn lại tới max) là 2 khối RIÊNG trong cùng
+  // .fr-bar-track (flex + gap, giống .fr-stacked-bar) — để có khoảng cách
+  // giữa phần tô màu và phần nền nhạt, khớp đúng phong cách "Theo trạng
+  // thái". Bỏ khối "remain" khi đã đầy (dòng cao nhất, remain=0) để không
+  // dư ra 1 khoảng gap trống vô nghĩa ở cuối thanh.
   deptListEl.innerHTML = deptList.length
     ? deptList
-        .map(
-          ([name, count]) => `
+        .map(([name, count]) => {
+          const remain = maxDept - count;
+          return `
     <div class="fr-bar-row">
       <span class="fr-bar-label" title="${name}">${name}</span>
-      <span class="fr-bar-track"><span class="fr-bar-fill" style="width:${maxDept ? (count / maxDept) * 100 : 0}%"></span></span>
+      <span class="fr-bar-track">
+        <span class="fr-bar-fill" style="flex:${count}"></span>
+        ${remain > 0 ? `<span class="fr-bar-remain" style="flex:${remain}"></span>` : ""}
+      </span>
       <span class="fr-bar-value">${count}</span>
-    </div>`,
-        )
+    </div>`;
+        })
         .join("")
     : `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
 
@@ -442,18 +451,25 @@ function renderFeatureRequestStats() {
   document.getElementById("fr-quy-legend").innerHTML = FR_REPORT_PRIORITY_META.map(
     (m) => `<span class="fr-legend-item"><span class="fr-stat-dot" style="background:${m.color}"></span>${m.key}</span>`,
   ).join("");
+  // Mỗi mức ưu tiên + phần "remain" (còn lại tới quý nhiều yêu cầu nhất) là
+  // các khối RIÊNG, con trực tiếp của .fr-bar-track (flex + gap) — cùng
+  // cách làm với "Theo đơn vị đề xuất" ở trên, để có khoảng cách thật giữa
+  // các dải màu thay vì 1 khối stacked con nằm lọt trong track nền.
   document.getElementById("fr-quy-bar-list").innerHTML = quyEntries.length
     ? quyEntries
         .map(([quy, bucket]) => {
           const totalQ = Object.values(bucket).reduce((a, b) => a + b, 0);
-          const widthPct = maxQuyTotal ? (totalQ / maxQuyTotal) * 100 : 0;
+          const remain = maxQuyTotal - totalQ;
           const segments = FR_REPORT_PRIORITY_META.filter((m) => bucket[m.key])
-            .map((m) => `<span style="flex:${bucket[m.key]};background:${m.color}" title="${m.key}: ${bucket[m.key]}"></span>`)
+            .map((m) => `<span class="fr-bar-seg" style="flex:${bucket[m.key]};background:${m.color}" title="${m.key}: ${bucket[m.key]}"></span>`)
             .join("");
           return `
     <div class="fr-bar-row">
       <span class="fr-bar-label">${quy}</span>
-      <span class="fr-bar-track"><span class="fr-bar-stacked" style="width:${widthPct}%">${segments}</span></span>
+      <span class="fr-bar-track">
+        ${segments}
+        ${remain > 0 ? `<span class="fr-bar-remain" style="flex:${remain}"></span>` : ""}
+      </span>
       <span class="fr-bar-value">${totalQ}</span>
     </div>`;
         })
