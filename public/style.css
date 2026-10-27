@@ -1694,9 +1694,13 @@ th {
 .rpfr-vbar-row { display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
 .rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; justify-content: flex-end; }
 .rpfr-vbar-value { font-weight: 700; font-size: 0.85rem; }
-.rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; }
+/* border-bottom trên CHÍNH cột (không phải cả hàng) — mọi cột đã bottom-
+   align với nhau (.rpfr-vbar-row align-items:flex-end + .rpfr-vbar-col
+   justify-content:flex-end) nên các border này tự xếp thẳng hàng, tạo
+   thành 1 trục X liền mạch chạy suốt bề ngang biểu đồ. */
+.rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; border-bottom: 1px solid var(--border); }
 .rpfr-vbar-stack > span { display: block; width: 100%; }
-.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; }
+.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; border-bottom: 1px solid var(--border); }
 .rpfr-vbar-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
 
 /* Theo loại yêu cầu (waffle) */
