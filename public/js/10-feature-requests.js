@@ -40,16 +40,19 @@ const FR_PRIORITY_CLASS = {
 // sẵn của app, gồm cả --maroon/--pink-rose) theo đúng style mẫu user gửi —
 // khác với badge nhiều màu (xanh/vàng/đỏ) trên bảng chi tiết, 2 khung này
 // CỐ Ý dùng 1 tông để nhìn như 1 bộ biểu đồ thống nhất.
+// Giãn cách xa hơn giữa các mốc (bỏ bớt mốc giữa liền kề như 500/700 dễ
+// nhìn na ná 600/400) để các màu cạnh nhau phân biệt rõ, không chỉ đậm/nhạt
+// nhẹ như trước.
 const FR_REPORT_STATUS_META = [
   { key: "Chờ duyệt", color: "#fcd9db" }, // red-200
-  { key: "Đã duyệt", color: "#ef404a" }, // red-500
+  { key: "Đã duyệt", color: "#ee0033" }, // red-600
   { key: "Từ chối", color: "#620915" }, // red-900 / --maroon
 ];
 const FR_REPORT_PRIORITY_META = [
   { key: "Khẩn cấp", color: "#620915" }, // red-900 / --maroon
-  { key: "Cao", color: "#c4132b" }, // red-700
-  { key: "Trung bình", color: "#f2666e" }, // red-400
-  { key: "Thấp", color: "#fcd9db" }, // red-200
+  { key: "Cao", color: "#ee0033" }, // red-600
+  { key: "Trung bình", color: "#f9b3b7" }, // red-300
+  { key: "Thấp", color: "#fef5f6" }, // red-100
 ];
 
 // ---- Cấu hình cột hiển thị ở bảng Yêu cầu tính năng ----
