@@ -21,10 +21,11 @@ const RPFR_PRIORITY_META = [
   { key: "Khẩn cấp", color: "#620915" },
   { key: "Cao", color: "#ee0033" },
   { key: "Trung bình", color: "#f9b3b7" },
-  // "Thấp" đổi sang XANH DA TRỜI NHẠT + vẽ NÉT ĐỨT (user yêu cầu kèm ảnh
-  // chụp màu) — dashed:true áp cho cả đường trong biểu đồ lẫn ô màu legend
-  // (repeating-linear-gradient giả nét đứt) để 2 nơi khớp nhau.
-  { key: "Thấp", color: "#64b5f6", dashed: true },
+  // "Thấp" vẽ NÉT ĐỨT (user yêu cầu kèm ảnh chụp màu) — dashed:true áp cho
+  // cả đường trong biểu đồ lẫn ô màu legend (repeating-linear-gradient giả
+  // nét đứt) để 2 nơi khớp nhau. Màu: đào nhạt (#fbe0c5, user gửi ảnh mẫu
+  // sau khi thử xanh da trời — quay lại họ màu ấm như cũ).
+  { key: "Thấp", color: "#fbe0c5", dashed: true },
 ];
 // Bảng màu cho ô vuông "Theo loại yêu cầu" — loai_yeu_cau là danh mục cấu
 // hình được (Cấu hình > Loại yêu cầu), số lượng giá trị không cố định nên
