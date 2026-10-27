@@ -1611,8 +1611,12 @@ th {
 /* Viền mảnh — mốc nhạt nhất trong gradient đơn sắc (VD "Thấp") gần như
    trùng màu nền trắng của card nếu không có viền để phân định hình tròn. */
 .fr-stat-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.12); flex-shrink: 0; }
-.fr-stat-list-value { font-weight: 700; white-space: nowrap; }
-.fr-stat-list-value .muted { font-weight: 400; margin-left: 4px; }
+/* Số lượng + % đặt trong 2 cột riêng, mỗi cột 1 chiều rộng cố định + căn
+   phải — để các dòng thẳng hàng với nhau (số/% trước đây dính liền chung
+   1 span, rộng hẹp theo đúng số chữ số nên không thẳng cột). */
+.fr-stat-list-value { display: flex; gap: 6px; font-weight: 700; white-space: nowrap; }
+.fr-stat-list-count { min-width: 14px; text-align: right; }
+.fr-stat-list-pct { min-width: 32px; text-align: right; font-weight: 400; }
 
 .fr-bar-row {
   display: flex;

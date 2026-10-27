@@ -392,7 +392,10 @@ function renderFeatureRequestStats() {
       (s) => `
     <div class="fr-stat-list-row">
       <span class="fr-stat-list-label"><span class="fr-stat-dot" style="background:${s.color}"></span>${s.key}</span>
-      <span class="fr-stat-list-value">${s.count}<span class="muted">${pct(s.count)}</span></span>
+      <span class="fr-stat-list-value">
+        <span class="fr-stat-list-count">${s.count}</span>
+        <span class="fr-stat-list-pct muted">${pct(s.count)}</span>
+      </span>
     </div>`,
     )
     .join("");
