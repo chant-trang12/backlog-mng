@@ -1622,8 +1622,8 @@ th {
   font-size: 0.85rem;
 }
 .fr-bar-label { flex: 0 0 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fr-bar-track { flex: 1; height: 12px; border-radius: 6px; background: var(--red-200); overflow: hidden; }
-.fr-bar-fill { display: block; height: 100%; border-radius: 6px; background: var(--red-600); }
+.fr-bar-track { flex: 1; height: 12px; border-radius: 4px; background: var(--red-200); overflow: hidden; }
+.fr-bar-fill { display: block; height: 100%; border-radius: 4px; background: var(--red-600); }
 /* Nhiều mức ưu tiên trong CÙNG 1 quý — mỗi mức 1 khối RIÊNG có khoảng
    cách, giống .fr-stacked-bar ở trên (không nối liền/bo tròn quá). */
 .fr-bar-stacked { display: flex; gap: 4px; height: 100%; }
