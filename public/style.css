@@ -1546,6 +1546,74 @@ th {
 #task-table tbody tr.task-row-urgent { background: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
 #task-table tbody tr.task-row-urgent:hover { background: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
 
+/* Thống kê tổng quan Yêu cầu tính năng — 4 thẻ số liệu + 3 khung biểu đồ,
+   đặt giữa ô Tìm kiếm và bảng dữ liệu (renderFeatureRequestStats(),
+   10-feature-requests.js). Màu các trạng thái/mức ưu tiên khớp ĐÚNG màu
+   badge đã dùng sẵn cho đúng trường đó trên chính bảng này (frStatusBadge
+   Class/FR_PRIORITY_CLASS) — không bịa bảng màu riêng. */
+.fr-stats-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.fr-stat-card {
+  flex: 1 1 160px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.fr-stat-card.fr-stat-highlight { background: var(--delete-light); border-color: var(--red-300); }
+.fr-stat-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+.fr-stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.fr-stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+.fr-stats-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.fr-stats-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.fr-stats-panel h3 { margin: 0 0 12px; font-size: 0.95rem; }
+
+.fr-stacked-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+  margin-bottom: 12px;
+}
+.fr-stacked-bar > span { display: block; height: 100%; }
+
+.fr-stat-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.85rem;
+}
+.fr-stat-list-label { display: flex; align-items: center; gap: 8px; }
+.fr-stat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.fr-stat-list-value { font-weight: 700; white-space: nowrap; }
+.fr-stat-list-value .muted { font-weight: 400; margin-left: 4px; }
+
+.fr-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+}
+.fr-bar-label { flex: 0 0 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-bar-track { flex: 1; height: 10px; border-radius: 6px; background: var(--bg); overflow: hidden; }
+.fr-bar-fill { display: block; height: 100%; border-radius: 6px; background: var(--primary); }
+.fr-bar-stacked { display: flex; height: 100%; }
+.fr-bar-stacked > span { display: block; height: 100%; }
+.fr-bar-value { flex: 0 0 28px; text-align: right; font-weight: 700; }
+
+.fr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 0.78rem; color: var(--muted); }
+.fr-legend-item { display: flex; align-items: center; gap: 6px; }
+
 /* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
    hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service
    .ts): checkbox/STT/Lĩnh vực/Mảng/Hoạt động-nghiệp vụ/Quy trình số hóa/Mã
@@ -3103,6 +3171,9 @@ img, svg, canvas, video { max-width: 100%; }
   /* Callout trong tiêu đề card Ranking Team (Home) — bỏ margin phải cố định. */
   .row[style*="space-between"] { row-gap: 8px; }
   .home-vbar-callout { margin-right: 0 !important; }
+
+  /* 3 khung thống kê Yêu cầu tính năng xếp dọc thay vì co hẹp từng khung. */
+  .fr-stats-panels { grid-template-columns: 1fr; }
 }
 
 /* ---- Điện thoại lớn / máy tính bảng dọc (≤720px) ---- */

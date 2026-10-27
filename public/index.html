@@ -1856,6 +1856,50 @@
               <label for="fr-filter-search" style="margin:0">Tìm kiếm</label>
               <input type="text" id="fr-filter-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
             </div>
+
+            <!-- Thống kê tổng quan — tính trên TOÀN BỘ danh sách đang xem
+                 được (state.featureRequests, không theo bộ lọc/từ khoá bên
+                 dưới) để luôn cho bức tranh tổng thể ổn định dù người dùng
+                 đang lọc bảng xem gì — xem renderFeatureRequestStats(),
+                 10-feature-requests.js. -->
+            <div class="fr-stats-cards" id="fr-stats-cards">
+              <div class="fr-stat-card fr-stat-highlight">
+                <div class="fr-stat-label">Tổng yêu cầu</div>
+                <div class="fr-stat-value" id="fr-stat-total">0</div>
+                <div class="fr-stat-sub" id="fr-stat-total-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Chờ duyệt</div>
+                <div class="fr-stat-value" id="fr-stat-cho-duyet">0</div>
+                <div class="fr-stat-sub" id="fr-stat-cho-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Đã duyệt</div>
+                <div class="fr-stat-value" id="fr-stat-da-duyet">0</div>
+                <div class="fr-stat-sub" id="fr-stat-da-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Ưu tiên cao</div>
+                <div class="fr-stat-value" id="fr-stat-uu-tien-cao">0</div>
+              </div>
+            </div>
+            <div class="fr-stats-panels">
+              <div class="fr-stats-panel">
+                <h3>Theo trạng thái</h3>
+                <div class="fr-stacked-bar" id="fr-status-stacked-bar"></div>
+                <div id="fr-status-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Theo đơn vị đề xuất</h3>
+                <div id="fr-dept-bar-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Theo quý thực hiện và ưu tiên</h3>
+                <div class="fr-legend" id="fr-quy-legend"></div>
+                <div id="fr-quy-bar-list"></div>
+              </div>
+            </div>
+
             <p class="muted" style="margin:0 0 8px">Bấm vào 1 dòng để xem đầy đủ chi tiết.</p>
             <!-- Thanh cuộn ngang PHÍA TRÊN bảng — giống bảng Nhiệm vụ
                  (setupTaskScrollTopSync ở 04-tasks.js): bảng Yêu cầu tính năng

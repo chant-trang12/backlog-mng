@@ -35,6 +35,22 @@ const FR_PRIORITY_CLASS = {
   "Khẩn cấp": "status-huy",
 };
 
+// ---- Thống kê tổng quan (renderFeatureRequestStats) ----
+// Màu khớp ĐÚNG badge đã dùng cho cùng trường đó trên chính bảng này
+// (frStatusBadgeClass/FR_PRIORITY_CLASS ở trên) — không bịa bảng màu riêng
+// cho khung thống kê, tránh 1 giá trị có 2 màu khác nhau ở 2 chỗ.
+const FR_REPORT_STATUS_META = [
+  { key: "Chờ duyệt", color: "#fdba74" }, // orange-300, khớp status-dang-thuc-hien
+  { key: "Đã duyệt", color: "#8bbf6f" }, // khớp family xanh của status-hoan-thanh
+  { key: "Từ chối", color: "#ee0033" }, // red-600, khớp status-huy
+];
+const FR_REPORT_PRIORITY_META = [
+  { key: "Khẩn cấp", color: "#ee0033" },
+  { key: "Cao", color: "#fdba74" },
+  { key: "Trung bình", color: "#8bbf6f" },
+  { key: "Thấp", color: "#fcd34d" }, // amber-300, khớp status-default
+];
+
 // ---- Cấu hình cột hiển thị ở bảng Yêu cầu tính năng ----
 // Giống bảng Nhiệm vụ (TASK_TOGGLEABLE_COLUMNS ở 04-tasks.js): bảng có 19
 // cột dữ liệu nên rất dài theo chiều ngang — cho người dùng tự chọn ẩn cột
@@ -177,6 +193,7 @@ async function loadFeatureRequests() {
   populateFrHeThongFilter();
   populateFrQuarterFilter();
   populateFrDonViDeXuatFilter();
+  renderFeatureRequestStats();
   frPagination.reset();
   renderFeatureRequestTable();
   updateFeatureRequestNavBadge(countPendingFeatureRequestsForTarget(state.featureRequests));
@@ -331,6 +348,113 @@ function frQuarterOf(value) {
   const month = Number(m[2]);
   if (month < 1 || month > 12) return "";
   return `${FR_QUARTER_LABELS[Math.floor((month - 1) / 3)]}/${m[1]}`;
+}
+
+// ---- Thống kê tổng quan (4 thẻ + 3 khung biểu đồ, giữa ô Tìm kiếm và bảng
+// dữ liệu) — tính trên state.featureRequests (TOÀN BỘ danh sách đang xem
+// được của phòng ban, KHÔNG theo bộ lọc/từ khoá) để luôn là 1 bức tranh
+// tổng thể ổn định, không nhảy số liên tục theo thao tác lọc bảng bên dưới.
+// Gọi lại ở loadFeatureRequests() mỗi khi tải dữ liệu mới.
+function renderFeatureRequestStats() {
+  const rows = state.featureRequests;
+  const total = rows.length;
+  const pct = (n) => (total === 0 ? "0%" : `${Math.round((n / total) * 100)}%`);
+
+  const deptSet = new Set(rows.map((r) => r.department_id).filter((id) => id != null));
+  document.getElementById("fr-stat-total").textContent = total;
+  document.getElementById("fr-stat-total-sub").textContent = `Từ ${deptSet.size} đơn vị đề xuất`;
+
+  const statusCounts = FR_REPORT_STATUS_META.map((m) => ({
+    ...m,
+    count: rows.filter((r) => r.trang_thai === m.key).length,
+  }));
+  const [choDuyet, daDuyet] = statusCounts;
+  document.getElementById("fr-stat-cho-duyet").textContent = choDuyet.count;
+  document.getElementById("fr-stat-cho-duyet-sub").textContent = `${pct(choDuyet.count)} tổng số`;
+  document.getElementById("fr-stat-da-duyet").textContent = daDuyet.count;
+  document.getElementById("fr-stat-da-duyet-sub").textContent = `${pct(daDuyet.count)} tổng số`;
+
+  const uuTienCao = rows.filter((r) => r.do_uu_tien === "Cao" || r.do_uu_tien === "Khẩn cấp").length;
+  document.getElementById("fr-stat-uu-tien-cao").textContent = uuTienCao;
+
+  // Theo trạng thái — thanh dồn (stacked bar) + danh sách kèm %.
+  const stackedBarEl = document.getElementById("fr-status-stacked-bar");
+  const nonZeroStatus = statusCounts.filter((s) => s.count > 0);
+  stackedBarEl.innerHTML = nonZeroStatus.length
+    ? nonZeroStatus.map((s) => `<span style="flex:${s.count};background:${s.color}" title="${s.key}: ${s.count}"></span>`).join("")
+    : `<span style="flex:1;background:var(--border)"></span>`;
+  document.getElementById("fr-status-list").innerHTML = statusCounts
+    .map(
+      (s) => `
+    <div class="fr-stat-list-row">
+      <span class="fr-stat-list-label"><span class="fr-stat-dot" style="background:${s.color}"></span>${s.key}</span>
+      <span class="fr-stat-list-value">${s.count}<span class="muted">${pct(s.count)}</span></span>
+    </div>`,
+    )
+    .join("");
+
+  // Theo đơn vị đề xuất — danh sách thanh ngang, sắp giảm dần theo số lượng.
+  const deptCounts = new Map();
+  rows.forEach((r) => {
+    const name = r.department_name || "—";
+    deptCounts.set(name, (deptCounts.get(name) ?? 0) + 1);
+  });
+  const deptList = [...deptCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const maxDept = deptList.length ? deptList[0][1] : 0;
+  const deptListEl = document.getElementById("fr-dept-bar-list");
+  deptListEl.innerHTML = deptList.length
+    ? deptList
+        .map(
+          ([name, count]) => `
+    <div class="fr-bar-row">
+      <span class="fr-bar-label" title="${name}">${name}</span>
+      <span class="fr-bar-track"><span class="fr-bar-fill" style="width:${maxDept ? (count / maxDept) * 100 : 0}%"></span></span>
+      <span class="fr-bar-value">${count}</span>
+    </div>`,
+        )
+        .join("")
+    : `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
+
+  // Theo quý thực hiện và ưu tiên — mỗi quý 1 thanh dồn theo mức ưu tiên.
+  // "Chưa xếp" gom các yêu cầu không có Thời gian mong muốn thực hiện,
+  // luôn xếp cuối cùng (không có ý nghĩa thời gian để so sánh với quý thật).
+  const quyMap = new Map();
+  rows.forEach((r) => {
+    const quy = frQuarterOf(r.thoi_gian_mong_muon) || "Chưa xếp";
+    if (!quyMap.has(quy)) quyMap.set(quy, {});
+    const bucket = quyMap.get(quy);
+    bucket[r.do_uu_tien] = (bucket[r.do_uu_tien] ?? 0) + 1;
+  });
+  const quyEntries = [...quyMap.entries()].sort((a, b) => {
+    if (a[0] === "Chưa xếp") return 1;
+    if (b[0] === "Chưa xếp") return -1;
+    const [qa, ya] = a[0].split("/");
+    const [qb, yb] = b[0].split("/");
+    if (ya !== yb) return Number(ya) - Number(yb);
+    return FR_QUARTER_LABELS.indexOf(qa) - FR_QUARTER_LABELS.indexOf(qb);
+  });
+  const quyTotals = quyEntries.map(([, bucket]) => Object.values(bucket).reduce((a, b) => a + b, 0));
+  const maxQuyTotal = quyTotals.length ? Math.max(...quyTotals) : 0;
+  document.getElementById("fr-quy-legend").innerHTML = FR_REPORT_PRIORITY_META.map(
+    (m) => `<span class="fr-legend-item"><span class="fr-stat-dot" style="background:${m.color}"></span>${m.key}</span>`,
+  ).join("");
+  document.getElementById("fr-quy-bar-list").innerHTML = quyEntries.length
+    ? quyEntries
+        .map(([quy, bucket]) => {
+          const totalQ = Object.values(bucket).reduce((a, b) => a + b, 0);
+          const widthPct = maxQuyTotal ? (totalQ / maxQuyTotal) * 100 : 0;
+          const segments = FR_REPORT_PRIORITY_META.filter((m) => bucket[m.key])
+            .map((m) => `<span style="flex:${bucket[m.key]};background:${m.color}" title="${m.key}: ${bucket[m.key]}"></span>`)
+            .join("");
+          return `
+    <div class="fr-bar-row">
+      <span class="fr-bar-label">${quy}</span>
+      <span class="fr-bar-track"><span class="fr-bar-stacked" style="width:${widthPct}%">${segments}</span></span>
+      <span class="fr-bar-value">${totalQ}</span>
+    </div>`;
+        })
+        .join("")
+    : `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
 }
 
 // Phòng đang xem là bên nào của yêu cầu này? "target" | "proposer" | null
