@@ -1658,7 +1658,10 @@ th {
 .rpfr-chart-sub { font-size: 0.8rem; margin: 0 0 12px; }
 
 .rpfr-row-2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; margin-bottom: 12px; }
-.rpfr-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+/* Hàng 3 bảng Báo cáo Yêu cầu tính năng — còn đúng 2 panel ("Theo loại yêu
+   cầu" + "Hệ thống cần cải tiến") sau khi bỏ panel "Tỉ lệ hoàn thành theo
+   phòng ban" (user yêu cầu gỡ), nên đổi từ 3 cột xuống 2 cột. */
+.rpfr-row-3 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
 
 /* Donut trạng thái */
 /* Donut dùng chung class .home-donut-* (Trang chủ, style.css ở trên) — chỉ

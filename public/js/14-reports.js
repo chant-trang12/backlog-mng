@@ -79,7 +79,6 @@ function renderReportsFr() {
   renderRpfrHeatmap(rows);
   renderRpfrWaffle(rows);
   renderRpfrHeThongList(rows);
-  renderRpfrDeptCompletion(rows);
 }
 
 function rpfrPct(n, total) {
@@ -406,40 +405,6 @@ function renderRpfrHeThongList(rows) {
     </div>`,
     )
     .join("");
-}
-
-// Tỉ lệ hoàn thành theo phòng ban — cột dọc màu xanh, đậm nhạt theo tỉ lệ
-// (đậm nhất = cao nhất), sắp giảm dần.
-function renderRpfrDeptCompletion(rows) {
-  const el = document.getElementById("rpfr-dept-completion-chart");
-  const deptMap = new Map();
-  rows.forEach((r) => {
-    const name = r.department_name || "—";
-    if (!deptMap.has(name)) deptMap.set(name, { total: 0, done: 0 });
-    const d = deptMap.get(name);
-    d.total += 1;
-    if (r.trang_thai === "Đã duyệt") d.done += 1;
-  });
-  const entries = [...deptMap.entries()]
-    .map(([name, d]) => [name, d.total === 0 ? 0 : Math.round((d.done / d.total) * 100)])
-    .sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) {
-    el.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
-    return;
-  }
-  const maxPct = Math.max(1, ...entries.map(([, p]) => p));
-  el.innerHTML = `<div class="rpfr-vbar-row"><div class="rpfr-vbar-axis"></div>${entries
-    .map(([name, pct]) => {
-      const height = Math.max(4, (pct / 100) * 160);
-      const opacity = 0.35 + 0.65 * (pct / maxPct);
-      return `
-      <div class="rpfr-vbar-col">
-        <div class="rpfr-vbar-value">${pct}%</div>
-        <div class="rpfr-vbar-single" style="height:${height}px;background:#0284c7;opacity:${opacity.toFixed(2)}"></div>
-        <div class="rpfr-vbar-label">${name}</div>
-      </div>`;
-    })
-    .join("")}</div>`;
 }
 
 document.getElementById("rpfr-filter-year")?.addEventListener("change", renderReportsFr);
