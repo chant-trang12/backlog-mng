@@ -517,11 +517,14 @@ function createPagination(prefix, onChange, unit = "dòng") {
   const controller = { page: 1, pageSize: 20 };
 
   // "Hiển thị a–b trong c <unit>" — tạo động 1 span, chèn làm con ĐẦU TIÊN
-  // của nhóm "Số dòng/trang" (bên trái pagination-bar), không cần sửa HTML
-  // ở từng bảng — áp dụng đồng loạt cho MỌI bảng dùng createPagination().
+  // của CHÍNH .pagination-bar (không phải nhóm "Số dòng/trang") — để nó
+  // chiếm trọn 1 hàng riêng, đẩy CẢ 2 nhóm "Số dòng/trang" và "Trước/Trang/
+  // Sau" xuống cùng 1 hàng dưới, thẳng hàng với nhau (xem .pagination-range
+  // -info flex-basis:100%, style.css). Không cần sửa HTML ở từng bảng — áp
+  // dụng đồng loạt cho MỌI bảng dùng createPagination().
   const rangeEl = document.createElement("span");
   rangeEl.className = "pagination-range-info muted";
-  pageSizeEl.closest(".row")?.prepend(rangeEl);
+  pageSizeEl.closest(".pagination-bar")?.prepend(rangeEl);
 
   pageSizeEl.addEventListener("change", () => {
     controller.pageSize = Number(pageSizeEl.value) || 20;
