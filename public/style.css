@@ -1647,6 +1647,11 @@ th {
 .fr-legend-item { display: flex; align-items: center; gap: 6px; }
 
 /* ---- Báo cáo - Thống kê > Yêu cầu tính năng (14-reports.js) ---- */
+/* #reports-tab-fr KHÔNG phải .card (không như các tab khác, VD
+   #team-tab-nhansu — luôn bọc trong <section class="card">, có padding
+   sẵn) nên chữ "Báo cáo tổng hợp..." nằm sát ngay dưới dải tab, đè gần
+   lên pill đang active — bù khoảng cách trên bằng padding-top riêng. */
+#reports-tab-fr { padding-top: 20px; }
 .rpfr-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
 .rpfr-header-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .rpfr-header-filters select { min-width: 150px; }
