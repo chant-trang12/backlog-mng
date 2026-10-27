@@ -148,6 +148,9 @@ function renderEmpty() {
 // sau đó bị chính nó hủy/thay bởi task B — hiện đủ cả 2 note nếu có):
 // - thay_cho_task_id: task NÀY là bản thay thế cho 1 task đã hủy trước đó.
 // - thay_the_task_id: task NÀY đã hủy và được 1 task khác thay thế.
+// - Hủy SỚM (trong 1/4 đầu thời gian mục tiêu) không bắt khai task thay thế
+//   nên không có thay_the_task_id — vẫn cần 1 note báo đã hủy, không để
+//   trống khác hẳn các task Hủy có thay thế.
 function renderReplacementInfoNote(t) {
   let html = "";
   if (t.thay_cho_task_id) {
@@ -161,6 +164,8 @@ function renderReplacementInfoNote(t) {
     if (replacement) {
       html += `<div class="auto-cancel-note">Đã được thay thế bởi nhiệm vụ: "${replacement.nhiem_vu}".</div>`;
     }
+  } else if (t.trang_thai === "Hủy") {
+    html += `<div class="auto-cancel-note">Nhiệm vụ đã Xin hủy.</div>`;
   }
   return html;
 }
