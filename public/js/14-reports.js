@@ -14,7 +14,7 @@
 // màu riêng cho trang báo cáo này.
 const RPFR_STATUS_META = [
   { key: "Chờ duyệt", color: "#fcd9db" }, // red-200
-  { key: "Đã duyệt", color: "#ee0033" }, // red-600
+  { key: "Đã duyệt", color: "#f2666e" }, // red-400 — hồng san hô, bớt gắt hơn đỏ tươi
   { key: "Từ chối", color: "#620915" }, // red-900 / maroon
 ];
 const RPFR_PRIORITY_META = [
@@ -110,6 +110,10 @@ function renderRpfrStatCards(rows) {
 
 // Donut trạng thái — tương tự renderHomeTaskStatCard (08-home.js) nhưng
 // tách riêng (khác bộ dữ liệu/màu, không dùng chung hàm được).
+// Donut — dùng lại NGUYÊN style + hiệu ứng hover "phình ra" + tooltip bám
+// chuột của donut Trang chủ (renderHomeTaskStatCard, 08-home.js): cùng
+// class .home-donut-* (CSS đã có sẵn, không viết lại), cùng cách tính toạ
+// độ --tx/--ty để cung phình ra đúng hướng tâm khi hover.
 function renderRpfrStatusDonut(rows) {
   const wrap = document.getElementById("rpfr-donut-wrap");
   const total = rows.length;
@@ -117,7 +121,7 @@ function renderRpfrStatusDonut(rows) {
     wrap.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
     return;
   }
-  const size = 160, cx = size / 2, cy = size / 2, outerR = 72, innerR = 44;
+  const size = 160, cx = size / 2, cy = size / 2, outerR = 71, innerR = 42, popDistance = 7;
   const data = RPFR_STATUS_META.map((m) => ({ ...m, count: rows.filter((r) => r.trang_thai === m.key).length })).filter(
     (d) => d.count > 0,
   );
@@ -133,7 +137,12 @@ function renderRpfrStatusDonut(rows) {
     const xo1 = cx + outerR * Math.sin(a1), yo1 = cy - outerR * Math.cos(a1);
     const xi1 = cx + innerR * Math.sin(a1), yi1 = cy - innerR * Math.cos(a1);
     const xi0 = cx + innerR * Math.sin(a0), yi0 = cy - innerR * Math.cos(a0);
-    wedges += `<path d="M${xo0.toFixed(1)},${yo0.toFixed(1)} A${outerR},${outerR} 0 ${largeArc} 1 ${xo1.toFixed(1)},${yo1.toFixed(1)} L${xi1.toFixed(1)},${yi1.toFixed(1)} A${innerR},${innerR} 0 ${largeArc} 0 ${xi0.toFixed(1)},${yi0.toFixed(1)} Z" fill="${d.color}"><title>${d.key}: ${d.count}</title></path>`;
+    const d0 = `M${xo0.toFixed(1)},${yo0.toFixed(1)} A${outerR},${outerR} 0 ${largeArc} 1 ${xo1.toFixed(1)},${yo1.toFixed(1)} L${xi1.toFixed(1)},${yi1.toFixed(1)} A${innerR},${innerR} 0 ${largeArc} 0 ${xi0.toFixed(1)},${yi0.toFixed(1)} Z`;
+
+    const mid = (a0 + a1) / 2;
+    const tx = (Math.sin(mid) * popDistance).toFixed(1);
+    const ty = (-Math.cos(mid) * popDistance).toFixed(1);
+    wedges += `<path class="home-donut-wedge" d="${d0}" fill="${d.color}" style="--tx:${tx}px;--ty:${ty}px" data-status="${d.key}" data-value="${d.count}" data-color="${d.color}" />`;
     angle = a1;
   });
 
@@ -148,12 +157,44 @@ function renderRpfrStatusDonut(rows) {
 
   wrap.innerHTML = `
     <div class="rpfr-donut-row">
-      <div class="rpfr-donut-svg-wrap">
-        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${wedges}</svg>
-        <div class="rpfr-donut-center"><div class="rpfr-donut-center-big">${total}</div><div class="rpfr-donut-center-small">YÊU CẦU</div></div>
+      <div class="home-donut-wrap" style="width:${size}px;height:${size}px;margin:0">
+        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" overflow="visible">${wedges}</svg>
+        <div class="home-donut-center"><div class="big">${total}</div><div class="small">Yêu cầu</div></div>
+        <div class="home-donut-tooltip" id="rpfr-donut-tooltip">
+          <div class="home-donut-tooltip-row">
+            <span class="home-donut-tooltip-dot"></span>
+            <span class="home-donut-tooltip-label"></span>
+            <span class="home-donut-tooltip-value"></span>
+          </div>
+        </div>
       </div>
       <div class="rpfr-donut-legend">${legend}</div>
     </div>`;
+
+  const donutWrapEl = wrap.querySelector(".home-donut-wrap");
+  const tooltipEl = document.getElementById("rpfr-donut-tooltip");
+  const dotEl = tooltipEl.querySelector(".home-donut-tooltip-dot");
+  const labelEl = tooltipEl.querySelector(".home-donut-tooltip-label");
+  const valueEl = tooltipEl.querySelector(".home-donut-tooltip-value");
+
+  function positionTooltip(clientX, clientY) {
+    const rect = donutWrapEl.getBoundingClientRect();
+    tooltipEl.style.left = `${clientX - rect.left + 14}px`;
+    tooltipEl.style.top = `${clientY - rect.top - 12}px`;
+  }
+
+  wrap.querySelectorAll(".home-donut-wedge").forEach((wedge) => {
+    wedge.addEventListener("mouseenter", (e) => {
+      dotEl.style.background = wedge.dataset.color;
+      labelEl.textContent = wedge.dataset.status;
+      valueEl.textContent = wedge.dataset.value;
+      tooltipEl.style.borderColor = wedge.dataset.color;
+      tooltipEl.classList.add("visible");
+      positionTooltip(e.clientX, e.clientY);
+    });
+    wedge.addEventListener("mousemove", (e) => positionTooltip(e.clientX, e.clientY));
+    wedge.addEventListener("mouseleave", () => tooltipEl.classList.remove("visible"));
+  });
 }
 
 // Xu hướng tiếp nhận và hoàn thành — 12 tháng của năm đang lọc (hoặc năm
