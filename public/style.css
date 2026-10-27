@@ -2944,6 +2944,11 @@ dialog.confirm-dialog .confirm-actions button { flex: 1; min-width: 0; }
 .pagination-range-info {
   font-size: 0.85rem;
   white-space: nowrap;
+  /* Chiếm trọn chiều ngang của hàng chứa nó (.row flex-wrap: wrap) -> đẩy
+     "Số dòng/trang" + select xuống dòng riêng bên dưới, không nằm ngang
+     hàng với nhau nữa. */
+  flex-basis: 100%;
+  margin-bottom: 4px;
 }
 
 .pagination-bar #task-page-info {
