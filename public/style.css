@@ -1646,6 +1646,79 @@ th {
 .fr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 0.78rem; color: var(--muted); }
 .fr-legend-item { display: flex; align-items: center; gap: 6px; }
 
+/* ---- Báo cáo - Thống kê > Yêu cầu tính năng (14-reports.js) ---- */
+.rpfr-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.rpfr-header-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.rpfr-header-filters select { min-width: 150px; }
+.rpfr-chart-sub { font-size: 0.8rem; margin: 0 0 12px; }
+
+.rpfr-row-2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; margin-bottom: 12px; }
+.rpfr-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+
+/* Donut trạng thái */
+.rpfr-donut-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.rpfr-donut-svg-wrap { position: relative; width: 160px; height: 160px; flex-shrink: 0; margin: 0 auto; }
+.rpfr-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.rpfr-donut-center-big { font-size: 1.8rem; font-weight: 800; }
+.rpfr-donut-center-small { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.rpfr-donut-legend { flex: 1 1 180px; min-width: 180px; }
+
+/* Xu hướng tiếp nhận/hoàn thành */
+.rpfr-trend-legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.rpfr-trend-legend-item { display: flex; align-items: center; gap: 6px; }
+.rpfr-trend-swatch { width: 14px; height: 2px; border-radius: 2px; background: currentColor; display: inline-block; }
+.rpfr-trend-swatch-dashed { background: none; border-top: 2px dashed; height: 0; }
+
+/* Phòng ban × trạng thái (bảng nhiệt) */
+.rpfr-heat-legend { display: flex; align-items: center; gap: 3px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.rpfr-heat-legend span { width: 12px; height: 12px; border-radius: 3px; }
+.rpfr-heat-legend span:nth-child(1) { background: #faf5f2; }
+.rpfr-heat-legend span:nth-child(2) { background: #fcd9db; }
+.rpfr-heat-legend span:nth-child(3) { background: #f9b3b7; }
+.rpfr-heat-legend span:nth-child(4) { background: #ee0033; }
+.rpfr-heat-legend span:nth-child(5) { background: #620915; }
+.rpfr-heat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.rpfr-heat-table th { font-weight: 600; color: var(--muted); font-size: 0.74rem; padding: 4px 6px; text-align: center; }
+.rpfr-heat-table th:first-child { text-align: left; }
+.rpfr-heat-table td { text-align: center; padding: 8px 6px; border-radius: 6px; font-weight: 700; color: var(--text); }
+.rpfr-heat-table td.rpfr-heat-dark { color: #fff; }
+.rpfr-heat-rowlabel { text-align: left !important; font-weight: 400 !important; color: var(--text) !important; background: none !important; white-space: nowrap; }
+.rpfr-heat-total { background: none !important; color: var(--text) !important; }
+
+/* Cột dọc dùng chung cho "Theo quý thực hiện" + "Tỉ lệ hoàn thành theo phòng ban" */
+.rpfr-vbar-row { display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
+.rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; justify-content: flex-end; }
+.rpfr-vbar-value { font-weight: 700; font-size: 0.85rem; }
+.rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; }
+.rpfr-vbar-stack > span { display: block; width: 100%; }
+.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; }
+.rpfr-vbar-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+
+/* Theo loại yêu cầu (waffle) */
+.rpfr-waffle { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.rpfr-waffle > span { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
+.rpfr-waffle-legend { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; }
+.rpfr-waffle-legend-item { display: flex; align-items: center; gap: 8px; }
+.rpfr-waffle-legend-item strong { margin-left: auto; }
+
+/* Hệ thống cần cải tiến (thanh slider + chấm) */
+.rpfr-dot-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.85rem; }
+.rpfr-dot-label { flex: 0 0 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rpfr-dot-track { flex: 1; position: relative; height: 2px; background: var(--border); border-radius: 2px; }
+.rpfr-dot-fill { display: block; height: 100%; background: #ee0033; border-radius: 2px; position: relative; }
+.rpfr-dot-fill::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #620915;
+}
+.rpfr-dot-value { flex: 0 0 24px; text-align: right; font-weight: 700; }
+
 /* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
    hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service
    .ts): checkbox/STT/Lĩnh vực/Mảng/Hoạt động-nghiệp vụ/Quy trình số hóa/Mã
@@ -3206,6 +3279,8 @@ img, svg, canvas, video { max-width: 100%; }
 
   /* 3 khung thống kê Yêu cầu tính năng xếp dọc thay vì co hẹp từng khung. */
   .fr-stats-panels { grid-template-columns: 1fr; }
+  .rpfr-row-2,
+  .rpfr-row-3 { grid-template-columns: 1fr; }
 }
 
 /* ---- Điện thoại lớn / máy tính bảng dọc (≤720px) ---- */

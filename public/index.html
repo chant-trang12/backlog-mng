@@ -2275,7 +2275,114 @@
             <span class="pill" data-tab="task">Nhiệm vụ</span>
           </div>
 
-          <div id="reports-tab-fr"></div>
+          <!-- Báo cáo tổng hợp Yêu cầu tính năng — xem renderReportsFr(),
+               14-reports.js. Dữ liệu tải riêng (không dùng chung
+               state.featureRequests của trang Yêu cầu tính năng) để vào
+               thẳng trang Báo cáo vẫn có số liệu, không cần ghé trang kia
+               trước. 3 trạng thái THẬT (Chờ duyệt/Đã duyệt/Từ chối) — ảnh
+               mẫu có 5 trạng thái nhưng hệ thống chỉ lưu 3, không bịa thêm. -->
+          <div id="reports-tab-fr">
+            <div class="rpfr-header">
+              <div>
+                <h2 style="margin:0">Báo cáo tổng hợp yêu cầu số hoá</h2>
+                <p class="muted" id="rpfr-subtitle" style="margin:4px 0 0"></p>
+              </div>
+              <div class="rpfr-header-filters">
+                <div>
+                  <label for="rpfr-filter-year">Kỳ báo cáo</label>
+                  <select id="rpfr-filter-year"></select>
+                </div>
+                <div>
+                  <label for="rpfr-filter-linhvuc">Lĩnh vực</label>
+                  <select id="rpfr-filter-linhvuc">
+                    <option value="">Tất cả lĩnh vực</option>
+                  </select>
+                </div>
+                <button type="button" id="rpfr-export-btn" class="btn-view">
+                  <svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất báo cáo
+                </button>
+              </div>
+            </div>
+
+            <div class="fr-stats-cards" id="rpfr-stats-cards">
+              <div class="fr-stat-card fr-stat-highlight">
+                <div class="fr-stat-label">Tổng yêu cầu</div>
+                <div class="fr-stat-value" id="rpfr-stat-total">0</div>
+                <div class="fr-stat-sub" id="rpfr-stat-total-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Chờ duyệt</div>
+                <div class="fr-stat-value" id="rpfr-stat-cho-duyet">0</div>
+                <div class="fr-stat-sub" id="rpfr-stat-cho-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Đã duyệt</div>
+                <div class="fr-stat-value" id="rpfr-stat-da-duyet">0</div>
+                <div class="fr-stat-sub" id="rpfr-stat-da-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Ưu tiên cao</div>
+                <div class="fr-stat-value" id="rpfr-stat-uu-tien-cao">0</div>
+                <div class="fr-stat-sub" id="rpfr-stat-uu-tien-cao-sub"></div>
+              </div>
+            </div>
+
+            <div class="rpfr-row-2">
+              <div class="fr-stats-panel">
+                <h3>Theo trạng thái</h3>
+                <div class="rpfr-donut-wrap" id="rpfr-donut-wrap"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <h3 style="margin:0 0 2px">Xu hướng tiếp nhận và hoàn thành</h3>
+                    <p class="muted rpfr-chart-sub" id="rpfr-trend-sub"></p>
+                  </div>
+                  <div class="rpfr-trend-legend">
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#ee0033"></span>Tiếp nhận</span>
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch rpfr-trend-swatch-dashed" style="border-color:#7dd3fc"></span>Hoàn thành</span>
+                  </div>
+                </div>
+                <div id="rpfr-trend-chart"></div>
+              </div>
+            </div>
+
+            <div class="rpfr-row-2">
+              <div class="fr-stats-panel">
+                <h3>Theo quý thực hiện</h3>
+                <p class="muted rpfr-chart-sub">Chia theo mức ưu tiên</p>
+                <div class="rpfr-legend" id="rpfr-quy-legend"></div>
+                <div id="rpfr-quy-chart"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <h3 style="margin:0">Phòng ban × trạng thái</h3>
+                  <div class="rpfr-heat-legend">Ít<span></span><span></span><span></span><span></span><span></span>Nhiều</div>
+                </div>
+                <p class="muted rpfr-chart-sub">Màu càng đậm, càng nhiều yêu cầu</p>
+                <div class="table-wrap" id="rpfr-heatmap-wrap"></div>
+              </div>
+            </div>
+
+            <div class="rpfr-row-3">
+              <div class="fr-stats-panel">
+                <h3>Theo loại yêu cầu</h3>
+                <p class="muted rpfr-chart-sub">Mỗi ô là một yêu cầu</p>
+                <div class="rpfr-waffle" id="rpfr-waffle"></div>
+                <div id="rpfr-waffle-legend"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Hệ thống cần cải tiến</h3>
+                <p class="muted rpfr-chart-sub">Số yêu cầu liên quan mỗi hệ thống</p>
+                <div id="rpfr-hethong-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Tỉ lệ hoàn thành theo phòng ban</h3>
+                <p class="muted rpfr-chart-sub">Hoàn thành / tổng yêu cầu của phòng</p>
+                <div id="rpfr-dept-completion-chart"></div>
+              </div>
+            </div>
+          </div>
           <div id="reports-tab-task" hidden></div>
           </div>
         </div>
@@ -3757,6 +3864,7 @@
   <script src="js/10-feature-requests.js"></script>
   <script src="js/11-action-logs.js"></script>
   <script src="js/13-digital-features.js"></script>
+  <script src="js/14-reports.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

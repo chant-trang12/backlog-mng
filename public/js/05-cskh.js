@@ -62,6 +62,7 @@ document.querySelectorAll("#reports-subnav .pill").forEach((pill) => {
     ["fr", "task"].forEach((tab) => {
       document.getElementById(`reports-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
+    if (pill.dataset.tab === "fr") loadReportsFr().catch((err) => showToast(err.message));
   });
 });
 
