@@ -507,12 +507,21 @@ function groupColorClass(group) {
 // Tỉ lệ khởi tạo) — cùng hành vi với bảng Danh sách nhiệm vụ: 20 dòng/trang
 // mặc định, chọn được 20/50/100, chỉ ảnh hưởng phần hiển thị (chọn/sửa/xóa
 // vẫn thao tác trên toàn bộ danh sách).
-function createPagination(prefix, onChange) {
+// `unit` — danh từ tiếng Việt cho tổng số dòng (VD "yêu cầu", "nhiệm vụ"),
+// dùng để dựng text "Hiển thị a–b trong c <unit>" — xem rangeEl bên dưới.
+function createPagination(prefix, onChange, unit = "dòng") {
   const pageSizeEl = document.getElementById(`${prefix}-page-size`);
   const prevEl = document.getElementById(`${prefix}-page-prev`);
   const nextEl = document.getElementById(`${prefix}-page-next`);
   const infoEl = document.getElementById(`${prefix}-page-info`);
   const controller = { page: 1, pageSize: 20 };
+
+  // "Hiển thị a–b trong c <unit>" — tạo động 1 span, chèn làm con ĐẦU TIÊN
+  // của nhóm "Số dòng/trang" (bên trái pagination-bar), không cần sửa HTML
+  // ở từng bảng — áp dụng đồng loạt cho MỌI bảng dùng createPagination().
+  const rangeEl = document.createElement("span");
+  rangeEl.className = "pagination-range-info muted";
+  pageSizeEl.closest(".row")?.prepend(rangeEl);
 
   pageSizeEl.addEventListener("change", () => {
     controller.pageSize = Number(pageSizeEl.value) || 20;
@@ -543,33 +552,37 @@ function createPagination(prefix, onChange) {
     pageSizeEl.value = String(controller.pageSize);
 
     const start = (controller.page - 1) * controller.pageSize;
+    const end = Math.min(start + controller.pageSize, items.length);
+    rangeEl.textContent =
+      items.length === 0 ? `Không có ${unit} nào` : `Hiển thị ${start + 1}–${end} trong ${items.length} ${unit}`;
+
     return items.slice(start, start + controller.pageSize);
   };
 
   return controller;
 }
 
-const taskPagination = createPagination("task", () => renderTasks());
-const memberPagination = createPagination("member", () => renderMemberTable());
-const incidentPagination = createPagination("incident", () => renderIncidents());
-const ticketPagination = createPagination("ticket", () => renderTickets());
-const creationRatePagination = createPagination("creation-rate", () => renderCreationRates());
-const compliancePagination = createPagination("compliance", () => renderComplianceRecords());
-const trainingPagination = createPagination("training", () => renderTrainingRecords());
-const supportPagination = createPagination("support", () => renderSupportRecords());
-const evaluationPagination = createPagination("danhgia", () => renderEvaluationRecords());
-const attendancePagination = createPagination("attendance", () => renderAttendanceTable());
-const roadmapPagination = createPagination("roadmap", () => renderRoadmap());
-const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable());
-const frPagination = createPagination("fr", () => renderFeatureRequestTable());
-const dfPagination = createPagination("df", () => renderDigitalFeatures());
-const dfsPagination = createPagination("dfs", () => renderDigitalFeatureScreens());
-const dfmdPagination = createPagination("dfmd", () => renderDigitalFeatureMasterData());
-const dfdoPagination = createPagination("dfdo", () => renderDigitalFeatureDataObjects());
-const dfintPagination = createPagination("dfint", () => renderDigitalFeatureIntegrations());
-const usersConfigPagination = createPagination("users-config", () => renderUsersConfig());
-const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig());
-const actionLogPagination = createPagination("al", () => renderActionLogTable());
+const taskPagination = createPagination("task", () => renderTasks(), "nhiệm vụ");
+const memberPagination = createPagination("member", () => renderMemberTable(), "nhân sự");
+const incidentPagination = createPagination("incident", () => renderIncidents(), "sự cố");
+const ticketPagination = createPagination("ticket", () => renderTickets(), "ticket hỗ trợ");
+const creationRatePagination = createPagination("creation-rate", () => renderCreationRates(), "bản ghi");
+const compliancePagination = createPagination("compliance", () => renderComplianceRecords(), "bản ghi tuân thủ");
+const trainingPagination = createPagination("training", () => renderTrainingRecords(), "lượt đào tạo");
+const supportPagination = createPagination("support", () => renderSupportRecords(), "lượt hỗ trợ");
+const evaluationPagination = createPagination("danhgia", () => renderEvaluationRecords(), "lượt đánh giá");
+const attendancePagination = createPagination("attendance", () => renderAttendanceTable(), "bản ghi chấm công");
+const roadmapPagination = createPagination("roadmap", () => renderRoadmap(), "dòng roadmap");
+const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable(), "bản ghi nội quy");
+const frPagination = createPagination("fr", () => renderFeatureRequestTable(), "yêu cầu");
+const dfPagination = createPagination("df", () => renderDigitalFeatures(), "tính năng số hoá");
+const dfsPagination = createPagination("dfs", () => renderDigitalFeatureScreens(), "màn hình");
+const dfmdPagination = createPagination("dfmd", () => renderDigitalFeatureMasterData(), "danh mục");
+const dfdoPagination = createPagination("dfdo", () => renderDigitalFeatureDataObjects(), "đối tượng dữ liệu");
+const dfintPagination = createPagination("dfint", () => renderDigitalFeatureIntegrations(), "tích hợp");
+const usersConfigPagination = createPagination("users-config", () => renderUsersConfig(), "user");
+const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig(), "phòng ban");
+const actionLogPagination = createPagination("al", () => renderActionLogTable(), "nhật ký");
 
 function today() {
   return new Date();

@@ -2937,6 +2937,15 @@ dialog.confirm-dialog .confirm-actions button { flex: 1; min-width: 0; }
 
 .pagination-bar select { width: auto; }
 
+/* "Hiển thị a–b trong c <đơn vị>" — chèn động làm con đầu tiên của nhóm
+   "Số dòng/trang" (bên trái pagination-bar), áp dụng cho MỌI bảng dữ liệu
+   dùng chung createPagination() (01-state.js), không cần sửa HTML riêng
+   từng bảng. */
+.pagination-range-info {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 .pagination-bar #task-page-info {
   font-size: 0.85rem;
   min-width: 90px;
