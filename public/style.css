@@ -1701,7 +1701,11 @@ th {
 
 /* Cột dọc dùng chung cho "Theo quý thực hiện" + "Tỉ lệ hoàn thành theo phòng ban" */
 .rpfr-vbar-row { position: relative; display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
-.rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; justify-content: flex-end; position: relative; z-index: 1; }
+/* margin-inline:auto phân bố đều các cột trên toàn bề ngang (hết chỗ dư
+   thì tự về 0 → vẫn cuộn ngang bình thường khi nhiều cột) — trước đây chỉ
+   flex:0 0 auto nên 2-3 cột dồn sát trái, nửa phải biểu đồ trống rỗng
+   (user phản hồi "hiển thị lệch sang trái"). */
+.rpfr-vbar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; margin-inline: auto; justify-content: flex-end; position: relative; z-index: 1; }
 .rpfr-vbar-value { font-weight: 700; font-size: 0.85rem; }
 .rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; }
 .rpfr-vbar-stack > span { display: block; width: 100%; }
