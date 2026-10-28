@@ -81,6 +81,7 @@ const FR_TOGGLEABLE_COLUMNS = [
   { key: "ket_qua", label: "Kết quả mong muốn" },
   { key: "do_uu_tien", label: "Ưu tiên" },
   { key: "don_vi_de_xuat", label: "Đơn vị đề xuất" },
+  { key: "don_vi_thuc_hien", label: "Đơn vị thực hiện số hoá" },
   { key: "nguoi_dau_moi", label: "Nhân sự đầu mối" },
   { key: "ghi_chu", label: "Ghi chú" },
   { key: "trang_thai", label: "Trạng thái" },
@@ -723,6 +724,7 @@ function renderFeatureRequestTable() {
        <td data-col="ket_qua" ${colHidden("ket_qua")}>${frClamp(r.ket_qua_mong_muon)}</td>
        <td data-col="do_uu_tien" ${colHidden("do_uu_tien")}><span class="status-badge ${FR_PRIORITY_CLASS[r.do_uu_tien] ?? "status-default"}">${r.do_uu_tien}</span></td>
        <td data-col="don_vi_de_xuat" ${colHidden("don_vi_de_xuat")}>${r.department_name ?? `<span class="muted">—</span>`}</td>
+       <td data-col="don_vi_thuc_hien" ${colHidden("don_vi_thuc_hien")}>${r.target_department_name ?? `<span class="muted">—</span>`}</td>
        <td data-col="nguoi_dau_moi" ${colHidden("nguoi_dau_moi")}>${frClamp(r.nguoi_de_xuat)}</td>
        <td data-col="ghi_chu" ${colHidden("ghi_chu")}>${frClamp(r.ghi_chu_xu_ly)}</td>
        <td data-col="trang_thai" ${colHidden("trang_thai")}>

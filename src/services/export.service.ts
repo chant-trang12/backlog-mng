@@ -253,11 +253,11 @@ const FR_HEADERS = [
   "Hệ thống cần cải tiến (nếu có)", "Đề xuất quy trình/nghiệp vụ",
   "Hiệu quả khi thực hiện", "Thời gian mong muốn thực hiện", "Quý thực hiện",
   "Kế hoạch software", "Kết quả mong muốn", "Ưu tiên", "Đơn vị đề xuất",
-  "Nhân sự đầu mối", "Ghi chú", "Trạng thái",
+  "Đơn vị thực hiện số hoá", "Nhân sự đầu mối", "Ghi chú", "Trạng thái",
 ];
 const FR_TOTAL_COLUMNS = FR_HEADERS.length;
 const FR_COLUMN_WIDTHS = [
-  6, 30, 16, 14, 14, 22, 16, 14, 16, 30, 24, 20, 24, 22, 16, 14, 20, 26, 12, 20, 16, 20, 16,
+  6, 30, 16, 14, 14, 22, 16, 14, 16, 30, 24, 20, 24, 22, 16, 14, 20, 26, 12, 20, 20, 16, 20, 16,
 ];
 
 // Quý thực hiện — khớp CHÍNH XÁC frQuarterOf() ở 10-feature-requests.js
@@ -341,6 +341,7 @@ export async function exportFeatureRequestsToExcel(
       r.ket_qua_mong_muon ?? "",
       r.do_uu_tien,
       r.department_name ?? "",
+      r.target_department_name ?? "",
       r.nguoi_de_xuat ?? "",
       r.ghi_chu_xu_ly ?? "",
       frStatusLabelForExport(r, viewerDepartmentId),
