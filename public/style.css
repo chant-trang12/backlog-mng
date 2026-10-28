@@ -1717,15 +1717,7 @@ th {
    vì border riêng từng cột (dễ mờ/lệch khi cột cao thấp khác nhau). */
 .rpfr-vbar-axis { position: absolute; left: 0; right: 0; bottom: 24px; height: 2px; background: var(--stone-400); pointer-events: none; }
 
-/* Theo loại yêu cầu (waffle) */
-.rpfr-waffle { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
-.rpfr-waffle > span { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; }
-.rpfr-waffle-legend { display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; }
-.rpfr-waffle-legend-item { display: flex; align-items: center; gap: 8px; }
-/* Số đếm nằm ngay sau nhãn (gap 8px) — trước đây strong có margin-left:auto
-   đẩy số sang mép phải panel, cách xa nhãn trông rời rạc (user phản hồi). */
-
-/* Hệ thống cần cải tiến (thanh slider + chấm) */
+/* Hệ thống cần cải tiến + Theo đơn vị thực hiện số hoá (thanh slider + chấm) */
 .rpfr-dot-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.85rem; }
 .rpfr-dot-label { flex: 0 0 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rpfr-dot-track { flex: 1; position: relative; height: 2px; background: var(--border); border-radius: 2px; }

@@ -27,11 +27,6 @@ const RPFR_PRIORITY_META = [
   // sau khi thử xanh da trời — quay lại họ màu ấm như cũ).
   { key: "Thấp", color: "#fbe0c5", dashed: true },
 ];
-// Bảng màu cho ô vuông "Theo loại yêu cầu" — loai_yeu_cau là danh mục cấu
-// hình được (Cấu hình > Loại yêu cầu), số lượng giá trị không cố định nên
-// không gán cứng 2 màu như ảnh mẫu (chỉ có "Cải tiến"/"Mới") — lặp vòng
-// qua bảng màu này theo đúng SỐ GIÁ TRỊ THỰC TẾ đang có trong dữ liệu.
-const RPFR_WAFFLE_PALETTE = ["#ee0033", "#fef3c7", "#f9b3b7", "#620915", "#7dd3fc", "#fcd9db", "#f2666e"];
 
 let rpfrAllRows = null; // null = chưa tải lần nào
 
@@ -81,7 +76,7 @@ function renderReportsFr() {
   renderRpfrTrendChart(rows);
   renderRpfrQuyChart(rows);
   renderRpfrHeatmap(rows);
-  renderRpfrWaffle(rows);
+  renderRpfrTargetDeptList(rows);
   renderRpfrHeThongList(rows);
 }
 
@@ -356,39 +351,35 @@ function renderRpfrHeatmap(rows) {
     </table>`;
 }
 
-// Theo loại yêu cầu — ô vuông dạng waffle, mỗi ô = 1 yêu cầu.
-function renderRpfrWaffle(rows) {
-  const waffleEl = document.getElementById("rpfr-waffle");
-  const legendEl = document.getElementById("rpfr-waffle-legend");
-  if (rows.length === 0) {
-    waffleEl.innerHTML = "";
-    legendEl.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
-    return;
-  }
+// Theo đơn vị thực hiện số hoá — thanh ngang kiểu "slider" (giống Hệ thống
+// cần cải tiến ngay cạnh, để nhìn thống nhất) — số yêu cầu MỖI PHÒNG BAN đã
+// TIẾP NHẬN (target_department_name, khớp đúng cột "Đơn vị thực hiện số
+// hoá" mới thêm ở bảng), sắp giảm dần. Trực quan hơn hẳn waffle ô vuông cũ
+// (user phản hồi) — xem rõ ngay phòng nào tiếp nhận nhiều/ít mà không cần
+// đếm từng ô.
+function renderRpfrTargetDeptList(rows) {
+  const el = document.getElementById("rpfr-target-dept-list");
   const counts = new Map();
   rows.forEach((r) => {
-    const key = r.loai_yeu_cau?.trim() || "Chưa phân loại";
+    const key = r.target_department_name?.trim() || "Chưa xác định";
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
   const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  const colorByKey = new Map(entries.map(([key], i) => [key, RPFR_WAFFLE_PALETTE[i % RPFR_WAFFLE_PALETTE.length]]));
-
-  const squares = [];
-  entries.forEach(([key, count]) => {
-    for (let i = 0; i < count; i++) squares.push(`<span style="background:${colorByKey.get(key)}" title="${key}"></span>`);
-  });
-  waffleEl.innerHTML = squares.join("");
-
-  const total = rows.length;
-  legendEl.innerHTML = `<div class="rpfr-waffle-legend">${entries
+  if (entries.length === 0) {
+    el.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
+    return;
+  }
+  const max = entries[0][1];
+  el.innerHTML = entries
     .map(
-      ([key, count]) => `
-    <div class="rpfr-waffle-legend-item">
-      <span class="fr-stat-dot" style="background:${colorByKey.get(key)}"></span>${key}
-      <strong>${count} · ${rpfrPct(count, total)}</strong>
+      ([name, count]) => `
+    <div class="rpfr-dot-row">
+      <span class="rpfr-dot-label" title="${name}">${name}</span>
+      <span class="rpfr-dot-track"><span class="rpfr-dot-fill" style="width:${max ? (count / max) * 100 : 0}%"></span></span>
+      <span class="rpfr-dot-value">${count}</span>
     </div>`,
     )
-    .join("")}</div>`;
+    .join("");
 }
 
 // Hệ thống cần cải tiến — thanh ngang kiểu "slider" (vạch + chấm tròn ở
