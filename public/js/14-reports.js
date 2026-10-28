@@ -476,8 +476,8 @@ function renderRpfrExchangeChart(rows) {
     const recvX = groupCenterX + 2;
     const sentY = yAt(sentVal);
     const recvY = yAt(recvVal);
-    bars += `<rect class="rpfr-exchange-bar" x="${sentX.toFixed(1)}" y="${sentY.toFixed(1)}" width="${barWidth}" height="${(baseY - sentY).toFixed(1)}" rx="3" fill="#ee0033"><title>${name} — Đã gửi: ${sentVal}</title></rect>`;
-    bars += `<rect class="rpfr-exchange-bar" x="${recvX.toFixed(1)}" y="${recvY.toFixed(1)}" width="${barWidth}" height="${(baseY - recvY).toFixed(1)}" rx="3" fill="#0284c7"><title>${name} — Nhận về: ${recvVal}</title></rect>`;
+    bars += `<rect class="rpfr-exchange-bar" x="${sentX.toFixed(1)}" y="${sentY.toFixed(1)}" width="${barWidth}" height="${(baseY - sentY).toFixed(1)}" rx="3" fill="#890d1e"><title>${name} — Đã gửi: ${sentVal}</title></rect>`;
+    bars += `<rect class="rpfr-exchange-bar" x="${recvX.toFixed(1)}" y="${recvY.toFixed(1)}" width="${barWidth}" height="${(baseY - recvY).toFixed(1)}" rx="3" fill="#cc4f55"><title>${name} — Nhận về: ${recvVal}</title></rect>`;
     const label = name.length > 16 ? `${name.slice(0, 15)}…` : name;
     xLabels += `<text x="${groupCenterX.toFixed(1)}" y="${h - padB + 16}" font-size="11" fill="var(--muted)" text-anchor="middle">${label}<title>${name}</title></text>`;
   });
