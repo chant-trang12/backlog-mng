@@ -358,6 +358,28 @@ function renderRpfrHeatmap(rows) {
 // hoá" mới thêm ở bảng), sắp giảm dần. Trực quan hơn hẳn waffle ô vuông cũ
 // (user phản hồi) — xem rõ ngay phòng nào tiếp nhận nhiều/ít mà không cần
 // đếm từng ô.
+// Cột dọc đơn sắc dùng chung cho "Theo đơn vị thực hiện số hoá" + "Hệ thống
+// cần cải tiến" — đổi từ kiểu "thanh ngang + chấm" sang cột dọc chuẩn (trục
+// X + trục Y, giống mẫu ECharts "dataset-encode0" user gửi: bar chart có
+// trục rõ ràng thay vì slider tối giản) — tái dùng NGUYÊN khung
+// .rpfr-vbar-* đã có sẵn (Theo quý thực hiện cũng dùng), chỉ 1 màu/cột vì
+// mỗi panel chỉ có 1 chỉ số (không cần nhóm nhiều cột/danh mục như mẫu).
+function rpfrVBarChartHtml(entries, color) {
+  if (entries.length === 0) return `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
+  const max = entries[0][1];
+  return `<div class="rpfr-vbar-row"><div class="rpfr-vbar-axis"></div>${entries
+    .map(([name, count]) => {
+      const height = max ? Math.max(4, (count / max) * 160) : 0;
+      return `
+    <div class="rpfr-vbar-col">
+      <div class="rpfr-vbar-value">${count}</div>
+      <div class="rpfr-vbar-single" style="height:${height}px;background:${color}" title="${name}: ${count}"></div>
+      <div class="rpfr-vbar-label" title="${name}">${name}</div>
+    </div>`;
+    })
+    .join("")}</div>`;
+}
+
 function renderRpfrTargetDeptList(rows) {
   const el = document.getElementById("rpfr-target-dept-list");
   const counts = new Map();
@@ -366,25 +388,10 @@ function renderRpfrTargetDeptList(rows) {
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
   const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) {
-    el.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
-    return;
-  }
-  const max = entries[0][1];
-  el.innerHTML = entries
-    .map(
-      ([name, count]) => `
-    <div class="rpfr-dot-row">
-      <span class="rpfr-dot-label" title="${name}">${name}</span>
-      <span class="rpfr-dot-track"><span class="rpfr-dot-fill" style="width:${max ? (count / max) * 100 : 0}%"></span></span>
-      <span class="rpfr-dot-value">${count}</span>
-    </div>`,
-    )
-    .join("");
+  el.innerHTML = rpfrVBarChartHtml(entries, "#ee0033");
 }
 
-// Hệ thống cần cải tiến — thanh ngang kiểu "slider" (vạch + chấm tròn ở
-// cuối phần tô màu), sắp giảm dần theo số lượng.
+// Hệ thống cần cải tiến — sắp giảm dần theo số lượng.
 function renderRpfrHeThongList(rows) {
   const el = document.getElementById("rpfr-hethong-list");
   const counts = new Map();
@@ -393,21 +400,7 @@ function renderRpfrHeThongList(rows) {
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
   const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) {
-    el.innerHTML = `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
-    return;
-  }
-  const max = entries[0][1];
-  el.innerHTML = entries
-    .map(
-      ([name, count]) => `
-    <div class="rpfr-dot-row">
-      <span class="rpfr-dot-label" title="${name}">${name}</span>
-      <span class="rpfr-dot-track"><span class="rpfr-dot-fill" style="width:${max ? (count / max) * 100 : 0}%"></span></span>
-      <span class="rpfr-dot-value">${count}</span>
-    </div>`,
-    )
-    .join("");
+  el.innerHTML = rpfrVBarChartHtml(entries, "#620915");
 }
 
 // Trao đổi yêu cầu với phòng ban khác — biểu đồ cột NHÓM (2 cột/phòng ban:
