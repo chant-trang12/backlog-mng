@@ -2373,6 +2373,23 @@
                 <div id="rpfr-hethong-list"></div>
               </div>
             </div>
+
+            <!-- Trao đổi yêu cầu với phòng ban khác — biểu đồ cột nhóm (2
+                 cột/phòng: Đã gửi/Nhận về), xem renderRpfrExchangeChart(),
+                 14-reports.js. -->
+            <div class="fr-stats-panel" style="margin-bottom:16px">
+              <div class="row" style="justify-content:space-between;align-items:flex-start">
+                <div>
+                  <h3 style="margin:0 0 2px" id="rpfr-exchange-title">Trao đổi yêu cầu với phòng ban khác</h3>
+                  <p class="muted rpfr-chart-sub" id="rpfr-exchange-sub">Số yêu cầu đã gửi / nhận về giữa phòng đang xem và các phòng ban khác</p>
+                </div>
+                <div class="rpfr-trend-legend">
+                  <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#ee0033"></span>Đã gửi</span>
+                  <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#0284c7"></span>Nhận về</span>
+                </div>
+              </div>
+              <div id="rpfr-exchange-chart"></div>
+            </div>
           </div>
           <div id="reports-tab-task" hidden></div>
           </div>

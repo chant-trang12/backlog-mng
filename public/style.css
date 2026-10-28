@@ -1735,6 +1735,22 @@ th {
 }
 .rpfr-dot-value { flex: 0 0 24px; text-align: right; font-weight: 700; }
 
+/* Trao đổi yêu cầu với phòng ban khác — cột mọc lên khi vẽ (tham khảo cảm
+   giác "dynamic" của mẫu ECharts dynamic-data user gửi, không dùng thư
+   viện ECharts — tự vẽ SVG như mọi biểu đồ khác trong trang báo cáo này). */
+.rpfr-exchange-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: rpfr-bar-grow 0.5s ease-out both;
+}
+@keyframes rpfr-bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpfr-exchange-bar { animation: none; }
+}
+
 /* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
    hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service
    .ts): checkbox/STT/Lĩnh vực/Mảng/Hoạt động-nghiệp vụ/Quy trình số hóa/Mã

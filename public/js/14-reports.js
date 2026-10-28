@@ -78,6 +78,7 @@ function renderReportsFr() {
   renderRpfrHeatmap(rows);
   renderRpfrTargetDeptList(rows);
   renderRpfrHeThongList(rows);
+  renderRpfrExchangeChart(rows);
 }
 
 function rpfrPct(n, total) {
@@ -407,6 +408,93 @@ function renderRpfrHeThongList(rows) {
     </div>`,
     )
     .join("");
+}
+
+// Trao đổi yêu cầu với phòng ban khác — biểu đồ cột NHÓM (2 cột/phòng ban:
+// Đã gửi/Nhận về), kiểu dáng tham khảo mẫu ECharts "dynamic-data" (cột
+// dựng theo category, có animation mọc lên khi vẽ — xem .rpfr-exchange-bar
+// style.css) — KHÔNG dùng thư viện ECharts (app này tự vẽ SVG/CSS cho mọi
+// biểu đồ, không thêm dependency ngoài), chỉ theo đúng Ý TƯỞNG trực quan.
+//
+// "Đã gửi" = rows có department_id = phòng đang xem, target khác phòng
+// đang xem, gộp theo target_department_name.
+// "Nhận về" = rows có target_department_id = phòng đang xem, department
+// khác phòng đang xem, gộp theo department_name.
+// rows (tham số) đã quét sẵn đúng 2 chiều này (listFeatureRequests lọc
+// department_id=X OR target_department_id=X), chỉ cần phân loại lại.
+function renderRpfrExchangeChart(rows) {
+  const el = document.getElementById("rpfr-exchange-chart");
+  const currentDeptId = state.currentDepartmentId;
+  const currentDept = state.departments.find((d) => d.id === currentDeptId);
+  document.getElementById("rpfr-exchange-title").textContent = currentDept
+    ? `Trao đổi yêu cầu giữa ${currentDept.name} và các phòng ban khác`
+    : "Trao đổi yêu cầu với phòng ban khác";
+
+  const sentMap = new Map();
+  const receivedMap = new Map();
+  rows.forEach((r) => {
+    if (r.department_id === currentDeptId && r.target_department_id && r.target_department_id !== currentDeptId) {
+      const name = r.target_department_name || "—";
+      sentMap.set(name, (sentMap.get(name) ?? 0) + 1);
+    }
+    if (r.target_department_id === currentDeptId && r.department_id && r.department_id !== currentDeptId) {
+      const name = r.department_name || "—";
+      receivedMap.set(name, (receivedMap.get(name) ?? 0) + 1);
+    }
+  });
+
+  const deptNames = [...new Set([...sentMap.keys(), ...receivedMap.keys()])].sort((a, b) => {
+    const totalA = (sentMap.get(a) ?? 0) + (receivedMap.get(a) ?? 0);
+    const totalB = (sentMap.get(b) ?? 0) + (receivedMap.get(b) ?? 0);
+    return totalB - totalA;
+  });
+
+  if (deptNames.length === 0) {
+    el.innerHTML = `<p class="muted" style="margin:0">Chưa có trao đổi yêu cầu với phòng ban khác.</p>`;
+    return;
+  }
+
+  const w = 680, h = 240, padL = 30, padB = 34, padT = 16, padR = 10;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const maxVal = Math.max(1, ...deptNames.map((n) => Math.max(sentMap.get(n) ?? 0, receivedMap.get(n) ?? 0)));
+  const yMax = Math.max(2, Math.ceil(maxVal / 2) * 2);
+  const groupWidth = plotW / deptNames.length;
+  const barWidth = Math.min(28, groupWidth * 0.3);
+  const yAt = (v) => padT + plotH - (v / yMax) * plotH;
+  const baseY = yAt(0);
+
+  // Số mốc trục Y không vượt quá yMax — yMax nhỏ (VD 2) mà vẫn chia 4 mốc
+  // sẽ ra bước 0.5, làm tròn hiển thị trùng nhãn (VD "1","1" hoặc "2","2").
+  const ySteps = Math.min(4, yMax);
+  let gridSvg = "", yLabels = "";
+  for (let s = 0; s <= ySteps; s++) {
+    const v = (yMax / ySteps) * s;
+    const y = yAt(v);
+    gridSvg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w - padR}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
+    yLabels += `<text x="${padL - 6}" y="${(y + 4).toFixed(1)}" font-size="11" fill="var(--muted)" text-anchor="end">${Math.round(v)}</text>`;
+  }
+
+  let bars = "", xLabels = "";
+  deptNames.forEach((name, i) => {
+    const groupCenterX = padL + groupWidth * (i + 0.5);
+    const sentVal = sentMap.get(name) ?? 0;
+    const recvVal = receivedMap.get(name) ?? 0;
+    const sentX = groupCenterX - barWidth - 2;
+    const recvX = groupCenterX + 2;
+    const sentY = yAt(sentVal);
+    const recvY = yAt(recvVal);
+    bars += `<rect class="rpfr-exchange-bar" x="${sentX.toFixed(1)}" y="${sentY.toFixed(1)}" width="${barWidth}" height="${(baseY - sentY).toFixed(1)}" rx="3" fill="#ee0033"><title>${name} — Đã gửi: ${sentVal}</title></rect>`;
+    bars += `<rect class="rpfr-exchange-bar" x="${recvX.toFixed(1)}" y="${recvY.toFixed(1)}" width="${barWidth}" height="${(baseY - recvY).toFixed(1)}" rx="3" fill="#0284c7"><title>${name} — Nhận về: ${recvVal}</title></rect>`;
+    const label = name.length > 16 ? `${name.slice(0, 15)}…` : name;
+    xLabels += `<text x="${groupCenterX.toFixed(1)}" y="${h - padB + 16}" font-size="11" fill="var(--muted)" text-anchor="middle">${label}<title>${name}</title></text>`;
+  });
+
+  el.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="240" preserveAspectRatio="xMidYMid meet">
+      ${gridSvg}${yLabels}
+      ${bars}
+      ${xLabels}
+    </svg>`;
 }
 
 document.getElementById("rpfr-filter-year")?.addEventListener("change", renderReportsFr);
