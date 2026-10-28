@@ -1709,12 +1709,9 @@ th {
 .rpfr-vbar-value { font-weight: 700; font-size: 0.85rem; }
 .rpfr-vbar-stack { width: 46px; display: flex; flex-direction: column-reverse; border-radius: 6px 6px 2px 2px; overflow: hidden; }
 .rpfr-vbar-stack > span { display: block; width: 100%; }
-.rpfr-vbar-single { width: 46px; border-radius: 6px 6px 2px 2px; }
 /* height cố định để tính đúng vị trí .rpfr-vbar-axis bên dưới (18px nhãn +
    6px gap cột = 24px tính từ đáy hàng). */
-/* max-width + ellipsis — tên phòng ban/hệ thống có thể dài hơn hẳn nhãn
-   quý ("Quý IV/2026"), không cắt thì các cột bị kéo giãn lệch nhau. */
-.rpfr-vbar-label { height: 18px; line-height: 18px; font-size: 0.78rem; color: var(--muted); white-space: nowrap; max-width: 78px; overflow: hidden; text-overflow: ellipsis; }
+.rpfr-vbar-label { height: 18px; line-height: 18px; font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
 /* Trục X — 1 đường DUY NHẤT chạy suốt bề ngang biểu đồ, đặt tuyệt đối thay
    vì border riêng từng cột (dễ mờ/lệch khi cột cao thấp khác nhau). */
 .rpfr-vbar-axis { position: absolute; left: 0; right: 0; bottom: 24px; height: 2px; background: var(--stone-400); pointer-events: none; }

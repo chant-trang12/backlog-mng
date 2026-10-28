@@ -358,26 +358,45 @@ function renderRpfrHeatmap(rows) {
 // hoá" mới thêm ở bảng), sắp giảm dần. Trực quan hơn hẳn waffle ô vuông cũ
 // (user phản hồi) — xem rõ ngay phòng nào tiếp nhận nhiều/ít mà không cần
 // đếm từng ô.
-// Cột dọc đơn sắc dùng chung cho "Theo đơn vị thực hiện số hoá" + "Hệ thống
-// cần cải tiến" — đổi từ kiểu "thanh ngang + chấm" sang cột dọc chuẩn (trục
-// X + trục Y, giống mẫu ECharts "dataset-encode0" user gửi: bar chart có
-// trục rõ ràng thay vì slider tối giản) — tái dùng NGUYÊN khung
-// .rpfr-vbar-* đã có sẵn (Theo quý thực hiện cũng dùng), chỉ 1 màu/cột vì
-// mỗi panel chỉ có 1 chỉ số (không cần nhóm nhiều cột/danh mục như mẫu).
-function rpfrVBarChartHtml(entries, color) {
+// Nội suy tuyến tính giữa 2 màu hex theo t (0 = colorA, 1 = colorB).
+function rpfrLerpColor(hexA, hexB, t) {
+  const a = parseInt(hexA.slice(1), 16);
+  const b = parseInt(hexB.slice(1), 16);
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r}, ${g}, ${bl})`;
+}
+
+// Biểu đồ cột ngang dùng chung cho "Theo đơn vị thực hiện số hoá" + "Hệ
+// thống cần cải tiến" — tái dùng NGUYÊN class .fr-bar-* (đã có sẵn ở khung
+// thống kê trên trang Yêu cầu tính năng, 10-feature-requests.js: label +
+// track 2 khối fill/remain có khoảng cách + value) để nhất quán kiểu "danh
+// sách xếp hạng dạng thanh ngang" trong toàn app. Mỗi thanh 1 màu RIÊNG,
+// nội suy từ colorDark (giá trị lớn nhất) -> colorLight (giá trị nhỏ nhất)
+// theo đúng yêu cầu user (đậm -> nhạt theo thứ hạng), không phải 1 màu cố
+// định cho mọi thanh.
+function rpfrHBarChartHtml(entries, colorDark, colorLight) {
   if (entries.length === 0) return `<p class="muted" style="margin:0">Chưa có dữ liệu.</p>`;
   const max = entries[0][1];
-  return `<div class="rpfr-vbar-row"><div class="rpfr-vbar-axis"></div>${entries
+  return entries
     .map(([name, count]) => {
-      const height = max ? Math.max(4, (count / max) * 160) : 0;
+      const remain = max - count;
+      const t = max ? 1 - count / max : 0;
+      const color = rpfrLerpColor(colorDark, colorLight, t);
       return `
-    <div class="rpfr-vbar-col">
-      <div class="rpfr-vbar-value">${count}</div>
-      <div class="rpfr-vbar-single" style="height:${height}px;background:${color}" title="${name}: ${count}"></div>
-      <div class="rpfr-vbar-label" title="${name}">${name}</div>
+    <div class="fr-bar-row">
+      <span class="fr-bar-label" title="${name}">${name}</span>
+      <span class="fr-bar-track">
+        <span class="fr-bar-fill" style="flex:${count};background:${color}"></span>
+        ${remain > 0 ? `<span class="fr-bar-remain" style="flex:${remain}"></span>` : ""}
+      </span>
+      <span class="fr-bar-value">${count}</span>
     </div>`;
     })
-    .join("")}</div>`;
+    .join("");
 }
 
 function renderRpfrTargetDeptList(rows) {
@@ -388,7 +407,7 @@ function renderRpfrTargetDeptList(rows) {
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
   const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  el.innerHTML = rpfrVBarChartHtml(entries, "#ee0033");
+  el.innerHTML = rpfrHBarChartHtml(entries, "#ee0033", "#fcd9db"); // đỏ đậm -> đỏ nhạt
 }
 
 // Hệ thống cần cải tiến — sắp giảm dần theo số lượng.
@@ -400,7 +419,7 @@ function renderRpfrHeThongList(rows) {
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
   const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  el.innerHTML = rpfrVBarChartHtml(entries, "#620915");
+  el.innerHTML = rpfrHBarChartHtml(entries, "#620915", "#f2666e"); // đỏ siêu đậm -> hồng san hô
 }
 
 // Trao đổi yêu cầu với phòng ban khác — biểu đồ cột NHÓM (2 cột/phòng ban:
