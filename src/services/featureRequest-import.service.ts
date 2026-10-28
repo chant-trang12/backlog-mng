@@ -2,7 +2,7 @@ import type ExcelJS from "exceljs";
 import { createFeatureRequest, isDuplicateTieuDe, listActiveTieuDeIndex, normalizeTieuDe } from "./featureRequest.service.js";
 import { listDepartments } from "./department.service.js";
 import { buildTemplateWorkbook, normalizeHeader, parseDateToIso, parseFirstSheet, pickColumn } from "./workbook.util.js";
-import { isDepartmentInScope, type DataScope } from "./scope.util.js";
+import type { DataScope } from "./scope.util.js";
 
 // ===== Import Excel "Yêu cầu tính năng" theo biểu mẫu Quy trình số hóa =====
 // 20 cột (kể cả STT — chỉ để đánh số, bỏ qua khi import).
@@ -253,16 +253,16 @@ export async function importFeatureRequestsFromWorkbook(
       }
       targetId = matchedTarget;
     }
-    // Fix IDOR: dòng chỉ ra phòng đích ngoài phạm vi của người import thì
-    // bỏ qua — không ghi yêu cầu vào hộp thư của phòng khác.
-    if (!isDepartmentInScope(scope, targetId)) {
-      result.skipped.push({
-        row: rowNo,
-        label,
-        reason: `Phòng ban thực hiện không nằm trong phạm vi phòng ban của bạn`,
-      });
-      continue;
-    }
+    // KHÔNG giới hạn targetId theo scope — "gửi yêu cầu tới phòng ban đích
+    // khác phòng mình" là bản chất của Yêu cầu tính năng (xem comment ở
+    // createFeatureRequestHandler, featureRequest.controller.ts: form
+    // "Thêm yêu cầu" đơn lẻ vốn đã cho chọn Phòng ban đích tự do, không
+    // giới hạn theo scope người tạo). Import Excel trước đây chặn chặt hơn
+    // hẳn so với form đơn lẻ (user phản hồi: BGD import file có dòng target
+    // khác phòng mình bị bỏ qua hết, trong khi Admin cùng file lại được) —
+    // bỏ chặn này để khớp đúng hành vi form đơn lẻ, không phải lỗ hổng mới
+    // (đề xuất/department_id người gửi vẫn ép đúng phòng mình ở trên, chỉ
+    // target/phòng nhận là tự do — không đổi).
     if (!label) {
       result.skipped.push({ row: rowNo, label: "", reason: "Thiếu Hoạt động/nghiệp vụ, Mô tả và Đề xuất" });
       continue;
