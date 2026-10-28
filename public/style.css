@@ -1694,7 +1694,7 @@ th {
 .rpfr-heat-legend span:nth-child(5) { background: #620915; }
 .rpfr-heat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .rpfr-heat-table th { font-weight: 600; color: #fff; font-size: 0.74rem; padding: 4px 6px; text-align: center; }
-.rpfr-heat-table td { text-align: center; padding: 8px 6px; border-radius: 6px; font-weight: 700; color: var(--text); }
+.rpfr-heat-table td { text-align: center; padding: 8px 6px; font-weight: 700; color: var(--text); }
 .rpfr-heat-table td.rpfr-heat-dark { color: #fff; }
 .rpfr-heat-rowlabel { text-align: left !important; font-weight: 400 !important; color: var(--text) !important; background: none !important; white-space: nowrap; }
 .rpfr-heat-total { background: none !important; color: var(--text) !important; }
