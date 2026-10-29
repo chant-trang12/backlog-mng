@@ -130,12 +130,20 @@ function scopeOf(req: Request): DataScope {
 // "bộ lọc xem" đối với scope.all (admin/phòng full-access).
 export async function listFeatureRequestsHandler(req: Request, res: Response) {
   const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const scope = scopeOf(req);
   const departmentId = resolveListDepartmentId(
-    scopeOf(req),
+    scope,
     Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
   );
   if (departmentId === SCOPE_EMPTY) return res.json([]);
-  res.json(await listFeatureRequests(departmentId));
+  // ?all=1 — Báo cáo - Thống kê > "Toàn công ty" (14-reports.js) xin rõ
+  // ràng TOÀN BỘ dữ liệu bất kể phòng đang xem ở bộ chuyển đổi, phân biệt
+  // với "chưa chọn phòng" (an toàn mặc định trả rỗng — xem comment ở
+  // listFeatureRequests). Chỉ có tác dụng khi scope.all=true; vai trò bị
+  // giới hạn phạm vi đã bị departmentId trên ép về đúng phòng của họ rồi,
+  // cờ này không mở thêm quyền gì.
+  const includeAll = req.query.all === "1" && scope.all;
+  res.json(await listFeatureRequests(departmentId, includeAll));
 }
 
 export async function createFeatureRequestHandler(req: Request, res: Response) {
@@ -454,11 +462,14 @@ export async function linkFeatureRequestToRoadmapHandler(req: Request, res: Resp
 export async function exportFeatureRequestsHandler(req: Request, res: Response) {
   const idsParam = typeof req.query.ids === "string" ? req.query.ids : "";
   const requestedDepartmentId = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const scope = scopeOf(req);
   const departmentId = resolveListDepartmentId(
-    scopeOf(req),
+    scope,
     Number.isFinite(requestedDepartmentId as number) ? requestedDepartmentId : null,
   );
-  const scopedRows = departmentId === SCOPE_EMPTY ? [] : await listFeatureRequests(departmentId);
+  // ?all=1 — xuất từ tab "Toàn công ty" (xem listFeatureRequestsHandler).
+  const includeAll = req.query.all === "1" && scope.all;
+  const scopedRows = departmentId === SCOPE_EMPTY ? [] : await listFeatureRequests(departmentId, includeAll);
   const byId = new Map(scopedRows.map((r) => [r.id, r]));
   const orderedIds = idsParam
     .split(",")

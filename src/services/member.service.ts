@@ -252,9 +252,17 @@ export async function cloneMembersFromPeriod(fromPeriodId: number, toPeriodId: n
       .where({ period_id: toPeriodId, team_id: newTeamId, name: m.name, is_deleted: false })
       .first();
     if (!existing) {
+      // department_id "đóng băng" theo team MỚI (tháng mới), giống đúng
+      // cách createMember() ở trên — thiếu dòng này khiến nhân sự nhân bản
+      // sang tháng mới mãi mãi có department_id=NULL, kéo theo mọi bản ghi
+      // CSKH/Đánh giá tạo cho họ sau đó cũng NULL và bị lọc rớt khỏi danh
+      // sách bất cứ khi nào xem theo đúng 1 phòng ban (Quy tắc 9.2) — lỗi
+      // thực tế: lưu Đánh giá báo thành công nhưng bảng vẫn hiện rỗng.
+      const newTeam = await db("teams").where({ id: newTeamId }).first();
       await db("members").insert({
         period_id: toPeriodId,
         team_id: newTeamId,
+        department_id: (newTeam as any)?.department_id ?? null,
         name: m.name,
         chuc_vu: m.chuc_vu,
         tuan_thu: m.tuan_thu,

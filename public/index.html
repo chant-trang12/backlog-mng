@@ -1839,6 +1839,12 @@
                 </select>
               </div>
               <div>
+                <label for="fr-filter-don-vi-thuc-hien">Đơn vị thực hiện số hoá</label>
+                <select id="fr-filter-don-vi-thuc-hien">
+                  <option value="">Tất cả</option>
+                </select>
+              </div>
+              <div>
                 <label for="fr-filter-uu-tien">Ưu tiên</label>
                 <select id="fr-filter-uu-tien">
                   <option value="">Tất cả</option>
@@ -2272,7 +2278,8 @@
         <div id="page-reports" hidden>
           <div class="tab-panel-group">
           <div class="chrome-tabs" id="reports-subnav">
-            <span class="pill active" data-tab="fr">Yêu cầu tính năng</span>
+            <span class="pill active" data-tab="fr">Yêu cầu tính năng PB</span>
+            <span class="pill" data-tab="company">Yêu cầu tính năng CT</span>
             <span class="pill" data-tab="task">Nhiệm vụ</span>
           </div>
 
@@ -2363,34 +2370,159 @@
 
             <div class="rpfr-row-3">
               <div class="fr-stats-panel">
-                <h3>Theo đơn vị thực hiện số hoá</h3>
-                <p class="muted rpfr-chart-sub">Số yêu cầu đã tiếp nhận theo từng phòng ban</p>
-                <div id="rpfr-target-dept-list"></div>
-              </div>
-              <div class="fr-stats-panel">
                 <h3>Hệ thống cần cải tiến</h3>
                 <p class="muted rpfr-chart-sub">Số yêu cầu liên quan mỗi hệ thống</p>
                 <div id="rpfr-hethong-list"></div>
               </div>
-            </div>
 
-            <!-- Trao đổi yêu cầu với phòng ban khác — biểu đồ cột nhóm (2
-                 cột/phòng: Đã gửi/Nhận về), xem renderRpfrExchangeChart(),
-                 14-reports.js. -->
-            <div class="fr-stats-panel" style="margin-bottom:16px">
-              <div class="row" style="justify-content:space-between;align-items:flex-start">
-                <div>
-                  <h3 style="margin:0 0 2px" id="rpfr-exchange-title">Trao đổi yêu cầu với phòng ban khác</h3>
-                  <p class="muted rpfr-chart-sub" id="rpfr-exchange-sub">Số yêu cầu đã gửi / nhận về giữa phòng đang xem và các phòng ban khác</p>
+              <!-- Trao đổi yêu cầu với phòng ban khác — biểu đồ cột nhóm (2
+                   cột/phòng: Đã gửi/Nhận về), xem renderRpfrExchangeChart(),
+                   14-reports.js. -->
+              <div class="fr-stats-panel">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <h3 style="margin:0 0 2px" id="rpfr-exchange-title">Trao đổi yêu cầu với phòng ban khác</h3>
+                    <p class="muted rpfr-chart-sub" id="rpfr-exchange-sub">Số yêu cầu đã gửi / nhận về giữa phòng đang xem và các phòng ban khác</p>
+                  </div>
+                  <div class="rpfr-trend-legend">
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#f2666e"></span>Đã gửi</span>
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#7dd3fc"></span>Nhận về</span>
+                  </div>
                 </div>
-                <div class="rpfr-trend-legend">
-                  <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#890d1e"></span>Đã gửi</span>
-                  <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#cc4f55"></span>Nhận về</span>
-                </div>
+                <div id="rpfr-exchange-chart"></div>
               </div>
-              <div id="rpfr-exchange-chart"></div>
             </div>
           </div>
+
+          <!-- Tab "Yêu cầu tính năng CT" (toàn công ty) — khớp cấu trúc tab
+               "Yêu cầu tính năng PB" ở trên, dùng CHUNG các hàm render*
+               (14-reports.js, truyền prefix="rpfrc") — khác ở vài điểm:
+               (1) dữ liệu nạp KHÔNG lọc theo phòng đang xem (loadReportsCompany,
+               không deptParam()), (2) thay "Phòng ban × trạng thái" (heatmap,
+               chỉ còn ở tab PB) bằng "Gửi / nhận yêu cầu theo phòng ban"
+               (renderRpfrSendRecvChart), (3) thay "Trao đổi yêu cầu với
+               phòng ban khác" (so sánh 1 phòng với các phòng khác — không
+               áp dụng khi xem gộp cả công ty) bằng 2 khung xếp hạng theo
+               phòng ban (Đơn vị đề xuất/Đơn vị thực hiện số hoá). -->
+          <div id="reports-tab-company" hidden>
+            <div class="rpfr-header">
+              <div>
+                <h2 style="margin:0">Báo cáo tổng hợp toàn công ty</h2>
+                <p class="muted" style="margin:4px 0 0">Số liệu gộp từ tất cả phòng ban</p>
+              </div>
+              <div class="rpfr-header-filters">
+                <div>
+                  <label for="rpfrc-filter-year">Kỳ báo cáo</label>
+                  <select id="rpfrc-filter-year"></select>
+                </div>
+                <div>
+                  <label for="rpfrc-filter-linhvuc">Lĩnh vực</label>
+                  <select id="rpfrc-filter-linhvuc">
+                    <option value="">Tất cả lĩnh vực</option>
+                  </select>
+                </div>
+                <button type="button" id="rpfrc-export-btn" class="btn-view">
+                  <svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất báo cáo
+                </button>
+              </div>
+            </div>
+
+            <div class="fr-stats-cards" id="rpfrc-stats-cards">
+              <div class="fr-stat-card fr-stat-highlight">
+                <div class="fr-stat-label">Tổng yêu cầu</div>
+                <div class="fr-stat-value" id="rpfrc-stat-total">0</div>
+                <div class="fr-stat-sub" id="rpfrc-stat-total-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Chờ duyệt</div>
+                <div class="fr-stat-value" id="rpfrc-stat-cho-duyet">0</div>
+                <div class="fr-stat-sub" id="rpfrc-stat-cho-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Đã duyệt</div>
+                <div class="fr-stat-value" id="rpfrc-stat-da-duyet">0</div>
+                <div class="fr-stat-sub" id="rpfrc-stat-da-duyet-sub"></div>
+              </div>
+              <div class="fr-stat-card">
+                <div class="fr-stat-label">Ưu tiên cao</div>
+                <div class="fr-stat-value" id="rpfrc-stat-uu-tien-cao">0</div>
+                <div class="fr-stat-sub" id="rpfrc-stat-uu-tien-cao-sub"></div>
+              </div>
+            </div>
+
+            <div class="rpfr-row-2">
+              <div class="fr-stats-panel">
+                <h3>Theo trạng thái</h3>
+                <div class="rpfr-donut-wrap" id="rpfrc-donut-wrap"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <h3 style="margin:0 0 2px">Xu hướng tiếp nhận và độ ưu tiên</h3>
+                    <p class="muted rpfr-chart-sub" id="rpfrc-trend-sub"></p>
+                  </div>
+                  <div class="rpfr-trend-legend" id="rpfrc-trend-legend"></div>
+                </div>
+                <div id="rpfrc-trend-chart"></div>
+              </div>
+            </div>
+
+            <!-- "Theo đơn vị đề xuất" để FULL 1 dòng (user yêu cầu) — chart
+                 line nhiều điểm (10 phòng ban) nên cần bề ngang rộng hơn 1
+                 nửa hàng. -->
+            <div class="fr-stats-panel" style="margin-bottom:16px">
+              <h3>Theo đơn vị đề xuất</h3>
+              <p class="muted rpfr-chart-sub">Số yêu cầu mỗi phòng ban đã gửi</p>
+              <div id="rpfrc-donvi-dexuat-list"></div>
+            </div>
+
+            <!-- Số lượng gửi/nhận theo phòng ban — thay cho heatmap "Phòng
+                 ban × trạng thái" (chỉ còn ở tab "Yêu cầu tính năng PB"),
+                 xem renderRpfrSendRecvChart(), 14-reports.js. 1/2 hàng,
+                 cạnh "Theo quý thực hiện" (user yêu cầu). -->
+            <div class="rpfr-row-3">
+              <div class="fr-stats-panel">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <h3 style="margin:0 0 2px">Gửi / nhận yêu cầu theo phòng ban</h3>
+                    <p class="muted rpfr-chart-sub">Số yêu cầu đã gửi đi và tiếp nhận về của mỗi phòng ban</p>
+                  </div>
+                  <!-- margin-left:auto — panel này giờ chỉ 1/2 hàng (hẹp
+                       hơn trước), tiêu đề dài khiến legend bị đẩy xuống
+                       dòng riêng; khi đó .row vẫn có justify-content:
+                       space-between nhưng 1 dòng chỉ còn đúng legend thì
+                       space-between vô tác dụng (lọt về sát trái) — ép
+                       margin-left:auto để legend luôn dính mép phải dù rơi
+                       xuống dòng riêng hay không (user yêu cầu căn phải). -->
+                  <div class="rpfr-trend-legend" style="margin-left:auto">
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#f2666e"></span>Đã gửi</span>
+                    <span class="rpfr-trend-legend-item"><span class="rpfr-trend-swatch" style="background:#7dd3fc"></span>Tiếp nhận</span>
+                  </div>
+                </div>
+                <div id="rpfrc-sendrecv-wrap"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Theo quý thực hiện</h3>
+                <p class="muted rpfr-chart-sub">Chia theo mức ưu tiên</p>
+                <div class="rpfr-legend" id="rpfrc-quy-legend"></div>
+                <div id="rpfrc-quy-chart"></div>
+              </div>
+            </div>
+
+            <div class="rpfr-row-3">
+              <div class="fr-stats-panel">
+                <h3>Theo đơn vị thực hiện số hoá</h3>
+                <p class="muted rpfr-chart-sub">Số yêu cầu mỗi phòng ban đã tiếp nhận</p>
+                <div id="rpfrc-donvi-thuchien-list"></div>
+              </div>
+              <div class="fr-stats-panel">
+                <h3>Hệ thống cần cải tiến</h3>
+                <p class="muted rpfr-chart-sub">Số yêu cầu liên quan mỗi hệ thống</p>
+                <div id="rpfrc-hethong-list"></div>
+              </div>
+            </div>
+          </div>
+
           <div id="reports-tab-task" hidden></div>
           </div>
         </div>

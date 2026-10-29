@@ -1643,6 +1643,14 @@ th {
 .fr-bar-remain { background: var(--stone-200); }
 .fr-bar-value { flex: 0 0 28px; text-align: right; font-weight: 700; }
 
+/* "Gửi / nhận yêu cầu theo phòng ban" (Báo cáo - Thống kê > Yêu cầu tính
+   năng CT) — 1 nhóm/phòng ban gồm 2 .fr-bar-row (Đã gửi/Tiếp nhận), có
+   đường kẻ phân cách + khoảng cách giữa các nhóm để không lẫn vào nhau. */
+.rpfr-sendrecv-group { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.rpfr-sendrecv-group:last-child { border-bottom: none; padding-bottom: 0; }
+.rpfr-sendrecv-group:first-child { padding-top: 0; }
+.rpfr-sendrecv-dept { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+
 .fr-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 10px; font-size: 0.78rem; color: var(--muted); }
 .fr-legend-item { display: flex; align-items: center; gap: 6px; }
 
@@ -1653,22 +1661,29 @@ th {
    xuống dòng khi hẹp, đồng bộ kiểu .fr-legend ở trên. */
 .rpfr-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 0.78rem; color: var(--muted); }
 
-/* ---- Báo cáo - Thống kê > Yêu cầu tính năng (14-reports.js) ---- */
-/* #reports-tab-fr KHÔNG phải .card (không như các tab khác, VD
-   #team-tab-nhansu — luôn bọc trong <section class="card">, có padding
-   sẵn) nên chữ "Báo cáo tổng hợp..." nằm sát ngay dưới dải tab, đè gần
-   lên pill đang active — bù khoảng cách trên bằng padding-top riêng. */
-#reports-tab-fr { padding-top: 20px; }
+/* ---- Báo cáo - Thống kê > Yêu cầu tính năng / Toàn công ty (14-reports.js) ---- */
+/* #reports-tab-fr/#reports-tab-company KHÔNG phải .card (không như các tab
+   khác, VD #team-tab-nhansu — luôn bọc trong <section class="card">, có
+   padding sẵn) nên chữ "Báo cáo tổng hợp..." nằm sát ngay dưới dải tab, đè
+   gần lên pill đang active — bù khoảng cách trên bằng padding-top riêng. */
+#reports-tab-fr,
+#reports-tab-company { padding-top: 20px; }
 .rpfr-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
 .rpfr-header-filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .rpfr-header-filters select { min-width: 150px; }
 .rpfr-chart-sub { font-size: 0.8rem; margin: 0 0 12px; }
 
 .rpfr-row-2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; margin-bottom: 12px; }
-/* Hàng 3 bảng Báo cáo Yêu cầu tính năng — còn đúng 2 panel ("Theo loại yêu
-   cầu" + "Hệ thống cần cải tiến") sau khi bỏ panel "Tỉ lệ hoàn thành theo
-   phòng ban" (user yêu cầu gỡ), nên đổi từ 3 cột xuống 2 cột. */
-.rpfr-row-3 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+/* Hàng "Hệ thống cần cải tiến" + "Trao đổi yêu cầu với phòng ban khác" cùng
+   1 dòng (user yêu cầu), chia đều 2 cột. */
+/* align-items:start — mặc định grid kéo giãn (stretch) mọi ô trong 1 hàng
+   bằng chiều cao ô CAO NHẤT, nên khi 2 panel chênh lệch nội dung nhiều (VD
+   "Gửi / nhận yêu cầu theo phòng ban" dài hẳn vì có N phòng ban × 2 dòng,
+   đứng cạnh "Theo quý thực hiện" chỉ cao cố định ~220px) panel ngắn bị kéo
+   giãn theo, để lại khoảng trắng rỗng bên dưới biểu đồ của nó — không đẩy
+   được nội dung xuống lấp đầy (user phản hồi). Bỏ stretch, mỗi panel chỉ
+   cao đúng bằng nội dung thật của nó. */
+.rpfr-row-3 { display: grid; grid-template-columns: repeat(2, 1fr); align-items: start; gap: 12px; margin-bottom: 16px; }
 
 /* Donut trạng thái */
 /* Donut dùng chung class .home-donut-* (Trang chủ, style.css ở trên) — chỉ
@@ -1699,8 +1714,22 @@ th {
 .rpfr-heat-rowlabel { text-align: left !important; font-weight: 400 !important; color: var(--text) !important; background: none !important; white-space: nowrap; }
 .rpfr-heat-total { background: none !important; color: var(--text) !important; }
 
-/* Cột dọc dùng chung cho "Theo quý thực hiện" + "Tỉ lệ hoàn thành theo phòng ban" */
-.rpfr-vbar-row { position: relative; display: flex; align-items: flex-end; gap: 22px; min-height: 200px; padding-top: 4px; overflow-x: auto; }
+/* Cột dọc dùng chung cho "Theo quý thực hiện" + "Theo đơn vị đề xuất" (lollipop) */
+/* .rpfr-vbar-row CHỈ còn là khung cuộn ngang — .rpfr-vbar-inner (bên trong)
+   mới là khối flex thật sự chứa các cột + trục X. Tách riêng 2 lớp này vì
+   .rpfr-vbar-axis position:absolute lấy kích thước containing block từ
+   .rpfr-vbar-inner — nếu containing block CHÍNH LÀ khung overflow-x:auto
+   (như trước), right:0 sẽ tính theo bề ngang GỐC (clientWidth) của khung,
+   không theo bề ngang THẬT của nội dung đã tràn (scrollWidth) → trục X bị
+   "cụt" giữa chừng khi nhiều cột (VD 10 phòng ban) vượt quá bề ngang khung,
+   dù các cột vẫn cuộn ngang bình thường (user phản hồi "mất trục x" + "các
+   cột không thẳng hàng" — trục X cụt làm tưởng cột không thẳng hàng theo
+   trục). width:max-content + min-width:100% trên .rpfr-vbar-inner khiến nó
+   LUÔN rộng bằng đúng nội dung (ít cột thì bằng khung để margin-inline:auto
+   vẫn canh giữa được như cũ, nhiều cột thì rộng hơn khung theo đúng tổng bề
+   ngang các cột) — containing block khớp y hệt scrollWidth thật. */
+.rpfr-vbar-row { overflow-x: auto; padding-top: 4px; }
+.rpfr-vbar-inner { position: relative; display: flex; align-items: flex-end; gap: 22px; min-height: 196px; width: max-content; min-width: 100%; }
 /* margin-inline:auto phân bố đều các cột trên toàn bề ngang (hết chỗ dư
    thì tự về 0 → vẫn cuộn ngang bình thường khi nhiều cột) — trước đây chỉ
    flex:0 0 auto nên 2-3 cột dồn sát trái, nửa phải biểu đồ trống rỗng
@@ -1717,21 +1746,6 @@ th {
 .rpfr-vbar-axis { position: absolute; left: 0; right: 0; bottom: 24px; height: 2px; background: var(--stone-400); pointer-events: none; }
 
 
-/* Trao đổi yêu cầu với phòng ban khác — cột mọc lên khi vẽ (tham khảo cảm
-   giác "dynamic" của mẫu ECharts dynamic-data user gửi, không dùng thư
-   viện ECharts — tự vẽ SVG như mọi biểu đồ khác trong trang báo cáo này). */
-.rpfr-exchange-bar {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: rpfr-bar-grow 0.5s ease-out both;
-}
-@keyframes rpfr-bar-grow {
-  from { transform: scaleY(0); }
-  to { transform: scaleY(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rpfr-exchange-bar { animation: none; }
-}
 
 /* Bảng Yêu cầu tính năng — đủ các cột theo biểu mẫu Excel "Quy trình số
    hóa" (import + hiển thị cùng bộ trường, xem featureRequest-import.service

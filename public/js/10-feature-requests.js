@@ -198,6 +198,7 @@ async function loadFeatureRequests() {
   populateFrHeThongFilter();
   populateFrQuarterFilter();
   populateFrDonViDeXuatFilter();
+  populateFrDonViThucHienFilter();
   renderFeatureRequestStats();
   frPagination.reset();
   renderFeatureRequestTable();
@@ -282,18 +283,30 @@ function populateFrDonViDeXuatFilter() {
   select.value = current;
 }
 
+function populateFrDonViThucHienFilter() {
+  const select = document.getElementById("fr-filter-don-vi-thuc-hien");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML =
+    `<option value="">Tất cả</option>` +
+    state.departments.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
+  select.value = current;
+}
+
 function filteredFeatureRequests() {
   const term = (document.getElementById("fr-filter-search")?.value ?? "").trim().toLowerCase();
   const status = document.getElementById("fr-filter-status")?.value ?? "";
   const heThong = document.getElementById("fr-filter-he-thong")?.value ?? "";
   const quy = document.getElementById("fr-filter-quy")?.value ?? "";
   const donVi = document.getElementById("fr-filter-don-vi")?.value ?? "";
+  const donViThucHien = document.getElementById("fr-filter-don-vi-thuc-hien")?.value ?? "";
   const uuTien = document.getElementById("fr-filter-uu-tien")?.value ?? "";
   return state.featureRequests.filter((r) => {
     if (status && r.trang_thai !== status) return false;
     if (heThong && r.he_thong !== heThong) return false;
     if (quy && frQuarterOf(r.thoi_gian_mong_muon) !== quy) return false;
     if (donVi && String(r.department_id ?? "") !== donVi) return false;
+    if (donViThucHien && String(r.target_department_id ?? "") !== donViThucHien) return false;
     if (uuTien && r.do_uu_tien !== uuTien) return false;
     if (
       term &&
@@ -1222,6 +1235,7 @@ document.getElementById("fr-filter-status")?.addEventListener("change", frResetP
 document.getElementById("fr-filter-he-thong")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-quy")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-don-vi")?.addEventListener("change", frResetPageAndRender);
+document.getElementById("fr-filter-don-vi-thuc-hien")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-uu-tien")?.addEventListener("change", frResetPageAndRender);
 
 // ---- Import Excel biểu mẫu Quy trình số hóa ----

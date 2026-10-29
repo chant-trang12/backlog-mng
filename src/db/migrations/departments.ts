@@ -142,6 +142,37 @@ export async function migrateDepartments(): Promise<void> {
     }
   }
 
+  // Backfill vá lỗi (KHÔNG gated theo hasColumn như các khối trên, chạy lại
+  // mỗi lần khởi động — chỉ đụng đúng các dòng còn NULL nên vô hại/idempotent):
+  // cloneMembersFromPeriod() (tạo tháng mới kế thừa nhân sự từ tháng gần
+  // nhất) trước đây KHÔNG gán department_id cho nhân sự nhân bản, nên mọi
+  // nhân sự ở tháng được tạo SAU tháng đầu tiên đều có department_id=NULL dù
+  // team của họ đã có phòng ban — kéo theo các bản ghi Đánh giá/Tuân thủ/Hỗ
+  // trợ/Đào tạo tạo cho họ cũng NULL theo, rồi bị lọc rớt khỏi danh sách khi
+  // xem đúng 1 phòng ban (Quy tắc 9.2): lưu báo thành công nhưng bảng rỗng.
+  // Đã sửa cloneMembersFromPeriod() (member.service.ts) để không còn tạo
+  // NULL mới; khối này chỉ dọn dữ liệu NULL cũ đã lỡ tạo trước khi sửa.
+  {
+    const staleMembers = await db("members").whereNull("department_id").select("id", "team_id");
+    for (const m of staleMembers) {
+      const team = await db("teams").where({ id: (m as any).team_id }).first();
+      const departmentId = (team as any)?.department_id;
+      if (departmentId != null) {
+        await db("members").where({ id: (m as any).id }).update({ department_id: departmentId });
+      }
+    }
+    for (const table of ["compliance_records", "training_records", "support_records", "danh_gia_records"]) {
+      const staleRows = await db(table).whereNull("department_id").select("id", "member_id");
+      for (const row of staleRows) {
+        const member = await db("members").where({ id: (row as any).member_id }).first();
+        const departmentId = (member as any)?.department_id;
+        if (departmentId != null) {
+          await db(table).where({ id: (row as any).id }).update({ department_id: departmentId });
+        }
+      }
+    }
+  }
+
   // attendance_records.department_id — ATTT (IDOR, báo cáo pentest "nhiều
   // chức năng tương tự"): Chấm công trước đây chỉ lọc theo period_id nên mọi
   // phòng thấy/ghi đè dữ liệu của nhau. Dòng cũ backfill về phòng đầu tiên

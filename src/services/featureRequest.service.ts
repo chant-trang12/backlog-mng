@@ -32,14 +32,29 @@ function stripAttachmentData<T extends { attachment_data?: unknown }>(row: T): O
 // departmentId=null/undefined (chưa chọn phòng ban nào ở sidebar) -> trả
 // rỗng, không phải "xem hết" — tránh rò rỉ yêu cầu của phòng khác khi state
 // chưa kịp có currentDepartmentId.
-export async function listFeatureRequests(departmentId: number | null): Promise<FeatureRequestWithDept[]> {
-  if (departmentId == null) return [];
+//
+// includeAll=true là NGOẠI LỆ DUY NHẤT, dùng cho Báo cáo - Thống kê > "Toàn
+// công ty" (14-reports.js, loadReportsCompany) — nơi "không có department_id"
+// mang đúng nghĩa "cố ý xin TẤT CẢ" chứ không phải "state chưa kịp tải".
+// Caller (listFeatureRequestsHandler/exportFeatureRequestsHandler) PHẢI tự
+// đảm bảo chỉ bật cờ này khi scope.all === true — departmentId truyền vào
+// đây đã qua resolveListDepartmentId nên vai trò bị giới hạn phạm vi không
+// bao giờ tới được nhánh này (SCOPE_EMPTY bị chặn ở controller từ trước).
+export async function listFeatureRequests(
+  departmentId: number | null,
+  includeAll = false,
+): Promise<FeatureRequestWithDept[]> {
+  if (departmentId == null && !includeAll) return [];
   const rows = await db("feature_requests as fr")
     .leftJoin("departments as d", "d.id", "fr.department_id")
     .leftJoin("departments as td", "td.id", "fr.target_department_id")
     .select("fr.*", "d.name as department_name", "td.name as target_department_name")
     .where("fr.is_deleted", false)
-    .where((qb) => qb.where("fr.department_id", departmentId).orWhere("fr.target_department_id", departmentId))
+    .modify((qb) => {
+      if (departmentId != null) {
+        qb.where((inner) => inner.where("fr.department_id", departmentId).orWhere("fr.target_department_id", departmentId));
+      }
+    })
     .orderBy("fr.created_at", "desc");
   return rows.map(stripAttachmentData) as FeatureRequestWithDept[];
 }

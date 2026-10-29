@@ -59,10 +59,11 @@ document.querySelectorAll("#reports-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#reports-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["fr", "task"].forEach((tab) => {
+    ["fr", "company", "task"].forEach((tab) => {
       document.getElementById(`reports-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
     if (pill.dataset.tab === "fr") loadReportsFr().catch((err) => showToast(err.message));
+    if (pill.dataset.tab === "company") loadReportsCompany().catch((err) => showToast(err.message));
   });
 });
 
