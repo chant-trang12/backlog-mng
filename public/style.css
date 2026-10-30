@@ -558,6 +558,10 @@ main {
   align-items: stretch;
 }
 .row-split[hidden] { display: none; }
+/* display:flex của .row đè rule [hidden] mặc định của trình duyệt — cần rule
+   tường minh này thì thuộc tính hidden mới ẩn thật (dùng cho khối 2 nút tắt
+   "Tạo yêu cầu"/"Xem danh sách YCNT" ở hero Trang chủ, index.html). */
+.row[hidden] { display: none; }
 
 .row-split-narrow {
   flex: 0 1 280px;

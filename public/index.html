@@ -65,7 +65,12 @@
                 <div class="home-hero-date"><span class="home-hero-dot" aria-hidden="true"></span><span id="home-hero-date-text"></span></div>
                 <h1 class="home-hero-title">Chào mừng trở lại<span id="home-hero-name-wrap">, <span class="home-hero-name" id="home-hero-name"></span></span></h1>
                 <p class="muted home-hero-subtitle">Yêu cầu tính năng số hoá, giao việc, theo dõi tiến độ và đánh giá kết quả — tất cả ở một nơi.</p>
-                <div class="row" style="margin-top:4px">
+                <!-- 2 nút tắt "Tạo yêu cầu" / "Xem danh sách yêu cầu tính
+                     năng" đã ẨN theo yêu cầu user (giữ lại trong DOM + JS để
+                     dễ bật lại): .row có display:flex đè rule [hidden] mặc
+                     định của trình duyệt nên phải kèm .row[hidden] trong
+                     style.css mới ẩn thật. -->
+                <div class="row" style="margin-top:4px" hidden>
                   <button type="button" id="home-hero-create-fr-btn" class="primary">Tạo yêu cầu</button>
                   <button type="button" id="home-hero-view-fr-btn" class="btn-view">Xem danh sách yêu cầu tính năng</button>
                 </div>
