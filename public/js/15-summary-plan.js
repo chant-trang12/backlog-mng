@@ -60,6 +60,8 @@ function renderCbnvTable() {
     )
     .join("");
 
+  syncCbnvStickyHeadOffset();
+
   document.getElementById("cbnv-tbody").querySelectorAll(".cbnv-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = Number(btn.closest("tr").dataset.id);
@@ -79,6 +81,23 @@ function renderCbnvTable() {
       }
     });
   });
+}
+
+// Ghim 2 hàng tiêu đề của #cbnv-table khi cuộn dọc: hàng 2 phải nằm NGAY
+// DƯỚI hàng 1 (xem comment #cbnv-table thead tr:nth-child(2) th ở style.css)
+// — đo chiều cao thật của hàng 1 (đổi theo độ dài nhãn tháng + độ rộng cột
+// khi wrap) rồi ghi vào biến CSS. Dùng ResizeObserver để tự cập nhật khi
+// hàng 1 co giãn theo bề rộng khung (cuộn ngang/đổi số cột/resize cửa sổ).
+function syncCbnvStickyHeadOffset() {
+  const table = document.getElementById("cbnv-table");
+  const row1 = table?.querySelector("thead tr:first-child");
+  if (!table || !row1) return;
+  const update = () => table.style.setProperty("--cbnv-thead-row1-h", `${row1.offsetHeight}px`);
+  update();
+  if (!table._cbnvHeadResizeObserver) {
+    table._cbnvHeadResizeObserver = new ResizeObserver(update);
+    table._cbnvHeadResizeObserver.observe(row1);
+  }
 }
 
 document.getElementById("cbnv-search")?.addEventListener("input", (e) => {

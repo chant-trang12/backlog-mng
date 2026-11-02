@@ -1468,6 +1468,17 @@ th {
   position: static;
 }
 
+/* Bảng "KQ xếp loại CBNV" (Kế hoạch tổng hợp) — thead gồm 2 HÀNG: hàng 1
+   (nhãn rowspan=2 + ô gộp "Kết quả hoàn thành nhiệm vụ/công việc tháng X")
+   và hàng 2 (6 cột con). Rule chung `th { top: 0 }` khiến CẢ 2 hàng cùng
+   ghim tại mép trên → khi cuộn xuống hàng 2 đè/lech lên hàng 1, viền nền
+   thủng lỗ (user phản hồi kèm ảnh chụp). Hàng 2 phải ghim DƯỚI hàng 1:
+   top = chiều cao thật của hàng 1, đo bằng JS trong 15-summary-plan.js rồi
+   ghi vào biến --cbnv-thead-row1-h (44px chỉ là dự phòng khi JS chưa chạy). */
+#cbnv-table thead tr:nth-child(2) th {
+  top: var(--cbnv-thead-row1-h, 44px);
+}
+
 /* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
    thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
    hết mới thấy. .table-scroll-top là 1 thanh giả cùng chiều rộng, đồng bộ
