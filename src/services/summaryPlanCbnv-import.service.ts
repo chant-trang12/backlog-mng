@@ -1,7 +1,7 @@
-import type ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 import { listDepartments } from "./department.service.js";
 import { createCbnvXepLoaiRecords } from "./summaryPlan.service.js";
-import { buildTemplateWorkbook, normalizeHeader, parseFirstSheet, pickColumn } from "./workbook.util.js";
+import { normalizeHeader, parseFirstSheet, pickColumn } from "./workbook.util.js";
 import type { DataScope } from "./scope.util.js";
 import type { UpsertCbnvXepLoaiInput } from "../types/summaryPlan.js";
 
@@ -56,37 +56,140 @@ const KEYS = {
 
 export function buildCbnvXepLoaiImportTemplate(opts?: { departments?: string[] }): Promise<ExcelJS.Buffer> {
   const departments = opts?.departments ?? [];
-  return buildTemplateWorkbook(
-    "KQ xếp loại CBNV",
-    CBNV_XEP_LOAI_IMPORT_HEADERS.map((header) => ({
-      header,
-      width: header === "STT" ? 6 : header === "Họ và Tên" ? 24 : Math.min(42, Math.max(14, header.length + 4)),
-    })),
-    [
-      [
-        1,
-        "115141",
-        "Vũ Anh Dũng",
-        "Trưởng phòng",
-        "",
-        departments[0] ?? "Phòng Công nghệ thông tin",
-        "BSS",
-        3.4,
-        "Đạt yêu cầu",
-        "Tuân thủ",
-        "Tuân thủ",
-        "B",
-        "Hoàn thành",
-        "",
-      ],
-    ],
-    [
-      { column: 6, options: departments },
-      { column: 10, options: [...TUAN_THU_OPTIONS] },
-      { column: 11, options: [...TUAN_THU_OPTIONS] },
-      { column: 12, options: [...XEP_LOAI_OPTIONS] },
-    ],
-  );
+  return buildCbnvTemplateWorkbook(departments);
+}
+
+// Bố cục file mẫu KHỚP bảng dữ liệu trên trang (user yêu cầu kèm ảnh chụp):
+// 2 hàng tiêu đề — hàng 1: nhãn cột trái/phải (gộp dọc 2 hàng) + ô nhóm
+// "Kết quả hoàn thành nhiệm vụ/công việc" gộp ngang 6 cột con; hàng 2: tên
+// 6 cột con. Màu khớp web: xanh ngọc #179188 (trái/nhóm/phải), 4 cột con
+// đầu #2ec48f, 2 cột "Xếp loại" cuối #21a844; chữ trắng đậm, có AutoFilter
+// ở hàng tiêu đề thật (hàng 2). Vài dòng ví dụ + dropdown (Phòng ban/
+// Tuân thủ/Xếp loại) như template cũ. Import đọc lại được nhờ bộ nhận diện
+// tiêu đề 2 hàng trong parseFirstSheet (workbook.util.ts).
+async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+
+  const LEFT_HEADERS = CBNV_XEP_LOAI_IMPORT_HEADERS.slice(0, 7);
+  const MID_HEADERS = CBNV_XEP_LOAI_IMPORT_HEADERS.slice(7, 13);
+  const RIGHT_HEADERS = ["Ghi chú, đề xuất của người quản lý trực tiếp với CBNV", "Chú ý"];
+  const TOTAL_COLUMNS = LEFT_HEADERS.length + MID_HEADERS.length + RIGHT_HEADERS.length;
+
+  const TEAL = "FF179188";
+  const GREEN_LIGHT = "FF2EC48F";
+  const GREEN_DARK = "FF21A844";
+  const fillCell = (cell: ExcelJS.Cell, argb: string) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb } };
+  };
+  const styleHeaderCell = (cell: ExcelJS.Cell, argb: string) => {
+    cell.value = "";
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, argb);
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  };
+
+  const sheet = workbook.addWorksheet("KQ xếp loại CBNV");
+  sheet.columns = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 30, 24].map((width) => ({ width }));
+
+  const groupRow = 1;
+  const headerRow = 2;
+  let col = 1;
+  // Cột trái: gộp dọc 2 hàng, nền xanh ngọc.
+  LEFT_HEADERS.forEach((label) => {
+    sheet.mergeCells(groupRow, col, headerRow, col);
+    const cell = sheet.getCell(groupRow, col);
+    cell.value = label;
+    styleHeaderCell(cell, TEAL);
+    col++;
+  });
+  // Ô nhóm giữa (hàng 1, gộp ngang 6 cột) + 6 tên cột con (hàng 2).
+  const midStart = col;
+  sheet.mergeCells(groupRow, midStart, groupRow, midStart + MID_HEADERS.length - 1);
+  const midGroupCell = sheet.getCell(groupRow, midStart);
+  midGroupCell.value = "Kết quả hoàn thành nhiệm vụ/công việc";
+  styleHeaderCell(midGroupCell, TEAL);
+  MID_HEADERS.forEach((label, i) => {
+    const cell = sheet.getCell(headerRow, col);
+    cell.value = label;
+    styleHeaderCell(cell, i < 4 ? GREEN_LIGHT : GREEN_DARK);
+    col++;
+  });
+  RIGHT_HEADERS.forEach((label) => {
+    sheet.mergeCells(groupRow, col, headerRow, col);
+    const cell = sheet.getCell(groupRow, col);
+    cell.value = label;
+    styleHeaderCell(cell, TEAL);
+    col++;
+  });
+  // Ô gộp dọc cần set giá trị ở master (hàng 1) — ô hàng 2 kế thừa nền viền
+  // qua merge nhưng exceljs vẫn cần style riêng cho vùng slave của MERGE
+  // NGANG; với merge DỌC exceljs tự áp style master. Bù lại độ cao 2 hàng.
+  sheet.getRow(groupRow).height = 22;
+  sheet.getRow(headerRow).height = 36;
+
+  // Dòng ví dụ (dòng 3) — 15 cột, cột 14 "Ghi chú, đề xuất..." để trống.
+  const sampleRow = [
+    1,
+    "115141",
+    "Vũ Anh Dũng",
+    "Trưởng phòng",
+    "",
+    departments[0] ?? "Phòng Công nghệ thông tin",
+    "BSS",
+    3.4,
+    "Đạt yêu cầu",
+    "Tuân thủ",
+    "Tuân thủ",
+    "B",
+    "Hoàn thành",
+    "",
+    "",
+  ];
+  const sampleCells = sheet.getRow(headerRow + 1);
+  sampleRow.forEach((val, i) => {
+    sampleCells.getCell(i + 1).value = val;
+    sampleCells.getCell(i + 1).alignment = { wrapText: true, vertical: "top" };
+  });
+
+  sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: TOTAL_COLUMNS } };
+  sheet.views = [{ state: "frozen", ySplit: headerRow }];
+
+  // Dropdown: Phòng ban (cột 6), Tuân thủ (10, 11), Xếp loại (12) — ghi danh
+  // mục vào sheet ẩn rồi tham chiếu, áp cho 500 dòng dữ liệu kế tiếp.
+  const dropdowns: { column: number; options: string[] }[] = [
+    { column: 6, options: departments },
+    { column: 10, options: [...TUAN_THU_OPTIONS] },
+    { column: 11, options: [...TUAN_THU_OPTIONS] },
+    { column: 12, options: [...XEP_LOAI_OPTIONS] },
+  ];
+  const lookup = workbook.addWorksheet("Danh mục", { state: "hidden" });
+  const VALID_ROWS = 500;
+  dropdowns.forEach((d, idx) => {
+    if (d.options.length === 0) return;
+    const colLetter = String.fromCharCode(65 + idx);
+    d.options.forEach((opt, r) => {
+      lookup.getCell(`${colLetter}${r + 1}`).value = opt;
+    });
+    const ref = `'Danh mục'!$${colLetter}$1:$${colLetter}$${d.options.length}`;
+    for (let r = headerRow + 1; r <= headerRow + VALID_ROWS; r++) {
+      sheet.getCell(r, d.column).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        showErrorMessage: false,
+        formulae: [ref],
+      };
+    }
+  });
+
+  return workbook.xlsx.writeBuffer();
 }
 
 export interface ImportCbnvXepLoaiResult {

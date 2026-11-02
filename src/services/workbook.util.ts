@@ -175,14 +175,56 @@ export async function parseFirstSheet(
 
   const headerRowIndex = findHeaderRowIndex(sheet, toText);
   const headerRow = sheet.getRow(headerRowIndex);
-  const headers: string[] = [];
+
+  // Bố cục tiêu đề 2 HÀNG có ô nhóm gộp ngang (file mẫu/xuất của "KQ xếp
+  // loại CBNV": hàng trên = nhãn cột trái + ô nhóm "Kết quả hoàn thành
+  // nhiệm vụ/công việc..." + nhãn phải; hàng dưới = tên cột con). Khi đó
+  // dòng tiêu đề THẬT là dòng DƯỚI: gộp tên cột = giá trị dòng dưới (ô
+  // tươi), fallback giá trị dòng trên (master của ô gộp dọc). Điều kiện
+  // nhận diện: dòng tiêu đề ứng viên chứa ô GỘP NGANG (slave khác cột
+  // master) VÀ dòng kế dưới có ≥2 giá trị tươi khác nhau + có ô gộp dọc
+  // nối từ dòng trên — file tiêu đề 1 hàng thường (không gộp) không bao
+  // giờ rơi vào nhánh này, hành vi cũ giữ nguyên.
+  let headers: string[] = [];
+  let firstDataRowIndex = headerRowIndex + 1;
+  let hasHorizontalGroupMerge = false;
   headerRow.eachCell({ includeEmpty: false }, (cell) => {
-    const text = toText(cell).trim();
-    if (text) headers.push(text);
+    if (cell.isMerged && Number(cell.master.row) === headerRowIndex && Number(cell.master.col) !== Number(cell.col)) {
+      hasHorizontalGroupMerge = true;
+    }
   });
+  if (hasHorizontalGroupMerge && headerRowIndex < sheet.rowCount) {
+    const nextRow = sheet.getRow(headerRowIndex + 1);
+    const freshValues = new Set<string>();
+    let hasVerticalSlave = false;
+    nextRow.eachCell({ includeEmpty: false }, (cell) => {
+      if (cell.isMerged && Number(cell.master.row) < headerRowIndex + 1) {
+        hasVerticalSlave = true;
+        return;
+      }
+      const text = toText(cell).trim();
+      if (text) freshValues.add(text);
+    });
+    if (hasVerticalSlave && freshValues.size >= 2) {
+      const colCount = Math.max(headerRow.cellCount, nextRow.cellCount);
+      for (let c = 1; c <= colCount; c++) {
+        const nextCell = nextRow.getCell(c);
+        const nextIsSlave = nextCell.isMerged && Number(nextCell.master.row) < headerRowIndex + 1;
+        const text = (nextIsSlave ? "" : toText(nextCell).trim()) || toText(headerRow.getCell(c)).trim();
+        if (text) headers.push(text);
+      }
+      firstDataRowIndex = headerRowIndex + 2;
+    }
+  }
+  if (headers.length === 0) {
+    headerRow.eachCell({ includeEmpty: false }, (cell) => {
+      const text = toText(cell).trim();
+      if (text) headers.push(text);
+    });
+  }
 
   const rows: Record<string, string>[] = [];
-  for (let r = headerRowIndex + 1; r <= sheet.rowCount; r++) {
+  for (let r = firstDataRowIndex; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     if (row.cellCount === 0) continue;
     const isEmpty = headers.every((_, i) => toText(row.getCell(i + 1)).trim() === "");
