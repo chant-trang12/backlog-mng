@@ -1477,9 +1477,9 @@ th {
    ghi vào biến --cbnv-thead-row1-h (44px chỉ là dự phòng khi JS chưa chạy). */
 #cbnv-table thead tr:nth-child(2) th {
   top: var(--cbnv-thead-row1-h, 44px);
-  /* 6 ô cột con nền NHẠT (user yêu cầu "để màu nhạt") — khác tông với
-     hàng 1 màu đỏ đậm, chữ chuyển sang đỏ thẫm cho đủ tương phản. */
-  background: var(--red-100);
+  /* 6 ô cột con nền hồng san hô nhạt (user gửi ảnh mẫu màu #e08f96) —
+     khác tông với hàng 1 màu đỏ đậm, chữ đỏ thẫm cho đủ tương phản. */
+  background: #e08f96;
   color: var(--red-800);
 }
 
