@@ -1488,6 +1488,14 @@ th {
 #cbnv-table thead tr:first-child th {
   background: #179188;
 }
+/* 4 ô cột con đầu (Điểm đánh giá, Xếp loại kết quả thực hiện, Tuân thủ
+   địa điểm, Tuân thủ Nội quy) đổi sang XANH LÁ NGỌC theo ảnh mẫu user gửi
+   (#2ec48f) — 2 ô cuối (Xếp loại, Xếp loại mức độ hoàn thành) vẫn giữ hồng
+   san hô phía trên. Chữ trắng đồng bộ với các ô tiêu đề đậm màu khác. */
+#cbnv-table thead tr:nth-child(2) th:nth-child(-n + 4) {
+  background: #2ec48f;
+  color: #fff;
+}
 /* Nhãn tiêu đề căn giữa theo cả 2 chiều (user yêu cầu "label bảng dữ liệu
    cần căn giữa") — mặc định th lệch trái + bám mép trên trông thiếu cân. */
 #cbnv-table th {
