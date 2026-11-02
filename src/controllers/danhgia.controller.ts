@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  clearDanhGiaRecordsForMembers,
   deleteDanhGiaRecord,
   listDanhGiaRecords,
   updateDanhGiaRecord,
@@ -15,11 +16,15 @@ function scopeOf(req: Request): DataScope {
   return req.dataScope ?? { all: true, departmentId: null };
 }
 
-// POST /api/danh-gia-records/bulk { period_id, team_id, entries: [{member_id, so_thu_tu}] }
+// POST /api/danh-gia-records/bulk { period_id, team_id, entries: [{member_id, so_thu_tu}], clear_member_ids?: number[] }
 // — "+ Thêm Đánh giá": nhập Số thứ tự cho nhiều nhân sự của 1 team cùng
 // lúc. Mỗi entry phải thuộc đúng team_id đã chọn và tháng theo dõi period_id.
+// clear_member_ids: các nhân sự bị XOÁ TRỐNG ô Ranking trong popup — bản
+// ghi Đánh giá cũ của họ bị gỡ bỏ (trước đây entry rỗng bị bỏ qua nên bản
+// ghi cũ còn nguyên → "kết quả lưu lại không đúng" — user phản hồi). Cho
+// phép gửi request CHỈ để xoá (entries rỗng + clear_member_ids khác rỗng).
 export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Response) {
-  const { period_id, team_id, entries } = req.body ?? {};
+  const { period_id, team_id, entries, clear_member_ids } = req.body ?? {};
   const periodId = Number(period_id);
   const period = await getPeriod(periodId);
   if (!period) {
@@ -30,24 +35,40 @@ export async function bulkUpsertDanhGiaRecordsHandler(req: Request, res: Respons
   if (!team) {
     return res.status(400).json({ error: "Trường 'team_id' không hợp lệ" });
   }
-  if (!Array.isArray(entries) || entries.length === 0) {
+  if (!Array.isArray(entries)) {
+    return res.status(400).json({ error: "Trường 'entries' phải là mảng" });
+  }
+  if (entries.length === 0 && !Array.isArray(clear_member_ids)) {
     return res.status(400).json({ error: "Trường 'entries' phải là mảng không rỗng" });
   }
 
   const parsedEntries: { member_id: number; so_thu_tu: number; ghi_chu?: string }[] = [];
-  for (const entry of entries) {
-    const memberId = Number(entry?.member_id);
+  const clearIds: number[] = Array.isArray(clear_member_ids) ? clear_member_ids.map(Number) : [];
+  const memberIdsToValidate = [
+    ...entries.map((entry: any) => Number(entry?.member_id)),
+    ...clearIds,
+  ];
+  for (const memberId of memberIdsToValidate) {
     const member = await getMember(memberId);
     if (!member || member.team_id !== teamId || member.period_id !== periodId) {
-      return res.status(400).json({ error: `Nhân sự (member_id=${entry?.member_id}) không hợp lệ hoặc không thuộc team/tháng đã chọn` });
+      return res.status(400).json({ error: `Nhân sự (member_id=${memberId}) không hợp lệ hoặc không thuộc team/tháng đã chọn` });
     }
+  }
+  for (const entry of entries) {
+    const memberId = Number(entry?.member_id);
     const soThuTu = Number(entry?.so_thu_tu);
     if (!Number.isFinite(soThuTu)) {
       return res.status(400).json({ error: `Số thứ tự của nhân sự (member_id=${memberId}) phải là số` });
     }
     parsedEntries.push({ member_id: memberId, so_thu_tu: soThuTu, ghi_chu: entry?.ghi_chu });
   }
+  for (const clearId of clearIds) {
+    if (!Number.isFinite(clearId)) {
+      return res.status(400).json({ error: "Trường 'clear_member_ids' phải là mảng số" });
+    }
+  }
 
+  await clearDanhGiaRecordsForMembers(periodId, clearIds, scopeOf(req));
   await upsertDanhGiaRecords(periodId, parsedEntries, scopeOf(req));
   res.status(201).json(await listDanhGiaRecords(periodId));
 }

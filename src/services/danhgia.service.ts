@@ -114,3 +114,28 @@ export async function deleteDanhGiaRecord(id: number, scope: DataScope): Promise
   const count = await softDeleteWhere(db, "danh_gia_records", { id });
   return count > 0;
 }
+
+// Xoá (soft-delete) bản ghi Đánh giá của các nhân sự được liệt kê trong 1
+// tháng — dùng cho luồng "Lưu" popup Thêm Đánh giá: user XOÁ TRỐNG ô
+// Ranking của nhân sự nào thì bản ghi cũ của nhân sự đó phải bị gỡ bỏ,
+// không còn giữ nguyên như trước đây (bulk upsert chỉ cập nhật entry gửi
+// lên, entry bị bỏ qua vẫn tồn tại → "kết quả lưu lại không đúng" — user
+// phản hồi). Trả về số bản ghi đã xoá.
+export async function clearDanhGiaRecordsForMembers(
+  periodId: number,
+  memberIds: number[],
+  scope: DataScope,
+): Promise<number> {
+  let cleared = 0;
+  for (const memberId of memberIds) {
+    const departmentId = await departmentIdFromMemberId(memberId);
+    assertDepartmentInScope(scope, departmentId);
+    const existing = await db("danh_gia_records")
+      .where({ period_id: periodId, member_id: memberId, is_deleted: false })
+      .first();
+    if (!existing) continue;
+    assertDepartmentInScope(scope, (existing as any).department_id ?? null);
+    cleared += await softDeleteWhere(db, "danh_gia_records", { id: (existing as any).id });
+  }
+  return cleared;
+}

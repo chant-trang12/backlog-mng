@@ -1195,16 +1195,27 @@ el.evaluationCancelBtn.addEventListener("click", () => el.evaluationDialog.close
 el.evaluationForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const teamId = Number(document.getElementById("dg-team").value);
-  const entries = Array.from(document.querySelectorAll("#danhgia-member-input-tbody tr"))
-    .map((tr) => ({
+  const entries = [];
+  const clearMemberIds = [];
+  Array.from(document.querySelectorAll("#danhgia-member-input-tbody tr")).forEach((tr) => {
+    const raw = tr.querySelector(".dg-so-thu-tu-input").value;
+    const entry = {
       member_id: Number(tr.dataset.memberId),
-      so_thu_tu: tr.querySelector(".dg-so-thu-tu-input").value,
+      so_thu_tu: raw,
       ghi_chu: tr.querySelector(".dg-ghi-chu-input").value.trim(),
-    }))
-    .filter((entry) => entry.so_thu_tu !== "")
-    .map((entry) => ({ member_id: entry.member_id, so_thu_tu: Number(entry.so_thu_tu), ghi_chu: entry.ghi_chu }));
+    };
+    // Ô Ranking bị XOÁ TRỐNG = ý định gỡ bỏ Đánh giá cũ của nhân sự đó —
+    // gửi qua clear_member_ids để server xoá bản ghi cũ (trước đây entry
+    // rỗng bị lọc bỏ nên bản ghi cũ còn nguyên sau khi Lưu — "kết quả lưu
+    // lại không đúng", user phản hồi).
+    if (raw === "") {
+      clearMemberIds.push(entry.member_id);
+    } else {
+      entries.push({ member_id: entry.member_id, so_thu_tu: Number(raw), ghi_chu: entry.ghi_chu });
+    }
+  });
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && clearMemberIds.length === 0) {
     showToast("Hãy nhập ít nhất 1 Ranking.");
     return;
   }
@@ -1212,7 +1223,7 @@ el.evaluationForm.addEventListener("submit", async (e) => {
   try {
     await api("/api/danh-gia-records/bulk", {
       method: "POST",
-      body: JSON.stringify({ period_id: state.currentPeriodId, team_id: teamId, entries }),
+      body: JSON.stringify({ period_id: state.currentPeriodId, team_id: teamId, entries, clear_member_ids: clearMemberIds }),
     });
     el.evaluationDialog.close();
     await loadEvaluationRecords();
