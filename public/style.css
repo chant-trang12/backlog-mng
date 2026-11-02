@@ -3075,6 +3075,15 @@ dialog .dialog-body > h2 { padding-right: 26px; } /* chừa chỗ cho nút X ở
 dialog input, dialog select, dialog textarea { width: 100%; }
 dialog .field-row { display: flex; gap: 12px; min-width: 0; }
 dialog .field-row > div { flex: 1; min-width: 0; }
+
+/* Popup "Sửa KQ xếp loại CBNV" (#cbnv-edit-form) — bố cục flex mặc định
+   (label rộng theo nội dung) làm các cột label/input lệch nhau từng dòng:
+   "cái thò cái thụt" (user phản hồi kèm ảnh chụp). Đổi sang LƯỚI 2 cột:
+   label cố định 230px, control chiếm trọn phần còn lại — thẳng hàng tuyệt
+   đối. Nhãn dài (VD "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công
+   việc") tự xuống dòng trong cột label. Màn hình hẹp (media ở dưới đổi
+   field-row thành 1 cột) thì lưới cũng thu về 1 cột. */
+#cbnv-edit-form .field-row { display: grid; grid-template-columns: 230px 1fr; align-items: center; }
 dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
 /* Popup xác nhận (confirmDialog trong app.js) — nhỏ gọn, căn giữa nội dung
@@ -3388,6 +3397,7 @@ img, svg, canvas, video { max-width: 100%; }
   dialog { width: 94vw; max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
   dialog form { padding: 16px; }
   dialog .field-row { flex-direction: column; gap: 12px; }
+  #cbnv-edit-form .field-row { grid-template-columns: 1fr; }
   dialog .actions { flex-wrap: wrap; }
   dialog .actions button { flex: 1 1 auto; }
   .fr-detail-grid { grid-template-columns: 1fr; }
