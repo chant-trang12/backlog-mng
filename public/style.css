@@ -1496,6 +1496,13 @@ th {
   background: #2ec48f;
   color: #fff;
 }
+/* 2 ô cột con cuối (Xếp loại, Xếp loại mức độ hoàn thành nhiệm vụ/công
+   việc) đổi sang XANH LÁ ĐẬM theo ảnh mẫu user gửi (#21a844). Chữ trắng
+   đồng bộ với các ô tiêu đề đậm màu khác. */
+#cbnv-table thead tr:nth-child(2) th:nth-child(n + 5) {
+  background: #21a844;
+  color: #fff;
+}
 /* Nhãn tiêu đề căn giữa theo cả 2 chiều (user yêu cầu "label bảng dữ liệu
    cần căn giữa") — mặc định th lệch trái + bám mép trên trông thiếu cân. */
 #cbnv-table th {
