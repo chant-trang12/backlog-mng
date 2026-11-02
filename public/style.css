@@ -1482,6 +1482,12 @@ th {
   background: #e08f96;
   color: var(--red-800);
 }
+/* Nhãn tiêu đề căn giữa theo cả 2 chiều (user yêu cầu "label bảng dữ liệu
+   cần căn giữa") — mặc định th lệch trái + bám mép trên trông thiếu cân. */
+#cbnv-table th {
+  text-align: center;
+  vertical-align: middle;
+}
 
 /* Thanh cuộn ngang phía trên bảng Nhiệm vụ (Backlog) — bảng nhiều cột,
    thanh cuộn mặc định của trình duyệt chỉ nằm ở CUỐI bảng nên phải cuộn dọc
