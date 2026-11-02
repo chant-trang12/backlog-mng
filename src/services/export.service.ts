@@ -380,9 +380,13 @@ const CBNV_HEADERS_MID = [
   "Xếp loại",
   "Xếp loại mức độ hoàn thành nhiệm vụ/công việc",
 ];
-const CBNV_HEADERS_RIGHT = ["Chú ý"];
+// Hai cột phải ĐỨNG RIÊNG từng cột (merge dọc hàng 3-4 như các cột trái),
+// KHÔNG gộp thành nhóm nữa — trước đây "Ghi chú, đề xuất..." là ô nhóm
+// nằm TRÊN ô "Chú ý" trong CÙNG 1 cột nên 2 nội dung bị chồng nhau trong
+// file xuất ra (user phản hồi kèm ảnh chụp: đúng ra là 2 cột cạnh nhau).
+const CBNV_HEADERS_RIGHT = ["Ghi chú, đề xuất của người quản lý trực tiếp với CBNV", "Chú ý"];
 const CBNV_TOTAL_COLUMNS = CBNV_HEADERS_LEFT.length + CBNV_HEADERS_MID.length + CBNV_HEADERS_RIGHT.length;
-const CBNV_COLUMN_WIDTHS = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 26];
+const CBNV_COLUMN_WIDTHS = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 30, 24];
 
 export async function exportCbnvXepLoaiToExcel(
   rows: import("../types/summaryPlan.js").CbnvXepLoaiRecordWithDept[],
@@ -434,16 +438,9 @@ export async function exportCbnvXepLoaiToExcel(
     cell.border = THIN_BORDER;
     col++;
   });
-  const rightStart = col;
-  sheet.mergeCells(groupRow, rightStart, groupRow, rightStart + CBNV_HEADERS_RIGHT.length - 1);
-  const rightGroupCell = sheet.getCell(groupRow, rightStart);
-  rightGroupCell.value = "Ghi chú, đề xuất của người quản lý trực tiếp với CBNV";
-  rightGroupCell.font = { bold: true, color: { argb: HEADER_FONT } };
-  rightGroupCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-  fillCell(rightGroupCell, HEADER_FILL);
-  rightGroupCell.border = THIN_BORDER;
   CBNV_HEADERS_RIGHT.forEach((label) => {
-    const cell = sheet.getCell(headerRow, col);
+    sheet.mergeCells(groupRow, col, headerRow, col);
+    const cell = sheet.getCell(groupRow, col);
     cell.value = label;
     cell.font = { bold: true, color: { argb: HEADER_FONT } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
@@ -470,6 +467,7 @@ export async function exportCbnvXepLoaiToExcel(
       r.tuan_thu_noi_quy ?? "",
       r.xep_loai ?? "",
       r.xep_loai_muc_do ?? "",
+      "", // cột "Ghi chú, đề xuất của người quản lý trực tiếp với CBNV" — để trống, HR tự điền
       r.chu_y ?? "",
     ];
     values.forEach((val, colIdx) => {
