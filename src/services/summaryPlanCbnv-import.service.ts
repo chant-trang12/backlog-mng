@@ -84,7 +84,6 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb } };
   };
   const styleHeaderCell = (cell: ExcelJS.Cell, argb: string) => {
-    cell.value = "";
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     fillCell(cell, argb);
