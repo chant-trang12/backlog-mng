@@ -21,12 +21,20 @@ export async function listCbnvXepLoai(periodId: number, departmentId?: number | 
   const query = db("cbnv_xep_loai_records as r")
     .leftJoin("departments as d", "d.id", "r.department_id")
     .leftJoin("periods as p", "p.id", "r.period_id")
-    .select("r.*", "d.name as department_name", "p.label as period_label")
+    // Chức danh LẤY TỪ cột "Chức vụ" của nhân sự (tab Nhân sự, Team & Nhân
+    // sự — bảng members, khớp qua member_id; user yêu cầu) — bản ghi chưa
+    // khớp được nhân sự (member_id NULL) hoặc nhân sự chưa có Chức vụ thì
+    // fallback về giá trị Chức danh đã lưu (Import Excel/nhập tay).
+    .leftJoin("members as m", "m.id", "r.member_id")
+    .select("r.*", "d.name as department_name", "p.label as period_label", "m.chuc_vu as member_chuc_vu")
     .where("r.period_id", periodId)
     .where("r.is_deleted", false);
   if (departmentId != null) query.where("r.department_id", departmentId);
   const rows = await query.orderBy("r.to_nhom", "asc").orderBy("r.ho_va_ten", "asc");
-  return rows as CbnvXepLoaiRecordWithDept[];
+  return (rows as (CbnvXepLoaiRecordWithDept & { member_chuc_vu: string | null })[]).map((row) => {
+    const { member_chuc_vu, ...rest } = row;
+    return { ...rest, chuc_danh: member_chuc_vu ?? rest.chuc_danh ?? null };
+  });
 }
 
 export async function createCbnvXepLoaiRecords(
