@@ -1482,6 +1482,12 @@ th {
   background: #e08f96;
   color: var(--red-800);
 }
+/* Nền tiêu đề HÀNG 1 (nhãn rowspan + ô gộp) đổi sang XANH NGỌC đậm theo
+   ảnh mẫu user gửi (#179188) — thay cho đỏ mận cũ; hàng 2 giữ riêng màu
+   hồng san hô phía trên. Chữ trắng giữ nguyên. */
+#cbnv-table thead tr:first-child th {
+  background: #179188;
+}
 /* Nhãn tiêu đề căn giữa theo cả 2 chiều (user yêu cầu "label bảng dữ liệu
    cần căn giữa") — mặc định th lệch trái + bám mép trên trông thiếu cân. */
 #cbnv-table th {
