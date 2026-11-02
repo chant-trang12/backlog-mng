@@ -1,14 +1,16 @@
 import { db } from "../db/database.js";
 import type { AppRole } from "../types/user.js";
 
-// 9 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
+// 10 "Chức năng" cho phép cấu hình quyền qua UI (Cấu hình → Phân quyền) —
 // khớp 1-1 với "module" mà resolveModuleAndAction() (actionLog.middleware.ts)
 // suy ra từ path, TRỪ "nhiem_vu_cham_diem" (route riêng PUT /tasks/:id/grade,
 // tách khỏi "nhiem_vu" ngay trong requireWrite — xem auth.middleware.ts),
 // "trang_chu" và "bao_cao_thong_ke" (không có API/module riêng — trang tổng
 // hợp/thống kê, chỉ can_read có ý nghĩa, xem NO_ADD_EDIT_FUNCTIONS bên
-// dưới). Cố ý KHÔNG gồm Cấu hình/Quản lý User/Nhật ký hoạt động (vẫn
-// admin-only tuyệt đối qua requireAdmin, không cấu hình được qua màn này).
+// dưới). "ke_hoach_tong_hop" CÓ module riêng ("Kế hoạch tổng hợp", root
+// "cbnv-xep-loai") — không thuộc 2 ngoại lệ trên. Cố ý KHÔNG gồm Cấu hình/
+// Quản lý User/Nhật ký hoạt động (vẫn admin-only tuyệt đối qua requireAdmin,
+// không cấu hình được qua màn này).
 export const PERMISSION_FUNCTIONS = [
   {
     key: "trang_chu",
@@ -55,6 +57,11 @@ export const PERMISSION_FUNCTIONS = [
     label: "Báo cáo - Thống kê",
     desc: "Trang Báo cáo - Thống kê — chỉ cột Đọc có ý nghĩa: tắt = ẩn mục \"Báo cáo - Thống kê\" khỏi menu trái cho role đó.",
   },
+  {
+    key: "ke_hoach_tong_hop",
+    label: "Kế hoạch tổng hợp",
+    desc: "KQ xếp loại CBNV (Import/Export Excel, Lấy thông tin xếp loại, Sửa, Xoá) + tab GNV (chưa có nội dung).",
+  },
 ] as const;
 export type PermissionFunctionKey = (typeof PERMISSION_FUNCTIONS)[number]["key"];
 const FUNCTION_KEYS = new Set<string>(PERMISSION_FUNCTIONS.map((f) => f.key));
@@ -63,6 +70,11 @@ const FUNCTION_KEYS = new Set<string>(PERMISSION_FUNCTIONS.map((f) => f.key));
 // phải 1 bảng dữ liệu CRUD riêng) — FE ẩn 2 checkbox này, server cũng chặn
 // luôn để admin không lỡ bật nhầm qua gọi API trực tiếp (can_add/can_edit
 // luôn bị ép về false dù client gửi gì, xem updateRolePermission bên dưới).
+// "Kế hoạch tổng hợp" KHÔNG nằm trong set này nữa — khác "trang_chu"/
+// "bao_cao_thong_ke" (dashboard tổng hợp thuần), trang này có CRUD thật
+// (Import/Export Excel, Lấy thông tin xếp loại, Sửa, Xoá ở tab "KQ xếp
+// loại CBNV") nên can_add/can_edit có ý nghĩa thật, cấu hình được bình
+// thường như "team_nhan_su".
 const NO_ADD_EDIT_FUNCTIONS = new Set<string>(["trang_chu", "bao_cao_thong_ke"]);
 
 // 3 role cấu hình được qua màn này — "admin" luôn toàn quyền (bypass trước

@@ -67,6 +67,18 @@ document.querySelectorAll("#reports-subnav .pill").forEach((pill) => {
   });
 });
 
+// Kế hoạch tổng hợp — 2 tab con chưa có nội dung (mô tả sau), chỉ cần
+// chuyển đổi hiển thị, không tải dữ liệu gì.
+document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    document.querySelectorAll("#summary-plan-subnav .pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    ["cbnv", "gnv"].forEach((tab) => {
+      document.getElementById(`summary-plan-tab-${tab}`).hidden = tab !== pill.dataset.tab;
+    });
+  });
+});
+
 // -- Sự cố --
 
 // Bộ cột chi tiết bảng Sự cố — KHỚP thứ tự thead #incident-table (sau
@@ -1303,8 +1315,13 @@ function computeWorkRuleRows() {
 }
 
 function filteredWorkRuleRows() {
+  // Bug: trước đây bỏ qua hẳn state.memberFilterTeam (dropdown "Team" dùng
+  // chung cho mọi tab ở trang Team & Nhân sự) — chọn 1 team ở đó không lọc
+  // được gì ở tab Nội quy, bảng vẫn hiện TẤT CẢ team (user phản hồi "tìm
+  // kiếm theo list team -> bảng dữ liệu trả kết quả không đúng").
+  let rows = computeWorkRuleRows();
+  if (state.memberFilterTeam) rows = rows.filter((r) => r.team === state.memberFilterTeam);
   const term = state.workRuleSearch.trim().toLowerCase();
-  const rows = computeWorkRuleRows();
   if (!term) return rows;
   return rows.filter((r) => r.name.toLowerCase().includes(term) || r.team.toLowerCase().includes(term));
 }

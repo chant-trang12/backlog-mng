@@ -41,6 +41,10 @@ const state = {
   evaluationRecords: [],
   criteriaConfigs: [],
   rankingConfig: { rows: [], columns: [], cells: [] },
+  // Kế hoạch tổng hợp > KQ xếp loại CBNV (15-summary-plan.js).
+  cbnvRecords: [],
+  cbnvSearch: "",
+  cbnvEditingId: null,
   tags: [],
   categoryOptions: [],
   groupOptions: [],
@@ -115,6 +119,7 @@ const el = {
   deptTip: document.getElementById("dept-tip"),
   periodSelect: document.getElementById("period-select"),
   teamPeriodSelect: document.getElementById("team-period-select"),
+  cbnvPeriodSelect: document.getElementById("cbnv-period-select"),
   configTeamPeriod: document.getElementById("config-team-period"),
   configTeamDept: document.getElementById("config-team-dept"),
   homeFilterPeriod: document.getElementById("home-filter-period"),

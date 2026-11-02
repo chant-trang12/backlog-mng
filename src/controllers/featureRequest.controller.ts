@@ -488,9 +488,10 @@ export async function exportFeatureRequestsHandler(req: Request, res: Response) 
 
 // ---- Import Excel theo biểu mẫu Quy trình số hóa ----
 
-// GET /api/feature-requests/import-template — file .xlsx mẫu (18 cột đúng
-// biểu mẫu), có dropdown chọn Hệ thống cần cải tiến (danh mục Cấu hình >
-// Hệ thống), Ưu tiên + Đơn vị đề xuất (danh mục phòng ban).
+// GET /api/feature-requests/import-template — file .xlsx mẫu (22 cột đúng
+// biểu mẫu, xem FEATURE_REQUEST_IMPORT_HEADERS), có dropdown chọn Hệ thống
+// cần cải tiến (danh mục Cấu hình > Hệ thống), Ưu tiên + Đơn vị đề xuất
+// (danh mục phòng ban).
 export async function downloadFeatureRequestTemplateHandler(_req: Request, res: Response) {
   const [departments, heThong, loaiYeuCau] = await Promise.all([listDepartments(), listHeThong(), listLoaiYeuCau()]);
   const buffer = await buildFeatureRequestImportTemplate({
@@ -510,16 +511,16 @@ export async function downloadFeatureRequestTemplateHandler(_req: Request, res: 
 // gửi File trực tiếp, express.raw() gắn ở route). Mỗi dòng = 1 yêu cầu mới
 // ("Chờ duyệt", phòng đề xuất lấy từ cột "Đơn vị đề xuất" — không tự tạo
 // phòng ban mới, dòng không khớp bị bỏ qua kèm lý do). Phòng ban đích lấy
-// theo cột "Phòng ban thực hiện" trong file (= Phòng ban đích của form,
+// theo cột "Đơn vị thực hiện số hoá" trong file (= Phòng ban đích của form,
 // khớp theo tên/mã phòng); dòng trống cột này thì fallback về phòng đang
 // xem (?department_id=X) — giữ logic "phòng import = phòng đích" cho file
 // cũ không có cột này.
 //
 // Fix IDOR (ATTT): với tài khoản bị giới hạn 1 phòng, fallback phòng đích
 // được ép về đúng phòng của người gọi (resolveListDepartmentId), và từng
-// dòng có "Phòng ban thực hiện" chỉ ra phòng KHÁC phạm vi sẽ bị bỏ qua kèm
-// lý do (xem importFeatureRequestsFromWorkbook) — không thể dùng import để
-// ghi yêu cầu vào hộp thư của phòng khác.
+// dòng có "Đơn vị thực hiện số hoá" chỉ ra phòng KHÁC phạm vi sẽ bị bỏ qua
+// kèm lý do (xem importFeatureRequestsFromWorkbook) — không thể dùng import
+// để ghi yêu cầu vào hộp thư của phòng khác.
 export async function importFeatureRequestsHandler(req: Request, res: Response) {
   const buffer = req.body;
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {

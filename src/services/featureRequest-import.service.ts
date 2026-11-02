@@ -5,7 +5,14 @@ import { buildTemplateWorkbook, normalizeHeader, parseDateToIso, parseFirstSheet
 import type { DataScope } from "./scope.util.js";
 
 // ===== Import Excel "Yêu cầu tính năng" theo biểu mẫu Quy trình số hóa =====
-// 20 cột (kể cả STT — chỉ để đánh số, bỏ qua khi import).
+// 22 cột (kể cả STT — chỉ để đánh số, bỏ qua khi import). Header "Đơn vị
+// thực hiện số hoá" khớp ĐÚNG tên cột đã dùng ở bảng Yêu cầu tính năng +
+// file xuất Excel (export.service.ts#FR_HEADERS) — trước đây file mẫu dùng
+// tên khác ("Phòng ban thực hiện"), khiến file đã Xuất Excel rồi sửa lại để
+// Nhập Excel (round-trip) không nhận diện được đúng cột này (user phản hồi
+// "3 file không giống nhau") — đã đổi tên cho khớp HẲN, đồng thời nới KEYS
+// bên dưới chấp nhận CẢ 2 tên cũ/mới để không phá các file mẫu cũ đã tải về
+// trước đây.
 // Mapping với cột dữ liệu hiện có (trùng thì GỘP LẠI 1, không tạo cột mới):
 //   "Tiêu đề"                             -> feature_requests.tieu_de
 //                                            (bắt buộc ở DB — nếu trống tự
@@ -14,7 +21,7 @@ import type { DataScope } from "./scope.util.js";
 //                                            (danh mục Cấu hình > Loại yêu
 //                                            cầu — không khớp danh mục vẫn
 //                                            lưu nguyên text, không chặn)
-//   "Phòng ban thực hiện"                 -> feature_requests.target_department_id
+//   "Đơn vị thực hiện số hoá"             -> feature_requests.target_department_id
 //                                            (CHÍNH LÀ "Phòng ban đích" của
 //                                            form — khớp theo tên/mã phòng;
 //                                            dòng trống cột này thì fallback
@@ -34,12 +41,11 @@ import type { DataScope } from "./scope.util.js";
 //                                            map vào trường date của form
 //                                            Thêm mới yêu cầu)
 // Các cột còn lại là trường mới (linh_vuc, mang, hoat_dong_nghiep_vu, ...).
-// Các cột còn lại là trường mới (linh_vuc, mang, hoat_dong_nghiep_vu, ...).
 export const FEATURE_REQUEST_IMPORT_HEADERS = [
   "STT",
   "Tiêu đề",
   "Loại yêu cầu",
-  "Lĩnh Vực",
+  "Lĩnh vực",
   "Mảng",
   "Hoạt động/nghiệp vụ",
   "Quy trình số hóa",
@@ -55,7 +61,7 @@ export const FEATURE_REQUEST_IMPORT_HEADERS = [
   "Kết quả mong muốn",
   "Ưu tiên",
   "Đơn vị đề xuất",
-  "Phòng ban thực hiện",
+  "Đơn vị thực hiện số hoá",
   "Nhân sự đầu mối",
   "Ghi chú",
 ] as const;
@@ -81,7 +87,11 @@ const KEYS = {
   ket_qua: ["ket qua mong muon", "ket qua"],
   uu_tien: ["uu tien", "do uu tien"],
   don_vi: ["don vi de xuat", "don vi", "phong ban de xuat"],
-  phong_ban_thuc_hien: ["phong ban thuc hien", "phong ban dich"],
+  // "don vi thuc hien so hoa" — tên cột MỚI (khớp file mẫu hiện tại + cột
+  // "Đơn vị thực hiện số hoá" ở file Xuất Excel, cho phép Xuất rồi Nhập lại
+  // (round-trip) nhận đúng cột này); 2 tên còn lại giữ để không phá file mẫu
+  // cũ đã tải về trước khi đổi tên.
+  phong_ban_thuc_hien: ["don vi thuc hien so hoa", "phong ban thuc hien", "phong ban dich"],
   dau_moi: ["nhan su dau moi", "nguoi de xuat"],
   ghi_chu: ["ghi chu"],
 };
@@ -160,7 +170,7 @@ export function buildFeatureRequestImportTemplate(opts?: {
       { column: 12, options: heThong }, // Hệ thống cần cải tiến (nếu có) — danh mục Cấu hình > Hệ thống
       { column: 18, options: [...PRIORITIES] }, // Ưu tiên
       { column: 19, options: departments }, // Đơn vị đề xuất
-      { column: 20, options: departments }, // Phòng ban thực hiện = Phòng ban đích
+      { column: 20, options: departments }, // Đơn vị thực hiện số hoá = Phòng ban đích
     ],
   );
 }
@@ -234,20 +244,20 @@ export async function importFeatureRequestsFromWorkbook(
     // chính mình — bỏ qua giá trị trong file (không thể giả mạo phòng khác).
     if (!scope.all) deptId = scope.departmentId ?? undefined;
 
-    // "Phòng ban thực hiện" = Phòng ban đích (target_department_id): dòng có
-    // điền thì khớp theo tên/mã phòng (sai thì bỏ qua kèm lý do — giống Đơn
-    // vị đề xuất); dòng TRỐNG thì fallback về phòng đang xem của người
+    // "Đơn vị thực hiện số hoá" = Phòng ban đích (target_department_id): dòng
+    // có điền thì khớp theo tên/mã phòng (sai thì bỏ qua kèm lý do — giống
+    // Đơn vị đề xuất); dòng TRỐNG thì fallback về phòng đang xem của người
     // import (targetDepartmentId) — giữ đúng logic "phòng import = phòng
     // đích" cho file cũ không có cột này.
-    const phongBanThucHien = val(row, col("phong_ban_thuc_hien"));
+    const donViThucHien = val(row, col("phong_ban_thuc_hien"));
     let targetId = targetDepartmentId ?? null;
-    if (phongBanThucHien) {
-      const matchedTarget = deptByKey.get(normalizeHeader(phongBanThucHien));
+    if (donViThucHien) {
+      const matchedTarget = deptByKey.get(normalizeHeader(donViThucHien));
       if (!matchedTarget) {
         result.skipped.push({
           row: rowNo,
           label,
-          reason: `Không tìm thấy "Phòng ban thực hiện: ${phongBanThucHien}" trong danh mục phòng ban`,
+          reason: `Không tìm thấy "Đơn vị thực hiện số hoá: ${donViThucHien}" trong danh mục phòng ban`,
         });
         continue;
       }

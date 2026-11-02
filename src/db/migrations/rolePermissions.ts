@@ -111,6 +111,13 @@ export async function migrateRolePermissions(): Promise<void> {
     ["bgd", true, false, false],
     ["viewer", true, false, false],
   ]);
+  // "Kế hoạch tổng hợp" — CRUD thật (tab "KQ xếp loại CBNV": Import Excel,
+  // Lấy thông tin xếp loại, Sửa), cùng kiểu với "team_nhan_su".
+  addSeed("ke_hoach_tong_hop", [
+    ["editor", true, true, true],
+    ["bgd", true, true, true],
+    ["viewer", true, false, false],
+  ]);
 
   if (seed.length > 0) {
     await db("role_permissions").insert(seed);

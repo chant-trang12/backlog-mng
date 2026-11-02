@@ -365,3 +365,124 @@ export async function exportFeatureRequestsToExcel(
 
   return workbook.xlsx.writeBuffer();
 }
+
+// ---- Xuất Excel "KQ xếp loại CBNV" (Kế hoạch tổng hợp) ----
+// Giữ ĐÚNG bố cục nhóm cột của mẫu HR user gửi: 1 header gộp "Kết quả hoàn
+// thành nhiệm vụ/công việc tháng X/YYYY" trùm lên 6 cột con, kiểu màu dùng
+// lại HEADER_FILL/TITLE_FILL/THIN_BORDER đã có sẵn ở trên (nhất quán màu
+// đỏ mận toàn app, không bịa bảng màu riêng).
+const CBNV_HEADERS_LEFT = ["TT", "Mã nhân viên", "Họ và Tên", "Chức danh", "Đơn vị", "Phòng ban", "Tổ nhóm"];
+const CBNV_HEADERS_MID = [
+  "Điểm đánh giá",
+  "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc",
+  "Tuân thủ địa điểm làm việc",
+  "Tuân thủ Nội quy lao động",
+  "Xếp loại",
+  "Xếp loại mức độ hoàn thành nhiệm vụ/công việc",
+];
+const CBNV_HEADERS_RIGHT = ["Chú ý"];
+const CBNV_TOTAL_COLUMNS = CBNV_HEADERS_LEFT.length + CBNV_HEADERS_MID.length + CBNV_HEADERS_RIGHT.length;
+const CBNV_COLUMN_WIDTHS = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 26];
+
+export async function exportCbnvXepLoaiToExcel(
+  rows: import("../types/summaryPlan.js").CbnvXepLoaiRecordWithDept[],
+  periodLabel: string,
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("KQ xếp loại CBNV");
+  sheet.columns = CBNV_COLUMN_WIDTHS.map((width) => ({ width }));
+
+  sheet.mergeCells(1, 1, 1, CBNV_TOTAL_COLUMNS);
+  const titleCell = sheet.getCell(1, 1);
+  titleCell.value = `KQ xếp loại CBNV — ${periodLabel}`;
+  titleCell.font = { bold: true, size: 14 };
+  titleCell.alignment = { horizontal: "center", vertical: "middle" };
+  fillCell(titleCell, TITLE_FILL);
+  sheet.getRow(1).height = 24;
+
+  // Hàng 3: nhóm cột gộp (merge ngang) — hàng 4: tên từng cột con.
+  const groupRow = 3;
+  const headerRow = 4;
+  let col = 1;
+  CBNV_HEADERS_LEFT.forEach((label) => {
+    sheet.mergeCells(groupRow, col, headerRow, col);
+    const cell = sheet.getCell(groupRow, col);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, HEADER_FILL);
+    cell.border = THIN_BORDER;
+    col++;
+  });
+  const midStart = col;
+  sheet.mergeCells(groupRow, midStart, groupRow, midStart + CBNV_HEADERS_MID.length - 1);
+  const midGroupCell = sheet.getCell(groupRow, midStart);
+  midGroupCell.value = `Kết quả hoàn thành nhiệm vụ/công việc ${periodLabel}`;
+  midGroupCell.font = { bold: true, color: { argb: HEADER_FONT } };
+  midGroupCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  fillCell(midGroupCell, HEADER_FILL);
+  midGroupCell.border = THIN_BORDER;
+  CBNV_HEADERS_MID.forEach((label) => {
+    const cell = sheet.getCell(headerRow, col);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, HEADER_FILL);
+    cell.border = THIN_BORDER;
+    col++;
+  });
+  const rightStart = col;
+  sheet.mergeCells(groupRow, rightStart, groupRow, rightStart + CBNV_HEADERS_RIGHT.length - 1);
+  const rightGroupCell = sheet.getCell(groupRow, rightStart);
+  rightGroupCell.value = "Ghi chú, đề xuất của người quản lý trực tiếp với CBNV";
+  rightGroupCell.font = { bold: true, color: { argb: HEADER_FONT } };
+  rightGroupCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  fillCell(rightGroupCell, HEADER_FILL);
+  rightGroupCell.border = THIN_BORDER;
+  CBNV_HEADERS_RIGHT.forEach((label) => {
+    const cell = sheet.getCell(headerRow, col);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, HEADER_FILL);
+    cell.border = THIN_BORDER;
+    col++;
+  });
+  sheet.getRow(groupRow).height = 22;
+  sheet.getRow(headerRow).height = 36;
+
+  let rowIndex = headerRow + 1;
+  rows.forEach((r, i) => {
+    const values = [
+      i + 1,
+      r.ma_nhan_vien ?? "",
+      r.ho_va_ten,
+      r.chuc_danh ?? "",
+      r.don_vi ?? "",
+      r.department_name ?? "",
+      r.to_nhom ?? "",
+      r.diem_danh_gia ?? "",
+      r.xep_loai_ket_qua ?? "",
+      r.tuan_thu_dia_diem ?? "",
+      r.tuan_thu_noi_quy ?? "",
+      r.xep_loai ?? "",
+      r.xep_loai_muc_do ?? "",
+      r.chu_y ?? "",
+    ];
+    values.forEach((val, colIdx) => {
+      const cell = sheet.getCell(rowIndex, colIdx + 1);
+      cell.value = val;
+      cell.alignment = { wrapText: true, vertical: "top" };
+      cell.border = THIN_BORDER;
+    });
+    rowIndex += 1;
+  });
+
+  sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: CBNV_TOTAL_COLUMNS } };
+  sheet.views = [{ state: "frozen", ySplit: headerRow }];
+
+  return workbook.xlsx.writeBuffer();
+}

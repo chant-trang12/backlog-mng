@@ -39,12 +39,14 @@ el.teamFilterTeam.addEventListener("change", () => {
   trainingPagination.reset();
   supportPagination.reset();
   evaluationPagination.reset();
+  workRulePagination.reset();
   renderMemberTeamFilter();
   renderMemberTable();
   renderComplianceRecords();
   renderTrainingRecords();
   renderSupportRecords();
   renderEvaluationRecords();
+  renderWorkRuleTable();
 });
 
 function filteredMembers() {

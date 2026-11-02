@@ -17,6 +17,7 @@ const MODULE_TO_FUNCTION_KEY: Record<string, string> = {
   "Roadmap năm": "roadmap",
   "Yêu cầu tính năng": "yeu_cau_tinh_nang",
   "Quản lý tính năng số hoá": "quan_ly_tinh_nang_so_hoa",
+  "Kế hoạch tổng hợp": "ke_hoach_tong_hop",
 };
 
 /**

@@ -35,6 +35,7 @@
         <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
         <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Tính năng số hóa</button>
         <button class="nav-item" data-page="reports"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Báo cáo - Thống kê</button>
+        <button class="nav-item" data-page="summary-plan"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg>Kế hoạch tổng hợp</button>
         <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình</button>
         <button class="nav-item" data-page="action-logs"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg>Nhật ký hoạt động</button>
         <button class="nav-item" data-page="hdsd"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg>HDSD</button>
@@ -2527,6 +2528,166 @@
           </div>
         </div>
 
+        <!-- ---- Trang Kế hoạch tổng hợp — tab "GNV" chưa có nội dung (mô tả
+             sau). Lọc theo tháng + phòng ban đang xem (bộ chuyển đổi phòng
+             ban chung ở header) — KHÔNG hiển thị lẫn dữ liệu phòng khác. ---- -->
+        <div id="page-summary-plan" hidden>
+          <div class="tab-panel-group">
+          <div class="chrome-tabs" id="summary-plan-subnav">
+            <span class="pill active" data-tab="cbnv">KQ xếp loại CBNV</span>
+            <span class="pill" data-tab="gnv">GNV</span>
+          </div>
+          <div id="summary-plan-tab-cbnv">
+            <section class="card">
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">KQ xếp loại CBNV</h2>
+                <div class="row" style="flex:0 0 auto">
+                  <button id="cbnv-download-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải file mẫu</button>
+                  <button id="cbnv-import-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                  <input type="file" id="cbnv-import-input" accept=".xlsx,.xlsm" hidden />
+                  <button id="cbnv-export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                  <button id="cbnv-fetch-ki-btn" class="btn-view write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Lấy thông tin xếp loại</button>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom:12px;align-items:center">
+                <div>
+                  <label for="cbnv-period-select" style="margin:0">Tháng theo dõi</label>
+                  <select id="cbnv-period-select"></select>
+                </div>
+                <div>
+                  <label for="cbnv-search" style="margin:0">Tìm kiếm</label>
+                  <input type="text" id="cbnv-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+                </div>
+              </div>
+              <div class="table-wrap" id="cbnv-table-wrap">
+                <table id="cbnv-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width:40px">TT</th>
+                      <th rowspan="2" style="width:100px">Mã nhân viên</th>
+                      <th rowspan="2" style="min-width:160px">Họ và Tên</th>
+                      <th rowspan="2" style="min-width:140px">Chức danh</th>
+                      <th rowspan="2" style="min-width:100px">Đơn vị</th>
+                      <th rowspan="2" style="min-width:140px">Phòng ban</th>
+                      <th rowspan="2" style="min-width:100px">Tổ nhóm</th>
+                      <th colspan="6" id="cbnv-group-ketqua">Kết quả hoàn thành nhiệm vụ/công việc</th>
+                      <th rowspan="2" style="min-width:200px">Chú ý</th>
+                      <th rowspan="2" style="min-width:140px"></th>
+                    </tr>
+                    <tr>
+                      <th style="width:90px">Điểm đánh giá</th>
+                      <th style="min-width:160px">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</th>
+                      <th style="min-width:120px">Tuân thủ địa điểm làm việc</th>
+                      <th style="min-width:120px">Tuân thủ Nội quy lao động</th>
+                      <th style="width:80px">Xếp loại</th>
+                      <th style="min-width:160px">Xếp loại mức độ hoàn thành nhiệm vụ/công việc</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cbnv-tbody"></tbody>
+                </table>
+                <p class="muted" id="cbnv-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu KQ xếp loại CBNV ở tháng/phòng ban đang xem.</p>
+              </div>
+              <div class="pagination-bar" id="cbnv-pagination">
+                <div class="row">
+                  <label for="cbnv-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="cbnv-page-size">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <button type="button" id="cbnv-page-prev" class="small">‹ Trước</button>
+                  <span id="cbnv-page-info" class="muted"></span>
+                  <button type="button" id="cbnv-page-next" class="small">Sau ›</button>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div id="summary-plan-tab-gnv" hidden>
+            <section class="card">
+              <h2>GNV</h2>
+              <p class="muted">Đang chờ bổ sung nội dung.</p>
+            </section>
+          </div>
+          </div>
+        </div>
+
+        <!-- Dialog "Sửa KQ xếp loại CBNV" -->
+        <dialog id="cbnv-edit-dialog">
+          <form id="cbnv-edit-form" method="dialog">
+            <h2>Sửa KQ xếp loại CBNV</h2>
+            <div class="field-row">
+              <label for="cbnv-f-ma-nhan-vien">Mã nhân viên</label>
+              <input type="text" id="cbnv-f-ma-nhan-vien" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-ho-va-ten">Họ và Tên *</label>
+              <input type="text" id="cbnv-f-ho-va-ten" required />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-chuc-danh">Chức danh</label>
+              <input type="text" id="cbnv-f-chuc-danh" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-don-vi">Đơn vị</label>
+              <input type="text" id="cbnv-f-don-vi" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-to-nhom">Tổ nhóm</label>
+              <input type="text" id="cbnv-f-to-nhom" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-diem">Điểm đánh giá</label>
+              <input type="number" step="0.01" id="cbnv-f-diem" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-xep-loai-ket-qua">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</label>
+              <input type="text" id="cbnv-f-xep-loai-ket-qua" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-tuan-thu-dia-diem">Tuân thủ địa điểm làm việc</label>
+              <select id="cbnv-f-tuan-thu-dia-diem">
+                <option value="">—</option>
+                <option value="Tuân thủ">Tuân thủ</option>
+                <option value="Không tuân thủ">Không tuân thủ</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-tuan-thu-noi-quy">Tuân thủ Nội quy lao động</label>
+              <select id="cbnv-f-tuan-thu-noi-quy">
+                <option value="">—</option>
+                <option value="Tuân thủ">Tuân thủ</option>
+                <option value="Không tuân thủ">Không tuân thủ</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-xep-loai">Xếp loại</label>
+              <select id="cbnv-f-xep-loai">
+                <option value="">—</option>
+                <option value="A+">A+</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-xep-loai-muc-do">Xếp loại mức độ hoàn thành nhiệm vụ/công việc</label>
+              <input type="text" id="cbnv-f-xep-loai-muc-do" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-chu-y">Chú ý</label>
+              <textarea id="cbnv-f-chu-y" rows="2"></textarea>
+            </div>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="cbnv-edit-cancel-btn" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
         <!-- ---- Trang Cấu hình ---- -->
         <div id="page-config" hidden>
           <div class="tab-panel-group">
@@ -4005,6 +4166,7 @@
   <script src="js/11-action-logs.js"></script>
   <script src="js/13-digital-features.js"></script>
   <script src="js/14-reports.js"></script>
+  <script src="js/15-summary-plan.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

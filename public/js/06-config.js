@@ -1015,11 +1015,15 @@ const PERMISSIONS_ROLE_LABELS = { admin: "Admin", subadmin: "Sub-Admin", editor:
 // dòng "Không truy cập" riêng bên dưới) nên cố ý nhóm chung 1 tông màu.
 const PERMISSIONS_ROLE_CLASS = { admin: "status-hoan-thanh", subadmin: "status-hoan-thanh", editor: "status-dang-thuc-hien", bgd: "status-tru-diem", viewer: "status-default" };
 // "Nhiệm vụ — Chấm điểm" không có khái niệm "Thêm mới" (chỉ sửa điểm 1
-// task đã có sẵn); "Trang chủ" không có Thêm/Sửa nào (dashboard tổng hợp)
-// — khoá checkbox Add cho 2 chức năng này, mọi role.
-const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem", "trang_chu"]);
-// "Trang chủ" cũng không có Sửa — chỉ cột Đọc có ý nghĩa với chức năng này.
-const PERMISSIONS_NO_EDIT = new Set(["trang_chu"]);
+// task đã có sẵn); "Trang chủ"/"Báo cáo - Thống kê" không có Thêm/Sửa nào
+// (dashboard/trang tổng hợp thuần, xem NO_ADD_EDIT_FUNCTIONS ở
+// permission.service.ts) — khoá checkbox Add cho các chức năng này, mọi
+// role. "Kế hoạch tổng hợp" KHÔNG nằm trong set này — có CRUD thật (tab
+// "KQ xếp loại CBNV"), can_add/can_edit cấu hình được bình thường.
+const PERMISSIONS_NO_ADD = new Set(["nhiem_vu_cham_diem", "trang_chu", "bao_cao_thong_ke"]);
+// "Trang chủ"/"Báo cáo - Thống kê" cũng không có Sửa — chỉ cột Đọc có ý
+// nghĩa với 2 chức năng này.
+const PERMISSIONS_NO_EDIT = new Set(["trang_chu", "bao_cao_thong_ke"]);
 
 async function loadPermissionsConfig() {
   const tbody = document.getElementById("permissions-config-tbody");

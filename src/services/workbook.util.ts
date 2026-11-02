@@ -129,9 +129,36 @@ export function cellToDateTimeText(cell: ExcelJS.Cell): string {
   return cellToText(cell);
 }
 
-// Đọc worksheet đầu tiên: dòng 1 là tiêu đề cột, các dòng sau là dữ liệu.
-// Trả về mảng bản ghi keyed theo tiêu đề cột (đã trim). Dòng trống bị bỏ qua.
-// opts.dateWithTime: đọc ô kiểu Date kèm giờ:phút (cho cột thời điểm sự cố).
+// Dò dòng tiêu đề cột THẬT trong N dòng đầu — không cứng "luôn là dòng 1".
+// File .xlsx Xuất Excel của app (export.service.ts) có dòng 1 là Ô GỘP tiêu
+// đề báo cáo (VD "Yêu cầu tính năng") rồi mới tới dòng tiêu đề cột thật ở
+// dòng 3; nếu người dùng Xuất Excel rồi sửa lại để Nhập Excel lại (round-
+// trip, quy trình user thường dùng), đọc cứng dòng 1 sẽ ra "header" chỉ có
+// đúng 1 giá trị lặp lại (ô gộp đọc qua eachCell trả về cùng 1 giá trị ở
+// mọi ô trong vùng gộp) — không khớp được cột nào, báo lỗi "Không tìm thấy
+// cột...". Dò: dòng ĐẦU TIÊN (tối đa 10 dòng) có từ 2 giá trị KHÁC NHAU trở
+// lên mới coi là dòng tiêu đề cột thật; dòng chỉ có 1 giá trị lặp (ô gộp)
+// hoặc rỗng thì bỏ qua, dò tiếp xuống dưới. File mẫu/template thông thường
+// (header luôn ở dòng 1, không ô gộp) vẫn ra đúng dòng 1 ngay ở lượt dò đầu
+// tiên — không đổi hành vi cũ cho các file nhập bình thường.
+function findHeaderRowIndex(sheet: ExcelJS.Worksheet, toText: (cell: ExcelJS.Cell) => string): number {
+  const maxScan = Math.min(10, sheet.rowCount);
+  for (let r = 1; r <= maxScan; r++) {
+    const vals: string[] = [];
+    sheet.getRow(r).eachCell({ includeEmpty: false }, (cell) => {
+      const text = toText(cell).trim();
+      if (text) vals.push(text);
+    });
+    if (new Set(vals).size >= 2) return r;
+  }
+  return 1; // không dò được dòng nào hợp lệ — giữ hành vi cũ (dòng 1)
+}
+
+// Đọc worksheet đầu tiên: dòng tiêu đề cột (xem findHeaderRowIndex — thường
+// là dòng 1, trừ file Xuất Excel có dòng tiêu đề báo cáo gộp ở trên), các
+// dòng sau là dữ liệu. Trả về mảng bản ghi keyed theo tiêu đề cột (đã trim).
+// Dòng trống bị bỏ qua. opts.dateWithTime: đọc ô kiểu Date kèm giờ:phút
+// (cho cột thời điểm sự cố).
 export async function parseFirstSheet(
   buffer: Buffer,
   opts: { dateWithTime?: boolean } = {},
@@ -146,7 +173,8 @@ export async function parseFirstSheet(
   const sheet = workbook.worksheets[0];
   if (!sheet) return { headers: [], rows: [] };
 
-  const headerRow = sheet.getRow(1);
+  const headerRowIndex = findHeaderRowIndex(sheet, toText);
+  const headerRow = sheet.getRow(headerRowIndex);
   const headers: string[] = [];
   headerRow.eachCell({ includeEmpty: false }, (cell) => {
     const text = toText(cell).trim();
@@ -154,7 +182,7 @@ export async function parseFirstSheet(
   });
 
   const rows: Record<string, string>[] = [];
-  for (let r = 2; r <= sheet.rowCount; r++) {
+  for (let r = headerRowIndex + 1; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     if (row.cellCount === 0) continue;
     const isEmpty = headers.every((_, i) => toText(row.getCell(i + 1)).trim() === "");

@@ -52,6 +52,12 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
   "roadmap-items": { module: "Roadmap năm", entity: "Dòng roadmap", table: "roadmap_items", nameColumn: "nhiem_vu" },
   "roadmap-details": { module: "Roadmap năm", entity: "Chi tiết công việc theo tháng" },
   "feature-requests": { module: "Yêu cầu tính năng", entity: "Yêu cầu tính năng", table: "feature_requests", nameColumn: "tieu_de" },
+  "cbnv-xep-loai": {
+    module: "Kế hoạch tổng hợp",
+    entity: "KQ xếp loại CBNV",
+    table: "cbnv_xep_loai_records",
+    nameColumn: "ho_va_ten",
+  },
   "digital-features": { module: "Quản lý tính năng số hoá", entity: "Tính năng số hoá", table: "digital_features", nameColumn: "module" },
   // 4 đối tượng con của Tính năng số hoá — route phẳng (sửa/xóa 1 dòng:
   // /digital-feature-<tên>/:id). Không khai báo thì entity rơi về chính
@@ -130,6 +136,7 @@ const VERB_LABELS: Record<string, { action: ActionLogType; verb: string }> = {
   "mark-ton": { action: "cap_nhat", verb: "Đánh dấu Nhiệm vụ tồn" },
   "unmark-ton": { action: "cap_nhat", verb: "Bỏ đánh dấu Nhiệm vụ tồn" },
   import: { action: "tao_moi", verb: "Nhập Excel" },
+  "fetch-ki": { action: "cap_nhat", verb: "Lấy thông tin xếp loại" }, // POST /cbnv-xep-loai/fetch-ki
   "diem-chuan": { action: "cap_nhat", verb: "Sửa điểm chuẩn" },
   details: { action: "tao_moi", verb: "Thêm" }, // POST /roadmap-items/:id/details
   members: { action: "tao_moi", verb: "Thêm" }, // POST /tasks/:id/members

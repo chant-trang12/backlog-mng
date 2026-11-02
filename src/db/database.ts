@@ -49,6 +49,7 @@ import { migrateDigitalFeatureIntegrationTables } from "./migrations/digitalFeat
 import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { migrateGradeDeductionsTable } from "./migrations/gradeDeductions.js";
+import { migrateCbnvXepLoaiTable } from "./migrations/summaryPlan.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { migrateMenuVisibility } from "./migrations/menuVisibility.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -114,6 +115,9 @@ export async function initDatabase(): Promise<void> {
     await migrateMembersKiLyDo();
     // members.ghi_chu (Ghi chú tự do ở tab Nhân sự).
     await migrateMembersGhiChu();
+    // cbnv_xep_loai_records (trang "Kế hoạch tổng hợp" > tab "KQ xếp loại
+    // CBNV") — cần periods/departments/members đã tồn tại sẵn (các bước trên).
+    await migrateCbnvXepLoaiTable();
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();

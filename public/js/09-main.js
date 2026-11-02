@@ -11,6 +11,7 @@ const pages = {
   // trong `pages` để khi user bấm sang mục menu khác, trang này tự ẩn.
   "digital-feature-detail": document.getElementById("page-digital-feature-detail"),
   reports: document.getElementById("page-reports"),
+  "summary-plan": document.getElementById("page-summary-plan"),
   config: document.getElementById("page-config"),
   "feature-requests": document.getElementById("page-feature-requests"),
   "action-logs": document.getElementById("page-action-logs"),
@@ -62,6 +63,10 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // active sẵn trong HTML) nên tải ngay; chuyển sang tab "fr" từ tab khác
     // thì tự tải lại ở chính handler click pill (05-cskh.js).
     if (btn.dataset.page === "reports") loadReportsFr().catch((err) => showToast(err.message));
+    // Kế hoạch tổng hợp — tải lại mỗi lần vào trang (giống Yêu cầu tính
+    // năng/Tính năng số hoá) để thấy ngay dữ liệu mới (Import/Sửa/Xoá/Lấy
+    // thông tin xếp loại ở lần xem trước).
+    if (btn.dataset.page === "summary-plan") loadCbnvXepLoai().catch((err) => showToast(err.message));
     // Nhật ký hoạt động — tải danh mục lọc (module/user) + dữ liệu mỗi lần
     // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
     // Admin dùng, tránh gọi API thừa cho editor/viewer).

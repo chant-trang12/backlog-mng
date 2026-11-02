@@ -1287,11 +1287,11 @@ document.getElementById("fr-import-input")?.addEventListener("change", async () 
     const result = await res.json();
     await loadFeatureRequests();
 
-    // Phòng ban đích lấy theo cột "Phòng ban thực hiện" trong file (khớp
+    // Phòng ban đích lấy theo cột "Đơn vị thực hiện số hoá" trong file (khớp
     // theo tên/mã phòng); dòng TRỐNG cột này thì về phòng đang xem — hộp
     // thư của phòng đó hiển thị theo phòng đề xuất HOẶC phòng đích nên
     // người import luôn thấy được các dòng mình vừa nhập.
-    let msg = `Đã nhập ${result.imported} yêu cầu (Phòng ban đích lấy theo cột "Phòng ban thực hiện" trong file; trống thì về phòng đang xem).`;
+    let msg = `Đã nhập ${result.imported} yêu cầu (Phòng ban đích lấy theo cột "Đơn vị thực hiện số hoá" trong file; trống thì về phòng đang xem).`;
     if (result.skipped?.length) {
       const detail = result.skipped
         .slice(0, 5)

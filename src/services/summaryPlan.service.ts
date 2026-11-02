@@ -1,0 +1,145 @@
+import { db } from "../db/database.js";
+import type {
+  CbnvKiEntry,
+  CbnvXepLoaiRecord,
+  CbnvXepLoaiRecordWithDept,
+  UpsertCbnvXepLoaiInput,
+} from "../types/summaryPlan.js";
+import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
+import { softDeleteWhere } from "./softDelete.util.js";
+
+export async function getCbnvXepLoaiRecord(id: number): Promise<CbnvXepLoaiRecord | undefined> {
+  const row = await db("cbnv_xep_loai_records").where({ id, is_deleted: false }).first();
+  return row as CbnvXepLoaiRecord | undefined;
+}
+
+// Danh sách theo tháng (period_id) + phòng ban (department_id — null/
+// undefined = scope.all, không lọc gì; SCOPE_EMPTY đã bị chặn ở controller
+// trước khi gọi tới đây). Sắp theo Tổ nhóm rồi Họ và tên cho dễ nhìn theo
+// từng team liền kề nhau, khớp đúng bố cục bảng mẫu HR user gửi.
+export async function listCbnvXepLoai(periodId: number, departmentId?: number | null): Promise<CbnvXepLoaiRecordWithDept[]> {
+  const query = db("cbnv_xep_loai_records as r")
+    .leftJoin("departments as d", "d.id", "r.department_id")
+    .leftJoin("periods as p", "p.id", "r.period_id")
+    .select("r.*", "d.name as department_name", "p.label as period_label")
+    .where("r.period_id", periodId)
+    .where("r.is_deleted", false);
+  if (departmentId != null) query.where("r.department_id", departmentId);
+  const rows = await query.orderBy("r.to_nhom", "asc").orderBy("r.ho_va_ten", "asc");
+  return rows as CbnvXepLoaiRecordWithDept[];
+}
+
+export async function createCbnvXepLoaiRecords(
+  periodId: number,
+  departmentId: number,
+  rows: UpsertCbnvXepLoaiInput[],
+  scope: DataScope,
+): Promise<number> {
+  assertDepartmentInScope(scope, departmentId);
+  if (rows.length === 0) return 0;
+  await db("cbnv_xep_loai_records").insert(
+    rows.map((r) => ({
+      period_id: periodId,
+      department_id: departmentId,
+      ma_nhan_vien: r.ma_nhan_vien?.trim() || null,
+      ho_va_ten: r.ho_va_ten.trim(),
+      chuc_danh: r.chuc_danh?.trim() || null,
+      don_vi: r.don_vi?.trim() || null,
+      to_nhom: r.to_nhom?.trim() || null,
+      diem_danh_gia: r.diem_danh_gia ?? null,
+      xep_loai_ket_qua: r.xep_loai_ket_qua?.trim() || null,
+      tuan_thu_dia_diem: r.tuan_thu_dia_diem?.trim() || null,
+      tuan_thu_noi_quy: r.tuan_thu_noi_quy?.trim() || null,
+      xep_loai: r.xep_loai?.trim() || null,
+      xep_loai_muc_do: r.xep_loai_muc_do?.trim() || null,
+      chu_y: r.chu_y?.trim() || null,
+    })),
+  );
+  return rows.length;
+}
+
+export async function updateCbnvXepLoaiRecord(
+  id: number,
+  input: UpsertCbnvXepLoaiInput,
+  scope: DataScope,
+): Promise<CbnvXepLoaiRecord | undefined> {
+  const existing = await getCbnvXepLoaiRecord(id);
+  if (!existing) return undefined;
+  assertDepartmentInScope(scope, existing.department_id);
+
+  const [updated] = await db("cbnv_xep_loai_records")
+    .where({ id })
+    .update({
+      ma_nhan_vien: input.ma_nhan_vien?.trim() || null,
+      ho_va_ten: input.ho_va_ten.trim(),
+      chuc_danh: input.chuc_danh?.trim() || null,
+      don_vi: input.don_vi?.trim() || null,
+      to_nhom: input.to_nhom?.trim() || null,
+      diem_danh_gia: input.diem_danh_gia ?? null,
+      xep_loai_ket_qua: input.xep_loai_ket_qua?.trim() || null,
+      tuan_thu_dia_diem: input.tuan_thu_dia_diem?.trim() || null,
+      tuan_thu_noi_quy: input.tuan_thu_noi_quy?.trim() || null,
+      xep_loai: input.xep_loai?.trim() || null,
+      xep_loai_muc_do: input.xep_loai_muc_do?.trim() || null,
+      chu_y: input.chu_y?.trim() || null,
+      updated_at: db.fn.now(),
+    })
+    .returning("*");
+  return updated as CbnvXepLoaiRecord;
+}
+
+export async function deleteCbnvXepLoaiRecord(id: number, scope: DataScope): Promise<boolean> {
+  const existing = await getCbnvXepLoaiRecord(id);
+  if (!existing) return false;
+  assertDepartmentInScope(scope, existing.department_id);
+  const count = await softDeleteWhere(db, "cbnv_xep_loai_records", { id });
+  return count > 0;
+}
+
+// "Lấy thông tin xếp loại" — nhận kết quả Rank/KI ĐÃ TÍNH SẴN ở FE (dùng
+// đúng thuật toán Ranking team ở Trang chủ, không viết lại ở backend — xem
+// comment CbnvKiEntry) cho TOÀN BỘ team của phòng đang xem, rồi upsert theo
+// (period_id, department_id, member_id):
+// - Đã có dòng cho member đó trong tháng/phòng này -> chỉ cập nhật đúng 3
+//   trường suy ra từ ranking (ho_va_ten/to_nhom/xep_loai), GIỮ NGUYÊN các
+//   trường nhập tay khác (Điểm đánh giá/Xếp loại kết quả/Tuân thủ/Chú ý) —
+//   tránh bấm lại nút này xoá mất dữ liệu đã nhập.
+// - Chưa có dòng -> tạo mới, chỉ điền 3 trường đó, các trường còn lại để
+//   trống chờ nhập tay/Import.
+export async function upsertKiFromRanking(
+  periodId: number,
+  departmentId: number,
+  entries: CbnvKiEntry[],
+  scope: DataScope,
+): Promise<{ created: number; updated: number }> {
+  assertDepartmentInScope(scope, departmentId);
+  let created = 0;
+  let updated = 0;
+  await db.transaction(async (trx) => {
+    for (const entry of entries) {
+      const existing = await trx("cbnv_xep_loai_records")
+        .where({ period_id: periodId, department_id: departmentId, member_id: entry.member_id, is_deleted: false })
+        .first();
+      if (existing) {
+        await trx("cbnv_xep_loai_records").where({ id: existing.id }).update({
+          ho_va_ten: entry.ho_va_ten,
+          to_nhom: entry.to_nhom,
+          xep_loai: entry.xep_loai,
+          updated_at: trx.fn.now(),
+        });
+        updated++;
+      } else {
+        await trx("cbnv_xep_loai_records").insert({
+          period_id: periodId,
+          department_id: departmentId,
+          member_id: entry.member_id,
+          ho_va_ten: entry.ho_va_ten,
+          to_nhom: entry.to_nhom,
+          xep_loai: entry.xep_loai,
+        });
+        created++;
+      }
+    }
+  });
+  return { created, updated };
+}
