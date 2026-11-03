@@ -118,6 +118,11 @@ export async function fetchKiHandler(req: Request, res: Response) {
       ho_va_ten: String(e.ho_va_ten).trim(),
       to_nhom: String(e.to_nhom ?? "").trim(),
       xep_loai: String(e.xep_loai ?? "").trim(),
+      // e?.diem_danh_gia != null trước — Number(null) = 0 (hữu hạn!), dùng
+      // thẳng Number.isFinite(Number(null)) sẽ nhầm null thành 0 thay vì
+      // giữ đúng ý nghĩa "chưa có điểm quy đổi" (Xếp loại D/E/K).
+      diem_danh_gia: e?.diem_danh_gia != null && Number.isFinite(Number(e.diem_danh_gia)) ? Number(e.diem_danh_gia) : null,
+      xep_loai_ket_qua: e?.xep_loai_ket_qua != null ? String(e.xep_loai_ket_qua).trim() || null : null,
     }));
 
   const result = await upsertKiFromRanking(periodId, departmentId, parsed, scopeOf(req));

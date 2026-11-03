@@ -60,6 +60,7 @@ export async function createCbnvXepLoaiRecords(
       tuan_thu_noi_quy: r.tuan_thu_noi_quy?.trim() || null,
       xep_loai: r.xep_loai?.trim() || null,
       xep_loai_muc_do: r.xep_loai_muc_do?.trim() || null,
+      ghi_chu_de_xuat: r.ghi_chu_de_xuat?.trim() || null,
       chu_y: r.chu_y?.trim() || null,
     })),
   );
@@ -89,6 +90,7 @@ export async function updateCbnvXepLoaiRecord(
       tuan_thu_noi_quy: input.tuan_thu_noi_quy?.trim() || null,
       xep_loai: input.xep_loai?.trim() || null,
       xep_loai_muc_do: input.xep_loai_muc_do?.trim() || null,
+      ghi_chu_de_xuat: input.ghi_chu_de_xuat?.trim() || null,
       chu_y: input.chu_y?.trim() || null,
       updated_at: db.fn.now(),
     })
@@ -108,12 +110,19 @@ export async function deleteCbnvXepLoaiRecord(id: number, scope: DataScope): Pro
 // đúng thuật toán Ranking team ở Trang chủ, không viết lại ở backend — xem
 // comment CbnvKiEntry) cho TOÀN BỘ team của phòng đang xem, rồi upsert theo
 // (period_id, department_id, member_id):
-// - Đã có dòng cho member đó trong tháng/phòng này -> chỉ cập nhật đúng 3
-//   trường suy ra từ ranking (ho_va_ten/to_nhom/xep_loai), GIỮ NGUYÊN các
-//   trường nhập tay khác (Điểm đánh giá/Xếp loại kết quả/Tuân thủ/Chú ý) —
-//   tránh bấm lại nút này xoá mất dữ liệu đã nhập.
-// - Chưa có dòng -> tạo mới, chỉ điền 3 trường đó, các trường còn lại để
-//   trống chờ nhập tay/Import.
+// - Đã có dòng cho member đó trong tháng/phòng này -> cập nhật 5 trường suy
+//   ra từ ranking (ho_va_ten/to_nhom/xep_loai/diem_danh_gia/xep_loai_ket_qua
+//   — 2 trường sau quy đổi DÂY CHUYỀN từ xep_loai, xem CBNV_XEP_LOAI_DIEM/
+//   cbnvXepLoaiKetQuaFromDiem ở 15-summary-plan.js, nên luôn ĐI KÈM
+//   xep_loai, không coi là "nhập tay"), GIỮ NGUYÊN trường nhập tay còn lại
+//   (Chú ý) — tránh bấm lại nút này xoá mất dữ liệu đã nhập. RIÊNG Tuân thủ
+//   địa điểm/Nội quy + Xếp loại mức độ hoàn thành: mọi nhân sự qua "Lấy
+//   thông tin xếp loại" LUÔN cần hiện mặc định ("Tuân thủ"/"Tuân thủ"/
+//   "Hoàn thành" — user yêu cầu) — chỉ ĐIỀN KHI CÒN TRỐNG
+//   (existing?.x || "mặc định"), vẫn giữ nguyên nếu đã từng sửa tay thành
+//   giá trị khác (không ghi đè lựa chọn thật).
+// - Chưa có dòng -> tạo mới, điền 5 trường trên + 3 trường mặc định (Tuân
+//   thủ/Tuân thủ/Hoàn thành), trường Chú ý để trống chờ nhập tay/Import.
 export async function upsertKiFromRanking(
   periodId: number,
   departmentId: number,
@@ -133,6 +142,11 @@ export async function upsertKiFromRanking(
           ho_va_ten: entry.ho_va_ten,
           to_nhom: entry.to_nhom,
           xep_loai: entry.xep_loai,
+          diem_danh_gia: entry.diem_danh_gia,
+          xep_loai_ket_qua: entry.xep_loai_ket_qua,
+          tuan_thu_dia_diem: (existing as any).tuan_thu_dia_diem || "Tuân thủ",
+          tuan_thu_noi_quy: (existing as any).tuan_thu_noi_quy || "Tuân thủ",
+          xep_loai_muc_do: (existing as any).xep_loai_muc_do || "Hoàn thành",
           updated_at: trx.fn.now(),
         });
         updated++;
@@ -144,6 +158,11 @@ export async function upsertKiFromRanking(
           ho_va_ten: entry.ho_va_ten,
           to_nhom: entry.to_nhom,
           xep_loai: entry.xep_loai,
+          diem_danh_gia: entry.diem_danh_gia,
+          xep_loai_ket_qua: entry.xep_loai_ket_qua,
+          tuan_thu_dia_diem: "Tuân thủ",
+          tuan_thu_noi_quy: "Tuân thủ",
+          xep_loai_muc_do: "Hoàn thành",
         });
         created++;
       }

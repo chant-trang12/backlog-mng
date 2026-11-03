@@ -73,7 +73,7 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#summary-plan-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["cbnv", "gnv"].forEach((tab) => {
+    ["overtime", "cbnv", "gnv", "pptx"].forEach((tab) => {
       document.getElementById(`summary-plan-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
   });

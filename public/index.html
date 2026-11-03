@@ -105,12 +105,6 @@
                   <label for="home-filter-period">Tháng</label>
                   <select id="home-filter-period"></select>
                 </div>
-                <div id="home-filter-team-wrap">
-                  <label for="home-filter-team">Team</label>
-                  <select id="home-filter-team">
-                    <option value="">Tất cả team</option>
-                  </select>
-                </div>
               </div>
             </section>
 
@@ -2534,10 +2528,82 @@
         <div id="page-summary-plan" hidden>
           <div class="tab-panel-group">
           <div class="chrome-tabs" id="summary-plan-subnav">
-            <span class="pill active" data-tab="cbnv">KQ xếp loại CBNV</span>
+            <span class="pill active" data-tab="overtime">Làm thêm giờ</span>
+            <span class="pill" data-tab="cbnv">KQ xếp loại CBNV</span>
             <span class="pill" data-tab="gnv">GNV</span>
+            <span class="pill" data-tab="pptx">Báo cáo PowerPoint</span>
           </div>
-          <div id="summary-plan-tab-cbnv">
+          <div id="summary-plan-tab-overtime">
+            <section class="card">
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Làm thêm giờ</h2>
+                <div class="row" style="flex:0 0 auto">
+                  <button id="ot-add-btn" class="btn-view write-action">+ Thêm mới</button>
+                  <button id="ot-download-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải file mẫu</button>
+                  <button id="ot-import-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                  <input type="file" id="ot-import-input" accept=".xlsx,.xlsm" hidden />
+                  <button id="ot-export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom:12px;align-items:center">
+                <div>
+                  <label for="ot-period-select" style="margin:0">Tháng theo dõi</label>
+                  <select id="ot-period-select"></select>
+                </div>
+                <div>
+                  <label for="ot-search" style="margin:0">Tìm kiếm</label>
+                  <input type="text" id="ot-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+                </div>
+              </div>
+              <div class="table-wrap" id="ot-table-wrap">
+                <table id="ot-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width:60px">Stt</th>
+                      <th rowspan="2" style="min-width:120px">Ngày tác động/làm thêm giờ</th>
+                      <th rowspan="2" style="min-width:260px">Nội dung tác động</th>
+                      <th rowspan="2" style="min-width:120px">Số kế hoạch tác động</th>
+                      <th rowspan="2" style="min-width:160px">Địa điểm tác động</th>
+                      <th colspan="2">Người thực hiện</th>
+                      <th rowspan="2" style="min-width:140px">Đơn vị</th>
+                      <th rowspan="2" style="min-width:120px">Bộ phận</th>
+                      <th rowspan="2" style="min-width:140px">Khoảng thời gian tác động</th>
+                      <th colspan="2">Làm thêm vào ban ngày</th>
+                      <th colspan="2">Làm thêm vào ban đêm</th>
+                      <th rowspan="2" style="min-width:200px">Ghi chú</th>
+                      <th rowspan="2" style="min-width:120px"></th>
+                    </tr>
+                    <tr>
+                      <th style="min-width:110px">Mã Nhân viên</th>
+                      <th style="min-width:150px">Họ và Tên</th>
+                      <th style="min-width:70px">Số giờ</th>
+                      <th style="min-width:70px">Số ngày</th>
+                      <th style="min-width:70px">Số giờ</th>
+                      <th style="min-width:70px">Số ngày</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ot-tbody"></tbody>
+                </table>
+                <p class="muted" id="ot-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu làm thêm giờ ở tháng/phòng ban đang xem.</p>
+              </div>
+              <div class="pagination-bar" id="ot-pagination">
+                <div class="row">
+                  <label for="ot-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="ot-page-size">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <button type="button" id="ot-page-prev" class="small">‹ Trước</button>
+                  <span id="ot-page-info" class="muted"></span>
+                  <button type="button" id="ot-page-next" class="small">Sau ›</button>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div id="summary-plan-tab-cbnv" hidden>
             <section class="card">
               <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
                 <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">KQ xếp loại CBNV</h2>
@@ -2571,6 +2637,7 @@
                       <th rowspan="2" style="min-width:140px">Phòng ban</th>
                       <th rowspan="2" style="min-width:100px">Tổ nhóm</th>
                       <th colspan="6" id="cbnv-group-ketqua">Kết quả hoàn thành nhiệm vụ/công việc</th>
+                      <th rowspan="2" style="min-width:220px">Ghi chú, đề xuất của người quản lý trực tiếp với CBNV</th>
                       <th rowspan="2" style="min-width:200px">Chú ý</th>
                       <th rowspan="2" style="min-width:140px"></th>
                     </tr>
@@ -2604,14 +2671,241 @@
               </div>
             </section>
           </div>
+          <div id="summary-plan-tab-pptx" hidden>
+            <section class="card">
+              <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h2 style="margin:0">Báo cáo PowerPoint</h2>
+                <div class="gnv-seg" id="pptx-view-seg" style="min-width:300px">
+                  <button type="button" class="gnv-seg-btn active" data-view="report">Báo cáo</button>
+                  <button type="button" class="gnv-seg-btn" data-view="template">Mẫu PowerPoint</button>
+                </div>
+              </div>
+              <div id="pptx-report-root"></div>
+              <div id="pptx-template-root" hidden></div>
+              <input type="file" id="pptx-template-input" accept=".pptx" hidden />
+            </section>
+          </div>
           <div id="summary-plan-tab-gnv" hidden>
             <section class="card">
-              <h2>GNV</h2>
-              <p class="muted">Đang chờ bổ sung nội dung.</p>
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">GNV</h2>
+                <div class="row" style="flex:0 0 auto">
+                  <button id="gnv-copy-btn" class="btn-edit write-action">Sao chép từ tháng khác</button>
+                  <button id="gnv-add-group-btn" class="btn-view write-action">+ Thêm nhóm</button>
+                  <button id="gnv-export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom:12px;align-items:center">
+                <div>
+                  <label for="gnv-period-select" style="margin:0">Tháng theo dõi</label>
+                  <select id="gnv-period-select"></select>
+                </div>
+              </div>
+              <div class="table-wrap" id="gnv-table-wrap">
+                <table id="gnv-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width:60px">STT</th>
+                      <th rowspan="2" style="min-width:240px">Mục tiêu nhiệm vụ/công việc</th>
+                      <th rowspan="2" style="min-width:150px">Chỉ số đo lường KPI</th>
+                      <th rowspan="2" style="min-width:260px">Phương pháp đo</th>
+                      <th rowspan="2" style="min-width:90px">Đơn vị đo</th>
+                      <th rowspan="2" style="min-width:80px">Tỷ trọng (%)</th>
+                      <th colspan="3">Các mức chỉ tiêu</th>
+                      <th rowspan="2" style="min-width:110px">Ngày bắt đầu</th>
+                      <th rowspan="2" style="min-width:110px">Ngày hoàn thành</th>
+                      <th colspan="3">Đánh giá kết quả thực hiện mục tiêu nhiệm vụ/công việc</th>
+                      <th rowspan="2" style="min-width:170px"></th>
+                    </tr>
+                    <tr>
+                      <th style="min-width:90px">Tối thiểu<br/>(T - Threshold)</th>
+                      <th style="min-width:90px">Mong đợi<br/>(B- Base)</th>
+                      <th style="min-width:90px">Thách thức<br/>(S- Stretch)</th>
+                      <th style="min-width:220px">Kết quả thực hiện chỉ tiêu</th>
+                      <th style="min-width:90px">CBNV tự đánh giá (Điểm 1-5)</th>
+                      <th style="min-width:90px">QLTT đánh giá (Điểm 1-5)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gnv-tbody"></tbody>
+                </table>
+                <p class="muted" id="gnv-empty" hidden style="padding:16px;text-align:center">Chưa có nhóm nào ở tháng/phòng ban đang xem. Bấm "Thêm nhóm" để bắt đầu.</p>
+              </div>
             </section>
           </div>
           </div>
         </div>
+
+        <!-- Dialog Làm thêm giờ: thêm/sửa -->
+        <dialog id="ot-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="ot-form" method="dialog">
+            <h2 id="ot-dialog-title">Thêm mới làm thêm giờ</h2>
+            <div class="field-row ot-shared-field"><label for="ot-f-ngay">Ngày tác động/làm thêm giờ</label><input type="date" id="ot-f-ngay" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-noi-dung">Nội dung tác động</label><textarea id="ot-f-noi-dung" rows="2"></textarea></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-so-ke-hoach">Số kế hoạch tác động</label><input type="text" id="ot-f-so-ke-hoach" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-dia-diem">Địa điểm tác động</label><select id="ot-f-dia-diem">
+              <option value="">—</option>
+              <option value="TT DL Hòa Lạc">TT DL Hòa Lạc</option>
+              <option value="TT DL Pháp Vân">TT DL Pháp Vân</option>
+              <option value="TT DL Hoàng Hoa Thám">TT DL Hoàng Hoa Thám</option>
+              <option value="TT DL Bình Dương">TT DL Bình Dương</option>
+            </select></div>
+            <div class="field-row"><label for="ot-f-ma-nv">Mã Nhân viên</label><input type="text" id="ot-f-ma-nv" /></div>
+            <div class="field-row"><label for="ot-f-ho-ten">Họ và Tên</label><select id="ot-f-ho-ten"></select></div>
+            <div class="field-row"><label for="ot-f-don-vi">Đơn vị</label><input type="text" id="ot-f-don-vi" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-bo-phan">Bộ phận</label><input type="text" id="ot-f-bo-phan" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-khoang">Khoảng thời gian tác động</label><input type="text" id="ot-f-khoang" placeholder="VD: 22h00 - 02h00" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-ca">Tác động</label><select id="ot-f-ca">
+              <option value="">—</option>
+              <option value="Tác động ban ngày">Tác động ban ngày</option>
+              <option value="Tác động ban đêm">Tác động ban đêm</option>
+            </select></div>
+            <div class="field-row ot-shared-field ot-day-field"><label for="ot-f-ngay-gio">Ban ngày — Số giờ</label><input type="number" min="0" step="any" id="ot-f-ngay-gio" /></div>
+            <div class="field-row ot-shared-field ot-day-field"><label for="ot-f-ngay-ngay">Ban ngày — Số ngày</label><input type="number" id="ot-f-ngay-ngay" readonly tabindex="-1" placeholder="Tự tính = Số giờ / 8" /></div>
+            <div class="field-row ot-shared-field ot-night-field"><label for="ot-f-dem-gio">Ban đêm — Số giờ</label><input type="number" min="0" step="any" id="ot-f-dem-gio" /></div>
+            <div class="field-row ot-shared-field ot-night-field"><label for="ot-f-dem-ngay">Ban đêm — Số ngày</label><input type="number" id="ot-f-dem-ngay" readonly tabindex="-1" placeholder="Tự tính = Số giờ / 8" /></div>
+            <div class="field-row ot-shared-field"><label for="ot-f-ghi-chu">Ghi chú</label><textarea id="ot-f-ghi-chu" rows="2"></textarea></div>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="ot-cancel-btn" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Dialog Báo cáo PowerPoint: xác nhận thay file mẫu (so sánh mã giữ chỗ) -->
+        <dialog id="pptx-diff-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="pptx-diff-form" method="dialog">
+            <h2 style="margin-top:0">Thay file mẫu</h2>
+            <p class="muted" id="pptx-diff-intro"></p>
+            <div id="pptx-diff-body"></div>
+            <div class="row" style="justify-content:flex-end;margin-top:14px">
+              <button type="button" id="pptx-diff-cancel" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Áp dụng</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Dialog GNV: tên nhóm -->
+        <dialog id="gnv-group-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="gnv-group-form" method="dialog">
+            <h2 id="gnv-group-title">Thêm nhóm</h2>
+            <div class="field-row">
+              <label for="gnv-group-name">Tên nhóm (VD: NHÓM KPI VỀ QUY TRÌNH VẬN HÀNH NỘI BỘ)</label>
+              <input type="text" id="gnv-group-name" required />
+            </div>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="gnv-group-cancel-btn" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Dialog GNV: thêm/sửa dòng nhiệm vụ -->
+        <dialog id="gnv-item-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="gnv-item-form" method="dialog">
+            <h2 id="gnv-item-title">Thêm nhiệm vụ</h2>
+            <div class="field-row gnv-shared-field"><label for="gnv-f-muc-tieu">Mục tiêu nhiệm vụ/công việc</label><textarea id="gnv-f-muc-tieu" rows="2"></textarea></div>
+            <div class="field-row gnv-shared-field"><label for="gnv-f-chi-so-kpi">Chỉ số đo lường KPI</label><input type="text" id="gnv-f-chi-so-kpi" /></div>
+            <div class="field-row"><label for="gnv-f-phuong-phap-do">Phương pháp đo</label><textarea id="gnv-f-phuong-phap-do" rows="2"></textarea></div>
+            <div class="field-row gnv-shared-field"><label for="gnv-f-don-vi-do">Đơn vị đo</label><select id="gnv-f-don-vi-do">
+              <option value="">—</option>
+              <option value="Thời gian">Thời gian</option>
+              <option value="Số lượng">Số lượng</option>
+              <option value="Tỷ lệ %">Tỷ lệ %</option>
+              <option value="Điểm">Điểm</option>
+            </select></div>
+            <div class="field-row gnv-shared-field"><label for="gnv-f-ty-trong">Tỷ trọng (%)</label><input type="number" min="0" max="100" step="any" id="gnv-f-ty-trong" /></div>
+            <div class="field-row"><label for="gnv-f-toi-thieu">Mức tối thiểu (T - Threshold)</label><input type="text" id="gnv-f-toi-thieu" /></div>
+            <div class="field-row"><label for="gnv-f-mong-doi">Mức mong đợi (B- Base)</label><input type="text" id="gnv-f-mong-doi" /></div>
+            <div class="field-row"><label for="gnv-f-thach-thuc">Mức thách thức (S- Stretch)</label><input type="text" id="gnv-f-thach-thuc" /></div>
+            <div class="field-row"><label for="gnv-f-bat-dau">Ngày bắt đầu</label><input type="date" id="gnv-f-bat-dau" /></div>
+            <div class="field-row"><label for="gnv-f-hoan-thanh">Ngày hoàn thành</label><input type="date" id="gnv-f-hoan-thanh" /></div>
+            <div class="field-row"><label for="gnv-f-ket-qua">Kết quả thực hiện chỉ tiêu</label><textarea id="gnv-f-ket-qua" rows="2"></textarea></div>
+            <div class="field-row"><label for="gnv-f-cbnv">CBNV tự đánh giá (Điểm 1-5)</label><input type="number" min="1" max="5" step="any" id="gnv-f-cbnv" /></div>
+            <div class="field-row"><label for="gnv-f-qltt">QLTT đánh giá (Điểm 1-5)</label><input type="number" min="1" max="5" step="any" id="gnv-f-qltt" /></div>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="gnv-item-cancel-btn" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+
+        <!-- Dialog GNV: sao chép nhóm + mục tiêu từ tháng khác -->
+        <dialog id="gnv-copy-dialog" class="gnv-pick-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="gnv-copy-form" method="dialog">
+            <header class="gnv-pick-head">
+              <h2>Sao chép từ tháng khác</h2>
+              <div class="gnv-pick-chips">
+                <span class="gnv-chip" id="gnv-copy-target"></span>
+              </div>
+            </header>
+            <div class="gnv-pick-section">
+              <div class="gnv-pick-label">Tháng nguồn</div>
+              <select id="gnv-copy-source" style="width:100%;box-sizing:border-box"></select>
+              <label class="gnv-pick-all" style="margin-top:10px"><input type="checkbox" id="gnv-copy-methods" checked /> Kèm tên các Phương pháp đo</label>
+              <p class="gnv-pick-hint">Chỉ chép Nhóm, Mục tiêu, Chỉ số KPI, Đơn vị đo, Tỷ trọng (và tên Phương pháp đo). Mức chỉ tiêu, ngày, kết quả và điểm đánh giá không được chép. Nhóm/mục tiêu đã có ở tháng này sẽ không bị nhân đôi.</p>
+            </div>
+            <div class="gnv-pick-section">
+              <div class="gnv-pick-toolbar">
+                <span class="gnv-pick-label" style="margin:0;flex:1">Chọn nhóm và mục tiêu</span>
+                <label class="gnv-pick-all"><input type="checkbox" id="gnv-copy-all" /> Chọn tất cả</label>
+              </div>
+              <div id="gnv-copy-list" class="gnv-pick-list"></div>
+            </div>
+            <footer class="gnv-pick-foot">
+              <span class="gnv-pick-count" id="gnv-copy-count">Chưa chọn mục tiêu nào</span>
+              <div class="row">
+                <button type="button" id="gnv-copy-cancel-btn" class="small">Huỷ</button>
+                <button type="submit" class="primary small" id="gnv-copy-submit" disabled>Sao chép</button>
+              </div>
+            </footer>
+          </form>
+        </dialog>
+
+        <!-- Dialog GNV: lấy nhiệm vụ từ Backlog -->
+        <dialog id="gnv-pick-dialog" class="gnv-pick-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="gnv-pick-form" method="dialog">
+            <header class="gnv-pick-head">
+              <h2>Lấy nhiệm vụ từ Backlog</h2>
+              <div class="gnv-pick-chips">
+                <span class="gnv-chip" id="gnv-pick-period"></span>
+                <span class="gnv-chip gnv-chip-soft" id="gnv-pick-total"></span>
+              </div>
+            </header>
+
+            <div class="gnv-pick-section">
+              <div class="gnv-pick-label">Cách thêm</div>
+              <div class="gnv-seg" id="gnv-pick-seg" role="tablist">
+                <button type="button" class="gnv-seg-btn active" data-mode="each">Mỗi nhiệm vụ 1 mục tiêu</button>
+                <button type="button" class="gnv-seg-btn" data-mode="merge">Gộp vào 1 mục tiêu mới</button>
+                <button type="button" class="gnv-seg-btn" data-mode="parent">Vào mục tiêu có sẵn</button>
+              </div>
+              <select id="gnv-pick-parent" hidden></select>
+              <p class="gnv-pick-hint" id="gnv-pick-hint"></p>
+            </div>
+
+            <div class="gnv-pick-section">
+              <div class="gnv-pick-toolbar">
+                <input type="search" id="gnv-pick-search" placeholder="Tìm theo tên nhiệm vụ hoặc team…" />
+                <label class="gnv-pick-all"><input type="checkbox" id="gnv-pick-all" /> Chọn tất cả</label>
+              </div>
+              <div id="gnv-pick-list" class="gnv-pick-list"></div>
+            </div>
+
+            <footer class="gnv-pick-foot">
+              <span class="gnv-pick-count" id="gnv-pick-count">Chưa chọn nhiệm vụ nào</span>
+              <div class="row">
+                <button type="button" id="gnv-pick-cancel-btn" class="small">Huỷ</button>
+                <button type="submit" class="primary small" id="gnv-pick-submit" disabled>Thêm vào nhóm</button>
+              </div>
+            </footer>
+          </form>
+        </dialog>
 
         <!-- Dialog "Sửa KQ xếp loại CBNV" -->
         <dialog id="cbnv-edit-dialog">
@@ -2643,7 +2937,15 @@
             </div>
             <div class="field-row">
               <label for="cbnv-f-xep-loai-ket-qua">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</label>
-              <input type="text" id="cbnv-f-xep-loai-ket-qua" />
+              <select id="cbnv-f-xep-loai-ket-qua">
+                <option value="">—</option>
+                <option value="Vượt xa yêu cầu">Vượt xa yêu cầu</option>
+                <option value="Vượt yêu cầu">Vượt yêu cầu</option>
+                <option value="Đạt yêu cầu">Đạt yêu cầu</option>
+                <option value="Gần đạt yêu cầu">Gần đạt yêu cầu</option>
+                <option value="Không đạt yêu cầu">Không đạt yêu cầu</option>
+                <option value="Không đánh giá">Không đánh giá</option>
+              </select>
             </div>
             <div class="field-row">
               <label for="cbnv-f-tuan-thu-dia-diem">Tuân thủ địa điểm làm việc</label>
@@ -2676,6 +2978,10 @@
             <div class="field-row">
               <label for="cbnv-f-xep-loai-muc-do">Xếp loại mức độ hoàn thành nhiệm vụ/công việc</label>
               <input type="text" id="cbnv-f-xep-loai-muc-do" />
+            </div>
+            <div class="field-row">
+              <label for="cbnv-f-ghi-chu">Ghi chú, đề xuất của người quản lý trực tiếp với CBNV</label>
+              <textarea id="cbnv-f-ghi-chu" rows="2"></textarea>
             </div>
             <div class="field-row">
               <label for="cbnv-f-chu-y">Chú ý</label>
@@ -4167,6 +4473,8 @@
   <script src="js/13-digital-features.js"></script>
   <script src="js/14-reports.js"></script>
   <script src="js/15-summary-plan.js"></script>
+  <script src="js/16-overtime.js"></script>
+  <script src="js/17-pptx-reports.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

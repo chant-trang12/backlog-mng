@@ -386,6 +386,10 @@ const CBNV_HEADERS_MID = [
 // file xuất ra (user phản hồi kèm ảnh chụp: đúng ra là 2 cột cạnh nhau).
 const CBNV_HEADERS_RIGHT = ["Ghi chú, đề xuất của người quản lý trực tiếp với CBNV", "Chú ý"];
 const CBNV_TOTAL_COLUMNS = CBNV_HEADERS_LEFT.length + CBNV_HEADERS_MID.length + CBNV_HEADERS_RIGHT.length;
+// Màu tiêu đề khớp bảng web (#cbnv-table trong style.css).
+const CBNV_TEAL = "FF179188";
+const CBNV_GREEN_LIGHT = "FF2EC48F";
+const CBNV_GREEN_DARK = "FF21A844";
 const CBNV_COLUMN_WIDTHS = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 30, 24];
 
 export async function exportCbnvXepLoaiToExcel(
@@ -417,7 +421,7 @@ export async function exportCbnvXepLoaiToExcel(
     cell.value = label;
     cell.font = { bold: true, color: { argb: HEADER_FONT } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    fillCell(cell, HEADER_FILL);
+    fillCell(cell, CBNV_TEAL);
     cell.border = THIN_BORDER;
     col++;
   });
@@ -427,14 +431,14 @@ export async function exportCbnvXepLoaiToExcel(
   midGroupCell.value = `Kết quả hoàn thành nhiệm vụ/công việc ${periodLabel}`;
   midGroupCell.font = { bold: true, color: { argb: HEADER_FONT } };
   midGroupCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-  fillCell(midGroupCell, HEADER_FILL);
+  fillCell(midGroupCell, CBNV_TEAL);
   midGroupCell.border = THIN_BORDER;
-  CBNV_HEADERS_MID.forEach((label) => {
+  CBNV_HEADERS_MID.forEach((label, i) => {
     const cell = sheet.getCell(headerRow, col);
     cell.value = label;
     cell.font = { bold: true, color: { argb: HEADER_FONT } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    fillCell(cell, HEADER_FILL);
+    fillCell(cell, i < 4 ? CBNV_GREEN_LIGHT : CBNV_GREEN_DARK);
     cell.border = THIN_BORDER;
     col++;
   });
@@ -444,7 +448,7 @@ export async function exportCbnvXepLoaiToExcel(
     cell.value = label;
     cell.font = { bold: true, color: { argb: HEADER_FONT } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    fillCell(cell, HEADER_FILL);
+    fillCell(cell, CBNV_TEAL);
     cell.border = THIN_BORDER;
     col++;
   });
@@ -467,7 +471,7 @@ export async function exportCbnvXepLoaiToExcel(
       r.tuan_thu_noi_quy ?? "",
       r.xep_loai ?? "",
       r.xep_loai_muc_do ?? "",
-      "", // cột "Ghi chú, đề xuất của người quản lý trực tiếp với CBNV" — để trống, HR tự điền
+      r.ghi_chu_de_xuat ?? "",
       r.chu_y ?? "",
     ];
     values.forEach((val, colIdx) => {
@@ -482,5 +486,268 @@ export async function exportCbnvXepLoaiToExcel(
   sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: CBNV_TOTAL_COLUMNS } };
   sheet.views = [{ state: "frozen", ySplit: headerRow }];
 
+  return workbook.xlsx.writeBuffer();
+}
+
+// ---- Xuất Excel tab "GNV" — bố cục như bảng mẫu: 2 hàng tiêu đề (nhóm cột
+// "Các mức chỉ tiêu"/"Đánh giá kết quả..." gộp ngang, còn lại gộp dọc), mỗi
+// NHÓM lớn là 1 hàng cam (số La Mã + tên nhóm + tổng tỷ trọng) rồi tới các
+// dòng nhiệm vụ của nhóm.
+const GNV_TEAL = "FF179188";
+const GNV_ORANGE = "FFFFC000";
+const GNV_WIDTHS = [6, 36, 22, 40, 14, 10, 12, 12, 12, 14, 14, 36, 12, 12];
+
+function toRoman(n: number): string {
+  const map: [number, string][] = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+  let out = "";
+  for (const [v, s] of map) while (n >= v) { out += s; n -= v; }
+  return out;
+}
+function gnvLevel(unit: string | null, v: string | null): string {
+  if (!v) return "";
+  if (unit === "Thời gian") return gnvDate(v);
+  if (unit === "Tỷ lệ %") return `${v}%`;
+  return v;
+}
+function gnvDate(v: string | null): string {
+  if (!v) return "";
+  const [y, m, d] = v.slice(0, 10).split("-");
+  return y && m && d ? `${d}/${m}/${y}` : v;
+}
+
+export async function exportGnvToExcel(
+  groups: import("../types/summaryPlan.js").GnvGroupWithItems[],
+  periodLabel: string,
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("GNV");
+  sheet.columns = GNV_WIDTHS.map((width) => ({ width }));
+  const total = GNV_WIDTHS.length;
+
+  sheet.mergeCells(1, 1, 1, total);
+  const title = sheet.getCell(1, 1);
+  title.value = `GNV — ${periodLabel}`;
+  title.font = { bold: true, size: 14 };
+  title.alignment = { horizontal: "center", vertical: "middle" };
+  fillCell(title, TITLE_FILL);
+  sheet.getRow(1).height = 24;
+
+  const g = 3;
+  const h = 4;
+  const head = (r: number, c: number, label: string) => {
+    const cell = sheet.getCell(r, c);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: HEADER_FONT } };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, GNV_TEAL);
+    cell.border = THIN_BORDER;
+  };
+  const tall = (c: number, label: string) => {
+    sheet.mergeCells(g, c, h, c);
+    head(g, c, label);
+  };
+  tall(1, "STT");
+  tall(2, "Mục tiêu nhiệm vụ/công việc");
+  tall(3, "Chỉ số đo lường KPI");
+  tall(4, "Phương pháp đo");
+  tall(5, "Đơn vị đo");
+  tall(6, "Tỷ trọng (%)");
+  sheet.mergeCells(g, 7, g, 9);
+  head(g, 7, "Các mức chỉ tiêu");
+  ["Tối thiểu (T - Threshold)", "Mong đợi (B- Base)", "Thách thức (S- Stretch)"].forEach((l, i) => head(h, 7 + i, l));
+  tall(10, "Ngày bắt đầu");
+  tall(11, "Ngày hoàn thành");
+  sheet.mergeCells(g, 12, g, 14);
+  head(g, 12, "Đánh giá kết quả thực hiện mục tiêu nhiệm vụ/công việc");
+  ["Kết quả thực hiện chỉ tiêu", "CBNV tự đánh giá (Điểm 1-5)", "QLTT đánh giá (Điểm 1-5)"].forEach((l, i) => head(h, 12 + i, l));
+  sheet.getRow(g).height = 22;
+  sheet.getRow(h).height = 40;
+
+  let r = h + 1;
+  groups.forEach((grp, gi) => {
+    const sum = grp.items.reduce((s, it) => s + (it.parent_item_id == null ? it.ty_trong ?? 0 : 0), 0);
+    const groupVals: (string | number)[] = [toRoman(gi + 1), grp.ten_nhom, "", "", "", grp.items.some((i) => i.ty_trong != null) ? `${Math.round(sum * 100) / 100}%` : ""];
+    for (let c = 1; c <= total; c++) {
+      const cell = sheet.getCell(r, c);
+      cell.value = groupVals[c - 1] ?? "";
+      cell.font = { bold: true };
+      cell.alignment = { vertical: "middle", horizontal: c === 2 ? "left" : "center", wrapText: true };
+      fillCell(cell, GNV_ORANGE);
+      cell.border = THIN_BORDER;
+    }
+    r++;
+    // Mục tiêu (dòng cha) + các phương pháp đo con: Mục tiêu/Chỉ số KPI/Đơn
+    // vị đo/Tỷ trọng gộp dọc theo số dòng của khối, giống bảng mẫu.
+    const heads = grp.items.filter((x) => x.parent_item_id == null);
+    heads.forEach((head, hi) => {
+      const block = [head, ...grp.items.filter((x) => x.parent_item_id === head.id)];
+      const startRow = r;
+      block.forEach((it, bi) => {
+        const isHead = bi === 0;
+        const vals = [
+          isHead ? hi + 1 : "", isHead ? head.muc_tieu ?? "" : "", isHead ? head.chi_so_kpi ?? "" : "",
+          it.phuong_phap_do ?? "", isHead ? head.don_vi_do ?? "" : "",
+          isHead && head.ty_trong != null ? `${head.ty_trong}%` : "",
+          gnvLevel(head.don_vi_do, it.muc_toi_thieu), gnvLevel(head.don_vi_do, it.muc_mong_doi), gnvLevel(head.don_vi_do, it.muc_thach_thuc),
+          gnvDate(it.ngay_bat_dau), gnvDate(it.ngay_hoan_thanh), it.ket_qua_thuc_hien ?? "",
+          it.cbnv_tu_danh_gia ?? "", it.qltt_danh_gia ?? "",
+        ];
+        vals.forEach((v, ci) => {
+          const cell = sheet.getCell(r, ci + 1);
+          cell.value = v;
+          const left = ci === 1 || ci === 2 || ci === 3 || ci === 11;
+          cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
+          cell.border = THIN_BORDER;
+        });
+        r++;
+      });
+      if (block.length > 1) {
+        [1, 2, 3, 5, 6].forEach((c) => sheet.mergeCells(startRow, c, r - 1, c));
+      }
+    });
+  });
+
+  // Dòng tổng Tỷ trọng cuối bảng (chỉ cộng dòng mục tiêu): dòng nền xanh nhạt
+  // "N%" rồi dòng "Σ = N%".
+  if (groups.length > 0) {
+    const totalWeight =
+      Math.round(
+        groups.flatMap((x) => x.items).filter((i) => i.parent_item_id == null).reduce((s, i) => s + (i.ty_trong ?? 0), 0) * 100,
+      ) / 100;
+    [`${totalWeight}%`, `Σ = ${totalWeight}%`].forEach((label, k) => {
+      for (let c = 1; c <= total; c++) {
+        const cell = sheet.getCell(r, c);
+        cell.value = c === 6 ? label : "";
+        cell.font = { bold: true, color: totalWeight > 100 ? { argb: "FFC00000" } : undefined };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        if (k === 0) fillCell(cell, "FFDBEEF3");
+        cell.border = THIN_BORDER;
+      }
+      r++;
+    });
+  }
+
+  sheet.views = [{ state: "frozen", ySplit: h }];
+  return workbook.xlsx.writeBuffer();
+}
+
+// ---- Tab "Làm thêm giờ": bố cục 2 hàng tiêu đề như bảng mẫu (nhóm "Người thực
+// hiện", "Làm thêm vào ban ngày/ban đêm" gộp ngang, còn lại gộp dọc), tiêu
+// đề nền xanh lá nhạt chữ đậm. Dùng chung cho File mẫu (không có dòng tiêu đề
+// báo cáo) và Xuất Excel (có dòng 1 tiêu đề báo cáo).
+const OT_HEADER_FILL = "FFE2EFDA";
+const OT_WIDTHS = [6, 16, 40, 16, 22, 14, 22, 18, 18, 22, 10, 10, 10, 10, 26];
+
+export function buildOvertimeWorkbook(
+  rows: import("../types/summaryPlan.js").OvertimeRecord[],
+  opts: { title?: string; sample?: boolean } = {},
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("Làm thêm giờ");
+  sheet.columns = OT_WIDTHS.map((width) => ({ width }));
+  const total = OT_WIDTHS.length;
+
+  let top = 1;
+  if (opts.title) {
+    sheet.mergeCells(1, 1, 1, total);
+    const t = sheet.getCell(1, 1);
+    t.value = opts.title;
+    t.font = { bold: true, size: 14 };
+    t.alignment = { horizontal: "center", vertical: "middle" };
+    sheet.getRow(1).height = 24;
+    top = 3;
+  }
+  const g = top;
+  const h = top + 1;
+  const head = (r: number, c: number, label: string) => {
+    const cell = sheet.getCell(r, c);
+    cell.value = label;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, OT_HEADER_FILL);
+    cell.border = THIN_BORDER;
+  };
+  const tall = (c: number, label: string) => {
+    sheet.mergeCells(g, c, h, c);
+    head(g, c, label);
+  };
+  tall(1, "Stt");
+  tall(2, "Ngày tác động/làm thêm giờ");
+  tall(3, "Nội dung tác động");
+  tall(4, "Số kế hoạch tác động");
+  tall(5, "Địa điểm tác động");
+  sheet.mergeCells(g, 6, g, 7);
+  head(g, 6, "Người thực hiện");
+  head(h, 6, "Mã Nhân viên");
+  head(h, 7, "Họ và Tên");
+  tall(8, "Đơn vị");
+  tall(9, "Bộ phận");
+  tall(10, "Khoảng thời gian tác động");
+  sheet.mergeCells(g, 11, g, 12);
+  head(g, 11, "Làm thêm vào ban ngày");
+  head(h, 11, "Số giờ");
+  head(h, 12, "Số ngày");
+  sheet.mergeCells(g, 13, g, 14);
+  head(g, 13, "Làm thêm vào ban đêm");
+  head(h, 13, "Số giờ");
+  head(h, 14, "Số ngày");
+  tall(15, "Ghi chú");
+  sheet.getRow(g).height = 22;
+  sheet.getRow(h).height = 30;
+
+  const dateText = (v: string | null) => {
+    if (!v) return "";
+    const [y, m, d] = v.slice(0, 10).split("-");
+    return y && m && d ? `${d}/${m}/${y}` : v;
+  };
+  const styleCell = (r: number, ci: number, v: string | number) => {
+    const cell = sheet.getCell(r, ci + 1);
+    cell.value = v;
+    const left = ci === 2 || ci === 4 || ci === 14;
+    cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
+    cell.border = THIN_BORDER;
+  };
+  // Giá trị dùng chung cả lượt tác động (Ngày, Nội dung, Số kế hoạch, Địa điểm, Bộ phận, Khoảng
+  // thời gian, ban ngày/đêm, Ghi chú) ghi lặp ở TỪNG dòng nhân sự — không gộp ô. Stt chạy theo dòng.
+  let rowNo = h + 1;
+  if (opts.sample) {
+    const shared = ["01/11/2026", "Nâng cấp hệ thống X", "KH-001", "TT DL Hòa Lạc"];
+    const tail = ["BSS", "22:00 - 02:00", 0, 0, 4, 0.5, "Ví dụ — xoá các dòng ví dụ khi nhập thật"];
+    [
+      { stt: 1, person: ["115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin"] },
+      { stt: 2, person: ["115142", "Nguyễn Văn A", "Phòng Công nghệ thông tin"] },
+    ].forEach((row) => {
+      [row.stt, ...shared, ...row.person, ...tail].forEach((v, ci) => styleCell(rowNo, ci, v));
+      rowNo++;
+    });
+  } else {
+    let stt = 0;
+    rows
+      .filter((r) => r.parent_id == null)
+      .forEach((head) => {
+        [head, ...rows.filter((r) => r.parent_id === head.id)].forEach((p) => {
+          stt++;
+          [
+            stt, dateText(head.ngay_tac_dong), head.noi_dung ?? "", head.so_ke_hoach ?? "", head.dia_diem ?? "",
+            p.ma_nhan_vien ?? "", p.ho_va_ten, p.don_vi ?? "",
+            head.bo_phan ?? "", head.khoang_thoi_gian ?? "", head.ban_ngay_so_gio ?? "", head.ban_ngay_so_ngay ?? "",
+            head.ban_dem_so_gio ?? "", head.ban_dem_so_ngay ?? "", head.ghi_chu ?? "",
+          ].forEach((v, ci) => styleCell(rowNo, ci, v));
+          rowNo++;
+        });
+      });
+  }
+
+  // Địa điểm tác động (cột 5): chọn từ danh sách, áp cho 500 dòng kế tiếp.
+  const locList = `"${["TT DL Hòa Lạc", "TT DL Pháp Vân", "TT DL Hoàng Hoa Thám", "TT DL Bình Dương"].join(",")}"`;
+  for (let r = h + 1; r <= h + 500; r++) {
+    sheet.getCell(r, 5).dataValidation = { type: "list", allowBlank: true, showErrorMessage: false, formulae: [locList] };
+  }
+
+  sheet.views = [{ state: "frozen", ySplit: h }];
   return workbook.xlsx.writeBuffer();
 }

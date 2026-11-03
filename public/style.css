@@ -3083,7 +3083,15 @@ dialog .field-row > div { flex: 1; min-width: 0; }
    đối. Nhãn dài (VD "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công
    việc") tự xuống dòng trong cột label. Màn hình hẹp (media ở dưới đổi
    field-row thành 1 cột) thì lưới cũng thu về 1 cột. */
-#cbnv-edit-form .field-row { display: grid; grid-template-columns: 230px 1fr; align-items: center; }
+#cbnv-edit-form .field-row,
+#gnv-item-form .field-row,
+#gnv-group-form .field-row { display: grid; grid-template-columns: 230px 1fr; align-items: center; }
+#gnv-item-form .field-row > label,
+#gnv-group-form .field-row > label { margin: 0; }
+#gnv-item-form .field-row > input,
+#gnv-item-form .field-row > textarea,
+#gnv-group-form .field-row > input { width: 100%; box-sizing: border-box; }
+#gnv-item-form .field-row:has(textarea) { align-items: start; }
 dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
 /* Popup xác nhận (confirmDialog trong app.js) — nhỏ gọn, căn giữa nội dung
@@ -3397,7 +3405,9 @@ img, svg, canvas, video { max-width: 100%; }
   dialog { width: 94vw; max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
   dialog form { padding: 16px; }
   dialog .field-row { flex-direction: column; gap: 12px; }
-  #cbnv-edit-form .field-row { grid-template-columns: 1fr; }
+  #cbnv-edit-form .field-row,
+  #gnv-item-form .field-row,
+  #gnv-group-form .field-row { grid-template-columns: 1fr; }
   dialog .actions { flex-wrap: wrap; }
   dialog .actions button { flex: 1 1 auto; }
   .fr-detail-grid { grid-template-columns: 1fr; }
@@ -3493,3 +3503,265 @@ body[data-role="viewer"] .inline-cell-input {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Tab "GNV" (Kế hoạch tổng hợp) — màu tiêu đề/hàng nhóm theo bảng mẫu:
+   tiêu đề xanh ngọc #179188 chữ trắng, hàng NHÓM lớn nền cam. */
+#gnv-table th {
+  background: #179188;
+  color: #fff;
+  text-align: center;
+  vertical-align: middle;
+}
+#gnv-table tr.gnv-group-row td {
+  background: #ffc000;
+  font-weight: 700;
+}
+#gnv-table td.gnv-center { text-align: center; }
+#gnv-table td { vertical-align: middle; white-space: pre-wrap; }
+
+
+
+/* Tab GNV: nút "Lấy từ Backlog" màu xanh lá đậm để phân biệt với "+ Nhiệm
+   vụ" (xanh dương) trên nền hàng nhóm màu cam. */
+button.gnv-pick-btn { background: #21a844; border-color: #21a844; color: #fff; }
+button.gnv-pick-btn:hover { background: #1b8a38; border-color: #1b8a38; }
+
+/* Trường dùng chung của popup GNV bị ẩn khi thêm/sửa dòng phương pháp đo con
+   (rule display:grid ở #gnv-item-form .field-row sẽ đè thuộc tính hidden). */
+#gnv-item-form .field-row.gnv-shared-field[hidden] { display: none; }
+
+/* #gnv-table có 2 hàng tiêu đề: hàng 2 ghim DƯỚI hàng 1 (top = chiều cao thật
+   của hàng 1, đo bằng JS — xem syncGnvStickyHeadOffset), nếu không cả 2 hàng
+   cùng ghim mép trên nên đè lên nhau khi cuộn. */
+#gnv-table thead tr:nth-child(2) th { top: var(--gnv-thead-row1-h, 44px); }
+
+/* Bảng GNV không giới hạn chiều cao — khung cao theo nội dung, trang cuộn
+   dọc bình thường (tiêu đề không còn ghim khi cuộn). */
+#gnv-table-wrap { max-height: none; }
+
+/* Popup "Lấy nhiệm vụ từ Backlog" (tab GNV) — gọn, hiện đại: chip thông tin,
+   nút phân đoạn chọn cách thêm, danh sách thẻ có thanh chọn nhanh, chân
+   popup hiện số đã chọn. */
+dialog.gnv-pick-dialog { max-width: 680px; width: 92vw; }
+.gnv-pick-dialog form { padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 16px; }
+.gnv-pick-head h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.gnv-pick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gnv-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+  background: #e6f4f2; color: #0f6b64;
+}
+.gnv-chip-soft { background: var(--stone-100); color: var(--stone-600); }
+.gnv-pick-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px; }
+.gnv-seg { display: flex; gap: 4px; padding: 4px; background: var(--stone-100); border-radius: 10px; }
+.gnv-seg-btn {
+  flex: 1 1 0; padding: 7px 8px; border: none; border-radius: 7px; background: transparent;
+  color: var(--stone-600); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.gnv-seg-btn:hover:not(:disabled) { background: var(--stone-200); }
+.gnv-seg-btn.active { background: #fff; color: #0f6b64; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.gnv-seg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#gnv-pick-parent { width: 100%; margin-top: 8px; box-sizing: border-box; }
+.gnv-pick-hint { margin: 8px 2px 0; font-size: 0.82rem; color: var(--muted); }
+.gnv-pick-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.gnv-pick-toolbar input[type="search"] { flex: 1 1 auto; min-width: 0; }
+label.gnv-pick-all { display: flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; font-size: 0.85rem; color: var(--text); cursor: pointer; }
+.gnv-pick-list { max-height: 44vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+label.gnv-task {
+  display: flex; align-items: center; gap: 10px; margin: 0; padding: 9px 12px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.92rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+label.gnv-task:hover { background: var(--stone-50); }
+label.gnv-task.is-selected { background: #e6f4f2; border-color: #179188; }
+label.gnv-task.is-used { opacity: 0.5; cursor: not-allowed; }
+label.gnv-task input[type="checkbox"] { flex: 0 0 auto; width: auto; min-width: 0; margin: 0; accent-color: #179188; }
+.gnv-task-stt { flex: 0 0 auto; font-size: 0.75rem; font-weight: 700; color: var(--stone-600); background: var(--stone-100); padding: 2px 7px; border-radius: 6px; }
+.gnv-task-name { flex: 1 1 auto; min-width: 0; }
+.gnv-task-team { flex: 0 0 auto; font-size: 0.75rem; font-weight: 600; color: #0f6b64; background: #e6f4f2; padding: 2px 8px; border-radius: 999px; }
+.gnv-task-used { flex: 0 0 auto; font-size: 0.72rem; color: var(--muted); }
+.gnv-pick-empty { margin: 16px 0; text-align: center; color: var(--muted); }
+.gnv-pick-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.gnv-pick-count { font-size: 0.88rem; font-weight: 600; color: var(--stone-700); }
+.gnv-pick-foot button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 600px) { .gnv-seg { flex-direction: column; } }
+
+/* Dòng tổng Tỷ trọng cuối bảng GNV: dòng 1 nền xanh nhạt đậm chữ, dòng 2 "Σ = N%". */
+#gnv-table tr.gnv-total-row td { background: #dbeef3; font-weight: 700; }
+#gnv-table tr.gnv-sigma-row td { background: #fff; font-weight: 700; }
+#gnv-table tr.gnv-total-over td.gnv-center { color: #c4132b; }
+
+/* Popup sao chép GNV: mục tiêu thụt vào dưới tên nhóm. */
+.gnv-copy-group { display: flex; flex-direction: column; gap: 6px; }
+label.gnv-copy-group-head { background: var(--stone-100); }
+label.gnv-copy-item { margin-left: 22px; }
+
+/* Popup "Lấy nhiệm vụ từ Backlog": đổi các màu xanh ngọc sang xanh da trời
+   (cùng bảng màu nút xanh .btn-view: sky-100/300/800). Chỉ áp cho popup này. */
+#gnv-pick-dialog .gnv-chip { background: var(--sky-100); color: var(--sky-800); }
+#gnv-pick-dialog .gnv-chip-soft { background: var(--stone-100); color: var(--stone-600); }
+#gnv-pick-dialog .gnv-seg-btn.active { color: var(--sky-800); }
+#gnv-pick-dialog label.gnv-task.is-selected { background: var(--sky-100); border-color: var(--sky-300); }
+#gnv-pick-dialog label.gnv-task input[type="checkbox"],
+#gnv-pick-dialog label.gnv-pick-all input[type="checkbox"] { accent-color: var(--sky-600); }
+#gnv-pick-dialog .gnv-task-team { background: var(--sky-100); color: var(--sky-800); }
+
+/* Tab "Làm thêm giờ": tiêu đề nền xanh lá nhạt chữ đậm như bảng mẫu; 2 hàng
+   tiêu đề ghim liên tiếp (hàng 2 dưới hàng 1, chiều cao đo bằng JS). */
+#ot-table th { background: #e2efda; color: #1c1917; text-align: center; vertical-align: middle; }
+#ot-table thead tr:nth-child(2) th { top: var(--ot-thead-row1-h, 44px); }
+#ot-table td.ot-center { text-align: center; }
+#ot-table td { vertical-align: middle; }
+#ot-form .field-row { display: grid; grid-template-columns: 230px 1fr; align-items: center; }
+#ot-form .field-row > label { margin: 0; }
+#ot-form .field-row > input, #ot-form .field-row > select, #ot-form .field-row > textarea { width: 100%; box-sizing: border-box; }
+#ot-form .field-row:has(textarea) { align-items: start; }
+@media (max-width: 600px) { #ot-form .field-row { grid-template-columns: 1fr; } }
+
+/* Trường dùng chung của lượt tác động bị ẩn khi thêm/sửa nhân sự tham gia thêm. */
+#ot-form .field-row.ot-shared-field[hidden] { display: none; }
+
+/* Trường Số giờ/Số ngày ban ngày/ban đêm ẩn theo "Khoảng thời gian tác động". */
+#ot-form .field-row.ot-day-field[hidden], #ot-form .field-row.ot-night-field[hidden] { display: none; }
+
+/* Ô Số ngày (tự tính) chỉ đọc: nền xám nhạt, không viền focus. */
+#ot-form input[readonly] { background: var(--stone-100); color: var(--stone-600); cursor: default; }
+
+/* Dòng nhân sự tham gia thêm: ẩn các trường dùng chung cả lượt tác động. */
+#ot-form.is-child .ot-shared-field { display: none !important; }
+
+/* ===== Tab "Báo cáo PowerPoint" (Kế hoạch tổng hợp) ===== */
+.pptx-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+.pptx-empty { text-align: center; padding: 32px 18px; }
+.pptx-picker-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.pptx-picker-head #pptx-type-seg { min-width: 280px; }
+.pptx-picker-head .primary { margin-left: auto; }
+.pptx-year { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
+.pptx-grid { display: grid; gap: 10px; }
+.pptx-grid-month { grid-template-columns: repeat(4, 1fr); }
+.pptx-qbox { background: var(--stone-100); border-radius: 10px; padding: 8px 10px; }
+.pptx-qhead { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 6px; }
+.pptx-chips { display: flex; gap: 6px; }
+.pptx-chips-wide { flex-wrap: wrap; }
+.pptx-chip { position: relative; flex: 1; min-width: 64px; padding: 8px 6px 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-weight: 700; cursor: pointer; }
+.pptx-chips-wide .pptx-chip { flex: 0 0 auto; min-width: 150px; }
+.pptx-chip.is-none { border-style: dashed; color: var(--muted); }
+.pptx-chip.is-selected { border-color: var(--red-600); box-shadow: 0 0 0 2px color-mix(in srgb, var(--red-600) 25%, transparent); }
+.pptx-dot { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--stone-300); display: inline-block; }
+.is-exported .pptx-dot, .pptx-dot.d-exported { background: #21a844; }
+.is-draft .pptx-dot, .pptx-dot.d-draft { background: #c2780a; }
+.pptx-legend { display: flex; gap: 14px; align-items: center; margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
+.pptx-legend .pptx-dot { position: static; transform: none; margin-right: 4px; }
+.pptx-legend .d-none { background: transparent; border: 1px solid var(--stone-400); }
+.pptx-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.pptx-side { position: sticky; top: 12px; }
+.pptx-progress { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.pptx-bar { flex: 1; height: 6px; background: var(--stone-200); border-radius: 99px; overflow: hidden; }
+.pptx-bar i { display: block; height: 100%; background: var(--red-600); transition: width 0.2s; }
+.pptx-alert { margin-top: 10px; padding: 9px 12px; border-radius: 8px; font-size: 0.88rem; }
+.pptx-alert.warn { background: #fef3c7; color: #6b4300; }
+.pptx-alert.info { background: var(--sky-100); color: var(--sky-800); }
+.pptx-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.pptx-pill.ok { background: #dcf5e4; color: #176a2e; }
+.pptx-pill.warn { background: #fdecc8; color: #8a5200; }
+.pptx-pill.info { background: var(--sky-100); color: var(--sky-800); }
+.pptx-pill.muted-pill { background: var(--stone-100); color: var(--stone-600); }
+.pptx-sec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pptx-num { width: 28px; height: 28px; border-radius: 50%; background: var(--stone-100); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.pptx-sec-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.82rem; }
+.pptx-over { color: #c4132b; font-weight: 600; }
+.pptx-link { background: none; border: none; color: var(--red-600); font-weight: 700; cursor: pointer; padding: 4px 0; }
+.pptx-table { width: 100%; border-collapse: collapse; }
+.pptx-table th { text-align: left; font-size: 0.78rem; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.pptx-table td { padding: 6px 8px; border-bottom: 1px solid var(--stone-100); }
+.pptx-table .r { text-align: right; }
+.pptx-table input { width: 100%; box-sizing: border-box; }
+.pptx-table td.r input { text-align: right; max-width: 120px; }
+.pptx-pct.pos { color: #176a2e; font-weight: 700; }
+.pptx-pct.neg { color: #c4132b; font-weight: 700; }
+.pptx-edited { color: var(--sky-700); font-style: normal; margin-left: 4px; }
+.pptx-icon { background: none; border: none; cursor: pointer; opacity: 0.6; padding: 2px 6px; }
+.pptx-icon:hover { opacity: 1; }
+.pptx-item { display: flex; align-items: center; gap: 10px; padding: 9px 6px; border-bottom: 1px solid var(--stone-100); }
+.pptx-item.is-editing { background: var(--stone-100); border-radius: 8px; align-items: flex-start; }
+.pptx-item.is-deleting { background: #fdecee; border-radius: 8px; }
+.pptx-ord { color: var(--muted); min-width: 24px; }
+.pptx-edit-input { width: 100%; box-sizing: border-box; }
+.pptx-edit-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.pptx-grip { cursor: grab; color: var(--stone-400); }
+.pptx-src { background: var(--sky-100); color: var(--sky-800); border-radius: 999px; padding: 1px 8px; font-size: 0.72rem; font-weight: 700; margin-left: 6px; }
+.pptx-hint { background: var(--stone-100); border: 1px dashed var(--stone-300); border-radius: 8px; padding: 12px; display: flex; gap: 12px; align-items: center; justify-content: space-between; color: var(--muted); }
+.pptx-para { width: 100%; box-sizing: border-box; }
+.pptx-slide { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0; background: #fff; aspect-ratio: 16/10; }
+.pptx-slide-bar { background: var(--red-600); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 6px 10px; display: flex; justify-content: space-between; }
+.pptx-slide-body { padding: 10px 12px; font-size: 0.78rem; }
+.pptx-slide-body ul { margin: 6px 0 0; padding-left: 16px; }
+.pptx-mini { width: 100%; font-size: 0.7rem; border-collapse: collapse; margin-top: 6px; }
+.pptx-mini th, .pptx-mini td { border: 1px solid var(--stone-200); padding: 2px 4px; text-align: left; }
+.pptx-thumbs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 8px 0; }
+.pptx-thumb { text-align: left; font-size: 0.72rem; padding: 6px 8px; border: 1px solid var(--border); border-top: 3px solid var(--red-600); border-radius: 6px; background: #fff; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pptx-thumb.is-active { border-color: var(--red-600); box-shadow: 0 0 0 2px color-mix(in srgb, var(--red-600) 25%, transparent); }
+.pptx-tpl-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.pptx-tpl-card { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; }
+.pptx-tpl-card.is-selected { border: 2px solid var(--red-600); }
+.pptx-file { display: flex; align-items: center; gap: 14px; }
+.pptx-fields { width: 100%; border-collapse: collapse; }
+.pptx-fields th { text-align: left; font-size: 0.78rem; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--border); }
+.pptx-fields td { padding: 8px; border-bottom: 1px solid var(--stone-100); vertical-align: middle; }
+.pptx-fields tr.is-hidden { opacity: 0.55; }
+.pptx-tpl-help { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.pptx-tpl-help ol, .pptx-tpl-help ul { padding-left: 20px; margin: 0; }
+.pptx-tpl-help li { margin-bottom: 6px; }
+@media (max-width: 1100px) { .pptx-layout { grid-template-columns: 1fr; } .pptx-side { position: static; } .pptx-grid-month, .pptx-tpl-cards { grid-template-columns: repeat(2, 1fr); } .pptx-tpl-help { grid-template-columns: 1fr; } }
+/* Bảng trong tab Báo cáo PowerPoint: tiêu đề nhạt (ghi đè kiểu th đỏ + ghim mặc định của app). */
+.pptx-table th, .pptx-fields th { background: transparent !important; color: var(--muted) !important; position: static; text-align: left; }
+.pptx-table th.r { text-align: right; }
+.pptx-card .row.pptx-actions { flex-wrap: wrap; }
+
+/* Tab "Báo cáo PowerPoint": nút phân đoạn đang chọn màu xanh da trời (cùng bảng màu nút xanh: sky-100/300/800). */
+#summary-plan-tab-pptx .gnv-seg-btn.active {
+  background: var(--sky-100);
+  color: var(--sky-800);
+  box-shadow: inset 0 0 0 1px var(--sky-300);
+}
+
+/* Nhãn trạng thái "ok" (Đã có mẫu / Đang dùng / Đã nhập / Đã xuất) của tab Báo cáo PowerPoint: nền hồng nhạt (red-200) chữ đỏ đậm, thay cho xanh lá. */
+.pptx-pill.ok { background: var(--red-200); color: var(--red-800); }
+
+/* Thẻ chọn loại mẫu: 3 dòng cố định (tên + nhãn trạng thái / tên file / thông tin) để các thẻ thẳng hàng, không tự xuống dòng lộn xộn. */
+.pptx-tpl-card { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pptx-tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; }
+.pptx-tpl-title { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pptx-tpl-head .pptx-pill { flex: 0 0 auto; }
+.pptx-tpl-file { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pptx-tpl-meta { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Khung file mẫu: tên file + nhãn cách nhau, dòng thông tin giãn dòng và ngăn cách từng mục bằng dấu chấm giữa. */
+.pptx-file-info { flex: 1; min-width: 0; }
+.pptx-file-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.pptx-file-title b { font-size: 1.1rem; }
+.pptx-file-meta { display: flex; flex-wrap: wrap; gap: 4px 0; font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
+.pptx-file-meta span:not(:last-child)::after { content: "·"; margin: 0 10px; color: var(--stone-400); }
+
+/* Ô nhập dòng danh sách (textarea): rộng hết khung, tự co giãn chiều cao theo người dùng kéo. */
+textarea.pptx-edit-input { width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical; font: inherit; }
+
+/* Ô slide ở khung xem trước: đầu mục ĐÃ CÓ nội dung hiện nền + viền xanh da trời (sky-100/300), ô đang chọn giữ viền đỏ. */
+.pptx-thumb.is-filled { background: var(--sky-100); border-color: var(--sky-300); border-top-color: var(--sky-300); color: var(--sky-800); }
+.pptx-thumb.is-filled.is-active { border-color: var(--red-600); border-top-color: var(--red-600); }
+
+/* Ô slide đang chọn: viền xanh dương đậm + quầng xanh (thay viền/quầng đỏ). */
+.pptx-thumb.is-active,
+.pptx-thumb.is-filled.is-active {
+  border-color: var(--sky-600);
+  border-top-color: var(--sky-600);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sky-600) 25%, transparent);
+}
+
+/* Bộ chọn năm của tab Báo cáo PowerPoint: nổi bật — khung xanh da trời nhạt, năm to đậm, nút mũi tên xanh đậm chữ trắng. */
+.pptx-year { background: var(--sky-100); border: 1px solid var(--sky-300); padding: 4px 6px; gap: 12px; }
+.pptx-year b { min-width: 52px; text-align: center; font-size: 1.15rem; color: var(--sky-800); }
+.pptx-year button { background: var(--sky-600); border-color: var(--sky-600); color: #fff; border-radius: 50%; width: 30px; height: 30px; padding: 0; font-size: 1.1rem; line-height: 1; }
+.pptx-year button:hover { background: var(--sky-700); border-color: var(--sky-700); }
+
+/* Nhãn "Tự động": tím nhạt (thay xám). */
+.pptx-pill.muted-pill { background: #ede9fe; color: #5b21b6; }

@@ -29,6 +29,17 @@ export const CBNV_XEP_LOAI_IMPORT_HEADERS = [
 
 export const XEP_LOAI_OPTIONS = ["A+", "A", "B", "C", "D", "E"];
 export const TUAN_THU_OPTIONS = ["Tuân thủ", "Không tuân thủ"];
+// 6 mức "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc" — khớp
+// ĐÚNG danh sách dropdown trên web (popup Sửa, 15-summary-plan.js) + bảng
+// quy đổi theo Điểm đánh giá user gửi ảnh.
+export const XEP_LOAI_KET_QUA_OPTIONS = [
+  "Vượt xa yêu cầu",
+  "Vượt yêu cầu",
+  "Đạt yêu cầu",
+  "Gần đạt yêu cầu",
+  "Không đạt yêu cầu",
+  "Không đánh giá",
+];
 
 const KEYS = {
   ma_nhan_vien: ["ma nhan vien"],
@@ -50,6 +61,11 @@ const KEYS = {
     "xep loai muc do hoan thanh nhiem vu/cong viec",
     "xep loai muc do hoan thanh nhiem vu cong viec",
     "xep loai muc do hoan thanh",
+  ],
+  ghi_chu_de_xuat: [
+    "ghi chu, de xuat cua nguoi quan ly truc tiep voi cbnv",
+    "ghi chu de xuat cua nguoi quan ly truc tiep voi cbnv",
+    "ghi chu de xuat",
   ],
   chu_y: ["chu y"],
 };
@@ -161,10 +177,12 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
   sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: TOTAL_COLUMNS } };
   sheet.views = [{ state: "frozen", ySplit: headerRow }];
 
-  // Dropdown: Phòng ban (cột 6), Tuân thủ (10, 11), Xếp loại (12) — ghi danh
-  // mục vào sheet ẩn rồi tham chiếu, áp cho 500 dòng dữ liệu kế tiếp.
+  // Dropdown: Phòng ban (cột 6), Xếp loại kết quả (9), Tuân thủ (10, 11),
+  // Xếp loại (12) — ghi danh mục vào sheet ẩn rồi tham chiếu, áp cho 500
+  // dòng dữ liệu kế tiếp.
   const dropdowns: { column: number; options: string[] }[] = [
     { column: 6, options: departments },
+    { column: 9, options: [...XEP_LOAI_KET_QUA_OPTIONS] },
     { column: 10, options: [...TUAN_THU_OPTIONS] },
     { column: 11, options: [...TUAN_THU_OPTIONS] },
     { column: 12, options: [...XEP_LOAI_OPTIONS] },
@@ -260,6 +278,7 @@ export async function importCbnvXepLoaiFromWorkbook(
       tuan_thu_noi_quy: val(row, col("tuan_thu_noi_quy")) || null,
       xep_loai: val(row, col("xep_loai")) || null,
       xep_loai_muc_do: val(row, col("xep_loai_muc_do")) || null,
+      ghi_chu_de_xuat: val(row, col("ghi_chu_de_xuat")) || null,
       chu_y: val(row, col("chu_y")) || null,
     };
     if (!byDepartment.has(departmentId)) byDepartment.set(departmentId, []);

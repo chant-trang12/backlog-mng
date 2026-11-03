@@ -266,6 +266,9 @@ async function selectDepartment(id) {
     // click handler, 09-main.js), tránh gọi API thừa cho trang đang đóng.
     if (!pages["summary-plan"]?.hidden && typeof loadCbnvXepLoai === "function") {
       await loadCbnvXepLoai().catch((err) => showToast(err.message));
+      if (typeof loadGnv === "function") await loadGnv().catch((err) => showToast(err.message));
+      if (typeof loadOvertime === "function") await loadOvertime().catch((err) => showToast(err.message));
+      if (typeof loadPptx === "function") await loadPptx().catch((err) => showToast(err.message));
     }
     syncHomeFromCurrentIfNeeded();
   } catch (err) {
@@ -462,6 +465,8 @@ async function loadPeriods() {
   el.teamPeriodSelect.innerHTML = optionsHtml;
   el.configTeamPeriod.innerHTML = optionsHtml;
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.innerHTML = optionsHtml;
+  if (el.gnvPeriodSelect) el.gnvPeriodSelect.innerHTML = optionsHtml;
+  if (el.otPeriodSelect) el.otPeriodSelect.innerHTML = optionsHtml;
 
   if (state.periods.length === 0) {
     state.currentPeriodId = null;
@@ -495,6 +500,8 @@ async function loadPeriods() {
   el.teamPeriodSelect.value = String(state.currentPeriodId);
   el.configTeamPeriod.value = String(state.currentPeriodId);
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.value = String(state.currentPeriodId);
+  if (el.gnvPeriodSelect) el.gnvPeriodSelect.value = String(state.currentPeriodId);
+  if (el.otPeriodSelect) el.otPeriodSelect.value = String(state.currentPeriodId);
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -504,6 +511,8 @@ async function loadPeriods() {
   await loadAttendanceRecords();
   await refreshHomeFilters();
   if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
+  if (typeof loadGnv === "function") await loadGnv();
+  if (typeof loadOvertime === "function") await loadOvertime();
 }
 
 // Bộ lọc "Tháng"/"Team" riêng ở trang Home — mặc định theo tháng đang chọn ở
@@ -651,6 +660,8 @@ async function switchPeriod(newId) {
   el.teamPeriodSelect.value = v;
   el.configTeamPeriod.value = v;
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.value = v;
+  if (el.gnvPeriodSelect) el.gnvPeriodSelect.value = v;
+  if (el.otPeriodSelect) el.otPeriodSelect.value = v;
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -664,6 +675,8 @@ async function switchPeriod(newId) {
 el.periodSelect.addEventListener("change", () => switchPeriod(el.periodSelect.value));
 el.teamPeriodSelect.addEventListener("change", () => switchPeriod(el.teamPeriodSelect.value));
 el.cbnvPeriodSelect?.addEventListener("change", () => switchPeriod(el.cbnvPeriodSelect.value));
+el.gnvPeriodSelect?.addEventListener("change", () => switchPeriod(el.gnvPeriodSelect.value));
+el.otPeriodSelect?.addEventListener("change", () => switchPeriod(el.otPeriodSelect.value));
 el.configTeamPeriod.addEventListener("change", () => switchPeriod(el.configTeamPeriod.value));
 
 el.deletePeriodBtn.addEventListener("click", async () => {

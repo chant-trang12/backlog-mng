@@ -12,7 +12,14 @@ import { db } from "../connection.js";
 // đúng dòng đó về sau (sẽ tạo dòng mới thay vì cập nhật).
 export async function migrateCbnvXepLoaiTable(): Promise<void> {
   const hasTable = await db.schema.hasTable("cbnv_xep_loai_records");
-  if (hasTable) return;
+  if (hasTable) {
+    if (!(await db.schema.hasColumn("cbnv_xep_loai_records", "ghi_chu_de_xuat"))) {
+      await db.schema.alterTable("cbnv_xep_loai_records", (t) => {
+        t.text("ghi_chu_de_xuat");
+      });
+    }
+    return;
+  }
 
   await db.schema.createTable("cbnv_xep_loai_records", (table) => {
     table.increments("id").primary();
@@ -30,6 +37,7 @@ export async function migrateCbnvXepLoaiTable(): Promise<void> {
     table.string("tuan_thu_noi_quy", 100);
     table.string("xep_loai", 20);
     table.string("xep_loai_muc_do", 100);
+    table.text("ghi_chu_de_xuat");
     table.text("chu_y");
     table.boolean("is_deleted").notNullable().defaultTo(false);
     table.dateTime("deleted_at");

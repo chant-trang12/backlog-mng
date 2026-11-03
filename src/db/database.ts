@@ -50,6 +50,9 @@ import { migrateActionLogsTable } from "./migrations/actionLogs.js";
 import { migrateTaskItemsTables } from "./migrations/taskItems.js";
 import { migrateGradeDeductionsTable } from "./migrations/gradeDeductions.js";
 import { migrateCbnvXepLoaiTable } from "./migrations/summaryPlan.js";
+import { migrateGnvTables } from "./migrations/gnv.js";
+import { migrateOvertimeTable } from "./migrations/overtime.js";
+import { migrateReportPptxTables } from "./migrations/reportPptx.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { migrateMenuVisibility } from "./migrations/menuVisibility.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -118,6 +121,12 @@ export async function initDatabase(): Promise<void> {
     // cbnv_xep_loai_records (trang "Kế hoạch tổng hợp" > tab "KQ xếp loại
     // CBNV") — cần periods/departments/members đã tồn tại sẵn (các bước trên).
     await migrateCbnvXepLoaiTable();
+    // gnv_groups + gnv_items (tab "GNV") — cần periods/departments/tasks.
+    await migrateGnvTables();
+    // overtime_records (tab "Làm thêm giờ") — cần periods/departments.
+    await migrateOvertimeTable();
+    // report_* (tab "Báo cáo PowerPoint") — cần departments.
+    await migrateReportPptxTables();
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();

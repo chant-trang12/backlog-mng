@@ -45,6 +45,13 @@ const state = {
   cbnvRecords: [],
   cbnvSearch: "",
   cbnvEditingId: null,
+  // Kế hoạch tổng hợp > GNV (15-summary-plan.js).
+  gnvGroups: [],
+  // Kế hoạch tổng hợp > Làm thêm giờ (16-overtime.js).
+  otRecords: [],
+  otSearch: "",
+  otEditingId: null,
+  otParentId: null,
   tags: [],
   categoryOptions: [],
   groupOptions: [],
@@ -120,6 +127,8 @@ const el = {
   periodSelect: document.getElementById("period-select"),
   teamPeriodSelect: document.getElementById("team-period-select"),
   cbnvPeriodSelect: document.getElementById("cbnv-period-select"),
+  gnvPeriodSelect: document.getElementById("gnv-period-select"),
+  otPeriodSelect: document.getElementById("ot-period-select"),
   configTeamPeriod: document.getElementById("config-team-period"),
   configTeamDept: document.getElementById("config-team-dept"),
   homeFilterPeriod: document.getElementById("home-filter-period"),

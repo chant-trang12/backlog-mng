@@ -66,7 +66,14 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     // Kế hoạch tổng hợp — tải lại mỗi lần vào trang (giống Yêu cầu tính
     // năng/Tính năng số hoá) để thấy ngay dữ liệu mới (Import/Sửa/Xoá/Lấy
     // thông tin xếp loại ở lần xem trước).
-    if (btn.dataset.page === "summary-plan") loadCbnvXepLoai().catch((err) => showToast(err.message));
+    if (btn.dataset.page === "summary-plan") {
+      // Vào menu luôn mở tab ĐẦU TIÊN (Làm thêm giờ).
+      document.querySelector("#summary-plan-subnav .pill")?.click();
+      loadCbnvXepLoai().catch((err) => showToast(err.message));
+      loadGnv().catch((err) => showToast(err.message));
+      loadOvertime().catch((err) => showToast(err.message));
+      loadPptx().catch((err) => showToast(err.message));
+    }
     // Nhật ký hoạt động — tải danh mục lọc (module/user) + dữ liệu mỗi lần
     // vào trang để thấy log mới nhất, chưa tải sẵn lúc khởi động app (chỉ
     // Admin dùng, tránh gọi API thừa cho editor/viewer).
