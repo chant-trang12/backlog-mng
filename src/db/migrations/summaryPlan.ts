@@ -25,7 +25,10 @@ export async function migrateCbnvXepLoaiTable(): Promise<void> {
     table.increments("id").primary();
     table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
     table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
-    table.integer("member_id").references("id").inTable("members").onDelete("SET NULL");
+    // NO ACTION (không dùng SET NULL): SQL Server báo "may cause cycles or multiple cascade paths" vì
+    // periods -> members đã CASCADE sẵn, cùng đường tới bảng này qua period_id. Nhân sự vốn xoá mềm
+    // (is_deleted) nên không cần cơ chế tự gỡ liên kết khi xoá cứng.
+    table.integer("member_id").references("id").inTable("members").onDelete("NO ACTION");
     table.string("ma_nhan_vien", 100);
     table.string("ho_va_ten", 255).notNullable();
     table.string("chuc_danh", 255);
