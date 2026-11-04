@@ -3809,3 +3809,15 @@ label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
 .pptx-chev { background: none; border: none; font-size: 1rem; color: var(--muted); cursor: pointer; padding: 4px 8px; }
 .pptx-section.is-collapsed { padding-top: 10px; padding-bottom: 10px; }
 .pptx-section.is-collapsed .pptx-sec-head { margin-bottom: 0; }
+
+/* Slide đang chọn: nền xanh đậm, chữ trắng, đổ bóng + nhích lên để nổi bật hơn hẳn các nút khác (kể cả nút xanh nhạt "đã nhập đủ"). */
+.pptx-slide-chip.is-active,
+.pptx-slide-chip.is-done.is-active {
+  background: var(--sky-600);
+  border-color: var(--sky-700);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sky-600) 45%, transparent);
+  transform: translateY(-1px);
+}
+.pptx-slide-chip.is-active i { color: #e0f2fe; }
+.pptx-slide-chip.is-active .pptx-slide-dot { background: #ffd28a; }

@@ -245,7 +245,7 @@ function renderPptxSlideBar(rep) {
   const chip = (key, label, fields) => {
     const need = fields.filter((f) => f.required && f.kind !== "auto" && !f.filled).length;
     const filled = fields.filter((f) => f.kind === "auto" || f.filled).length;
-    return `<button type="button" class="pptx-slide-chip${pptx.slideFilter === key ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
+    return `<button type="button" aria-pressed="${String(pptx.slideFilter) === String(key)}" class="pptx-slide-chip${String(pptx.slideFilter) === String(key) ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
   };
   return `<div class="pptx-slide-chips">${chip("all", "Tất cả", rep.fields)}${slides.map((n) => chip(String(n), n ? `Slide ${n}` : "Khác", rep.fields.filter((f) => (f.slide_no ?? 0) === n))).join("")}</div>
     <div class="pptx-slide-tools"><button type="button" class="small" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small" data-act="expand-all">Mở rộng tất cả</button></div>`;
