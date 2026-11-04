@@ -3825,3 +3825,7 @@ label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
 /* Nút "Mở rộng tất cả": tím nhạt (phân biệt với "Thu gọn tất cả" vàng nhạt). */
 button.pptx-btn-expand { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
 button.pptx-btn-expand:hover { background: #ddd6fe; }
+
+/* Nút "Tất cả" (thanh chọn slide): nền riêng để phân biệt với các nút Slide N; khi đang chọn thì dùng nền xanh đậm như nút slide. */
+.pptx-slide-chip[data-slide="all"]:not(.is-active) { background: #fdecc8; border-color: #fcd34d; color: #8a5200; }
+.pptx-slide-chip[data-slide="all"]:not(.is-active) i { color: #8a5200; }
