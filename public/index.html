@@ -2846,8 +2846,15 @@
             <div class="gnv-pick-section">
               <div class="gnv-pick-label">Tháng nguồn</div>
               <select id="gnv-copy-source" style="width:100%;box-sizing:border-box"></select>
-              <label class="gnv-pick-all" style="margin-top:10px"><input type="checkbox" id="gnv-copy-methods" checked /> Kèm tên các Phương pháp đo</label>
-              <p class="gnv-pick-hint">Chỉ chép Nhóm, Mục tiêu, Chỉ số KPI, Đơn vị đo, Tỷ trọng (và tên Phương pháp đo). Mức chỉ tiêu, ngày, kết quả và điểm đánh giá không được chép. Nhóm/mục tiêu đã có ở tháng này sẽ không bị nhân đôi.</p>
+              <label class="gnv-opt">
+                <input type="checkbox" id="gnv-copy-methods" checked />
+                <span><b>Kèm tên các Phương pháp đo</b><small>Bỏ chọn nếu chỉ muốn chép Nhóm và Mục tiêu.</small></span>
+              </label>
+              <div class="gnv-copy-note">
+                <div><b>Được chép:</b> Nhóm, Mục tiêu, Chỉ số KPI, Đơn vị đo, Tỷ trọng.</div>
+                <div><b>Không chép:</b> mức chỉ tiêu, ngày, kết quả, điểm đánh giá.</div>
+                <div>Nhóm/mục tiêu đã có ở tháng này sẽ không bị nhân đôi.</div>
+              </div>
             </div>
             <div class="gnv-pick-section">
               <div class="gnv-pick-toolbar">

@@ -3765,3 +3765,24 @@ textarea.pptx-edit-input { width: 100%; box-sizing: border-box; min-height: 64px
 
 /* Nhãn "Tự động": tím nhạt (thay xám). */
 .pptx-pill.muted-pill { background: #ede9fe; color: #5b21b6; }
+
+/* Popup "Sao chép từ tháng khác" (GNV): bố cục gọn + màu xanh da trời như popup Lấy nhiệm vụ từ Backlog. */
+#gnv-copy-dialog .gnv-chip { background: var(--sky-100); color: var(--sky-800); }
+#gnv-copy-dialog label.gnv-task.is-selected { background: var(--sky-100); border-color: var(--sky-300); }
+#gnv-copy-dialog label.gnv-task input[type="checkbox"],
+#gnv-copy-dialog label.gnv-pick-all input[type="checkbox"],
+#gnv-copy-dialog label.gnv-opt input[type="checkbox"] { accent-color: var(--sky-600); }
+#gnv-copy-dialog .gnv-task-team { background: var(--sky-100); color: var(--sky-800); }
+label.gnv-opt {
+  display: flex; align-items: flex-start; justify-content: flex-start; gap: 10px;
+  margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 0.92rem; cursor: pointer; text-align: left;
+}
+label.gnv-opt:hover { background: var(--stone-50); }
+label.gnv-opt input[type="checkbox"] { flex: 0 0 auto; width: auto; min-width: 0; margin: 3px 0 0; }
+label.gnv-opt span { display: flex; flex-direction: column; gap: 2px; }
+label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
+.gnv-copy-note {
+  margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--sky-100); color: var(--sky-800);
+  font-size: 0.82rem; line-height: 1.55; display: flex; flex-direction: column; gap: 2px;
+}
