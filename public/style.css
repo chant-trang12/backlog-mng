@@ -3845,3 +3845,8 @@ button.pptx-btn-expand:hover { background: #ddd6fe; }
 .pptx-slide-cm { font-style: normal; font-size: 0.68rem; font-weight: 700; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; text-align: center; border-radius: 999px; background: var(--delete); color: #fff; }
 button.pptx-btn-cm { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
 button.pptx-btn-cm.is-on { background: var(--red-600); border-color: var(--red-700); color: #fff; }
+
+/* Chấm đỏ số góp ý chưa xử lý trên tab "Báo cáo PowerPoint". */
+#summary-plan-subnav .pill { position: relative; }
+.pill-badge { position: absolute; top: -7px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--delete); color: #fff; font-size: 0.7rem; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #fff; }
+.pill.active .pill-badge { background: #fff; color: var(--red-600); box-shadow: 0 0 0 2px var(--red-600); }
