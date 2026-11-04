@@ -861,7 +861,7 @@ async function onPptxCommentAction(code, act, id, sec) {
       const c = await api(`/api/reports/${rep.id}/comments`, { method: "POST", body: JSON.stringify({ field_code: code, content }) });
       rep.comments.push(c);
     } else if (act === "cm-resolve" || act === "cm-open") {
-      if (act === "cm-resolve" && !(await confirmDialog("Xác nhận góp ý này đã được xử lý xong?", { title: "Xác nhận xử lý xong", okText: "Xác nhận", danger: false }))) return;
+      if (act === "cm-resolve" && !(await confirmDialog("Xác nhận góp ý này đã được ghi nhận/ chỉnh sửa?", { title: "Xác nhận xử lý", okText: "Xác nhận", danger: false }))) return;
       const c = await api(`/api/report-comments/${id}`, { method: "PUT", body: JSON.stringify({ status: act === "cm-resolve" ? "resolved" : "open" }) });
       rep.comments = rep.comments.map((x) => (x.id === Number(id) ? c : x));
     } else if (act === "cm-del") {
