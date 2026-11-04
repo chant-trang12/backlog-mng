@@ -458,6 +458,13 @@ el.warningChipUrgent.addEventListener("click", () => toggleTaskWarningFilter("ur
 
 // ---- Periods ----
 
+// Tháng mặc định: tháng THỰC TẾ (hôm nay) nếu đã được quản lý, không thì tháng mới nhất trong danh sách.
+function defaultPeriodId() {
+  const now = new Date();
+  const currentReal = state.periods.find((p) => p.year === now.getFullYear() && p.month === now.getMonth() + 1);
+  return (currentReal ?? state.periods[0])?.id ?? null;
+}
+
 async function loadPeriods() {
   state.periods = await api("/api/periods");
   const optionsHtml = state.periods.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");

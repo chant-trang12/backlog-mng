@@ -82,7 +82,14 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
       gnv: typeof loadGnv === "function" ? loadGnv : null,
       pptx: typeof loadPptx === "function" ? loadPptx : null,
     };
-    loaders[pill.dataset.tab]?.().catch((err) => showToast(err.message));
+    // Mỗi lần chuyển tab: đưa "Tháng theo dõi" về THÁNG MẶC ĐỊNH (tháng hiện tại) — nếu đang lệch thì
+    // đổi tháng (switchPeriod đã nạp lại CBNV/GNV/Làm thêm giờ), không thì chỉ nạp lại tab vừa mở.
+    const def = typeof defaultPeriodId === "function" ? defaultPeriodId() : null;
+    if (def != null && def !== state.currentPeriodId && pill.dataset.tab !== "pptx") {
+      switchPeriod(def).catch((err) => showToast(err.message));
+    } else {
+      loaders[pill.dataset.tab]?.().catch((err) => showToast(err.message));
+    }
   });
 });
 
