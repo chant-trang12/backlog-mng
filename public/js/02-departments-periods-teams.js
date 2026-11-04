@@ -670,6 +670,9 @@ async function switchPeriod(newId) {
   await loadEvaluationRecords();
   await loadAttendanceRecords();
   if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
+  // GNV + Làm thêm giờ cũng theo "Tháng theo dõi" — phải nạp lại khi đổi tháng.
+  if (typeof loadGnv === "function") await loadGnv();
+  if (typeof loadOvertime === "function") await loadOvertime();
 }
 
 el.periodSelect.addEventListener("change", () => switchPeriod(el.periodSelect.value));
