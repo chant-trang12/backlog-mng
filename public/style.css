@@ -3771,7 +3771,7 @@ textarea.pptx-edit-input { width: 100%; box-sizing: border-box; min-height: 64px
 #gnv-copy-dialog label.gnv-task.is-selected { background: var(--sky-100); border-color: var(--sky-300); }
 #gnv-copy-dialog label.gnv-task input[type="checkbox"],
 #gnv-copy-dialog label.gnv-pick-all input[type="checkbox"],
-#gnv-copy-dialog label.gnv-opt input[type="checkbox"] { accent-color: var(--sky-600); }
+#gnv-copy-dialog label.gnv-opt input[type="checkbox"] { accent-color: var(--red-600); }
 #gnv-copy-dialog .gnv-task-team { background: var(--sky-100); color: var(--sky-800); }
 label.gnv-opt {
   display: flex; align-items: flex-start; justify-content: flex-start; gap: 10px;
