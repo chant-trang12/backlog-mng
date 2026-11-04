@@ -258,7 +258,7 @@ const pxOpenOf = (list) => list.filter((c) => c.status === "open").length;
 function renderPptxComments(f) {
   const list = pxCommentsOf(f.code);
   const open = pxOpenOf(list);
-  return `<div class="pptx-cm">
+  return `<div class="pptx-cm${open ? " has-open" : ""}">
     <div class="pptx-cm-head">💬 Góp ý${list.length ? ` · ${open} chưa xử lý / ${list.length}` : ""}</div>
     ${list
       .map(
