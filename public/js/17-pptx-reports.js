@@ -255,7 +255,7 @@ function renderPptxComments(f) {
         <div class="pptx-cm-meta"><b>${pxEsc(c.author_name ?? "Ẩn danh")}</b><span class="muted">${pxDateTime(c.created_at)}</span>
           <span class="pptx-pill ${c.status === "resolved" ? "ok" : "warn"}">${c.status === "resolved" ? "✓ Đã xử lý" : "● Mới"}</span>
           <span style="flex:1"></span>
-          ${c.status === "resolved" ? `<button type="button" class="small write-action" data-act="cm-open" data-id="${c.id}">Mở lại</button>` : `<button type="button" class="small btn-view write-action" data-act="cm-resolve" data-id="${c.id}">Đã xử lý</button>`}
+          ${c.status === "resolved" ? `<button type="button" class="small write-action" data-act="cm-open" data-id="${c.id}">Mở lại</button>` : `<button type="button" class="small btn-view write-action" data-act="cm-resolve" data-id="${c.id}">Xử lý xong</button>`}
           <button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button></div>
         <div class="pptx-cm-text">${pxEsc(c.content).replace(/\n/g, "<br/>")}</div>
         ${c.status === "resolved" && c.resolved_by ? `<div class="muted" style="font-size:.75rem">Xử lý bởi ${pxEsc(c.resolved_by)}</div>` : ""}</div>`,
@@ -828,6 +828,7 @@ async function onPptxCommentAction(code, act, id, sec) {
       const c = await api(`/api/reports/${rep.id}/comments`, { method: "POST", body: JSON.stringify({ field_code: code, content }) });
       rep.comments.push(c);
     } else if (act === "cm-resolve" || act === "cm-open") {
+      if (act === "cm-resolve" && !(await confirmDialog("Xác nhận góp ý này đã được xử lý xong?", { title: "Xác nhận xử lý xong", okText: "Xác nhận", danger: false }))) return;
       const c = await api(`/api/report-comments/${id}`, { method: "PUT", body: JSON.stringify({ status: act === "cm-resolve" ? "resolved" : "open" }) });
       rep.comments = rep.comments.map((x) => (x.id === Number(id) ? c : x));
     } else if (act === "cm-del") {
