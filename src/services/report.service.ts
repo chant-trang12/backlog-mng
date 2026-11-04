@@ -3,6 +3,7 @@ import { db } from "../db/database.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { fillPptx, type FillData } from "./pptx.service.js";
 import { ReportError, getTemplateFile, type TemplateField } from "./reportTemplate.service.js";
+import { listReportComments } from "./reportComment.service.js";
 import { childPeriods, exportFileName, periodLabel, periodShort, previousPeriod, validIdx, type PeriodType } from "./reportPeriod.util.js";
 
 export { ReportError };
@@ -241,6 +242,7 @@ export async function getReport(id: number, scope: DataScope) {
     status: report.status, label: periodLabel(type, report.year, report.idx), file_name: tpl?.file_name ?? null,
     slide_count: tpl?.slide_count ?? 0, last_exported_at: report.last_exported_at, updated_at: report.updated_at,
     has_prev: !!prevReport, prev_label: prevLabel, fields: out,
+    comments: await listReportComments(id),
     changed_children: changed, missing_children: missingChildren,
   };
 }
@@ -377,7 +379,17 @@ export async function exportReport(id: number, byUser: string | null, scope: Dat
       };
     if (f.required && f.kind !== "auto" && isEmpty(f.kind, c)) missingRequired.push(f.label);
   }
-  const file = await fillPptx(Buffer.from(tplFile.file_data), data);
+  // Góp ý của báo cáo -> Comment của slide trong file xuất (kèm tên đầu mục + trạng thái).
+  const labelByCode = new Map(fields.map((f) => [f.code, f.label]));
+  const slideByCode = new Map(fields.map((f) => [f.code, f.slide_no]));
+  const comments = (await listReportComments(id))
+    .map((c) => ({
+      slide_no: slideByCode.get(c.field_code) ?? c.slide_no ?? 1,
+      author: c.author_name ?? "Góp ý",
+      date: (c.created_at as unknown) instanceof Date ? (c.created_at as unknown as Date) : new Date(String(c.created_at).replace(" ", "T") + (String(c.created_at).includes("T") ? "" : "Z")),
+      text: `${c.status === "resolved" ? "[Đã xử lý] " : ""}[${labelByCode.get(c.field_code) ?? c.field_code}] ${c.content}`,
+    }));
+  const file = await fillPptx(Buffer.from(tplFile.file_data), data, comments);
   const fileName = exportFileName(type, report.year, report.idx);
   const last = (await db("report_versions").where({ report_id: id }).max({ m: "version_no" }).first()) as any;
   const versionNo = Number(last?.m ?? 0) + 1;

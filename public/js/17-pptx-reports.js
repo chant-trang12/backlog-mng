@@ -47,6 +47,7 @@ const pptx = {
   search: "", // từ khoá tìm trong báo cáo đang mở
   slideFilter: "all", // "all" hoặc số slide đang hiển thị (nhập theo từng trang slide)
   collapsed: new Set(), // mã các đầu mục đang thu gọn
+  onlyOpenComments: false, // chỉ hiện đầu mục có góp ý chưa xử lý
 };
 
 const px = (id) => document.getElementById(id);
@@ -89,6 +90,7 @@ async function loadPptxOverview() {
 
 async function openPptxReport(id, rerenderPicker = true) {
   pptx.report = await api(`/api/reports/${id}`);
+  refreshSpNavBadge();
   pptx.activeCode = pptx.report.fields[0]?.code ?? null;
   // Báo cáo nhiều đầu mục: mặc định chỉ hiện 1 slide (nhập theo từng trang); ít đầu mục thì hiện tất cả.
   const slides = pxSlideNumbers(pptx.report);
@@ -239,16 +241,58 @@ function pxSummary(f) {
   if (f.kind === "paragraph") { const t = (c.text ?? "").trim().replace(/\s+/g, " "); return t ? (t.length > 60 ? t.slice(0, 60) + "…" : t) : "chưa nhập"; }
   return "tự động";
 }
+// ---- Góp ý theo đầu mục ----
+const pxCommentsOf = (code) => (pptx.report?.comments ?? []).filter((c) => c.field_code === code);
+const pxOpenOf = (list) => list.filter((c) => c.status === "open").length;
+function renderPptxComments(f) {
+  const list = pxCommentsOf(f.code);
+  const open = pxOpenOf(list);
+  return `<div class="pptx-cm">
+    <div class="pptx-cm-head">💬 Góp ý${list.length ? ` · ${open} chưa xử lý / ${list.length}` : ""}</div>
+    ${list
+      .map(
+        (c) => `<div class="pptx-cm-item${c.status === "resolved" ? " is-resolved" : ""}">
+        <div class="pptx-cm-meta"><b>${pxEsc(c.author_name ?? "Ẩn danh")}</b><span class="muted">${pxDateTime(c.created_at)}</span>
+          <span class="pptx-pill ${c.status === "resolved" ? "ok" : "warn"}">${c.status === "resolved" ? "✓ Đã xử lý" : "● Mới"}</span>
+          <span style="flex:1"></span>
+          ${c.status === "resolved" ? `<button type="button" class="small write-action" data-act="cm-open" data-id="${c.id}">Mở lại</button>` : `<button type="button" class="small btn-view write-action" data-act="cm-resolve" data-id="${c.id}">Đã xử lý</button>`}
+          <button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button></div>
+        <div class="pptx-cm-text">${pxEsc(c.content).replace(/\n/g, "<br/>")}</div>
+        ${c.status === "resolved" && c.resolved_by ? `<div class="muted" style="font-size:.75rem">Xử lý bởi ${pxEsc(c.resolved_by)}</div>` : ""}</div>`,
+      )
+      .join("")}
+    <div class="pptx-cm-form write-action"><textarea class="pptx-cm-input" rows="2" placeholder="Viết góp ý cho đầu mục này…"></textarea><button type="button" class="small primary" data-act="cm-add">Gửi góp ý</button></div>
+  </div>`;
+}
+
+// Chấm đỏ ở menu trái: số góp ý CHƯA XỬ LÝ của phòng đang xem (cùng kiểu chấm đỏ của Yêu cầu tính năng).
+function updateSpNavBadge(count) {
+  const badge = document.getElementById("sp-nav-badge");
+  if (!badge) return;
+  badge.hidden = !(count > 0);
+  badge.textContent = count > 99 ? "99+" : String(count);
+}
+async function refreshSpNavBadge() {
+  if (state.currentDepartmentId == null) return updateSpNavBadge(0);
+  try {
+    const r = await api(`/api/report-comments/open-count?department_id=${state.currentDepartmentId}`);
+    updateSpNavBadge(r?.count ?? 0);
+  } catch {
+    // lỗi mạng tạm thời: giữ nguyên chấm cũ
+  }
+}
+
 // Thanh chọn TRANG (slide) + thu gọn/mở rộng tất cả. Chấm cam = còn đầu mục bắt buộc chưa nhập.
 function renderPptxSlideBar(rep) {
   const slides = pxSlideNumbers(rep);
   const chip = (key, label, fields) => {
     const need = fields.filter((f) => f.required && f.kind !== "auto" && !f.filled).length;
     const filled = fields.filter((f) => f.kind === "auto" || f.filled).length;
-    return `<button type="button" aria-pressed="${String(pptx.slideFilter) === String(key)}" class="pptx-slide-chip${String(pptx.slideFilter) === String(key) ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
+    const openCm = fields.reduce((n, f) => n + pxOpenOf(pxCommentsOf(f.code)), 0);
+    return `<button type="button" aria-pressed="${String(pptx.slideFilter) === String(key)}" class="pptx-slide-chip${String(pptx.slideFilter) === String(key) ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${openCm ? `<em class="pptx-slide-cm" title="Góp ý chưa xử lý">${openCm}</em>` : ""}${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
   };
   return `<div class="pptx-slide-chips">${chip("all", "Tất cả", rep.fields)}${slides.map((n) => chip(String(n), n ? `Slide ${n}` : "Khác", rep.fields.filter((f) => (f.slide_no ?? 0) === n))).join("")}</div>
-    <div class="pptx-slide-tools"><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small pptx-btn-expand" data-act="expand-all">Mở rộng tất cả</button></div>`;
+    <div class="pptx-slide-tools"><button type="button" class="small pptx-btn-cm${pptx.onlyOpenComments ? " is-on" : ""}" data-act="only-open-cm" title="Chỉ hiện đầu mục có góp ý chưa xử lý">💬 Góp ý chưa xử lý (${rep.fields.reduce((n, f) => n + pxOpenOf(pxCommentsOf(f.code)), 0)})</button><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small pptx-btn-expand" data-act="expand-all">Mở rộng tất cả</button></div>`;
 }
 
 function renderPptxSectionInner(f, i) {
@@ -260,10 +304,11 @@ function renderPptxSectionInner(f, i) {
       <span class="pptx-num">${i + 1}</span>
       <div style="flex:1"><b style="font-size:1.05rem">${pxEsc(f.label)}</b>
         <div class="muted" style="font-size:.78rem">Slide ${f.slide_no ?? "?"} · mã <code>{{${pxEsc(f.code)}}}</code> · ${PPTX_KINDS[f.kind]}${f.required ? " · bắt buộc" : ""}${sourceTxt}${collapsed ? ` · <b>${pxEsc(pxSummary(f))}</b>` : ""}</div></div>
+      ${pxCommentsOf(f.code).length ? `<span class="pptx-cm-badge${pxOpenOf(pxCommentsOf(f.code)) ? " has-open" : ""}" title="Góp ý">💬 ${pxOpenOf(pxCommentsOf(f.code)) || pxCommentsOf(f.code).length}</span>` : ""}
       <span data-pill>${pptxFieldPill(f)}</span>
       <button type="button" class="pptx-chev" data-act="toggle" title="${collapsed ? "Mở rộng" : "Thu gọn"}">${collapsed ? "▸" : "▾"}</button>
     </div>
-    ${collapsed ? "" : `<div class="pptx-sec-body">${renderPptxBody(f)}</div>`}`;
+    ${collapsed ? "" : `<div class="pptx-sec-body">${renderPptxBody(f)}</div>${renderPptxComments(f)}`}`;
 }
 
 function renderPptxBody(f) {
@@ -481,6 +526,12 @@ function bindPptxReport() {
         px("pptx-preview").innerHTML = renderPptxPreview();
       }
     } else if (tool) {
+      if (tool.dataset.act === "only-open-cm") {
+        pptx.onlyOpenComments = !pptx.onlyOpenComments;
+        px("pptx-slidebar").innerHTML = renderPptxSlideBar(pptx.report);
+        applyPptxSearch();
+        return;
+      }
       if (tool.dataset.act === "collapse-all") pptx.report.fields.forEach((f) => pptx.collapsed.add(f.code));
       else pptx.collapsed.clear();
       pptx.report.fields.forEach((f, i) => {
@@ -528,9 +579,10 @@ function applyPptxSearch() {
   for (const f of rep.fields) {
     const el = px(`pptx-sec-${f.code}`);
     if (!el) continue;
-    const match = words.length
+    const base = words.length
       ? words.every((w) => pxSearchText(f).includes(w))
-      : pptx.slideFilter === "all" || String(f.slide_no ?? 0) === String(pptx.slideFilter);
+      : pptx.onlyOpenComments || pptx.slideFilter === "all" || String(f.slide_no ?? 0) === String(pptx.slideFilter);
+    const match = base && (!pptx.onlyOpenComments || pxOpenOf(pxCommentsOf(f.code)) > 0);
     el.hidden = !match;
     if (match) shown++;
   }
@@ -718,6 +770,7 @@ async function onPptxMainClick(e) {
   const f = pxField(code);
   const act = btn.dataset.act;
   const id = btn.dataset.id;
+  if (act.startsWith("cm-")) return onPptxCommentAction(code, act, id, sec);
   if (act === "add") {
     pptx.editing = { code, id: null };
     renderPptxSection(code);
@@ -762,6 +815,31 @@ async function onPptxMainClick(e) {
     } catch (err) {
       showToast(err.message);
     }
+  }
+}
+
+async function onPptxCommentAction(code, act, id, sec) {
+  const rep = pptx.report;
+  try {
+    if (act === "cm-add") {
+      const input = sec.querySelector(".pptx-cm-input");
+      const content = (input?.value ?? "").trim();
+      if (!content) return showToast("Hãy nhập nội dung góp ý.");
+      const c = await api(`/api/reports/${rep.id}/comments`, { method: "POST", body: JSON.stringify({ field_code: code, content }) });
+      rep.comments.push(c);
+    } else if (act === "cm-resolve" || act === "cm-open") {
+      const c = await api(`/api/report-comments/${id}`, { method: "PUT", body: JSON.stringify({ status: act === "cm-resolve" ? "resolved" : "open" }) });
+      rep.comments = rep.comments.map((x) => (x.id === Number(id) ? c : x));
+    } else if (act === "cm-del") {
+      if (!(await confirmDialog("Xóa góp ý này?", { title: "Xác nhận xóa", okText: "Xóa" }))) return;
+      await api(`/api/report-comments/${id}`, { method: "DELETE" });
+      rep.comments = rep.comments.filter((x) => x.id !== Number(id));
+    }
+    renderPptxSection(code);
+    applyPptxSearch();
+    refreshSpNavBadge();
+  } catch (e) {
+    showToast(e.message);
   }
 }
 

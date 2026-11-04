@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as tpl from "../services/reportTemplate.service.js";
 import * as rep from "../services/report.service.js";
+import * as cm from "../services/reportComment.service.js";
 import { buildSamplePptx } from "../services/pptxSample.service.js";
 import { isPeriodType, type PeriodType } from "../services/reportPeriod.util.js";
 import { parsePositiveInt } from "../utils/validate.js";
@@ -173,4 +174,47 @@ export async function downloadVersionHandler(req: Request, res: Response) {
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
   res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(v.file_name)}`);
   res.send(Buffer.from(v.file_data));
+}
+
+// ---- Góp ý theo đầu mục ----
+function commentUser(req: Request): cm.CommentUser {
+  const u = req.appUser;
+  return { id: u?.id ?? null, name: u?.name ?? u?.username ?? null, canDeleteAny: !u || u.role === "admin" || u.role === "subadmin" };
+}
+export async function addCommentHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    res.status(201).json(await cm.addComment(id, String(req.body?.field_code ?? ""), String(req.body?.content ?? ""), commentUser(req), scopeOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function setCommentStatusHandler(req: Request, res: Response) {
+  const cid = parsePositiveInt(String(req.params.cid ?? ""));
+  if (!cid) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    const row = await cm.setCommentStatus(cid, String(req.body?.status ?? ""), commentUser(req), scopeOf(req));
+    if (!row) return res.status(404).json({ error: "Không tìm thấy góp ý" });
+    res.json(row);
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function deleteCommentHandler(req: Request, res: Response) {
+  const cid = parsePositiveInt(String(req.params.cid ?? ""));
+  if (!cid) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    if (!(await cm.deleteComment(cid, commentUser(req), scopeOf(req)))) return res.status(404).json({ error: "Không tìm thấy góp ý" });
+    res.status(204).end();
+  } catch (e) {
+    fail(res, e);
+  }
+}
+// Số góp ý chưa xử lý của phòng đang xem (chấm đỏ ở menu).
+export async function openCommentCountHandler(req: Request, res: Response) {
+  const requested = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const d = resolveListDepartmentId(scopeOf(req), requested);
+  if (d === SCOPE_EMPTY || d == null) return res.json({ count: 0 });
+  res.json({ count: await cm.openCommentCount(d) });
 }

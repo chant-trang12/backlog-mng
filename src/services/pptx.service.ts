@@ -127,7 +127,7 @@ function replaceTokens(text: string, scalar: (code: string, sub?: string) => str
 }
 
 // Điền dữ liệu vào file mẫu. Mã không có dữ liệu -> thay bằng chuỗi rỗng.
-export async function fillPptx(buffer: Buffer, data: FillData): Promise<Buffer> {
+export async function fillPptx(buffer: Buffer, data: FillData, comments: SlideComment[] = []): Promise<Buffer> {
   const zip = await JSZip.loadAsync(buffer);
   // Điền cả slide lẫn ghi chú thuyết trình (Notes).
   const targets = [...slideEntries(zip), ...(await noteEntries(zip)).map((n) => ({ name: n.name, no: n.slideFileNo }))];
@@ -175,7 +175,106 @@ export async function fillPptx(buffer: Buffer, data: FillData): Promise<Buffer> 
 
     zip.file(s.name, xml);
   }
+  if (comments.length) await addSlideComments(zip, comments);
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+}
+
+export interface SlideComment {
+  slide_no: number; // số thứ tự slide (1-based, theo thứ tự quét mã)
+  author: string;
+  date: Date;
+  text: string;
+}
+
+const REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "GY";
+
+// Ghi góp ý vào phần Comment của từng slide (định dạng comment kinh điển của PowerPoint:
+// ppt/commentAuthors.xml + ppt/comments/commentN.xml, nối qua .rels và [Content_Types].xml).
+async function addSlideComments(zip: JSZip, comments: SlideComment[]): Promise<void> {
+  const slides = slideEntries(zip);
+  const ctFile = zip.file("[Content_Types].xml");
+  let ct = ctFile ? await ctFile.async("string") : "";
+  const addOverride = (part: string, type: string) => {
+    if (!ct.includes(`PartName="${part}"`)) ct = ct.replace("</Types>", `<Override PartName="${part}" ContentType="${type}"/></Types>`);
+  };
+
+  // Tác giả: dùng lại commentAuthors.xml nếu mẫu đã có.
+  const authorsPath = "ppt/commentAuthors.xml";
+  const authors: { id: number; name: string; initials: string; lastIdx: number }[] = [];
+  const old = zip.file(authorsPath);
+  if (old) {
+    for (const m of (await old.async("string")).matchAll(/<p:cmAuthor\b([^>]*)\/?>/g)) {
+      const a = m[1];
+      authors.push({
+        id: Number(a.match(/\bid="(\d+)"/)?.[1] ?? 0),
+        name: unesc(a.match(/\bname="([^"]*)"/)?.[1] ?? ""),
+        initials: a.match(/\binitials="([^"]*)"/)?.[1] ?? "",
+        lastIdx: Number(a.match(/\blastIdx="(\d+)"/)?.[1] ?? 0),
+      });
+    }
+  }
+  const authorOf = (name: string) => {
+    let a = authors.find((x) => x.name === name);
+    if (!a) {
+      a = { id: authors.reduce((mx, x) => Math.max(mx, x.id), -1) + 1, name, initials: initialsOf(name), lastIdx: 0 };
+      authors.push(a);
+    }
+    return a;
+  };
+
+  const bySlide = new Map<number, SlideComment[]>();
+  for (const c of comments) bySlide.set(c.slide_no, [...(bySlide.get(c.slide_no) ?? []), c]);
+  let fileCounter = Object.keys(zip.files).filter((n) => /^ppt\/comments\/comment\d+\.xml$/.test(n)).length;
+
+  for (const [slideNo, list] of bySlide) {
+    const slide = slides[slideNo - 1];
+    if (!slide) continue;
+    const relsPath = `ppt/slides/_rels/slide${slide.no}.xml.rels`;
+    let rels = (await zip.file(relsPath)?.async("string")) ?? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+    const existing = rels.match(/<Relationship\b[^>]*Type="[^"]*\/comments"[^>]*>/)?.[0];
+    let commentPath: string;
+    let cms = "";
+    let existingXml: string | null = null;
+    if (existing) {
+      const target = existing.match(/Target="([^"]*)"/)![1];
+      commentPath = "ppt/" + target.replace(/^\.\.\//, "");
+      existingXml = (await zip.file(commentPath)?.async("string")) ?? null;
+    } else {
+      commentPath = `ppt/comments/comment${++fileCounter}.xml`;
+      const ids = [...rels.matchAll(/Id="rId(\d+)"/g)].map((m) => Number(m[1]));
+      const rid = `rId${(ids.length ? Math.max(...ids) : 0) + 1}`;
+      rels = rels.replace("</Relationships>", `<Relationship Id="${rid}" Type="${REL_NS}/comments" Target="../comments/${commentPath.split("/").pop()}"/></Relationships>`);
+      zip.file(relsPath, rels);
+    }
+    list.forEach((c, k) => {
+      const a = authorOf(c.author);
+      a.lastIdx += 1;
+      cms += `<p:cm authorId="${a.id}" dt="${c.date.toISOString().replace("Z", "")}" idx="${a.lastIdx}"><p:pos x="${10 + (k % 5) * 40}" y="${10 + k * 40}"/><p:text>${esc(c.text)}</p:text></p:cm>`;
+    });
+    const xml = existingXml
+      ? existingXml.replace("</p:cmLst>", `${cms}</p:cmLst>`)
+      : `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:cmLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">${cms}</p:cmLst>`;
+    zip.file(commentPath, xml);
+    addOverride("/" + commentPath, "application/vnd.openxmlformats-officedocument.presentationml.comments+xml");
+  }
+
+  zip.file(
+    authorsPath,
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:cmAuthorLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${REL_NS}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">${authors
+      .map((a) => `<p:cmAuthor id="${a.id}" name="${esc(a.name)}" initials="${esc(a.initials)}" lastIdx="${a.lastIdx}" clrIdx="${a.id % 8}"/>`)
+      .join("")}</p:cmAuthorLst>`,
+  );
+  addOverride("/" + authorsPath, "application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml");
+  zip.file("[Content_Types].xml", ct);
+
+  // presentation.xml.rels: quan hệ tới commentAuthors.xml.
+  const presRelsPath = "ppt/_rels/presentation.xml.rels";
+  const presRels = await zip.file(presRelsPath)?.async("string");
+  if (presRels && !presRels.includes("/commentAuthors")) {
+    const ids = [...presRels.matchAll(/Id="rId(\d+)"/g)].map((m) => Number(m[1]));
+    zip.file(presRelsPath, presRels.replace("</Relationships>", `<Relationship Id="rId${(ids.length ? Math.max(...ids) : 0) + 1}" Type="${REL_NS}/commentAuthors" Target="commentAuthors.xml"/></Relationships>`));
+  }
 }
 
 function paragraphsText(xml: string): string {

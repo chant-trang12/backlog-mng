@@ -3829,3 +3829,19 @@ button.pptx-btn-expand:hover { background: #ddd6fe; }
 /* Nút "Tất cả" (thanh chọn slide): nền riêng để phân biệt với các nút Slide N; khi đang chọn thì dùng nền xanh đậm như nút slide. */
 .pptx-slide-chip[data-slide="all"]:not(.is-active) { background: #fdecc8; border-color: #fcd34d; color: #8a5200; }
 .pptx-slide-chip[data-slide="all"]:not(.is-active) i { color: #8a5200; }
+
+/* Góp ý theo đầu mục (Báo cáo PowerPoint) + chấm đỏ ở menu "Kế hoạch tổng hợp" (giống Yêu cầu tính năng). */
+.nav-item[data-page="summary-plan"] { padding-right: 32px; }
+.pptx-cm { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: var(--stone-50); border: 1px solid var(--stone-200); }
+.pptx-cm-head { font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
+.pptx-cm-item { padding: 8px 10px; margin-bottom: 8px; border-radius: 8px; background: #fff; border: 1px solid #fcd34d; }
+.pptx-cm-item.is-resolved { border-color: var(--stone-200); opacity: 0.8; }
+.pptx-cm-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.82rem; }
+.pptx-cm-text { margin-top: 4px; white-space: normal; }
+.pptx-cm-form { display: flex; gap: 8px; align-items: flex-start; }
+.pptx-cm-input { flex: 1; min-width: 0; box-sizing: border-box; resize: vertical; font: inherit; }
+.pptx-cm-badge { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--stone-100); color: var(--stone-600); white-space: nowrap; }
+.pptx-cm-badge.has-open { background: var(--red-200); color: var(--red-800); }
+.pptx-slide-cm { font-style: normal; font-size: 0.68rem; font-weight: 700; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px; text-align: center; border-radius: 999px; background: var(--delete); color: #fff; }
+button.pptx-btn-cm { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
+button.pptx-btn-cm.is-on { background: var(--red-600); border-color: var(--red-700); color: #fff; }

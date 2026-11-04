@@ -22,6 +22,10 @@ router.post("/reports/:id/copy-previous", c.copyPreviousHandler);
 router.post("/reports/:id/refresh", c.refreshHandler);
 router.post("/reports/:id/export", c.exportReportHandler);
 router.get("/reports/:id/versions", c.listVersionsHandler);
+router.post("/reports/:id/comments", c.addCommentHandler);
+router.put("/report-comments/:cid", c.setCommentStatusHandler);
+router.delete("/report-comments/:cid", c.deleteCommentHandler);
+router.get("/report-comments/open-count", c.openCommentCountHandler);
 router.get("/report-versions/:vid/download", c.downloadVersionHandler);
 
 export default router;

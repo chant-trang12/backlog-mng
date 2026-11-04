@@ -261,6 +261,7 @@ async function selectDepartment(id) {
     } else {
       await refreshFeatureRequestNavBadge().catch(() => {});
     }
+    if (typeof refreshSpNavBadge === "function") await refreshSpNavBadge().catch(() => {});
     // "Kế hoạch tổng hợp" — cùng kiểu lazy-reload: chỉ nạp lại ngay nếu
     // trang đang mở sẵn, trang chưa mở thì tự nạp lại khi bấm vào (nav
     // click handler, 09-main.js), tránh gọi API thừa cho trang đang đóng.

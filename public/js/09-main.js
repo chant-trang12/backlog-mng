@@ -260,6 +260,7 @@ async function checkAuth() {
         loadMemberParticipation(),
         loadRoadmap(),
         refreshFeatureRequestNavBadge(),
+        typeof refreshSpNavBadge === "function" ? refreshSpNavBadge() : null,
       ]),
     )
     .catch((err) => showToast(err.message));

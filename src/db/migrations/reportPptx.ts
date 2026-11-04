@@ -73,6 +73,25 @@ export async function migrateReportPptxTables(): Promise<void> {
       t.unique(["report_id", "code"]);
     });
   }
+  // Góp ý của sếp/đồng nghiệp theo từng đầu mục của báo cáo: chỉ có 2 trạng thái Mới(open) / Đã xử lý(resolved).
+  if (!(await db.schema.hasTable("report_comments"))) {
+    await db.schema.createTable("report_comments", (t) => {
+      t.increments("id").primary();
+      t.integer("report_id").notNullable().references("id").inTable("reports").onDelete("CASCADE");
+      t.string("field_code", 100).notNullable();
+      t.integer("slide_no");
+      t.text("content").notNullable();
+      t.string("status", 20).notNullable().defaultTo("open");
+      t.integer("author_id");
+      t.string("author_name", 255);
+      t.string("resolved_by", 255);
+      t.dateTime("resolved_at");
+      t.boolean("is_deleted").notNullable().defaultTo(false);
+      t.dateTime("deleted_at");
+      t.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      t.index(["report_id"]);
+    });
+  }
   if (!(await db.schema.hasTable("report_versions"))) {
     await db.schema.createTable("report_versions", (t) => {
       t.increments("id").primary();
