@@ -45,6 +45,8 @@ const pptx = {
   tpl: null,
   pendingUpload: null,
   search: "", // từ khoá tìm trong báo cáo đang mở
+  slideFilter: "all", // "all" hoặc số slide đang hiển thị (nhập theo từng trang slide)
+  collapsed: new Set(), // mã các đầu mục đang thu gọn
 };
 
 const px = (id) => document.getElementById(id);
@@ -88,6 +90,10 @@ async function loadPptxOverview() {
 async function openPptxReport(id, rerenderPicker = true) {
   pptx.report = await api(`/api/reports/${id}`);
   pptx.activeCode = pptx.report.fields[0]?.code ?? null;
+  // Báo cáo nhiều đầu mục: mặc định chỉ hiện 1 slide (nhập theo từng trang); ít đầu mục thì hiện tất cả.
+  const slides = pxSlideNumbers(pptx.report);
+  pptx.slideFilter = pptx.report.fields.length > 6 && slides.length > 1 ? slides[0] : "all";
+  pptx.collapsed = new Set();
   pptx.editing = null;
   pptx.deleting = null;
   pptx.savedAt = null;
@@ -195,7 +201,8 @@ function renderPptxReport() {
           <div class="pptx-search"><input type="search" id="pptx-search" placeholder="Tìm trong báo cáo: tên đầu mục, mã {{...}} hoặc nội dung…" value="${pxEsc(pptx.search)}" /><span class="muted" id="pptx-search-count"></span></div>
           <div id="pptx-warnings">${renderPptxWarnings(rep, missing, aggSources)}</div>
         </div>
-        ${rep.fields.map((f, i) => `<div class="pptx-card pptx-section" id="pptx-sec-${f.code}" data-code="${f.code}">${renderPptxSectionInner(f, i)}</div>`).join("")}
+        <div class="pptx-card pptx-slidebar" id="pptx-slidebar">${renderPptxSlideBar(rep)}</div>
+        ${rep.fields.map((f, i) => `<div class="pptx-card pptx-section${pptx.collapsed.has(f.code) ? " is-collapsed" : ""}" id="pptx-sec-${f.code}" data-code="${f.code}">${renderPptxSectionInner(f, i)}</div>`).join("")}
       </div>
       <aside class="pptx-side"><div id="pptx-preview">${renderPptxPreview()}</div></aside>
     </div>`;
@@ -221,17 +228,42 @@ function pptxFieldPill(f) {
   return f.filled ? '<span class="pptx-pill ok">● Đã nhập</span>' : '<span class="pptx-pill warn">● Chưa nhập</span>';
 }
 
+// Số slide có đầu mục (tăng dần); đầu mục chưa rõ slide gom vào 0.
+function pxSlideNumbers(rep) {
+  return [...new Set(rep.fields.map((f) => f.slide_no ?? 0))].sort((a, b) => a - b);
+}
+function pxSummary(f) {
+  const c = f.content ?? {};
+  if (f.kind === "table") return `${(c.rows ?? []).filter((r) => r.ten).length} chỉ tiêu`;
+  if (f.kind === "list") return `${(c.items ?? []).filter((i) => i.text && i.selected !== false).length} dòng`;
+  if (f.kind === "paragraph") { const t = (c.text ?? "").trim().replace(/\s+/g, " "); return t ? (t.length > 60 ? t.slice(0, 60) + "…" : t) : "chưa nhập"; }
+  return "tự động";
+}
+// Thanh chọn TRANG (slide) + thu gọn/mở rộng tất cả. Chấm cam = còn đầu mục bắt buộc chưa nhập.
+function renderPptxSlideBar(rep) {
+  const slides = pxSlideNumbers(rep);
+  const chip = (key, label, fields) => {
+    const need = fields.filter((f) => f.required && f.kind !== "auto" && !f.filled).length;
+    const filled = fields.filter((f) => f.kind === "auto" || f.filled).length;
+    return `<button type="button" class="pptx-slide-chip${pptx.slideFilter === key ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
+  };
+  return `<div class="pptx-slide-chips">${chip("all", "Tất cả", rep.fields)}${slides.map((n) => chip(String(n), n ? `Slide ${n}` : "Khác", rep.fields.filter((f) => (f.slide_no ?? 0) === n))).join("")}</div>
+    <div class="pptx-slide-tools"><button type="button" class="small" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small" data-act="expand-all">Mở rộng tất cả</button></div>`;
+}
+
 function renderPptxSectionInner(f, i) {
   const rep = pptx.report;
+  const collapsed = pptx.collapsed.has(f.code);
   const sourceTxt = rep.period_type === "month" && f.source === "manual" ? "" : ` · Nguồn: ${PPTX_SOURCES[f.source] ?? ""}`;
   return `
     <div class="pptx-sec-head">
       <span class="pptx-num">${i + 1}</span>
       <div style="flex:1"><b style="font-size:1.05rem">${pxEsc(f.label)}</b>
-        <div class="muted" style="font-size:.78rem">Slide ${f.slide_no ?? "?"} · mã <code>{{${pxEsc(f.code)}}}</code> · ${PPTX_KINDS[f.kind]}${f.required ? " · bắt buộc" : ""}${sourceTxt}</div></div>
+        <div class="muted" style="font-size:.78rem">Slide ${f.slide_no ?? "?"} · mã <code>{{${pxEsc(f.code)}}}</code> · ${PPTX_KINDS[f.kind]}${f.required ? " · bắt buộc" : ""}${sourceTxt}${collapsed ? ` · <b>${pxEsc(pxSummary(f))}</b>` : ""}</div></div>
       <span data-pill>${pptxFieldPill(f)}</span>
+      <button type="button" class="pptx-chev" data-act="toggle" title="${collapsed ? "Mở rộng" : "Thu gọn"}">${collapsed ? "▸" : "▾"}</button>
     </div>
-    <div class="pptx-sec-body">${renderPptxBody(f)}</div>`;
+    ${collapsed ? "" : `<div class="pptx-sec-body">${renderPptxBody(f)}</div>`}`;
 }
 
 function renderPptxBody(f) {
@@ -314,7 +346,11 @@ function renderPptxPreview() {
     <div class="row" style="justify-content:space-between"><b>Xem trước</b><span class="muted">Slide ${f.slide_no ?? idx + 1} / ${rep.slide_count}</span></div>
     <div class="pptx-slide"><div class="pptx-slide-bar"><span>BÁO CÁO ${pxEsc(rep.label.toUpperCase())}</span><span>${f.slide_no ?? ""}</span></div>
       <div class="pptx-slide-body"><div style="font-weight:700;margin-bottom:6px">${idx + 1}. ${pxEsc(f.label)}</div>${body}</div></div>
-    <div class="pptx-thumbs">${rep.fields.map((x, k) => `<button type="button" class="pptx-thumb${x.filled ? " is-filled" : ""}${x.code === f.code ? " is-active" : ""}" data-code="${x.code}">${k + 1} · ${pxEsc(x.label)}</button>`).join("")}</div>
+    <div class="pptx-thumbs">${pxSlideNumbers(rep).map((n) => {
+      const fs = rep.fields.filter((x) => (x.slide_no ?? 0) === n);
+      const done = fs.every((x) => x.kind === "auto" || x.filled);
+      return `<button type="button" class="pptx-thumb${done ? " is-filled" : ""}${(f.slide_no ?? 0) === n ? " is-active" : ""}" data-slide="${n}">${n ? `Slide ${n}` : "Khác"} · ${fs.length} mục</button>`;
+    }).join("")}</div>
     <p class="muted" style="font-size:.8rem">Bấm một đầu mục để xem nội dung tương ứng. Bản xem trước chỉ minh hoạ nội dung; font, màu, logo được lấy nguyên từ file mẫu khi xuất.</p>`;
 }
 
@@ -328,6 +364,7 @@ function refreshPptxHeader() {
   const fill = px("pptx-bar-fill");
   if (fill) fill.style.width = `${total ? (done / total) * 100 : 0}%`;
   if (px("pptx-progress-text")) px("pptx-progress-text").textContent = `${done}/${total} đầu mục đã nhập`;
+  if (px("pptx-slidebar")) px("pptx-slidebar").innerHTML = renderPptxSlideBar(rep);
   const missing = rep.fields.filter((f) => f.required && f.kind !== "auto" && !f.filled);
   if (px("pptx-warnings")) px("pptx-warnings").innerHTML = renderPptxWarnings(rep, missing, rep.period_type !== "month");
   if (px("pptx-status")) px("pptx-status").innerHTML = rep.status === "exported" ? '<span class="pptx-pill ok">● Đã xuất</span>' : '<span class="pptx-pill warn">● Nháp</span>';
@@ -341,7 +378,10 @@ function recomputeFilled(f) {
 function renderPptxSection(code) {
   const i = pptx.report.fields.findIndex((f) => f.code === code);
   const el = px(`pptx-sec-${code}`);
-  if (el && i >= 0) el.innerHTML = renderPptxSectionInner(pptx.report.fields[i], i);
+  if (el && i >= 0) {
+    el.classList.toggle("is-collapsed", pptx.collapsed.has(code));
+    el.innerHTML = renderPptxSectionInner(pptx.report.fields[i], i);
+  }
   refreshPptxHeader();
 }
 function schedulePptxSave(code, delay = 700) {
@@ -430,6 +470,26 @@ function bindPptxReport() {
   root.querySelector(".pptx-main").addEventListener("keydown", onPptxMainKey);
   root.querySelector(".pptx-main").addEventListener("change", onPptxMainChange);
   bindPptxDrag(root.querySelector(".pptx-main"));
+  px("pptx-slidebar").addEventListener("click", (e) => {
+    const chip = e.target.closest(".pptx-slide-chip");
+    const tool = e.target.closest("[data-act]");
+    if (chip) {
+      setPptxSlideFilter(chip.dataset.slide);
+      const first = pptx.report.fields.find((f) => chip.dataset.slide === "all" || String(f.slide_no ?? 0) === chip.dataset.slide);
+      if (first) {
+        pptx.activeCode = first.code;
+        px("pptx-preview").innerHTML = renderPptxPreview();
+      }
+    } else if (tool) {
+      if (tool.dataset.act === "collapse-all") pptx.report.fields.forEach((f) => pptx.collapsed.add(f.code));
+      else pptx.collapsed.clear();
+      pptx.report.fields.forEach((f, i) => {
+        const el = px(`pptx-sec-${f.code}`);
+        el.classList.toggle("is-collapsed", pptx.collapsed.has(f.code));
+        el.innerHTML = renderPptxSectionInner(f, i);
+      });
+    }
+  });
   px("pptx-search").addEventListener("input", (e) => {
     pptx.search = e.target.value;
     applyPptxSearch();
@@ -438,9 +498,17 @@ function bindPptxReport() {
   px("pptx-preview").addEventListener("click", (e) => {
     const t = e.target.closest(".pptx-thumb");
     if (!t) return;
-    pptx.activeCode = t.dataset.code;
+    // Bấm 1 slide -> chuyển tới trang slide đó (nếu đang xem từng slide) và xem trước đầu mục đầu tiên của nó.
+    const first = pptx.report.fields.find((x) => String(x.slide_no ?? 0) === t.dataset.slide);
+    if (!first) return;
+    if (pptx.slideFilter !== "all" || pxFold(pptx.search)) {
+      pptx.search = "";
+      if (px("pptx-search")) px("pptx-search").value = "";
+      setPptxSlideFilter(t.dataset.slide);
+    }
+    pptx.activeCode = first.code;
     px("pptx-preview").innerHTML = renderPptxPreview();
-    px(`pptx-sec-${t.dataset.code}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    px(`pptx-sec-${first.code}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
@@ -451,7 +519,7 @@ function pxSearchText(f) {
   const body = f.kind === "table" ? (c.rows ?? []).map((r) => `${r.ten} ${r.don_vi} ${r.ke_hoach ?? ""} ${r.thuc_hien ?? ""}`).join(" ") : f.kind === "list" ? (c.items ?? []).map((i) => i.text).join(" ") : f.kind === "paragraph" ? c.text ?? "" : pptx.report.label;
   return pxFold(`${f.label} ${f.code} ${body}`);
 }
-// Lọc các đầu mục theo từ khoá (ẩn đầu mục không khớp); rỗng = hiện tất cả.
+// Hiện/ẩn đầu mục: đang TÌM KIẾM thì lọc theo từ khoá trên mọi slide; không thì chỉ hiện slide đang chọn (hoặc tất cả).
 function applyPptxSearch() {
   const rep = pptx.report;
   if (!rep) return;
@@ -460,13 +528,19 @@ function applyPptxSearch() {
   for (const f of rep.fields) {
     const el = px(`pptx-sec-${f.code}`);
     if (!el) continue;
-    const text = pxSearchText(f);
-    const match = words.every((w) => text.includes(w));
+    const match = words.length
+      ? words.every((w) => pxSearchText(f).includes(w))
+      : pptx.slideFilter === "all" || String(f.slide_no ?? 0) === String(pptx.slideFilter);
     el.hidden = !match;
     if (match) shown++;
   }
   const count = px("pptx-search-count");
   if (count) count.textContent = words.length ? `Hiện ${shown}/${rep.fields.length} đầu mục` : "";
+}
+function setPptxSlideFilter(key) {
+  pptx.slideFilter = key === "all" ? "all" : Number(key);
+  px("pptx-slidebar").innerHTML = renderPptxSlideBar(pptx.report);
+  applyPptxSearch();
 }
 
 async function changePptxYear(d) {
@@ -631,6 +705,13 @@ async function onPptxMainClick(e) {
   if (pptx.activeCode !== code) {
     pptx.activeCode = code;
     px("pptx-preview").innerHTML = renderPptxPreview();
+  }
+  // Bấm vào dòng tiêu đề đầu mục (hoặc nút ▾/▸) -> thu gọn/mở rộng.
+  if (e.target.closest(".pptx-sec-head")) {
+    if (pptx.collapsed.has(code)) pptx.collapsed.delete(code);
+    else pptx.collapsed.add(code);
+    renderPptxSection(code);
+    return;
   }
   const btn = e.target.closest("[data-act]");
   if (!btn || btn.dataset.act === "pick") return;

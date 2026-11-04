@@ -3793,3 +3793,19 @@ label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
 .pptx-search { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .pptx-search input { flex: 1; min-width: 0; }
 .pptx-section[hidden] { display: none; }
+
+/* Thanh chọn trang (slide) + thu gọn đầu mục của báo cáo PowerPoint. */
+.pptx-slidebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; position: sticky; top: 0; z-index: 3; }
+.pptx-slide-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pptx-slide-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--stone-700); }
+.pptx-slide-chip i { font-style: normal; font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+.pptx-slide-chip.is-done { background: var(--sky-100); border-color: var(--sky-300); color: var(--sky-800); }
+.pptx-slide-chip.is-active { background: var(--sky-600); border-color: var(--sky-600); color: #fff; }
+.pptx-slide-chip.is-active i { color: #fff; }
+.pptx-slide-dot { width: 7px; height: 7px; border-radius: 50%; background: #e08a00; }
+.pptx-slide-tools { display: flex; gap: 6px; }
+.pptx-sec-head { cursor: pointer; }
+.pptx-sec-head:hover .pptx-chev { color: var(--text); }
+.pptx-chev { background: none; border: none; font-size: 1rem; color: var(--muted); cursor: pointer; padding: 4px 8px; }
+.pptx-section.is-collapsed { padding-top: 10px; padding-bottom: 10px; }
+.pptx-section.is-collapsed .pptx-sec-head { margin-bottom: 0; }
