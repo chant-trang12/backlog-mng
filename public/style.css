@@ -3882,3 +3882,12 @@ button.pptx-btn-cm.is-on { background: var(--red-600); border-color: var(--red-7
 .pptx-section { background: #fffdf8; border-color: #f6ecd3; }
 .pptx-section.is-filled { background: #f9fcff; border-color: #dcedfb; }
 .pptx-section.is-auto { background: #fcfaff; border-color: #ebe5fb; }
+
+/* Ô tìm trong báo cáo: khung xanh da trời + nền xanh nhạt + biểu tượng kính lúp để nổi bật. */
+.pptx-search input[type="search"] {
+  border: 2px solid var(--sky-300);
+  background: #f1f9ff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>") no-repeat 12px center;
+  padding: 10px 12px 10px 38px;
+  border-radius: 10px;
+}
+.pptx-search input[type="search"]:focus { border-color: var(--sky-600); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky-600) 22%, transparent); background-color: #fff; }
