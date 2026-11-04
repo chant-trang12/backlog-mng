@@ -215,7 +215,7 @@ function renderPptxReport() {
           <div id="pptx-warnings">${renderPptxWarnings(rep, missing, aggSources)}</div>
         </div>
         <div class="pptx-card pptx-slidebar" id="pptx-slidebar">${renderPptxSlideBar(rep)}</div>
-        ${rep.fields.map((f, i) => `<div class="pptx-card pptx-section${pptx.collapsed.has(f.code) ? " is-collapsed" : ""}" id="pptx-sec-${f.code}" data-code="${f.code}">${renderPptxSectionInner(f, i)}</div>`).join("")}
+        ${rep.fields.map((f, i) => `<div class="pptx-card pptx-section${pptx.collapsed.has(f.code) ? " is-collapsed" : ""}${f.kind === "auto" ? " is-auto" : f.filled ? " is-filled" : ""}" id="pptx-sec-${f.code}" data-code="${f.code}">${renderPptxSectionInner(f, i)}</div>`).join("")}
       </div>
       <aside class="pptx-side"><div id="pptx-preview">${renderPptxPreview()}</div></aside>
     </div>`;
@@ -438,8 +438,11 @@ function renderPptxSection(code) {
   const i = pptx.report.fields.findIndex((f) => f.code === code);
   const el = px(`pptx-sec-${code}`);
   if (el && i >= 0) {
+    const fld = pptx.report.fields[i];
     el.classList.toggle("is-collapsed", pptx.collapsed.has(code));
-    el.innerHTML = renderPptxSectionInner(pptx.report.fields[i], i);
+    el.classList.toggle("is-auto", fld.kind === "auto");
+    el.classList.toggle("is-filled", fld.kind !== "auto" && !!fld.filled);
+    el.innerHTML = renderPptxSectionInner(fld, i);
   }
   refreshPptxHeader();
 }

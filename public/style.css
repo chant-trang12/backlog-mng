@@ -3872,3 +3872,8 @@ button.pptx-btn-cm.is-on { background: var(--red-600); border-color: var(--red-7
 .pptx-cm-item.is-resolved { background: #e3f3fe; }
 .pptx-cm-input { background: #fffbea; }
 .pptx-cm:not(.has-open) .pptx-cm-input { background: #f3faff; }
+
+/* Nền thẻ đầu mục theo trạng thái: chưa nhập = kem nhạt, đã nhập = xanh da trời rất nhạt, tự động = tím rất nhạt. */
+.pptx-section { background: #fffaf0; border-color: #f3e3bd; }
+.pptx-section.is-filled { background: #f3faff; border-color: #cfe9fb; }
+.pptx-section.is-auto { background: #f8f5ff; border-color: #e3dafb; }
