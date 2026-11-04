@@ -3767,7 +3767,7 @@ textarea.pptx-edit-input { width: 100%; box-sizing: border-box; min-height: 64px
 .pptx-pill.muted-pill { background: #ede9fe; color: #5b21b6; }
 
 /* Popup "Sao chép từ tháng khác" (GNV): bố cục gọn + màu xanh da trời như popup Lấy nhiệm vụ từ Backlog. */
-#gnv-copy-dialog .gnv-chip { background: var(--sky-100); color: var(--sky-800); }
+#gnv-copy-dialog .gnv-chip { background: var(--red-200); color: var(--red-800); }
 #gnv-copy-dialog label.gnv-task.is-selected { background: var(--sky-100); border-color: var(--sky-300); }
 #gnv-copy-dialog label.gnv-task input[type="checkbox"],
 #gnv-copy-dialog label.gnv-pick-all input[type="checkbox"],
