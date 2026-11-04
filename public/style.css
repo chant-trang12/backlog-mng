@@ -3788,3 +3788,8 @@ label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
   margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--sky-100); color: var(--sky-800);
   font-size: 0.82rem; line-height: 1.55; display: flex; flex-direction: column; gap: 2px;
 }
+
+/* Ô tìm trong báo cáo PowerPoint. */
+.pptx-search { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.pptx-search input { flex: 1; min-width: 0; }
+.pptx-section[hidden] { display: none; }

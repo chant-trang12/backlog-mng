@@ -44,6 +44,7 @@ const pptx = {
   tplType: "quarter",
   tpl: null,
   pendingUpload: null,
+  search: "", // từ khoá tìm trong báo cáo đang mở
 };
 
 const px = (id) => document.getElementById(id);
@@ -191,6 +192,7 @@ function renderPptxReport() {
             </div>
           </div>
           <div class="pptx-progress"><div class="pptx-bar"><i id="pptx-bar-fill" style="width:${total ? (done / total) * 100 : 0}%"></i></div><b id="pptx-progress-text">${done}/${total} đầu mục đã nhập</b></div>
+          <div class="pptx-search"><input type="search" id="pptx-search" placeholder="Tìm trong báo cáo: tên đầu mục, mã {{...}} hoặc nội dung…" value="${pxEsc(pptx.search)}" /><span class="muted" id="pptx-search-count"></span></div>
           <div id="pptx-warnings">${renderPptxWarnings(rep, missing, aggSources)}</div>
         </div>
         ${rep.fields.map((f, i) => `<div class="pptx-card pptx-section" id="pptx-sec-${f.code}" data-code="${f.code}">${renderPptxSectionInner(f, i)}</div>`).join("")}
@@ -428,6 +430,11 @@ function bindPptxReport() {
   root.querySelector(".pptx-main").addEventListener("keydown", onPptxMainKey);
   root.querySelector(".pptx-main").addEventListener("change", onPptxMainChange);
   bindPptxDrag(root.querySelector(".pptx-main"));
+  px("pptx-search").addEventListener("input", (e) => {
+    pptx.search = e.target.value;
+    applyPptxSearch();
+  });
+  applyPptxSearch();
   px("pptx-preview").addEventListener("click", (e) => {
     const t = e.target.closest(".pptx-thumb");
     if (!t) return;
@@ -435,6 +442,31 @@ function bindPptxReport() {
     px("pptx-preview").innerHTML = renderPptxPreview();
     px(`pptx-sec-${t.dataset.code}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+}
+
+// Chuỗi để tìm của 1 đầu mục: tên + mã + toàn bộ nội dung đã nhập (không phân biệt hoa/thường, bỏ dấu).
+const pxFold = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+function pxSearchText(f) {
+  const c = f.content ?? {};
+  const body = f.kind === "table" ? (c.rows ?? []).map((r) => `${r.ten} ${r.don_vi} ${r.ke_hoach ?? ""} ${r.thuc_hien ?? ""}`).join(" ") : f.kind === "list" ? (c.items ?? []).map((i) => i.text).join(" ") : f.kind === "paragraph" ? c.text ?? "" : pptx.report.label;
+  return pxFold(`${f.label} ${f.code} ${body}`);
+}
+// Lọc các đầu mục theo từ khoá (ẩn đầu mục không khớp); rỗng = hiện tất cả.
+function applyPptxSearch() {
+  const rep = pptx.report;
+  if (!rep) return;
+  const words = pxFold(pptx.search).split(/\s+/).filter(Boolean);
+  let shown = 0;
+  for (const f of rep.fields) {
+    const el = px(`pptx-sec-${f.code}`);
+    if (!el) continue;
+    const text = pxSearchText(f);
+    const match = words.every((w) => text.includes(w));
+    el.hidden = !match;
+    if (match) shown++;
+  }
+  const count = px("pptx-search-count");
+  if (count) count.textContent = words.length ? `Hiện ${shown}/${rep.fields.length} đầu mục` : "";
 }
 
 async function changePptxYear(d) {
