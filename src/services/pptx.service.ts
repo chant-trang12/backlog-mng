@@ -14,7 +14,9 @@ export interface ScannedCode {
   has_row_tokens: boolean;
 }
 
-const TOKEN_RE = /\{\{\s*([A-Za-z0-9_]+)(?:\.([A-Za-z0-9_]+))?\s*\}\}/g;
+// Mã gồm chữ (cả chữ có dấu tiếng Việt, VD "tieu_de_cđs"), số và dấu gạch dưới; chuẩn hoá NFC để khớp dữ liệu đã lưu.
+const TOKEN_RE = /\{\{\s*([\p{L}\p{N}_]+)(?:\.([\p{L}\p{N}_]+))?\s*\}\}/gu;
+const nfc = (s: string) => s.normalize("NFC");
 const PARA_RE = /<a:p(?:\s[^>]*)?>[\s\S]*?<\/a:p>/g;
 const RUN_RE = /<a:r(?:\s[^>]*)?>[\s\S]*?<\/a:r>/g;
 const ROW_RE = /<a:tr(?:\s[^>]*)?>[\s\S]*?<\/a:tr>/g;
@@ -104,7 +106,7 @@ export async function scanPptx(buffer: Buffer): Promise<{ slide_count: number; c
     for (const p of xml.match(PARA_RE) ?? []) {
       const text = paragraphText(p);
       for (const m of text.matchAll(TOKEN_RE)) {
-        const code = m[1];
+        const code = nfc(m[1]);
         const cur = codes.get(code) ?? { code, slide_no: part.slideNo, has_row_tokens: false };
         if (m[2]) cur.has_row_tokens = true;
         codes.set(code, cur);
@@ -121,7 +123,7 @@ export interface FillData {
 }
 
 function replaceTokens(text: string, scalar: (code: string, sub?: string) => string): string {
-  return text.replace(TOKEN_RE, (_, code: string, sub?: string) => scalar(code, sub));
+  return text.replace(TOKEN_RE, (_, code: string, sub?: string) => scalar(nfc(code), sub));
 }
 
 // Điền dữ liệu vào file mẫu. Mã không có dữ liệu -> thay bằng chuỗi rỗng.
@@ -136,7 +138,7 @@ export async function fillPptx(buffer: Buffer, data: FillData): Promise<Buffer> 
     xml = xml.replace(ROW_RE, (row) => {
       const tokens = [...paragraphsText(row).matchAll(TOKEN_RE)].filter((m) => m[2]);
       if (tokens.length === 0) return row;
-      const code = tokens[0][1];
+      const code = nfc(tokens[0][1]);
       const rows = data[code]?.rows ?? [];
       const make = (item: FillItem | null) =>
         row.replace(PARA_RE, (p) => {
@@ -156,7 +158,7 @@ export async function fillPptx(buffer: Buffer, data: FillData): Promise<Buffer> 
         // còn mã dạng {{ma.cot}} ngoài hàng bảng -> xoá trắng
         return text.includes("{{") ? setParagraphText(p, replaceTokens(text, () => "")) : p;
       }
-      const code = m[0][1];
+      const code = nfc(m[0][1]);
       const d = data[code];
       if (!d) return setParagraphText(p, replaceTokens(text, () => ""));
       if (d.kind === "auto" || d.kind === "paragraph") {

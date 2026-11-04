@@ -394,7 +394,7 @@ async function flushPptxSave(code) {
   pptx.dirty.delete(code);
   const f = pxField(code);
   try {
-    await api(`/api/reports/${pptx.report.id}/sections/${code}`, { method: "PUT", body: JSON.stringify({ content: f.content }) });
+    await api(`/api/reports/${pptx.report.id}/sections/${encodeURIComponent(code)}`, { method: "PUT", body: JSON.stringify({ content: f.content }) });
     pptx.report.status = "draft";
     pptx.savedAt = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
     const cur = pptx.overview.reports.find((r) => r.id === pptx.report.id);
@@ -757,7 +757,7 @@ async function onPptxMainClick(e) {
     renderPptxSection(code);
   } else if (act === "pull-prev") {
     try {
-      await api(`/api/reports/${pptx.report.id}/sections/${code}/pull-previous`, { method: "POST" });
+      await api(`/api/reports/${pptx.report.id}/sections/${encodeURIComponent(code)}/pull-previous`, { method: "POST" });
       await reloadPptxReport();
     } catch (err) {
       showToast(err.message);
