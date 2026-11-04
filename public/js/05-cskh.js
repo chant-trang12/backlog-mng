@@ -67,8 +67,7 @@ document.querySelectorAll("#reports-subnav .pill").forEach((pill) => {
   });
 });
 
-// Kế hoạch tổng hợp — 2 tab con chưa có nội dung (mô tả sau), chỉ cần
-// chuyển đổi hiển thị, không tải dữ liệu gì.
+// Kế hoạch tổng hợp — chuyển tab con: đổi hiển thị + nạp lại dữ liệu tab vừa mở.
 document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#summary-plan-subnav .pill").forEach((p) => p.classList.remove("active"));
@@ -76,6 +75,14 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
     ["overtime", "cbnv", "gnv", "pptx"].forEach((tab) => {
       document.getElementById(`summary-plan-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
+    // Chuyển tab -> làm mới dữ liệu của tab vừa mở (dữ liệu có thể đã đổi ở tab khác/đổi tháng/phòng ban).
+    const loaders = {
+      overtime: typeof loadOvertime === "function" ? loadOvertime : null,
+      cbnv: typeof loadCbnvXepLoai === "function" ? loadCbnvXepLoai : null,
+      gnv: typeof loadGnv === "function" ? loadGnv : null,
+      pptx: typeof loadPptx === "function" ? loadPptx : null,
+    };
+    loaders[pill.dataset.tab]?.().catch((err) => showToast(err.message));
   });
 });
 
