@@ -3866,3 +3866,9 @@ button.pptx-btn-cm.is-on { background: var(--red-600); border-color: var(--red-7
 .pptx-cm-item.is-resolved { border-color: var(--sky-300); opacity: 1; background: #fff; }
 .pptx-cm-input { background: #fff; border-color: #e0b84a; }
 .pptx-cm:not(.has-open) .pptx-cm-input { border-color: var(--sky-300); }
+
+/* Nền nhạt cho từng góp ý theo trạng thái + ô nhập (thay nền trắng): Mới = vàng nhạt, Đã xử lý = xanh da trời nhạt. */
+.pptx-cm-item { background: #fff0c2; }
+.pptx-cm-item.is-resolved { background: #e3f3fe; }
+.pptx-cm-input { background: #fffbea; }
+.pptx-cm:not(.has-open) .pptx-cm-input { background: #f3faff; }
