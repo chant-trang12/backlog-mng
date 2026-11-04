@@ -3821,3 +3821,7 @@ label.gnv-opt small { color: var(--muted); font-size: 0.8rem; }
 }
 .pptx-slide-chip.is-active i { color: #e0f2fe; }
 .pptx-slide-chip.is-active .pptx-slide-dot { background: #ffd28a; }
+
+/* Nút "Mở rộng tất cả": tím nhạt (phân biệt với "Thu gọn tất cả" vàng nhạt). */
+button.pptx-btn-expand { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+button.pptx-btn-expand:hover { background: #ddd6fe; }

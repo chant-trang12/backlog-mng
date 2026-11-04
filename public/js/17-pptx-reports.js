@@ -248,7 +248,7 @@ function renderPptxSlideBar(rep) {
     return `<button type="button" aria-pressed="${String(pptx.slideFilter) === String(key)}" class="pptx-slide-chip${String(pptx.slideFilter) === String(key) ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
   };
   return `<div class="pptx-slide-chips">${chip("all", "Tất cả", rep.fields)}${slides.map((n) => chip(String(n), n ? `Slide ${n}` : "Khác", rep.fields.filter((f) => (f.slide_no ?? 0) === n))).join("")}</div>
-    <div class="pptx-slide-tools"><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small btn-view" data-act="expand-all">Mở rộng tất cả</button></div>`;
+    <div class="pptx-slide-tools"><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small pptx-btn-expand" data-act="expand-all">Mở rộng tất cả</button></div>`;
 }
 
 function renderPptxSectionInner(f, i) {
