@@ -100,7 +100,21 @@ const touch = (id: number, extra: Record<string, unknown> = {}) =>
 export async function overview(departmentId: number, year: number) {
   const reports = (await db("reports").where({ department_id: departmentId, year, is_deleted: false }).select("id", "period_type", "idx", "status", "last_exported_at")) as any[];
   const templates = (await db("report_templates").where({ department_id: departmentId }).select("period_type")) as any[];
-  return { reports, templates: templates.map((t) => t.period_type) };
+  // Số góp ý CHƯA XỬ LÝ theo từng báo cáo (để hiện chấm đỏ ở tháng/quý/năm) và theo năm (để biết năm khác có góp ý).
+  const openRows = (await db("report_comments as c")
+    .join("reports as r", "r.id", "c.report_id")
+    .where({ "r.department_id": departmentId, "r.is_deleted": false, "c.is_deleted": false, "c.status": "open" })
+    .groupBy("r.id", "r.year")
+    .select("r.id", "r.year")
+    .count({ n: "*" })) as any[];
+  const openById = new Map(openRows.map((r) => [Number(r.id), Number(r.n)]));
+  const openByYear: Record<number, number> = {};
+  for (const r of openRows) openByYear[Number(r.year)] = (openByYear[Number(r.year)] ?? 0) + Number(r.n);
+  return {
+    reports: reports.map((r) => ({ ...r, open_comments: openById.get(Number(r.id)) ?? 0 })),
+    templates: templates.map((t) => t.period_type),
+    open_by_year: openByYear,
+  };
 }
 
 // ---- Tổng hợp từ kỳ con ----

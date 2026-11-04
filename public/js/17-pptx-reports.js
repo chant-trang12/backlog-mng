@@ -111,7 +111,7 @@ function renderPptxReportView() {
   const root = px("pptx-report-root");
   const hasTemplate = pptx.overview.templates.includes(pptx.type);
   root.innerHTML = `
-    <div class="pptx-card">${renderPptxPicker()}</div>
+    <div class="pptx-card" id="pptx-picker">${renderPptxPicker()}</div>
     ${
       pptx.report
         ? renderPptxReport()
@@ -126,6 +126,13 @@ function renderPptxReportView() {
   bindPptxReport();
 }
 
+// Chấm đỏ trên mũi tên năm: có góp ý chưa xử lý ở năm trước (dir=-1) / năm sau (dir=1).
+function pxYearDot(dir) {
+  const by = pptx.overview.open_by_year ?? {};
+  const has = Object.entries(by).some(([y, n]) => n > 0 && (dir < 0 ? Number(y) < pptx.year : Number(y) > pptx.year));
+  return has ? '<i class="pptx-year-dot" title="Có góp ý chưa xử lý ở năm khác"></i>' : "";
+}
+
 function renderPptxPicker() {
   const t = pptx.type;
   const count = { exported: 0, draft: 0 };
@@ -134,7 +141,8 @@ function renderPptxPicker() {
   const chip = (idx, text) => {
     const r = pptxReportOf(t, idx);
     const st = r ? (r.status === "exported" ? "exported" : "draft") : "none";
-    return `<button type="button" class="pptx-chip is-${st}${pptx.selectedIdx === idx ? " is-selected" : ""}" data-idx="${idx}">${text}<i class="pptx-dot"></i></button>`;
+    const cm = r?.open_comments ?? 0;
+    return `<button type="button" class="pptx-chip is-${st}${pptx.selectedIdx === idx ? " is-selected" : ""}" data-idx="${idx}">${text}<i class="pptx-dot"></i>${cm ? `<em class="pptx-slide-cm pptx-chip-cm" title="Góp ý chưa xử lý">${cm}</em>` : ""}</button>`;
   };
   let grid = "";
   if (t === "month") {
@@ -161,8 +169,11 @@ function renderPptxPicker() {
   return `
     <div class="pptx-picker-head">
       <b style="font-size:1.05rem">Kỳ báo cáo</b>
-      <div class="gnv-seg" id="pptx-type-seg">${PPTX_TYPES.map((x) => `<button type="button" class="gnv-seg-btn${x.key === t ? " active" : ""}" data-type="${x.key}">${x.label}</button>`).join("")}</div>
-      <div class="pptx-year"><button type="button" class="small" id="pptx-year-prev">‹</button><b>${pptx.year}</b><button type="button" class="small" id="pptx-year-next">›</button></div>
+      <div class="gnv-seg" id="pptx-type-seg">${PPTX_TYPES.map((x) => {
+        const cm = pptx.overview.reports.filter((r) => r.period_type === x.key).reduce((n, r) => n + (r.open_comments ?? 0), 0);
+        return `<button type="button" class="gnv-seg-btn${x.key === t ? " active" : ""}" data-type="${x.key}">${x.label}${cm ? `<em class="pptx-slide-cm pptx-seg-cm" title="Góp ý chưa xử lý">${cm}</em>` : ""}</button>`;
+      }).join("")}</div>
+      <div class="pptx-year"><button type="button" class="small" id="pptx-year-prev">‹${pxYearDot(-1)}</button><b>${pptx.year}</b><button type="button" class="small" id="pptx-year-next">›${pxYearDot(1)}</button></div>
       <button class="primary write-action" id="pptx-create-top" ${next == null || pptxReportOf(t, next) ? "disabled" : ""} data-idx="${next ?? ""}">+ Tạo báo cáo ${next ? pxEsc((() => { const l = pxLabel(t, pptx.year, next); return l.charAt(0).toLowerCase() + l.slice(1); })()) : ""}</button>
     </div>
     <div class="pptx-grid pptx-grid-${t}">${grid}</div>
@@ -462,8 +473,9 @@ async function reloadPptxReport() {
 const pxNewId = () => Math.random().toString(36).slice(2, 10);
 
 // ---------------------------------------------------------------- sự kiện màn hình Báo cáo
-function bindPptxReport() {
-  const root = px("pptx-report-root");
+// Gắn sự kiện cho thẻ "Kỳ báo cáo" (đổi loại kỳ, năm, chọn kỳ, tạo báo cáo) — tách riêng để vẽ lại riêng thẻ này khi số góp ý đổi.
+function bindPptxPicker() {
+  const root = px("pptx-picker");
   root.querySelectorAll("#pptx-type-seg .gnv-seg-btn").forEach((b) =>
     b.addEventListener("click", async () => {
       pptx.type = b.dataset.type;
@@ -486,6 +498,24 @@ function bindPptxReport() {
     }),
   );
   px("pptx-create-top")?.addEventListener("click", (e) => createPptxReport(Number(e.currentTarget.dataset.idx)));
+}
+// Cập nhật số góp ý chưa xử lý của báo cáo đang mở vào tổng quan rồi vẽ lại thẻ chọn kỳ (chấm đỏ tháng/quý/năm).
+function refreshPptxPickerBadges() {
+  const r = pptx.report && pptx.overview.reports.find((x) => x.id === pptx.report.id);
+  if (r) {
+    const delta = pxOpenOf(pptx.report.comments ?? []) - (r.open_comments ?? 0);
+    r.open_comments = pxOpenOf(pptx.report.comments ?? []);
+    pptx.overview.open_by_year = { ...(pptx.overview.open_by_year ?? {}), [pptx.year]: Math.max(0, (pptx.overview.open_by_year?.[pptx.year] ?? 0) + delta) };
+  }
+  if (px("pptx-picker")) {
+    px("pptx-picker").innerHTML = renderPptxPicker();
+    bindPptxPicker();
+  }
+}
+
+function bindPptxReport() {
+  const root = px("pptx-report-root");
+  bindPptxPicker();
   px("pptx-create-btn")?.addEventListener("click", () => createPptxReport(pptx.selectedIdx));
   px("pptx-goto-template")?.addEventListener("click", () => setPptxView("template", pptx.type));
   if (!pptx.report) return;
@@ -842,6 +872,7 @@ async function onPptxCommentAction(code, act, id, sec) {
     renderPptxSection(code);
     applyPptxSearch();
     refreshSpNavBadge();
+    refreshPptxPickerBadges();
   } catch (e) {
     showToast(e.message);
   }
