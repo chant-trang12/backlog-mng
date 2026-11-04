@@ -64,6 +64,24 @@ function slideEntries(zip: JSZip): { name: string; no: number }[] {
     .sort((a, b) => a.no - b.no);
 }
 
+// Phần GHI CHÚ thuyết trình (khung Notes dưới slide): ppt/notesSlides/notesSlideN.xml. Mỗi trang ghi chú
+// gắn với 1 slide qua file .rels (Target="../slides/slideM.xml"); không đọc được thì coi như slide N.
+async function noteEntries(zip: JSZip): Promise<{ name: string; slideFileNo: number }[]> {
+  const out: { name: string; slideFileNo: number }[] = [];
+  for (const name of Object.keys(zip.files)) {
+    const m = name.match(/^ppt\/notesSlides\/notesSlide(\d+)\.xml$/);
+    if (!m) continue;
+    let slideFileNo = Number(m[1]);
+    const rels = zip.file(`ppt/notesSlides/_rels/notesSlide${m[1]}.xml.rels`);
+    if (rels) {
+      const t = (await rels.async("string")).match(/Target="\.\.\/slides\/slide(\d+)\.xml"/);
+      if (t) slideFileNo = Number(t[1]);
+    }
+    out.push({ name, slideFileNo });
+  }
+  return out;
+}
+
 // Quét file mẫu: danh sách mã (theo thứ tự xuất hiện) + số slide.
 export async function scanPptx(buffer: Buffer): Promise<{ slide_count: number; codes: ScannedCode[] }> {
   let zip: JSZip;
@@ -75,13 +93,19 @@ export async function scanPptx(buffer: Buffer): Promise<{ slide_count: number; c
   const slides = slideEntries(zip);
   if (slides.length === 0) throw new Error("Không tìm thấy slide nào — hãy tải lên file .pptx hợp lệ.");
   const codes = new Map<string, ScannedCode>();
-  for (const [i, s] of slides.entries()) {
-    const xml = normalizeXml(await zip.file(s.name)!.async("string"));
+  // Quét slide trước, rồi tới ghi chú thuyết trình (mã trong Notes tính theo số thứ tự slide chứa nó).
+  const slideIndex = new Map(slides.map((s, i) => [s.no, i + 1]));
+  const parts = [
+    ...slides.map((s, i) => ({ name: s.name, slideNo: i + 1 })),
+    ...(await noteEntries(zip)).map((n) => ({ name: n.name, slideNo: slideIndex.get(n.slideFileNo) ?? n.slideFileNo })),
+  ];
+  for (const part of parts) {
+    const xml = normalizeXml(await zip.file(part.name)!.async("string"));
     for (const p of xml.match(PARA_RE) ?? []) {
       const text = paragraphText(p);
       for (const m of text.matchAll(TOKEN_RE)) {
         const code = m[1];
-        const cur = codes.get(code) ?? { code, slide_no: i + 1, has_row_tokens: false };
+        const cur = codes.get(code) ?? { code, slide_no: part.slideNo, has_row_tokens: false };
         if (m[2]) cur.has_row_tokens = true;
         codes.set(code, cur);
       }
@@ -103,7 +127,9 @@ function replaceTokens(text: string, scalar: (code: string, sub?: string) => str
 // Điền dữ liệu vào file mẫu. Mã không có dữ liệu -> thay bằng chuỗi rỗng.
 export async function fillPptx(buffer: Buffer, data: FillData): Promise<Buffer> {
   const zip = await JSZip.loadAsync(buffer);
-  for (const s of slideEntries(zip)) {
+  // Điền cả slide lẫn ghi chú thuyết trình (Notes).
+  const targets = [...slideEntries(zip), ...(await noteEntries(zip)).map((n) => ({ name: n.name, no: n.slideFileNo }))];
+  for (const s of targets) {
     let xml = normalizeXml(await zip.file(s.name)!.async("string"));
 
     // 1) Hàng bảng có mã dạng {{ma.cot}} -> nhân bản theo số chỉ tiêu.

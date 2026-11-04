@@ -743,6 +743,7 @@ function renderPptxTemplates() {
         <li>Giữ nguyên tiêu đề, logo, màu. Thay phần nội dung đổi theo kỳ bằng mã, ví dụ <code>{{cv_noi_bat}}</code>.</li>
         <li>Tên kỳ (Tháng 10/2026, Quý III/2026…) dùng mã có sẵn <code>{{ky_bao_cao}}</code>, hệ thống tự điền.</li>
         <li>Bảng chỉ tiêu: đặt trong <b>một hàng</b> của bảng PowerPoint các mã <code>{{ma.ten}}</code> <code>{{ma.don_vi}}</code> <code>{{ma.ke_hoach}}</code> <code>{{ma.thuc_hien}}</code> <code>{{ma.ty_le}}</code> — hàng đó được nhân theo số chỉ tiêu.</li>
+        <li><b>Ghi chú thuyết trình (Notes):</b> gõ mã vào khung Notes dưới slide, ví dụ <code>{{ghi_chu_iso}}</code> (chọn kiểu Đoạn văn) — hệ thống điền cả phần ghi chú khi xuất.</li>
         <li>Lưu file .pptx và tải lên ở đây.</li></ol></div>
       <div class="pptx-card"><h3 style="margin-top:0">Khi thay file mẫu</h3><p>Hệ thống so sánh mã giữ chỗ cũ và mới, báo lại trước khi áp dụng:</p><ul>
         <li><b>Mã giữ nguyên:</b> dữ liệu các kỳ giữ nguyên.</li><li><b>Mã mới:</b> thêm đầu mục mới, các kỳ cũ để trống.</li><li><b>Mã bị bỏ:</b> ẩn đầu mục, không xóa dữ liệu cũ.</li></ul>
