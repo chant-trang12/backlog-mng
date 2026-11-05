@@ -4016,3 +4016,7 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 #otsum-form .field-row:has(textarea) { align-items: start; }
 #otsum-form input[readonly] { background: var(--stone-100); color: var(--stone-600); cursor: default; }
 @media (max-width: 600px) { #otsum-form .field-row { grid-template-columns: 1fr; } }
+
+/* Nút "Lấy từ Chi tiết" (Tổng hợp làm thêm giờ): tím nhạt, khác các nút vàng/cam trong thanh công cụ. */
+button.ots-btn-detail { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+button.ots-btn-detail:hover { background: #ddd6fe; }
