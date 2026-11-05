@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { ReportError } from "./reportTemplate.service.js";
+import { assertCanView, type Actor } from "./reportShare.service.js";
 
 // Góp ý theo đầu mục của báo cáo PowerPoint (người duyệt như sếp góp ý, người lập báo cáo đánh dấu "Đã xử lý").
 export interface ReportComment {
@@ -30,10 +31,10 @@ export async function listReportComments(reportId: number): Promise<ReportCommen
   return (await db("report_comments").where({ report_id: reportId, is_deleted: false }).orderBy("created_at", "asc").orderBy("id", "asc")) as ReportComment[];
 }
 
-export async function addComment(reportId: number, code: string, content: string, user: CommentUser, scope: DataScope): Promise<ReportComment> {
+export async function addComment(reportId: number, code: string, content: string, user: CommentUser, scope: DataScope, actor: Actor): Promise<ReportComment> {
   const report = await reportOf(reportId);
   if (!report) throw new ReportError("Không tìm thấy báo cáo.");
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor); // người được chia sẻ cũng góp ý được
   const text = content.trim();
   if (!text) throw new ReportError("Hãy nhập nội dung góp ý.");
   if (text.length > 2000) throw new ReportError("Góp ý tối đa 2000 ký tự.");
@@ -60,12 +61,12 @@ export async function setCommentStatus(commentId: number, status: string, user: 
   return row as ReportComment;
 }
 
-export async function deleteComment(commentId: number, user: CommentUser, scope: DataScope): Promise<boolean> {
+export async function deleteComment(commentId: number, user: CommentUser, scope: DataScope, actor: Actor): Promise<boolean> {
   const c = (await db("report_comments").where({ id: commentId, is_deleted: false }).first()) as ReportComment | undefined;
   if (!c) return false;
   const report = await reportOf(c.report_id);
   if (!report) return false;
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor);
   // Chỉ người viết (hoặc admin/subadmin; hoặc khi chưa bật đăng nhập SSO) mới xoá được góp ý.
   if (!user.canDeleteAny && user.id != null && c.author_id !== user.id) throw new ReportError("Chỉ người viết góp ý (hoặc admin) mới xóa được.");
   await db("report_comments").where({ id: commentId }).update({ is_deleted: true, deleted_at: db.fn.now() });

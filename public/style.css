@@ -3917,3 +3917,19 @@ label.cbnv-flag-opt small { color: var(--muted); font-size: 0.78rem; }
 /* Bảng "Chi tiết làm thêm giờ" và "KQ xếp loại CBNV": không giới hạn chiều cao — khung cao theo nội dung, trang cuộn dọc bình thường
    (tiêu đề không còn ghim khi cuộn, thanh cuộn ngang vẫn giữ). */
 #ot-table-wrap, #cbnv-table-wrap { max-height: none; }
+
+/* Chia sẻ báo cáo PowerPoint: thanh chọn phạm vi, danh sách được chia sẻ, hộp thoại chia sẻ, chế độ chỉ xem/góp ý. */
+.pptx-scope-bar { margin-bottom: 12px; max-width: 520px; }
+.pptx-shared-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--sky-300); border-radius: 10px; background: var(--sky-100); cursor: pointer; }
+.pptx-shared-item:hover { background: #d4ecfc; }
+.pptx-shared-title { display: flex; gap: 8px; align-items: center; }
+.pptx-share-results { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 190px; overflow-y: auto; }
+.pptx-share-user { display: flex; align-items: center; gap: 4px; width: 100%; text-align: left; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; }
+.pptx-share-user:hover { background: var(--sky-100); border-color: var(--sky-300); }
+.pptx-share-add { margin-left: auto; color: var(--sky-700); font-weight: 700; font-size: 0.8rem; }
+/* Báo cáo được chia sẻ: ẩn mọi nút sửa; chỉ giữ góp ý. */
+.pptx-shared [data-act="add"], .pptx-shared [data-act="edit"], .pptx-shared [data-act="del"], .pptx-shared [data-act="add-row"], .pptx-shared [data-act="del-row"],
+.pptx-shared [data-act="pull-prev"], .pptx-shared [data-act="img-pick"], .pptx-shared [data-act="img-del"], .pptx-shared [data-act="cm-resolve"], .pptx-shared [data-act="cm-open"],
+.pptx-shared .pptx-grip, .pptx-shared .pptx-img-actions, .pptx-shared .pptx-img-drop, .pptx-shared #pptx-delete-report, .pptx-shared #pptx-copy-prev,
+.pptx-shared #pptx-refresh, .pptx-shared #pptx-share-btn { display: none !important; }
+.pptx-shared .pptx-table input, .pptx-shared .pptx-para, .pptx-shared .pptx-cap-input, .pptx-shared .pptx-pick { pointer-events: none; }

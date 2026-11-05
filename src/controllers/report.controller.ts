@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as tpl from "../services/reportTemplate.service.js";
 import * as rep from "../services/report.service.js";
 import * as img from "../services/reportImage.service.js";
+import * as sh from "../services/reportShare.service.js";
 import * as cm from "../services/reportComment.service.js";
 import { buildSamplePptx } from "../services/pptxSample.service.js";
 import { isPeriodType, type PeriodType } from "../services/reportPeriod.util.js";
@@ -18,6 +19,11 @@ function deptOf(req: Request): number | null {
   const raw = req.query.department_id ?? req.body?.department_id;
   const n = raw != null && raw !== "" ? Number(raw) : NaN;
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+// Người thao tác (để xét quyền báo cáo được chia sẻ).
+function actorOf(req: Request): sh.Actor {
+  const u = req.appUser;
+  return { userId: u?.id ?? null, departmentId: u?.department_id ?? null, name: u?.name ?? u?.username ?? null };
 }
 function byUser(req: Request): string | null {
   return req.appUser?.name ?? req.appUser?.username ?? null;
@@ -111,7 +117,7 @@ const idOf = (req: Request) => parsePositiveInt(String(req.params.id ?? ""));
 export async function getReportHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });
-  const r = await rep.getReport(id, scopeOf(req));
+  const r = await rep.getReport(id, scopeOf(req), actorOf(req));
   if (!r) return res.status(404).json({ error: "Không tìm thấy báo cáo" });
   res.json(r);
 }
@@ -151,7 +157,7 @@ export async function exportReportHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    const r = await rep.exportReport(id, byUser(req), scopeOf(req));
+    const r = await rep.exportReport(id, byUser(req), scopeOf(req), actorOf(req));
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
     res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(r.fileName)}`);
     res.setHeader("X-Missing-Required", encodeURIComponent(JSON.stringify(r.missingRequired)));
@@ -165,12 +171,12 @@ export async function exportReportHandler(req: Request, res: Response) {
 export async function listVersionsHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });
-  res.json(await rep.listVersions(id, scopeOf(req)));
+  res.json(await rep.listVersions(id, scopeOf(req), actorOf(req)));
 }
 export async function downloadVersionHandler(req: Request, res: Response) {
   const vid = parsePositiveInt(String(req.params.vid ?? ""));
   if (!vid) return res.status(400).json({ error: "id không hợp lệ" });
-  const v = await rep.getVersionFile(vid, scopeOf(req));
+  const v = await rep.getVersionFile(vid, scopeOf(req), actorOf(req));
   if (!v) return res.status(404).json({ error: "Không tìm thấy phiên bản" });
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
   res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(v.file_name)}`);
@@ -186,7 +192,7 @@ export async function addCommentHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    res.status(201).json(await cm.addComment(id, String(req.body?.field_code ?? ""), String(req.body?.content ?? ""), commentUser(req), scopeOf(req)));
+    res.status(201).json(await cm.addComment(id, String(req.body?.field_code ?? ""), String(req.body?.content ?? ""), commentUser(req), scopeOf(req), actorOf(req)));
   } catch (e) {
     fail(res, e);
   }
@@ -206,7 +212,7 @@ export async function deleteCommentHandler(req: Request, res: Response) {
   const cid = parsePositiveInt(String(req.params.cid ?? ""));
   if (!cid) return res.status(400).json({ error: "id không hợp lệ" });
   try {
-    if (!(await cm.deleteComment(cid, commentUser(req), scopeOf(req)))) return res.status(404).json({ error: "Không tìm thấy góp ý" });
+    if (!(await cm.deleteComment(cid, commentUser(req), scopeOf(req), actorOf(req)))) return res.status(404).json({ error: "Không tìm thấy góp ý" });
     res.status(204).end();
   } catch (e) {
     fail(res, e);
@@ -254,8 +260,50 @@ export async function deleteImageHandler(req: Request, res: Response) {
 export async function getImageHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });
-  const f = await img.getImageFile(id, String(req.params.code), scopeOf(req));
+  const f = await img.getImageFile(id, String(req.params.code), scopeOf(req), actorOf(req));
   if (!f) return res.status(404).json({ error: "Chưa có ảnh" });
   res.setHeader("Content-Type", f.mime);
   res.send(Buffer.from(f.data));
+}
+
+// ---- Chia sẻ báo cáo (theo người / cả phòng) ----
+export async function listSharesHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    res.json(await sh.listShares(id, scopeOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function addShareHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    const uid = parsePositiveInt(String(req.body?.user_id ?? ""));
+    const did = parsePositiveInt(String(req.body?.department_id ?? ""));
+    await sh.addShare(id, { user_id: uid || undefined, department_id: did || undefined }, actorOf(req), scopeOf(req));
+    res.status(201).json(await sh.listShares(id, scopeOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function removeShareHandler(req: Request, res: Response) {
+  const sid = parsePositiveInt(String(req.params.sid ?? ""));
+  if (!sid) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    if (!(await sh.removeShare(sid, scopeOf(req)))) return res.status(404).json({ error: "Không tìm thấy chia sẻ" });
+    res.status(204).end();
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function shareUsersHandler(req: Request, res: Response) {
+  res.json(await sh.searchUsers(String(req.query.q ?? ""), actorOf(req)));
+}
+export async function sharedWithMeHandler(req: Request, res: Response) {
+  res.json(await sh.sharedWithMe(actorOf(req)));
+}
+export async function sharedUnseenHandler(req: Request, res: Response) {
+  res.json({ count: await sh.unseenSharedCount(actorOf(req)) });
 }

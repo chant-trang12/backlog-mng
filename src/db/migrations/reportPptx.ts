@@ -108,6 +108,31 @@ export async function migrateReportPptxTables(): Promise<void> {
       t.unique(["report_id", "field_code"]);
     });
   }
+  // Chia sẻ báo cáo: theo TỪNG NGƯỜI (user_id) hoặc CẢ PHÒNG (department_id). Người được chia sẻ (kể cả phòng ban khác) xem
+  // toàn bộ báo cáo, góp ý, xuất PowerPoint; không sửa nội dung. Không đặt FK tới users/departments (tránh vòng cascade MSSQL).
+  if (!(await db.schema.hasTable("report_shares"))) {
+    await db.schema.createTable("report_shares", (t) => {
+      t.increments("id").primary();
+      t.integer("report_id").notNullable().references("id").inTable("reports").onDelete("CASCADE");
+      t.string("share_type", 20).notNullable(); // user | department
+      t.integer("user_id");
+      t.integer("department_id");
+      t.string("shared_by", 255);
+      t.integer("shared_by_id");
+      t.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      t.index(["report_id"]);
+    });
+  }
+  // Lần đầu mỗi người mở 1 báo cáo được chia sẻ -> hết "mới" (chấm đỏ thông báo).
+  if (!(await db.schema.hasTable("report_share_views"))) {
+    await db.schema.createTable("report_share_views", (t) => {
+      t.increments("id").primary();
+      t.integer("report_id").notNullable().references("id").inTable("reports").onDelete("CASCADE");
+      t.integer("user_id").notNullable();
+      t.dateTime("viewed_at").notNullable().defaultTo(db.fn.now());
+      t.unique(["report_id", "user_id"]);
+    });
+  }
   if (!(await db.schema.hasTable("report_versions"))) {
     await db.schema.createTable("report_versions", (t) => {
       t.increments("id").primary();

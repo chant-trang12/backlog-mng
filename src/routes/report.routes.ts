@@ -13,6 +13,9 @@ router.put("/report-templates/:type/fields", c.updateFieldsHandler);
 
 // Báo cáo
 router.get("/reports/overview", c.overviewHandler);
+router.get("/reports/shared-with-me", c.sharedWithMeHandler);
+router.get("/report-shares/unseen-count", c.sharedUnseenHandler);
+router.get("/report-share-users", c.shareUsersHandler);
 router.post("/reports", c.createReportHandler);
 router.get("/reports/:id", c.getReportHandler);
 router.delete("/reports/:id", c.deleteReportHandler);
@@ -26,6 +29,9 @@ router.get("/reports/:id/images/:code", c.getImageHandler);
 router.put("/reports/:id/images/:code", express.raw({ type: () => true, limit: "6mb" }), c.putImageHandler);
 router.put("/reports/:id/images/:code/caption", c.putCaptionHandler);
 router.delete("/reports/:id/images/:code", c.deleteImageHandler);
+router.get("/reports/:id/shares", c.listSharesHandler);
+router.post("/reports/:id/shares", c.addShareHandler);
+router.delete("/report-shares/:sid", c.removeShareHandler);
 router.post("/reports/:id/comments", c.addCommentHandler);
 router.put("/report-comments/:cid", c.setCommentStatusHandler);
 router.delete("/report-comments/:cid", c.deleteCommentHandler);

@@ -5,6 +5,7 @@ import { fillPptx, type FillData } from "./pptx.service.js";
 import { ReportError, getTemplateFile, type TemplateField } from "./reportTemplate.service.js";
 import { listReportComments } from "./reportComment.service.js";
 import { imageMetaByCode, imageRowsForExport } from "./reportImage.service.js";
+import { assertCanView, markViewed, type Actor } from "./reportShare.service.js";
 import { childPeriods, exportFileName, periodLabel, periodShort, previousPeriod, validIdx, type PeriodType } from "./reportPeriod.util.js";
 
 export { ReportError };
@@ -220,10 +221,12 @@ export async function createReport(dept: number, type: PeriodType, year: number,
 }
 
 // ---- Đọc báo cáo ----
-export async function getReport(id: number, scope: DataScope) {
+export async function getReport(id: number, scope: DataScope, actor: Actor) {
   const report = await getRawReport(id);
   if (!report) return null;
-  assertDepartmentInScope(scope, report.department_id);
+  // Chủ báo cáo (cùng phạm vi phòng ban) hoặc người được chia sẻ ("shared": chỉ xem/góp ý/xuất).
+  const access = await assertCanView(report, scope, actor);
+  if (access === "shared") await markViewed(id, actor);
   const type = report.period_type as PeriodType;
   const tpl = (await db("report_templates").where({ department_id: report.department_id, period_type: type }).select("id", "file_name", "version", "slide_count").first()) as any;
   const fields = tpl ? await loadFields(tpl.id) : [];
@@ -258,11 +261,13 @@ export async function getReport(id: number, scope: DataScope) {
     return { ...f, content, filled: f.kind === "auto" ? true : !isEmpty(f.kind, content), carry_count: carry };
   });
   return {
-    id: report.id, department_id: report.department_id, period_type: type, year: report.year, idx: report.idx,
+    access, id: report.id, department_id: report.department_id, period_type: type, year: report.year, idx: report.idx,
     status: report.status, label: periodLabel(type, report.year, report.idx), file_name: tpl?.file_name ?? null,
     slide_count: tpl?.slide_count ?? 0, last_exported_at: report.last_exported_at, updated_at: report.updated_at,
     has_prev: !!prevReport, prev_label: prevLabel, fields: out,
     comments: await listReportComments(id),
+    share_count: access === "owner" ? Number(((await db("report_shares").where({ report_id: id }).count({ n: "*" }).first()) as any)?.n ?? 0) : 0,
+    department_name: ((await db("departments").where({ id: report.department_id }).select("name").first()) as any)?.name ?? null,
     changed_children: changed, missing_children: missingChildren,
   };
 }
@@ -372,10 +377,10 @@ export function ratio(r: { ke_hoach: number | null; thuc_hien: number | null }):
   return r.ke_hoach && r.thuc_hien != null ? (r.thuc_hien / r.ke_hoach) * 100 : null;
 }
 
-export async function exportReport(id: number, byUser: string | null, scope: DataScope) {
+export async function exportReport(id: number, byUser: string | null, scope: DataScope, actor: Actor) {
   const report = await getRawReport(id);
   if (!report) throw new ReportError("Không tìm thấy báo cáo.");
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor);
   const type = report.period_type as PeriodType;
   const tplFile = await getTemplateFile(report.department_id, type);
   if (!tplFile) throw new ReportError("Chưa có file mẫu cho loại kỳ này.");
@@ -429,17 +434,17 @@ export async function exportReport(id: number, byUser: string | null, scope: Dat
   return { file, fileName, versionNo, missingRequired };
 }
 
-export async function listVersions(id: number, scope: DataScope) {
+export async function listVersions(id: number, scope: DataScope, actor: Actor) {
   const report = await getRawReport(id);
   if (!report) return [];
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor);
   return db("report_versions").where({ report_id: id }).select("id", "version_no", "file_name", "created_by", "created_at").orderBy("version_no", "desc");
 }
-export async function getVersionFile(versionId: number, scope: DataScope) {
+export async function getVersionFile(versionId: number, scope: DataScope, actor: Actor) {
   const v = (await db("report_versions").where({ id: versionId }).first()) as any;
   if (!v) return null;
   const report = await getRawReport(v.report_id);
   if (!report) return null;
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor);
   return v as { file_name: string; file_data: Buffer };
 }

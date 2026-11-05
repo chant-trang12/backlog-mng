@@ -49,6 +49,9 @@ const pptx = {
   slideFilter: "all", // "all" hoặc số slide đang hiển thị (nhập theo từng trang slide)
   collapsed: new Set(), // mã các đầu mục đang thu gọn
   onlyOpenComments: false, // chỉ hiện đầu mục có góp ý chưa xử lý
+  scope: "mine", // "mine" = báo cáo của phòng tôi | "shared" = báo cáo được chia sẻ cho tôi
+  sharedList: [],
+  unseenShared: 0,
 };
 
 const px = (id) => document.getElementById(id);
@@ -70,6 +73,8 @@ const pxTitle = (rep) =>
 
 // ---------------------------------------------------------------- tải dữ liệu
 async function loadPptx() {
+  refreshSpNavBadge();
+  if (pptx.view === "report" && pptx.scope === "shared") return loadPptxShared();
   if (pxNeedDept()) {
     px("pptx-report-root").innerHTML = '<p class="muted" style="padding:16px">Hãy chọn 1 phòng ban cụ thể ở bộ chuyển đổi phòng ban để dùng Báo cáo PowerPoint.</p>';
     px("pptx-template-root").innerHTML = px("pptx-report-root").innerHTML;
@@ -108,10 +113,80 @@ function pptxReportOf(type, idx) {
   return pptx.overview.reports.find((r) => r.period_type === type && r.idx === idx);
 }
 
+// ---- Báo cáo được chia sẻ cho tôi (kể cả phòng ban khác): xem + góp ý + xuất PowerPoint, không sửa nội dung ----
+function renderPptxScopeBar() {
+  const btn = (key, label, badge) => `<button type="button" class="gnv-seg-btn${pptx.scope === key ? " active" : ""}" data-scope="${key}">${label}${badge ? `<em class="pptx-slide-cm pptx-seg-cm">${badge}</em>` : ""}</button>`;
+  return `<div class="gnv-seg pptx-scope-bar" id="pptx-scope-bar">${btn("mine", "Báo cáo của phòng tôi", 0)}${btn("shared", "Được chia sẻ với tôi", pptx.unseenShared)}</div>`;
+}
+function bindPptxScopeBar() {
+  px("pptx-scope-bar")?.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-scope]");
+    if (!b || b.dataset.scope === pptx.scope) return;
+    pptx.scope = b.dataset.scope;
+    pptx.report = null;
+    await loadPptx().catch((err) => showToast(err.message));
+  });
+}
+async function loadPptxShared() {
+  pptx.sharedList = (await api("/api/reports/shared-with-me")) ?? [];
+  pptx.unseenShared = pptx.sharedList.filter((r) => r.is_new).length;
+  if (pptx.report && pptx.report.access === "shared") return renderPptxReportView();
+  pptx.report = null;
+  renderPptxReportView();
+}
+function renderPptxSharedList() {
+  const list = pptx.sharedList;
+  return `<div class="pptx-card">
+    <b style="font-size:1.05rem">Báo cáo được chia sẻ với tôi</b>
+    <p class="muted" style="margin:4px 0 12px">Bạn xem được nội dung, góp ý và xuất PowerPoint; không sửa được nội dung báo cáo.</p>
+    ${
+      list.length
+        ? list.map((r) => `<button type="button" class="pptx-shared-item" data-id="${r.report_id}">
+            <span class="pptx-shared-title"><b>${pxEsc(r.label)}</b> · ${pxEsc(r.department_name ?? "")} ${r.is_new ? '<span class="pptx-pill warn">Mới</span>' : ""}</span>
+            <span class="muted">Chia sẻ bởi ${pxEsc(r.shared_by ?? "—")} · ${pxDateTime(r.shared_at)}${r.open_comments ? ` · ${r.open_comments} góp ý chưa xử lý` : ""}</span></button>`).join("")
+        : '<p class="muted">Chưa có báo cáo nào được chia sẻ với bạn.</p>'
+    }</div>`;
+}
+
 function renderPptxReportView() {
   const root = px("pptx-report-root");
+  const sharedMode = pptx.scope === "shared";
+  root.classList.toggle("pptx-shared", pptx.report?.access === "shared");
+  if (sharedMode) {
+    root.innerHTML = `${renderPptxScopeBar()}${
+      pptx.report
+        ? `<div class="pptx-alert info" style="margin-bottom:12px">Báo cáo của <b>${pxEsc(pptx.report.department_name ?? "phòng ban khác")}</b>, được chia sẻ cho bạn: bạn xem, góp ý và xuất PowerPoint; không sửa được nội dung. <button type="button" class="small btn-view" id="pptx-back-shared">← Danh sách chia sẻ</button></div>${renderPptxReport()}`
+        : renderPptxSharedList()
+    }`;
+    bindPptxScopeBar();
+    root.querySelectorAll(".pptx-shared-item").forEach((b) =>
+      b.addEventListener("click", async () => {
+        try {
+          pptx.report = await api(`/api/reports/${b.dataset.id}`);
+          pptx.activeCode = pptx.report.fields[0]?.code ?? null;
+          pptx.slideFilter = "all";
+          pptx.collapsed = new Set();
+          pptx.editing = null;
+          pptx.deleting = null;
+          await loadPptxShared();
+          refreshSpNavBadge();
+        } catch (e) {
+          showToast(e.message);
+        }
+      }),
+    );
+    if (pptx.report) {
+      px("pptx-back-shared")?.addEventListener("click", () => {
+        pptx.report = null;
+        loadPptxShared().catch((e) => showToast(e.message));
+      });
+      bindPptxReport();
+    }
+    return;
+  }
   const hasTemplate = pptx.overview.templates.includes(pptx.type);
   root.innerHTML = `
+    ${renderPptxScopeBar()}
     <div class="pptx-card" id="pptx-picker">${renderPptxPicker()}</div>
     ${
       pptx.report
@@ -124,6 +199,7 @@ function renderPptxReportView() {
                 : `<p>Chưa có file mẫu cho loại kỳ này. Hãy tải mẫu lên ở tab <b>Mẫu PowerPoint</b>.</p><button class="btn-view" id="pptx-goto-template">Đến Mẫu PowerPoint</button>`
           }</div>`
     }`;
+  bindPptxScopeBar();
   bindPptxReport();
 }
 
@@ -206,6 +282,7 @@ function renderPptxReport() {
             </div>
             <div class="row" style="gap:8px">
               ${prevBtn}
+              <button class="btn-view" id="pptx-share-btn">👥 Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
               <button class="btn-view" id="pptx-versions-btn">Phiên bản</button>
               <button class="primary" id="pptx-export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PowerPoint</button>
               <button class="btn-delete write-action" id="pptx-delete-report" title="Xoá báo cáo">Xóa</button>
@@ -269,7 +346,7 @@ function renderPptxComments(f) {
           <span class="pptx-pill ${c.status === "resolved" ? "ok" : "warn"}">${c.status === "resolved" ? "✓ Đã xử lý" : "● Mới"}</span>
           <span style="flex:1"></span>
           ${c.status === "resolved" ? `<button type="button" class="small write-action" data-act="cm-open" data-id="${c.id}">Mở lại</button>` : `<button type="button" class="small btn-view write-action" data-act="cm-resolve" data-id="${c.id}">Xử lý</button>`}
-          <button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button></div>
+          ${pptx.report.access === "shared" && c.author_id !== state.currentUserId ? "" : `<button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button>`}</div>
         <div class="pptx-cm-text">${pxEsc(c.content).replace(/\n/g, "<br/>")}</div>
         ${c.status === "resolved" && c.resolved_by ? `<div class="muted" style="font-size:.75rem">Xử lý bởi ${pxEsc(c.resolved_by)}</div>` : ""}</div>`,
       )
@@ -289,10 +366,18 @@ function updateSpNavBadge(count) {
   }
 }
 async function refreshSpNavBadge() {
-  if (state.currentDepartmentId == null) return updateSpNavBadge(0);
   try {
-    const r = await api(`/api/report-comments/open-count?department_id=${state.currentDepartmentId}`);
-    updateSpNavBadge(r?.count ?? 0);
+    // Chấm đỏ = góp ý chưa xử lý của phòng đang xem + báo cáo MỚI được chia sẻ cho tôi (chưa mở lần nào).
+    const [c, s] = await Promise.all([
+      state.currentDepartmentId == null ? { count: 0 } : api(`/api/report-comments/open-count?department_id=${state.currentDepartmentId}`),
+      api("/api/report-shares/unseen-count"),
+    ]);
+    pptx.unseenShared = s?.count ?? 0;
+    updateSpNavBadge((c?.count ?? 0) + pptx.unseenShared);
+    if (px("pptx-scope-bar")) {
+      px("pptx-scope-bar").outerHTML = renderPptxScopeBar();
+      bindPptxScopeBar();
+    }
   } catch {
     // lỗi mạng tạm thời: giữ nguyên chấm cũ
   }
@@ -555,6 +640,7 @@ const pxNewId = () => Math.random().toString(36).slice(2, 10);
 // Gắn sự kiện cho thẻ "Kỳ báo cáo" (đổi loại kỳ, năm, chọn kỳ, tạo báo cáo) — tách riêng để vẽ lại riêng thẻ này khi số góp ý đổi.
 function bindPptxPicker() {
   const root = px("pptx-picker");
+  if (!root) return; // chế độ báo cáo được chia sẻ không có thẻ chọn kỳ
   root.querySelectorAll("#pptx-type-seg .gnv-seg-btn").forEach((b) =>
     b.addEventListener("click", async () => {
       pptx.type = b.dataset.type;
@@ -612,6 +698,7 @@ function bindPptxReport() {
   px("pptx-refresh")?.addEventListener("click", refreshPptxFromChildren);
   px("pptx-export-btn").addEventListener("click", exportPptxReport);
   px("pptx-versions-btn").addEventListener("click", showPptxVersions);
+  px("pptx-share-btn")?.addEventListener("click", openPptxShareDialog);
   px("pptx-delete-report").addEventListener("click", async () => {
     if (!(await confirmDialog(`Xóa báo cáo ${pptx.report.label}?`, { title: "Xác nhận xóa", okText: "Xóa" }))) return;
     try {
@@ -907,6 +994,8 @@ async function onPptxMainClick(e) {
   const f = pxField(code);
   const act = btn.dataset.act;
   const id = btn.dataset.id;
+  // Báo cáo được chia sẻ: chỉ được góp ý (thêm/xóa góp ý của mình), không sửa nội dung.
+  if (pptx.report.access === "shared" && act !== "cm-add" && act !== "cm-del") return;
   if (act.startsWith("cm-")) return onPptxCommentAction(code, act, id, sec);
   if (act === "img-pick") {
     pptx.imgTarget = code;
@@ -1224,4 +1313,69 @@ px("pptx-diff-form")?.addEventListener("submit", async (e) => {
 document.addEventListener("click", (e) => {
   const b = e.target.closest("button[data-href]");
   if (b && b.closest("#summary-plan-tab-pptx, #pptx-diff-dialog")) window.location.href = b.dataset.href;
+});
+
+// ---- Hộp thoại Chia sẻ báo cáo (theo từng người hoặc cả phòng) ----
+async function openPptxShareDialog() {
+  const rep = pptx.report;
+  px("pptx-share-title").textContent = `Chia sẻ ${rep.label}`;
+  px("pptx-share-search").value = "";
+  px("pptx-share-results").innerHTML = '<span class="muted">Gõ tên hoặc tài khoản để tìm người.</span>';
+  const depts = (state.departments ?? []).filter((d) => d.id !== rep.department_id);
+  px("pptx-share-dept").innerHTML = '<option value="">— Chọn phòng ban —</option>' + depts.map((d) => `<option value="${d.id}">${pxEsc(d.name)}</option>`).join("");
+  px("pptx-share-dialog").showModal();
+  await renderPptxShareList();
+}
+async function renderPptxShareList() {
+  try {
+    const shares = await api(`/api/reports/${pptx.report.id}/shares`);
+    pptx.report.share_count = shares.length;
+    const btn = px("pptx-share-btn");
+    if (btn) btn.textContent = `👥 Chia sẻ${shares.length ? ` (${shares.length})` : ""}`;
+    px("pptx-share-list").innerHTML = shares.length
+      ? shares
+          .map((s) => `<div class="pptx-item"><span style="flex:1"><b>${pxEsc(s.type === "department" ? "Cả phòng: " + (s.department_name ?? "") : s.user_name ?? "")}</b>${s.type === "user" && s.user_department ? ` <span class="muted">· ${pxEsc(s.user_department)}</span>` : ""}<br/><span class="muted" style="font-size:.78rem">Chia sẻ bởi ${pxEsc(s.shared_by ?? "—")} · ${pxDateTime(s.created_at)}</span></span><button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`)
+          .join("")
+      : '<p class="muted">Chưa chia sẻ cho ai.</p>';
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+let pxShareTimer = null;
+px("pptx-share-search")?.addEventListener("input", (e) => {
+  clearTimeout(pxShareTimer);
+  pxShareTimer = setTimeout(async () => {
+    try {
+      const users = await api(`/api/report-share-users?q=${encodeURIComponent(e.target.value.trim())}`);
+      px("pptx-share-results").innerHTML = users.length
+        ? users.map((u) => `<button type="button" class="pptx-share-user" data-uid="${u.id}"><b>${pxEsc(u.name || u.username)}</b><span class="muted"> · ${pxEsc(u.department_name ?? "Chưa gán phòng ban")}</span><span class="pptx-share-add">+ Chia sẻ</span></button>`).join("")
+        : '<span class="muted">Không tìm thấy người phù hợp.</span>';
+    } catch (err) {
+      showToast(err.message);
+    }
+  }, 300);
+});
+px("pptx-share-dialog")?.addEventListener("click", async (e) => {
+  const rep = pptx.report;
+  const add = e.target.closest("[data-uid]");
+  const del = e.target.closest("[data-share-del]");
+  try {
+    if (add) {
+      await api(`/api/reports/${rep.id}/shares`, { method: "POST", body: JSON.stringify({ user_id: Number(add.dataset.uid) }) });
+      showToast("Đã chia sẻ.", "success");
+      await renderPptxShareList();
+    } else if (del) {
+      if (!(await confirmDialog("Thu hồi chia sẻ? Người này sẽ không xem được báo cáo nữa.", { title: "Thu hồi chia sẻ", okText: "Thu hồi" }))) return;
+      await api(`/api/report-shares/${del.dataset.shareDel}`, { method: "DELETE" });
+      await renderPptxShareList();
+    } else if (e.target.id === "pptx-share-dept-btn") {
+      const did = Number(px("pptx-share-dept").value);
+      if (!did) return showToast("Hãy chọn phòng ban.");
+      await api(`/api/reports/${rep.id}/shares`, { method: "POST", body: JSON.stringify({ department_id: did }) });
+      showToast("Đã chia sẻ cho cả phòng.", "success");
+      await renderPptxShareList();
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
 });

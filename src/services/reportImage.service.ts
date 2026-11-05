@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { ReportError } from "./reportTemplate.service.js";
+import { assertCanView, type Actor } from "./reportShare.service.js";
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB / ảnh
 export interface ImageMeta {
@@ -75,9 +76,9 @@ export async function deleteImage(reportId: number, code: string, scope: DataSco
   await db("reports").where({ id: reportId }).update({ updated_at: db.fn.now(), rev: db.raw("rev + 1"), status: "draft" });
 }
 
-export async function getImageFile(reportId: number, code: string, scope: DataScope) {
+export async function getImageFile(reportId: number, code: string, scope: DataScope, actor: Actor) {
   const report = await reportOf(reportId);
   if (!report) return null;
-  assertDepartmentInScope(scope, report.department_id);
+  await assertCanView(report, scope, actor);
   return (await db("report_images").where({ report_id: reportId, field_code: code }).first()) as { mime: string; data: Buffer; file_name: string | null } | undefined;
 }
