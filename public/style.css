@@ -3982,3 +3982,10 @@ dialog.pptx-share-dialog { max-width: 600px; width: 94vw; }
 /* Nút "Chia sẻ" báo cáo: cam (thay tím). */
 button.pptx-btn-share { background: var(--orange-100); border-color: var(--orange-300); color: var(--orange-800); }
 button.pptx-btn-share:hover { background: var(--orange-300); }
+
+/* Bộ chọn năm Roadmap: cùng kiểu bộ chọn năm của Báo cáo PowerPoint — khung xanh da trời nhạt, số năm đậm, nút mũi tên tròn xanh đậm. */
+.year-stepper { align-items: center; gap: 12px; padding: 4px 6px; border: 1px solid var(--sky-300); background: var(--sky-100); box-shadow: none; overflow: visible; }
+.year-stepper button { width: 30px; height: 30px; min-width: 0; padding: 0; border-radius: 50%; background: var(--sky-600); color: #fff; font-size: 1.1rem; line-height: 1; }
+.year-stepper button:hover:not(:disabled), .year-stepper button:focus-visible:not(:disabled) { background: var(--sky-700); color: #fff; }
+.year-stepper button:active:not(:disabled) { background: var(--sky-800); color: #fff; }
+.year-stepper-value { background: transparent; color: var(--sky-800); min-width: 52px; padding: 0; font-size: 1.15rem; }
