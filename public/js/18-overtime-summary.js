@@ -158,11 +158,17 @@ document.getElementById("otsum-tbody")?.addEventListener("click", async (e) => {
 // ---- Lấy từ Chi tiết / File mẫu / Import / Xuất Excel ----
 document.getElementById("otsum-from-detail-btn")?.addEventListener("click", async () => {
   if (!state.currentPeriodId) return showToast("Hãy chọn Tháng theo dõi trước.");
-  if (!(await confirmDialog("Cộng số giờ từng nhân sự từ tab Chi tiết làm thêm giờ của tháng này? Dòng đã có sẽ được cập nhật số giờ, dòng chưa có sẽ được thêm mới.", { title: "Lấy từ Chi tiết", okText: "Lấy dữ liệu", danger: false }))) return;
+  const call = (dry) => api("/api/overtime-summary/from-detail", { method: "POST", body: JSON.stringify({ period_id: state.currentPeriodId, department_id: state.currentDepartmentId, dry_run: dry }) });
   try {
-    const r = await api("/api/overtime-summary/from-detail", { method: "POST", body: JSON.stringify({ period_id: state.currentPeriodId, department_id: state.currentDepartmentId }) });
+    // Xem trước: dòng nào sẽ thêm/cập nhật/xoá (nhân sự đã xoá ở tab Chi tiết thì xoá khỏi Tổng hợp) rồi mới hỏi xác nhận.
+    const p = await call(true);
+    const names = p.removed_names.length ? `\n\nSẽ XÓA ${p.removed} dòng không còn trong Chi tiết: ${p.removed_names.slice(0, 8).join(", ")}${p.removed_names.length > 8 ? "…" : ""}.` : "";
+    if (!p.created && !p.updated && !p.removed) return showToast("Chi tiết làm thêm giờ của tháng này chưa có dữ liệu để lấy.");
+    const msg = `Đồng bộ với tab Chi tiết làm thêm giờ: thêm ${p.created} dòng mới, cập nhật ${p.updated} dòng.${names}`;
+    if (!(await confirmDialog(msg, { title: "Lấy từ Chi tiết", okText: "Đồng bộ", danger: p.removed > 0 }))) return;
+    const r = await call(false);
     await loadOvertimeSummary();
-    showToast(`Đã lấy từ Chi tiết: ${r.created} dòng mới, ${r.updated} dòng cập nhật.`, "success");
+    showToast(`Đã đồng bộ: ${r.created} dòng mới, ${r.updated} cập nhật${r.removed ? `, xóa ${r.removed}` : ""}.`, "success");
   } catch (err) {
     showToast(err.message);
   }

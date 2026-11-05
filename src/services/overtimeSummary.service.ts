@@ -135,7 +135,7 @@ export async function getSummaryRecord(id: number) {
 export async function createSummaryRecords(periodId: number, departmentId: number | null, inputs: SummaryInput[], scope: DataScope): Promise<number> {
   if (departmentId == null) throw new OvertimeSummaryError("Hãy chọn 1 phòng ban cụ thể trước.");
   assertDepartmentInScope(scope, departmentId);
-  const rows = inputs.map((i) => ({ period_id: periodId, department_id: departmentId, ...normalizeSummary(i) }));
+  const rows = inputs.map((i) => ({ period_id: periodId, department_id: departmentId, nguon: "nhap_tay", ...normalizeSummary(i) }));
   if (rows.length) await db.batchInsert("overtime_summary_records", rows, 50);
   return rows.length;
 }
@@ -155,9 +155,16 @@ export async function deleteSummaryRecord(id: number, scope: DataScope): Promise
   return (await softDeleteWhere(db, "overtime_summary_records", { id })) > 0;
 }
 
-// "Lấy từ Chi tiết": cộng giờ ban ngày/ban đêm của từng nhân sự trong tab Chi tiết làm thêm giờ cùng tháng + phòng, rồi
-// thêm mới/cập nhật (khớp mã NV hoặc họ tên) dòng tổng hợp tương ứng — giữ nguyên Bộ phận/Ghi chú đã nhập.
-export async function importFromDetail(periodId: number, departmentId: number | null, scope: DataScope): Promise<{ created: number; updated: number }> {
+// "Lấy từ Chi tiết": ĐỒNG BỘ với tab Chi tiết làm thêm giờ cùng tháng + phòng:
+//  - nhân sự có trong Chi tiết: cộng giờ ban ngày/ban đêm, thêm mới dòng tổng hợp hoặc cập nhật số giờ (Mã NV/Đơn vị/Bộ phận chỉ điền vào chỗ trống);
+//  - dòng tổng hợp KHÔNG còn nhân sự đó trong Chi tiết (đã xoá bên Chi tiết) -> bị xoá, trừ dòng do người dùng NHẬP TAY/Import.
+// dryRun = true: chỉ tính, trả danh sách để người dùng xác nhận (không ghi gì).
+export async function importFromDetail(
+  periodId: number,
+  departmentId: number | null,
+  scope: DataScope,
+  dryRun = false,
+): Promise<{ created: number; updated: number; removed: number; removed_names: string[] }> {
   if (departmentId == null) throw new OvertimeSummaryError("Hãy chọn 1 phòng ban cụ thể trước.");
   assertDepartmentInScope(scope, departmentId);
   const detail = (await db("overtime_records").where({ period_id: periodId, department_id: departmentId, is_deleted: false }).orderBy("id", "asc")) as any[];
@@ -180,20 +187,30 @@ export async function importFromDetail(periodId: number, departmentId: number | 
     cur.eg += head.ban_dem_so_gio ?? 0;
   }
   const existing = (await db("overtime_summary_records").where({ period_id: periodId, department_id: departmentId, is_deleted: false })) as any[];
+  const matched = new Set<number>();
   let created = 0;
   let updated = 0;
+  const plan = sums.map((s) => ({ s, hit: existing.find((e) => samePerson(e, s.sample)) }));
+  for (const p of plan) {
+    if (p.hit) {
+      matched.add(p.hit.id);
+      updated++;
+    } else created++;
+  }
+  const stale = existing.filter((e) => !matched.has(e.id) && e.nguon !== "nhap_tay");
+  const result = { created, updated, removed: stale.length, removed_names: stale.map((e) => e.ho_va_ten as string) };
+  if (dryRun) return result;
+
   await db.transaction(async (trx) => {
-    for (const s of sums) {
+    for (const { s, hit } of plan) {
       const dg = round2(s.dg);
       const eg = round2(s.eg);
-      const hit = existing.find((e) => samePerson(e, s.sample));
       const vals = { ban_ngay_so_gio: dg, ban_ngay_so_ngay: days(dg), ban_dem_so_gio: eg, ban_dem_so_ngay: days(eg) };
       if (hit) {
         // Cập nhật số giờ; Mã NV/Đơn vị/Bộ phận chỉ ĐIỀN VÀO chỗ đang trống (không ghi đè nội dung đã nhập).
         await trx("overtime_summary_records")
           .where({ id: hit.id })
-          .update({ ...vals, ma_nhan_vien: hit.ma_nhan_vien || s.ma, don_vi: hit.don_vi || s.don_vi, bo_phan: hit.bo_phan || s.bo_phan, updated_at: trx.fn.now() });
-        updated++;
+          .update({ ...vals, ma_nhan_vien: hit.ma_nhan_vien || s.ma, don_vi: hit.don_vi || s.don_vi, bo_phan: hit.bo_phan || s.bo_phan, nguon: hit.nguon ?? "chi_tiet", updated_at: trx.fn.now() });
       } else {
         await trx("overtime_summary_records").insert({
           period_id: periodId,
@@ -202,11 +219,12 @@ export async function importFromDetail(periodId: number, departmentId: number | 
           ho_va_ten: s.sample.ho_va_ten,
           don_vi: s.don_vi,
           bo_phan: s.bo_phan,
+          nguon: "chi_tiet",
           ...vals,
         });
-        created++;
       }
     }
+    for (const e of stale) await softDeleteWhere(trx as any, "overtime_summary_records", { id: e.id });
   });
-  return { created, updated };
+  return result;
 }

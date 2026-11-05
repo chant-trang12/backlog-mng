@@ -99,7 +99,7 @@ export async function fromDetailHandler(req: Request, res: Response) {
   const periodId = Number(req.body?.period_id);
   if (!(await getPeriod(periodId))) return res.status(400).json({ error: "period_id không hợp lệ" });
   try {
-    res.json(await importFromDetail(periodId, writeDepartmentId(req, req.body?.department_id), scopeOf(req)));
+    res.json(await importFromDetail(periodId, writeDepartmentId(req, req.body?.department_id), scopeOf(req), !!req.body?.dry_run));
   } catch (e) {
     fail(res, e);
   }
