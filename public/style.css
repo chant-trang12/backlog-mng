@@ -3991,3 +3991,6 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 .year-stepper-value { background: transparent; color: var(--sky-800); min-width: 52px; padding: 0; font-size: 1.15rem; }
 
 .pptx-share-avatar .icon { width: 18px; height: 18px; }
+
+/* Avatar chia sẻ: icon nằm CHÍNH GIỮA vòng tròn (bỏ margin-right và vertical-align mặc định của .icon). */
+.pptx-share-avatar .icon { margin: 0; display: block; vertical-align: baseline; }
