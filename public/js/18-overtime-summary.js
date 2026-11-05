@@ -26,8 +26,9 @@ function filteredOvertimeSummary() {
 
 function otsRating(text) {
   if (!text) return "";
-  const good = text === "Đạt" || text.startsWith("Trong");
-  return `<span class="ots-pill ${good ? "ok" : "bad"}">${otEsc(text)}</span>`;
+  // "Trong giới hạn số giờ…" hiện chữ thường (không tô màu); "Đạt" giữ nhãn xanh; còn lại (Quá số giờ / Vượt quy định) nhãn hồng.
+  if (text.startsWith("Trong")) return otEsc(text);
+  return `<span class="ots-pill ${text === "Đạt" ? "ok" : "bad"}">${otEsc(text)}</span>`;
 }
 
 function renderOvertimeSummary() {
