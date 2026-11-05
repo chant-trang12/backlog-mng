@@ -436,6 +436,8 @@ document.getElementById("gnv-f-don-vi-do")?.addEventListener("change", (e) => {
   applyGnvLevelType(gnvLevelUnit);
 });
 
+pinTableHead("gnv-table"); // ghim tiêu đề khi cuộn trang xuống (bảng không giới hạn chiều cao)
+
 async function loadGnv() {
   if (!state.currentPeriodId) {
     state.gnvGroups = [];
