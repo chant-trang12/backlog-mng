@@ -282,7 +282,7 @@ function renderPptxReport() {
             </div>
             <div class="row" style="gap:8px">
               ${prevBtn}
-              <button class="btn-view" id="pptx-share-btn">👥 Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
+              <button class="pptx-btn-share" id="pptx-share-btn">👥 Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
               <button class="btn-view" id="pptx-versions-btn">Phiên bản</button>
               <button class="primary" id="pptx-export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PowerPoint</button>
               <button class="btn-delete write-action" id="pptx-delete-report" title="Xoá báo cáo">Xóa</button>

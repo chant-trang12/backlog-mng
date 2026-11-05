@@ -3933,3 +3933,7 @@ label.cbnv-flag-opt small { color: var(--muted); font-size: 0.78rem; }
 .pptx-shared .pptx-grip, .pptx-shared .pptx-img-actions, .pptx-shared .pptx-img-drop, .pptx-shared #pptx-delete-report, .pptx-shared #pptx-copy-prev,
 .pptx-shared #pptx-refresh, .pptx-shared #pptx-share-btn { display: none !important; }
 .pptx-shared .pptx-table input, .pptx-shared .pptx-para, .pptx-shared .pptx-cap-input, .pptx-shared .pptx-pick { pointer-events: none; }
+
+/* Nút "Chia sẻ" báo cáo: tím nhạt (khác nút "Phiên bản" xanh da trời). */
+button.pptx-btn-share { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+button.pptx-btn-share:hover { background: #ddd6fe; }
