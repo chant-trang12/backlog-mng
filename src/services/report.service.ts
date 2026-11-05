@@ -4,6 +4,7 @@ import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { fillPptx, type FillData } from "./pptx.service.js";
 import { ReportError, getTemplateFile, type TemplateField } from "./reportTemplate.service.js";
 import { listReportComments } from "./reportComment.service.js";
+import { imageMetaByCode, imageRowsForExport } from "./reportImage.service.js";
 import { childPeriods, exportFileName, periodLabel, periodShort, previousPeriod, validIdx, type PeriodType } from "./reportPeriod.util.js";
 
 export { ReportError };
@@ -205,7 +206,7 @@ export async function createReport(dept: number, type: PeriodType, year: number,
   const prevReport = type === "month" && prev ? await findReport(dept, type, prev.year, prev.idx) : undefined;
   const prevSections = prevReport ? await loadSections(prevReport.id) : new Map<string, Content>();
   for (const f of fields) {
-    if (f.kind === "auto") continue;
+    if (f.kind === "auto" || f.kind === "image") continue;
     let content: Content = agg.result.get(f.code) ?? (f.kind === "table" ? { rows: [] } : f.kind === "list" ? { items: [] } : { text: "" });
     // Tháng: bảng "mang sang" giữ tên chỉ tiêu + đơn vị, bỏ số liệu.
     if (type === "month" && f.kind === "table" && f.carry_over && f.source !== "prior_year") {
@@ -227,6 +228,7 @@ export async function getReport(id: number, scope: DataScope) {
   const tpl = (await db("report_templates").where({ department_id: report.department_id, period_type: type }).select("id", "file_name", "version", "slide_count").first()) as any;
   const fields = tpl ? await loadFields(tpl.id) : [];
   const sections = await loadSections(id);
+  const images = await imageMetaByCode(id);
 
   // Cảnh báo: kỳ con đổi sau lúc tổng hợp / kỳ con còn thiếu.
   const snapshot = report.snapshot_json ? JSON.parse(report.snapshot_json) : { children: {} };
@@ -247,6 +249,10 @@ export async function getReport(id: number, scope: DataScope) {
   const prevLabel = prev ? periodLabel(type, prev.year, prev.idx) : "";
 
   const out = fields.map((f) => {
+    if (f.kind === "image") {
+      const meta = images.get(f.code);
+      return { ...f, content: meta ?? { has_image: false, caption: "" }, filled: !!meta, carry_count: 0 };
+    }
     const content = sections.get(f.code) ?? (f.kind === "table" ? { rows: [] } : f.kind === "list" ? { items: [] } : { text: "" });
     const carry = f.carry_over && f.kind === "list" ? (prevSections.get(f.code)?.items ?? []).filter((i) => i.text && i.selected !== false).length : 0;
     return { ...f, content, filled: f.kind === "auto" ? true : !isEmpty(f.kind, content), carry_count: carry };
@@ -270,6 +276,7 @@ export async function updateSection(id: number, code: string, rawContent: any, s
   const f = tpl ? ((await db("report_template_fields").where({ template_id: tpl.id, code }).first()) as TemplateField | undefined) : undefined;
   if (!f) throw new ReportError("Không tìm thấy đầu mục.");
   if (f.kind === "auto") throw new ReportError("Đầu mục tự điền, không sửa được.");
+  if (f.kind === "image") throw new ReportError("Đầu mục Hình ảnh: hãy dùng chức năng tải ảnh.");
   const content = sanitizeContent(f.kind, rawContent);
   await saveSection(id, code, content);
   await touch(id, { status: "draft" });
@@ -288,7 +295,7 @@ export async function copyFromPrevious(id: number, scope: DataScope) {
   const fields = await loadFields(tpl.id);
   const prevSections = await loadSections(prevReport.id);
   for (const f of fields) {
-    if (f.kind === "auto") continue;
+    if (f.kind === "auto" || f.kind === "image") continue;
     const c = prevSections.get(f.code);
     if (!c) continue;
     const copy = JSON.parse(JSON.stringify(c)) as Content;
@@ -378,8 +385,18 @@ export async function exportReport(id: number, byUser: string | null, scope: Dat
 
   const data: FillData = {};
   const missingRequired: string[] = [];
+  const imageRows = new Map((await imageRowsForExport(id)).map((r: any) => [r.field_code, r]));
   for (const f of fields) {
     const c = sections.get(f.code);
+    if (f.kind === "image") {
+      const r = imageRows.get(f.code);
+      data[f.code] = {
+        kind: "image",
+        image: r ? { data: Buffer.from(r.data), ext: String(r.mime).includes("png") ? "png" : "jpg", caption: r.caption ?? "", name: r.file_name ?? "" } : null,
+      };
+      if (f.required && !r) missingRequired.push(f.label);
+      continue;
+    }
     if (f.kind === "auto") data[f.code] = { kind: "auto", text: label };
     else if (f.kind === "paragraph") data[f.code] = { kind: "paragraph", text: c?.text ?? "" };
     else if (f.kind === "list") data[f.code] = { kind: "list", items: (c?.items ?? []).filter((i) => i.text && i.selected !== false).map((i) => i.text) };

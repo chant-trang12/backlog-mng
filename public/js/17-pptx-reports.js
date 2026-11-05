@@ -17,12 +17,13 @@ const PPTX_SOURCES = {
   prior_year: "So sánh cùng kỳ năm trước",
   auto: "Tự động",
 };
-const PPTX_KINDS = { auto: "Tự điền kỳ", table: "Bảng chỉ tiêu", list: "Danh sách", paragraph: "Đoạn văn" };
+const PPTX_KINDS = { auto: "Tự điền kỳ", table: "Bảng chỉ tiêu", list: "Danh sách", paragraph: "Đoạn văn", image: "Hình ảnh" };
 const PPTX_SOURCES_BY_KIND = {
   auto: ["auto"],
   table: ["manual", "sum", "last", "prior_year"],
   list: ["manual", "suggest", "last"],
   paragraph: ["manual", "last"],
+  image: ["manual"],
 };
 const PPTX_MAX_LINES = 8; // số dòng vừa 1 slide (cảnh báo khi vượt)
 const ROMAN = ["", "I", "II", "III", "IV"];
@@ -249,6 +250,7 @@ function pxSummary(f) {
   const c = f.content ?? {};
   if (f.kind === "table") return `${(c.rows ?? []).filter((r) => r.ten).length} chỉ tiêu`;
   if (f.kind === "list") return `${(c.items ?? []).filter((i) => i.text && i.selected !== false).length} dòng`;
+  if (f.kind === "image") return c.has_image ? (c.file_name || "đã có ảnh") : "chưa có ảnh";
   if (f.kind === "paragraph") { const t = (c.text ?? "").trim().replace(/\s+/g, " "); return t ? (t.length > 60 ? t.slice(0, 60) + "…" : t) : "chưa nhập"; }
   return "tự động";
 }
@@ -325,9 +327,81 @@ function renderPptxSectionInner(f, i) {
     ${collapsed ? "" : `<div class="pptx-sec-body">${renderPptxBody(f)}</div>${renderPptxComments(f)}`}`;
 }
 
+// ---- Đầu mục Hình ảnh: 1 ảnh (PNG/JPG, tối đa 5 MB) + chú thích 1 dòng ----
+const PPTX_IMG_MAX = 5 * 1024 * 1024;
+const pxSize = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
+function renderPptxImageBody(f) {
+  const c = f.content;
+  const url = `/api/reports/${pptx.report.id}/images/${encodeURIComponent(f.code)}?v=${encodeURIComponent(c.updated_at ?? "")}`;
+  return `<div class="pptx-img">
+    ${
+      c.has_image
+        ? `<div class="pptx-img-preview"><img src="${url}" alt="${pxEsc(c.file_name ?? "")}" /></div>
+           <div class="muted" style="font-size:.8rem;margin:6px 0">${pxEsc(c.file_name ?? "")} · ${pxSize(c.size_bytes)}</div>
+           <input type="text" class="pptx-cap-input" maxlength="200" placeholder="Chú thích dưới ảnh (tuỳ chọn, 1 dòng)" value="${pxEsc(c.caption ?? "")}" />`
+        : `<div class="pptx-img-drop" tabindex="0" data-act="img-pick">Chưa có ảnh. Bấm để chọn ảnh, kéo thả hoặc dán (Ctrl+V) vào đây.<br/><span class="muted">PNG hoặc JPG, tối đa 5 MB.</span></div>`
+    }
+    <div class="pptx-img-actions write-action"><button type="button" class="small btn-view" data-act="img-pick">${c.has_image ? "Thay ảnh" : "Chọn ảnh"}</button>${c.has_image ? '<button type="button" class="small btn-delete" data-act="img-del">Xóa ảnh</button>' : ""}</div>
+  </div>`;
+}
+
+async function uploadPptxImage(code, file) {
+  const f = pxField(code);
+  if (!file) return;
+  if (!/^image\/(png|jpe?g)$/.test(file.type)) return showToast("Chỉ nhận ảnh PNG hoặc JPG.");
+  if (file.size > PPTX_IMG_MAX) return showToast("Ảnh vượt quá 5 MB — hãy chọn ảnh nhỏ hơn.");
+  try {
+    const res = await fetch(`/api/reports/${pptx.report.id}/images/${encodeURIComponent(code)}?file_name=${encodeURIComponent(file.name || "anh.png")}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: await file.arrayBuffer(),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Lỗi ${res.status}`);
+    f.content = { ...body, caption: f.content.caption || body.caption || "" };
+    f.filled = true;
+    pptx.report.status = "draft";
+    renderPptxSection(code);
+    showToast("Đã tải ảnh lên.", "success");
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+// input chọn file dùng chung (tạo 1 lần)
+function pptxImageInput() {
+  let input = document.getElementById("pptx-img-input");
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "file";
+    input.id = "pptx-img-input";
+    input.accept = "image/png,image/jpeg";
+    input.hidden = true;
+    input.addEventListener("change", async () => {
+      const file = input.files[0];
+      input.value = "";
+      if (file && pptx.imgTarget) await uploadPptxImage(pptx.imgTarget, file);
+    });
+    document.body.appendChild(input);
+  }
+  return input;
+}
+// Dán ảnh (Ctrl+V) vào đầu mục ảnh đang chọn; kéo thả ảnh vào thẻ đầu mục ảnh.
+document.addEventListener("paste", (e) => {
+  if (!pptx.report || px("pptx-report-root")?.offsetParent === null) return;
+  if (e.target.closest?.("input, textarea")) return;
+  const f = pptx.report.fields.find((x) => x.code === pptx.activeCode);
+  if (!f || f.kind !== "image") return;
+  const file = [...(e.clipboardData?.files ?? [])].find((x) => x.type.startsWith("image/"));
+  if (file) {
+    e.preventDefault();
+    uploadPptxImage(f.code, file);
+  }
+});
+
 function renderPptxBody(f) {
   const c = f.content;
   if (f.kind === "auto") return `<p class="muted" style="margin:6px 0">Tự điền: <b>${pxEsc(pptx.report.label)}</b></p>`;
+  if (f.kind === "image") return renderPptxImageBody(f);
   if (f.kind === "paragraph") return `<textarea class="pptx-para" data-code="${f.code}" rows="4" placeholder="Nhập nội dung đoạn văn...">${pxEsc(c.text ?? "")}</textarea>`;
   if (f.kind === "table") {
     const rows = c.rows ?? [];
@@ -391,6 +465,7 @@ function renderPptxPreview() {
   if (!f) return "";
   let body = "";
   if (f.kind === "auto") body = `<p>${pxEsc(rep.label)}</p>`;
+  else if (f.kind === "image") body = f.content.has_image ? `<img class="pptx-prev-img" src="/api/reports/${rep.id}/images/${encodeURIComponent(f.code)}?v=${encodeURIComponent(f.content.updated_at ?? "")}" alt="" />${f.content.caption ? `<div class="muted" style="text-align:center;font-size:.72rem">${pxEsc(f.content.caption)}</div>` : ""}` : '<i class="muted">Chưa có ảnh</i>';
   else if (f.kind === "paragraph") body = `<p>${pxEsc(f.content.text ?? "").replace(/\n/g, "<br/>") || '<i class="muted">Chưa có nội dung</i>'}</p>`;
   else if (f.kind === "list") {
     const items = (f.content.items ?? []).filter((i) => i.text && i.selected !== false);
@@ -432,6 +507,7 @@ function refreshPptxHeader() {
 }
 function recomputeFilled(f) {
   const c = f.content;
+  if (f.kind === "image") { f.filled = !!c.has_image; return; }
   f.filled = f.kind === "table" ? (c.rows ?? []).some((r) => r.ten) : f.kind === "list" ? (c.items ?? []).some((i) => i.text && i.selected !== false) : f.kind === "paragraph" ? !!(c.text ?? "").trim() : true;
 }
 function renderPptxSection(code) {
@@ -551,6 +627,17 @@ function bindPptxReport() {
   root.querySelector(".pptx-main").addEventListener("keydown", onPptxMainKey);
   root.querySelector(".pptx-main").addEventListener("change", onPptxMainChange);
   bindPptxDrag(root.querySelector(".pptx-main"));
+  const mainEl = root.querySelector(".pptx-main");
+  mainEl.addEventListener("dragover", (e) => {
+    if (e.dataTransfer?.types?.includes("Files") && e.target.closest(".pptx-section")) e.preventDefault();
+  });
+  mainEl.addEventListener("drop", (e) => {
+    const sec = e.target.closest(".pptx-section");
+    const file = e.dataTransfer?.files?.[0];
+    if (!sec || !file || pxField(sec.dataset.code).kind !== "image") return;
+    e.preventDefault();
+    uploadPptxImage(sec.dataset.code, file);
+  });
   px("pptx-slidebar").addEventListener("click", (e) => {
     const chip = e.target.closest(".pptx-slide-chip");
     const tool = e.target.closest("[data-act]");
@@ -603,7 +690,7 @@ function bindPptxReport() {
 const pxFold = (v) => String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
 function pxSearchText(f) {
   const c = f.content ?? {};
-  const body = f.kind === "table" ? (c.rows ?? []).map((r) => `${r.ten} ${r.don_vi} ${r.ke_hoach ?? ""} ${r.thuc_hien ?? ""}`).join(" ") : f.kind === "list" ? (c.items ?? []).map((i) => i.text).join(" ") : f.kind === "paragraph" ? c.text ?? "" : pptx.report.label;
+  const body = f.kind === "table" ? (c.rows ?? []).map((r) => `${r.ten} ${r.don_vi} ${r.ke_hoach ?? ""} ${r.thuc_hien ?? ""}`).join(" ") : f.kind === "list" ? (c.items ?? []).map((i) => i.text).join(" ") : f.kind === "paragraph" ? c.text ?? "" : f.kind === "image" ? `${c.file_name ?? ""} ${c.caption ?? ""}` : pptx.report.label;
   return pxFold(`${f.label} ${f.code} ${body}`);
 }
 // Hiện/ẩn đầu mục: đang TÌM KIẾM thì lọc theo từ khoá trên mọi slide; không thì chỉ hiện slide đang chọn (hoặc tất cả).
@@ -714,6 +801,20 @@ function onPptxMainInput(e) {
   if (!sec) return;
   const code = sec.dataset.code;
   const f = pxField(code);
+  if (e.target.matches(".pptx-cap-input")) {
+    f.content.caption = e.target.value;
+    clearTimeout(pptx.saveTimers[`cap-${code}`]);
+    pptx.saveTimers[`cap-${code}`] = setTimeout(async () => {
+      try {
+        await api(`/api/reports/${pptx.report.id}/images/${encodeURIComponent(code)}/caption`, { method: "PUT", body: JSON.stringify({ caption: f.content.caption }) });
+        pptx.savedAt = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+        refreshPptxHeader();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }, 600);
+    return;
+  }
   if (e.target.matches(".pptx-para")) {
     f.content.text = e.target.value;
     recomputeFilled(f);
@@ -807,6 +908,23 @@ async function onPptxMainClick(e) {
   const act = btn.dataset.act;
   const id = btn.dataset.id;
   if (act.startsWith("cm-")) return onPptxCommentAction(code, act, id, sec);
+  if (act === "img-pick") {
+    pptx.imgTarget = code;
+    pptxImageInput().click();
+    return;
+  }
+  if (act === "img-del") {
+    if (!(await confirmDialog("Xóa ảnh của đầu mục này?", { title: "Xác nhận xóa", okText: "Xóa" }))) return;
+    try {
+      await api(`/api/reports/${pptx.report.id}/images/${encodeURIComponent(code)}`, { method: "DELETE" });
+      f.content = { has_image: false, caption: "" };
+      f.filled = false;
+      renderPptxSection(code);
+    } catch (e) {
+      showToast(e.message);
+    }
+    return;
+  }
   if (act === "add") {
     pptx.editing = { code, id: null };
     renderPptxSection(code);
@@ -972,6 +1090,7 @@ function renderPptxTemplates() {
         <li>Giữ nguyên tiêu đề, logo, màu. Thay phần nội dung đổi theo kỳ bằng mã, ví dụ <code>{{cv_noi_bat}}</code>.</li>
         <li>Tên kỳ (Tháng 10/2026, Quý III/2026…) dùng mã có sẵn <code>{{ky_bao_cao}}</code>, hệ thống tự điền.</li>
         <li>Bảng chỉ tiêu: đặt trong <b>một hàng</b> của bảng PowerPoint các mã <code>{{ma.ten}}</code> <code>{{ma.don_vi}}</code> <code>{{ma.ke_hoach}}</code> <code>{{ma.thuc_hien}}</code> <code>{{ma.ty_le}}</code> — hàng đó được nhân theo số chỉ tiêu.</li>
+        <li><b>Ảnh thay đổi theo kỳ:</b> vẽ một khung chữ ở đúng chỗ, đúng cỡ muốn đặt ảnh rồi gõ mã bắt đầu bằng <code>anh_</code>, ví dụ <code>{{anh_dashboard}}</code> (chọn kiểu Hình ảnh). Khi xuất, khung được thay bằng ảnh đã tải lên (co vừa khung, giữ tỉ lệ) kèm chú thích.</li>
         <li><b>Ghi chú thuyết trình (Notes):</b> gõ mã vào khung Notes dưới slide, ví dụ <code>{{ghi_chu_iso}}</code> (chọn kiểu Đoạn văn) — hệ thống điền cả phần ghi chú khi xuất.</li>
         <li>Lưu file .pptx và tải lên ở đây.</li></ol></div>
       <div class="pptx-card"><h3 style="margin-top:0">Khi thay file mẫu</h3><p>Hệ thống so sánh mã giữ chỗ cũ và mới, báo lại trước khi áp dụng:</p><ul>

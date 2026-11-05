@@ -5,14 +5,15 @@ import { PERIOD_TYPES, type PeriodType } from "./reportPeriod.util.js";
 
 export class ReportError extends Error {}
 
-export type FieldKind = "auto" | "table" | "list" | "paragraph";
+export type FieldKind = "auto" | "table" | "list" | "paragraph" | "image";
 export type FieldSource = "manual" | "sum" | "suggest" | "last" | "prior_year" | "auto";
-export const FIELD_KINDS: FieldKind[] = ["auto", "table", "list", "paragraph"];
+export const FIELD_KINDS: FieldKind[] = ["auto", "table", "list", "paragraph", "image"];
 export const SOURCES_BY_KIND: Record<FieldKind, FieldSource[]> = {
   auto: ["auto"],
   table: ["manual", "sum", "last", "prior_year"],
   list: ["manual", "suggest", "last"],
   paragraph: ["manual", "last"],
+  image: ["manual"],
 };
 
 export interface TemplateField {
@@ -38,6 +39,7 @@ const humanize = (code: string) => {
 function defaultsFor(code: string, hasRowTokens: boolean, type: PeriodType) {
   let kind: FieldKind = "list";
   if (code === "ky_bao_cao") kind = "auto";
+  else if (/^(anh|hinh|img|image)(_|$)/.test(code)) kind = "image";
   else if (hasRowTokens || /ket_qua|chi_tieu|_kd|so_sanh|bang/.test(code)) kind = "table";
   else if (/danh_gia|nhan_xet|tong_ket|y_kien|ghi_chu/.test(code)) kind = "paragraph";
   let source: FieldSource = "manual";
@@ -49,7 +51,7 @@ function defaultsFor(code: string, hasRowTokens: boolean, type: PeriodType) {
   return {
     kind,
     source,
-    required: kind !== "auto" && !/so_sanh/.test(code),
+    required: kind !== "auto" && kind !== "image" && !/so_sanh/.test(code),
     carry_over: kind === "list" && /ton_tai|vuong_mac/.test(code),
   };
 }

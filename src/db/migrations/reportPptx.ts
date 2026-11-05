@@ -92,6 +92,22 @@ export async function migrateReportPptxTables(): Promise<void> {
       t.index(["report_id"]);
     });
   }
+  // Ảnh của đầu mục kiểu "Hình ảnh": 1 ảnh / đầu mục / báo cáo (PNG hoặc JPEG, tối đa 5 MB) + chú thích 1 dòng.
+  if (!(await db.schema.hasTable("report_images"))) {
+    await db.schema.createTable("report_images", (t) => {
+      t.increments("id").primary();
+      t.integer("report_id").notNullable().references("id").inTable("reports").onDelete("CASCADE");
+      t.string("field_code", 100).notNullable();
+      t.string("file_name", 255);
+      t.string("mime", 50).notNullable();
+      t.integer("size_bytes").notNullable();
+      t.binary("data").notNullable();
+      t.string("caption", 300);
+      t.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      t.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      t.unique(["report_id", "field_code"]);
+    });
+  }
   if (!(await db.schema.hasTable("report_versions"))) {
     await db.schema.createTable("report_versions", (t) => {
       t.increments("id").primary();

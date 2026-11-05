@@ -117,9 +117,44 @@ export async function scanPptx(buffer: Buffer): Promise<{ slide_count: number; c
 }
 
 export type FillItem = Record<string, string>;
+export interface FillImage {
+  data: Buffer;
+  ext: "png" | "jpg";
+  caption?: string;
+  name?: string;
+}
+
+// Kích thước điểm ảnh (rộng, cao) của PNG/JPEG để co ảnh vừa khung mà giữ tỉ lệ.
+function imageSize(data: Buffer, ext: string): { w: number; h: number } | null {
+  try {
+    if (ext === "png" && data.length > 24) return { w: data.readUInt32BE(16), h: data.readUInt32BE(20) };
+    if (ext === "jpg") {
+      let i = 2;
+      while (i + 9 < data.length) {
+        if (data[i] !== 0xff) { i++; continue; }
+        const marker = data[i + 1];
+        if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { h: data.readUInt16BE(i + 5), w: data.readUInt16BE(i + 7) };
+        i += 2 + data.readUInt16BE(i + 2);
+      }
+    }
+  } catch {
+    /* kích thước không đọc được -> dùng nguyên khung */
+  }
+  return null;
+}
+
+const SP_RE = /<p:sp(?:\s[^>]*)?>[\s\S]*?<\/p:sp>/g;
+const EMU_PT = 12700;
+const CAPTION_H = 28 * EMU_PT; // chỗ dành cho dòng chú thích dưới ảnh
 export interface FillData {
   // code -> giá trị: chuỗi (tự điền/đoạn văn), mảng chuỗi (danh sách), mảng object (bảng chỉ tiêu)
-  [code: string]: { kind: "auto" | "paragraph" | "list" | "table"; text?: string; items?: string[]; rows?: FillItem[] };
+  [code: string]: {
+    kind: "auto" | "paragraph" | "list" | "table" | "image";
+    text?: string;
+    items?: string[];
+    rows?: FillItem[];
+    image?: FillImage | null; // kind "image": ảnh (1 ảnh/khung) + chú thích tuỳ chọn; null = chưa có ảnh -> xoá khung
+  };
 }
 
 function replaceTokens(text: string, scalar: (code: string, sub?: string) => string): string {
@@ -129,6 +164,7 @@ function replaceTokens(text: string, scalar: (code: string, sub?: string) => str
 // Điền dữ liệu vào file mẫu. Mã không có dữ liệu -> thay bằng chuỗi rỗng.
 export async function fillPptx(buffer: Buffer, data: FillData, comments: SlideComment[] = []): Promise<Buffer> {
   const zip = await JSZip.loadAsync(buffer);
+  let imageCounter = 0;
   // Điền cả slide lẫn ghi chú thuyết trình (Notes).
   const targets = [...slideEntries(zip), ...(await noteEntries(zip)).map((n) => ({ name: n.name, no: n.slideFileNo }))];
   for (const s of targets) {
@@ -149,6 +185,39 @@ export async function fillPptx(buffer: Buffer, data: FillData, comments: SlideCo
         });
       return rows.length ? rows.map(make).join("") : make(null);
     });
+
+    // 1b) Khung chữ chứa mã ảnh -> thay cả khung bằng ảnh (co vừa khung, giữ tỉ lệ) + chú thích dưới ảnh.
+    const pending: { rid: string; path: string; bytes: Buffer }[] = [];
+    xml = xml.replace(SP_RE, (sp) => {
+      const tok = [...paragraphsText(sp).matchAll(TOKEN_RE)].filter((m) => !m[2]).map((m) => nfc(m[1])).find((c) => data[c]?.kind === "image");
+      if (!tok) return sp;
+      const img = data[tok].image;
+      if (!img) return ""; // chưa có ảnh: bỏ khung chữ chứa mã
+      const box = sp.match(/<a:off x="(-?\d+)" y="(-?\d+)"\s*\/>\s*<a:ext cx="(\d+)" cy="(\d+)"\s*\/>/);
+      let [bx, by, bw, bh] = box ? box.slice(1).map(Number) : [914400, 1371600, 6858000, 3429000];
+      const capH = img.caption ? Math.min(CAPTION_H, Math.floor(bh / 3)) : 0;
+      const areaH = bh - capH;
+      const dim = imageSize(img.data, img.ext);
+      let w = bw;
+      let h = areaH;
+      if (dim && dim.w > 0 && dim.h > 0) {
+        const scale = Math.min(bw / dim.w, areaH / dim.h);
+        w = Math.round(dim.w * scale);
+        h = Math.round(dim.h * scale);
+      }
+      const x = bx + Math.floor((bw - w) / 2);
+      const y = by + Math.floor((areaH - h) / 2);
+      const rid = `rIdRptImg${++imageCounter}`;
+      const path = `ppt/media/report_image${imageCounter}.${img.ext}`;
+      pending.push({ rid, path, bytes: img.data });
+      const id = 9000 + imageCounter * 2;
+      const pic = `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Ảnh ${esc(tok)}" descr="${esc(img.caption || img.name || tok)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+      const cap = img.caption
+        ? `<p:sp><p:nvSpPr><p:cNvPr id="${id + 1}" name="Chú thích ${esc(tok)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${bx}" y="${by + areaH}"/><a:ext cx="${bw}" cy="${capH}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="vi-VN" sz="1200" i="1" dirty="0"/><a:t>${esc(img.caption)}</a:t></a:r></a:p></p:txBody></p:sp>`
+        : "";
+      return pic + cap;
+    });
+    if (pending.length && /^ppt\/slides\/slide\d+\.xml$/.test(s.name)) await attachImages(zip, s.name, pending);
 
     // 2) Đoạn văn có mã {{ma}} (không có phần .cot).
     xml = xml.replace(PARA_RE, (p) => {
@@ -184,6 +253,23 @@ export interface SlideComment {
   author: string;
   date: Date;
   text: string;
+}
+
+// Ghi file ảnh vào ppt/media, nối vào .rels của slide và khai báo kiểu file ảnh trong [Content_Types].xml.
+async function attachImages(zip: JSZip, slidePath: string, imgs: { rid: string; path: string; bytes: Buffer }[]): Promise<void> {
+  const relsPath = slidePath.replace("ppt/slides/", "ppt/slides/_rels/") + ".rels";
+  let rels = (await zip.file(relsPath)?.async("string")) ?? `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+  let ct = (await zip.file("[Content_Types].xml")?.async("string")) ?? "";
+  for (const img of imgs) {
+    zip.file(img.path, img.bytes);
+    rels = rels.replace("</Relationships>", `<Relationship Id="${img.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${img.path.split("/").pop()}"/></Relationships>`);
+    const ext = img.path.split(".").pop()!;
+    if (!new RegExp(`<Default[^>]*Extension="${ext}"`, "i").test(ct)) {
+      ct = ct.replace(/<Types[^>]*>/, (m) => `${m}<Default Extension="${ext}" ContentType="${ext === "png" ? "image/png" : "image/jpeg"}"/>`);
+    }
+  }
+  zip.file(relsPath, rels);
+  if (ct) zip.file("[Content_Types].xml", ct);
 }
 
 const REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";

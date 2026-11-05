@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as tpl from "../services/reportTemplate.service.js";
 import * as rep from "../services/report.service.js";
+import * as img from "../services/reportImage.service.js";
 import * as cm from "../services/reportComment.service.js";
 import { buildSamplePptx } from "../services/pptxSample.service.js";
 import { isPeriodType, type PeriodType } from "../services/reportPeriod.util.js";
@@ -217,4 +218,44 @@ export async function openCommentCountHandler(req: Request, res: Response) {
   const d = resolveListDepartmentId(scopeOf(req), requested);
   if (d === SCOPE_EMPTY || d == null) return res.json({ count: 0 });
   res.json({ count: await cm.openCommentCount(d) });
+}
+
+// ---- Ảnh của đầu mục kiểu Hình ảnh (1 ảnh / đầu mục, PNG/JPG, tối đa 5 MB) ----
+export async function putImageHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) return res.status(400).json({ error: "Thiếu file ảnh" });
+  try {
+    const name = typeof req.query.file_name === "string" ? req.query.file_name : null;
+    res.json(await img.saveImage(id, String(req.params.code), req.body, name, scopeOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function putCaptionHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    res.json(await img.setCaption(id, String(req.params.code), String(req.body?.caption ?? ""), scopeOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function deleteImageHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    await img.deleteImage(id, String(req.params.code), scopeOf(req));
+    res.status(204).end();
+  } catch (e) {
+    fail(res, e);
+  }
+}
+export async function getImageHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  const f = await img.getImageFile(id, String(req.params.code), scopeOf(req));
+  if (!f) return res.status(404).json({ error: "Chưa có ảnh" });
+  res.setHeader("Content-Type", f.mime);
+  res.send(Buffer.from(f.data));
 }
