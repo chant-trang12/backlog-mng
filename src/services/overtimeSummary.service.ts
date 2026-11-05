@@ -94,16 +94,26 @@ export async function listSummary(periodId: number, departmentId?: number | null
   if (departmentId != null) q.where({ department_id: departmentId });
   const rows = (await q.orderBy("id", "asc")) as any[];
 
-  // Tổng tháng của các tháng TRƯỚC trong cùng năm (cùng phòng ban) theo nhân sự.
-  const earlier: { p: Person; hours: number }[] = [];
+  // Lũy kế chạy của từng nhân sự qua các tháng TRƯỚC trong cùng năm (cùng phòng ban), theo thứ tự tháng:
+  //   lũy kế tháng m = "Tổng các tháng trước" của tháng m + tổng tháng m,
+  //   "Tổng các tháng trước" của tháng m = số NHẬP TAY nếu có, KHÔNG thì = LŨY KẾ của tháng gần nhất trước đó có nhân sự này.
+  // => tháng n+1 tự lấy "Tổng các tháng trước" = "Lũy kế" của tháng n (kể cả khi tháng n có nhập tay số các tháng trước).
+  const chain: { p: Person; luyKe: number }[] = [];
   if (period && rows.length) {
     const eq = db("overtime_summary_records as r")
       .join("periods as p", "p.id", "r.period_id")
       .where({ "r.is_deleted": false, "p.year": period.year })
       .where("p.month", "<", period.month);
     if (departmentId != null) eq.where("r.department_id", departmentId);
-    for (const r of (await eq.select("r.ma_nhan_vien", "r.ho_va_ten", "r.ban_ngay_so_gio", "r.ban_dem_so_gio")) as any[]) {
-      earlier.push({ p: r, hours: (r.ban_ngay_so_gio ?? 0) + (r.ban_dem_so_gio ?? 0) });
+    const prev = (await eq.orderBy("p.month", "asc").orderBy("r.id", "asc").select("r.ma_nhan_vien", "r.ho_va_ten", "r.ban_ngay_so_gio", "r.ban_dem_so_gio", "r.tong_cac_thang_truoc_nhap")) as any[];
+    for (const r of prev) {
+      let e = chain.find((c) => samePerson(c.p, r));
+      if (!e) {
+        e = { p: r, luyKe: 0 };
+        chain.push(e);
+      }
+      const truoc = r.tong_cac_thang_truoc_nhap != null ? r.tong_cac_thang_truoc_nhap : e.luyKe;
+      e.luyKe = round2(truoc + (r.ban_ngay_so_gio ?? 0) + (r.ban_dem_so_gio ?? 0));
     }
   }
 
@@ -111,7 +121,7 @@ export async function listSummary(periodId: number, departmentId?: number | null
     const tong = round2((r.ban_ngay_so_gio ?? 0) + (r.ban_dem_so_gio ?? 0));
     // Vượt quy định = tổng tháng - 40 nếu tổng > 40, ngược lại 0.
     const vuot = tong > LIMIT_MONTH_HOURS ? round2(tong - LIMIT_MONTH_HOURS) : 0;
-    const truoc = round2(r.tong_cac_thang_truoc_nhap != null ? r.tong_cac_thang_truoc_nhap : earlier.filter((e) => samePerson(e.p, r)).reduce((s, e) => s + e.hours, 0));
+    const truoc = round2(r.tong_cac_thang_truoc_nhap != null ? r.tong_cac_thang_truoc_nhap : chain.find((c) => samePerson(c.p, r))?.luyKe ?? 0);
     const luyKe = round2(truoc + tong);
     return {
       ...r,
