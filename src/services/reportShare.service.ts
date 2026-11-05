@@ -8,7 +8,14 @@ export interface Actor {
   userId: number | null;
   departmentId: number | null;
   name: string | null;
+  // Mọi phòng ban "tôi đang đại diện": phòng của tài khoản + phòng đang chọn ở bộ chuyển phòng ban (admin/full-access, hoặc chưa bật SSO
+  // — khi đó không có tài khoản/phòng gốc nên phòng đang chọn là danh tính duy nhất).
+  departmentIds?: number[];
+  viewDepartmentId?: number | null;
 }
+const deptIds = (a: Actor): number[] => [...new Set([...(a.departmentIds ?? []), ...(a.departmentId != null ? [a.departmentId] : [])])];
+// Khoá ghi nhận "đã mở": id tài khoản; không có tài khoản (chưa bật SSO) thì dùng -id phòng ban đang chọn.
+const viewKey = (a: Actor): number | null => a.userId ?? (a.viewDepartmentId != null ? -a.viewDepartmentId : null);
 
 async function reportOf(id: number) {
   return (await db("reports").where({ id, is_deleted: false }).first()) as any | undefined;
@@ -16,10 +23,11 @@ async function reportOf(id: number) {
 
 // Báo cáo có được chia sẻ cho người này (trực tiếp hoặc cho cả phòng của họ) không.
 export async function isSharedWith(reportId: number, actor: Actor): Promise<boolean> {
-  if (actor.userId == null && actor.departmentId == null) return false;
+  const ids = deptIds(actor);
+  if (actor.userId == null && ids.length === 0) return false;
   const q = db("report_shares").where({ report_id: reportId }).where((b) => {
     if (actor.userId != null) b.orWhere({ share_type: "user", user_id: actor.userId });
-    if (actor.departmentId != null) b.orWhere({ share_type: "department", department_id: actor.departmentId });
+    if (ids.length) b.orWhere((c) => c.where({ share_type: "department" }).whereIn("department_id", ids));
   });
   return !!(await q.first());
 }
@@ -100,25 +108,26 @@ export async function searchUsers(q: string, self: Actor) {
 
 // Báo cáo được chia sẻ cho tôi (trực tiếp hoặc cho phòng của tôi) — kèm "mới" (chưa mở lần nào) + số góp ý chưa xử lý.
 export async function sharedWithMe(actor: Actor) {
-  if (actor.userId == null && actor.departmentId == null) return [];
+  const ids = deptIds(actor);
+  if (actor.userId == null && ids.length === 0) return [];
   const shares = (await db("report_shares as s")
     .join("reports as r", "r.id", "s.report_id")
     .join("departments as d", "d.id", "r.department_id")
     .where("r.is_deleted", false)
     .where((b) => {
       if (actor.userId != null) b.orWhere({ "s.share_type": "user", "s.user_id": actor.userId });
-      if (actor.departmentId != null) b.orWhere({ "s.share_type": "department", "s.department_id": actor.departmentId });
+      if (ids.length) b.orWhere((c) => c.where({ "s.share_type": "department" }).whereIn("s.department_id", ids));
     })
     .select("s.report_id", "s.shared_by", "s.created_at as shared_at", "r.period_type", "r.year", "r.idx", "r.status", "d.name as department_name")) as any[];
   const byReport = new Map<number, any>();
   for (const s of shares) if (!byReport.has(s.report_id) || String(s.shared_at) > String(byReport.get(s.report_id).shared_at)) byReport.set(s.report_id, s);
-  const ids = [...byReport.keys()];
+  const reportIds = [...byReport.keys()];
   const viewed = new Set<number>(
-    actor.userId != null && ids.length ? ((await db("report_share_views").where({ user_id: actor.userId }).whereIn("report_id", ids).pluck("report_id")) as number[]) : [],
+    viewKey(actor) != null && reportIds.length ? ((await db("report_share_views").where({ user_id: viewKey(actor)! }).whereIn("report_id", reportIds).pluck("report_id")) as number[]) : [],
   );
   const open = new Map<number, number>();
-  if (ids.length) {
-    const rows = (await db("report_comments").whereIn("report_id", ids).where({ is_deleted: false, status: "open" }).groupBy("report_id").select("report_id").count({ n: "*" })) as any[];
+  if (reportIds.length) {
+    const rows = (await db("report_comments").whereIn("report_id", reportIds).where({ is_deleted: false, status: "open" }).groupBy("report_id").select("report_id").count({ n: "*" })) as any[];
     for (const r of rows) open.set(Number(r.report_id), Number(r.n));
   }
   return [...byReport.values()]
@@ -141,7 +150,8 @@ export async function unseenSharedCount(actor: Actor): Promise<number> {
 }
 
 export async function markViewed(reportId: number, actor: Actor) {
-  if (actor.userId == null) return;
-  const hit = await db("report_share_views").where({ report_id: reportId, user_id: actor.userId }).first();
-  if (!hit) await db("report_share_views").insert({ report_id: reportId, user_id: actor.userId });
+  const key = viewKey(actor);
+  if (key == null) return;
+  const hit = await db("report_share_views").where({ report_id: reportId, user_id: key }).first();
+  if (!hit) await db("report_share_views").insert({ report_id: reportId, user_id: key });
 }

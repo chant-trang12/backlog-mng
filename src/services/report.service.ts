@@ -5,7 +5,7 @@ import { fillPptx, type FillData } from "./pptx.service.js";
 import { ReportError, getTemplateFile, type TemplateField } from "./reportTemplate.service.js";
 import { listReportComments } from "./reportComment.service.js";
 import { imageMetaByCode, imageRowsForExport } from "./reportImage.service.js";
-import { assertCanView, markViewed, type Actor } from "./reportShare.service.js";
+import { assertCanView, isSharedWith, markViewed, type Actor } from "./reportShare.service.js";
 import { childPeriods, exportFileName, periodLabel, periodShort, previousPeriod, validIdx, type PeriodType } from "./reportPeriod.util.js";
 
 export { ReportError };
@@ -226,7 +226,8 @@ export async function getReport(id: number, scope: DataScope, actor: Actor) {
   if (!report) return null;
   // Chủ báo cáo (cùng phạm vi phòng ban) hoặc người được chia sẻ ("shared": chỉ xem/góp ý/xuất).
   const access = await assertCanView(report, scope, actor);
-  if (access === "shared") await markViewed(id, actor);
+  // Đánh dấu "đã mở" khi báo cáo này được chia sẻ cho tôi (kể cả khi tôi có quyền chủ, VD admin/chưa bật SSO) -> hết "Mới".
+  if (access === "shared" || (await isSharedWith(id, actor))) await markViewed(id, actor);
   const type = report.period_type as PeriodType;
   const tpl = (await db("report_templates").where({ department_id: report.department_id, period_type: type }).select("id", "file_name", "version", "slide_count").first()) as any;
   const fields = tpl ? await loadFields(tpl.id) : [];

@@ -23,7 +23,12 @@ function deptOf(req: Request): number | null {
 // Người thao tác (để xét quyền báo cáo được chia sẻ).
 function actorOf(req: Request): sh.Actor {
   const u = req.appUser;
-  return { userId: u?.id ?? null, departmentId: u?.department_id ?? null, name: u?.name ?? u?.username ?? null };
+  const scope = scopeOf(req);
+  // Phòng ban đang chọn ở header: chỉ tin khi người dùng có quyền ở phòng đó (admin/full-access, hoặc chính phòng của họ).
+  const asked = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const view = asked != null && Number.isInteger(asked) && asked > 0 && (scope.all || asked === scope.departmentId) ? asked : null;
+  const home = u?.department_id ?? null;
+  return { userId: u?.id ?? null, departmentId: home, name: u?.name ?? u?.username ?? null, departmentIds: [...(home != null ? [home] : []), ...(view != null ? [view] : [])], viewDepartmentId: view };
 }
 function byUser(req: Request): string | null {
   return req.appUser?.name ?? req.appUser?.username ?? null;

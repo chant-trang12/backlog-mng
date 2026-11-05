@@ -65,6 +65,8 @@ const pxRich = (v) => pxEsc(v).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\
 const pxDateTime = (v) => { const m = String(v ?? "").match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : pxEsc(v); };
 const pxNum = (n) => (n == null || n === "" ? "" : Number(n).toLocaleString("vi-VN", { maximumFractionDigits: 2 }));
 const pxRatio = (r) => (r.ke_hoach && r.thuc_hien != null ? (r.thuc_hien / r.ke_hoach) * 100 : null);
+// Phòng ban đang chọn ở header — gửi kèm để biết "tôi đang đại diện phòng nào" khi xem báo cáo được chia sẻ cho phòng đó.
+const pxDeptQ = () => (state.currentDepartmentId != null ? `?department_id=${state.currentDepartmentId}` : "");
 const pxNeedDept = () => state.currentDepartmentId == null;
 const pxTitle = (rep) =>
   rep.period_type === "month" || rep.period_type === "quarter"
@@ -128,9 +130,9 @@ function bindPptxScopeBar() {
   });
 }
 async function loadPptxShared() {
-  pptx.sharedList = (await api("/api/reports/shared-with-me")) ?? [];
+  pptx.sharedList = (await api(`/api/reports/shared-with-me${pxDeptQ()}`)) ?? [];
   pptx.unseenShared = pptx.sharedList.filter((r) => r.is_new).length;
-  if (pptx.report && pptx.report.access === "shared") return renderPptxReportView();
+  if (pptx.report) return renderPptxReportView(); // đang mở 1 báo cáo được chia sẻ: giữ nguyên (chỉ làm mới danh sách/số liệu)
   pptx.report = null;
   renderPptxReportView();
 }
@@ -151,7 +153,7 @@ function renderPptxSharedList() {
 function renderPptxReportView() {
   const root = px("pptx-report-root");
   const sharedMode = pptx.scope === "shared";
-  root.classList.toggle("pptx-shared", pptx.report?.access === "shared");
+  root.classList.toggle("pptx-shared", pptx.scope === "shared" || pptx.report?.access === "shared");
   if (sharedMode) {
     root.innerHTML = `${renderPptxScopeBar()}${
       pptx.report
@@ -162,7 +164,7 @@ function renderPptxReportView() {
     root.querySelectorAll(".pptx-shared-item").forEach((b) =>
       b.addEventListener("click", async () => {
         try {
-          pptx.report = await api(`/api/reports/${b.dataset.id}`);
+          pptx.report = await api(`/api/reports/${b.dataset.id}${pxDeptQ()}`);
           pptx.activeCode = pptx.report.fields[0]?.code ?? null;
           pptx.slideFilter = "all";
           pptx.collapsed = new Set();
@@ -370,7 +372,7 @@ async function refreshSpNavBadge() {
     // Chấm đỏ = góp ý chưa xử lý của phòng đang xem + báo cáo MỚI được chia sẻ cho tôi (chưa mở lần nào).
     const [c, s] = await Promise.all([
       state.currentDepartmentId == null ? { count: 0 } : api(`/api/report-comments/open-count?department_id=${state.currentDepartmentId}`),
-      api("/api/report-shares/unseen-count"),
+      api(`/api/report-shares/unseen-count${pxDeptQ()}`),
     ]);
     pptx.unseenShared = s?.count ?? 0;
     updateSpNavBadge((c?.count ?? 0) + pptx.unseenShared);
@@ -995,7 +997,7 @@ async function onPptxMainClick(e) {
   const act = btn.dataset.act;
   const id = btn.dataset.id;
   // Báo cáo được chia sẻ: chỉ được góp ý (thêm/xóa góp ý của mình), không sửa nội dung.
-  if (pptx.report.access === "shared" && act !== "cm-add" && act !== "cm-del") return;
+  if ((pptx.scope === "shared" || pptx.report.access === "shared") && act !== "cm-add" && act !== "cm-del") return;
   if (act.startsWith("cm-")) return onPptxCommentAction(code, act, id, sec);
   if (act === "img-pick") {
     pptx.imgTarget = code;
