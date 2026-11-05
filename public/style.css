@@ -3964,3 +3964,9 @@ dialog.pptx-share-dialog { max-width: 600px; width: 94vw; }
 .pptx-share-info .muted { font-size: 0.78rem; }
 .pptx-share-avatar { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; background: var(--sky-100); color: var(--sky-800); border: 1px solid var(--sky-300); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
 .pptx-share-avatar.is-dept { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+
+/* Thẻ "Đã chia sẻ": đổi tím -> cam vàng. */
+.pptx-share-card-list { background: #fffaf0; border-color: #f3e3bd; border-left-color: #e08a00; }
+.pptx-share-card-list .pptx-share-card-title span { background: #e08a00; }
+.pptx-share-row { border-color: #f3e3bd; }
+.pptx-share-avatar.is-dept { background: #fdecc8; border-color: #fcd34d; color: #8a5200; }
