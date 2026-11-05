@@ -284,7 +284,7 @@ function renderPptxReport() {
             </div>
             <div class="row" style="gap:8px">
               ${prevBtn}
-              <button class="pptx-btn-share" id="pptx-share-btn">👥 Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
+              <button class="pptx-btn-share" id="pptx-share-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
               <button class="btn-view" id="pptx-versions-btn">Phiên bản</button>
               <button class="primary" id="pptx-export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PowerPoint</button>
               <button class="btn-delete write-action" id="pptx-delete-report" title="Xoá báo cáo">Xóa</button>
@@ -1333,7 +1333,7 @@ async function renderPptxShareList() {
     const shares = await api(`/api/reports/${pptx.report.id}/shares`);
     pptx.report.share_count = shares.length;
     const btn = px("pptx-share-btn");
-    if (btn) btn.textContent = `👥 Chia sẻ${shares.length ? ` (${shares.length})` : ""}`;
+    if (btn) btn.innerHTML = `<svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Chia sẻ${shares.length ? ` (${shares.length})` : ""}`;
     px("pptx-share-count").textContent = shares.length ? `(${shares.length})` : "";
     px("pptx-share-list").innerHTML = shares.length
       ? shares
