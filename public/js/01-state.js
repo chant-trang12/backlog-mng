@@ -517,6 +517,28 @@ function groupColorClass(group) {
   return slot === undefined ? "status-default" : `team-color-${slot}`;
 }
 
+// Ghim hàng tiêu đề (thead) của bảng khi cuộn TRANG xuống — dùng cho bảng KHÔNG giới hạn chiều cao (khung bảng không
+// có cuộn dọc riêng nên position: sticky của th không bám được). Dịch thead xuống đúng bằng phần bảng đã cuộn khuất
+// phía trên mép màn hình (transform), nên cuộn ngang trong khung bảng vẫn hoạt động bình thường.
+function pinTableHead(tableId) {
+  const table = document.getElementById(tableId);
+  const thead = table?.querySelector("thead");
+  if (!table || !thead) return;
+  thead.style.position = "relative";
+  thead.style.zIndex = "5";
+  const update = () => {
+    if (table.offsetParent === null) return; // tab/trang đang ẩn
+    const top = table.getBoundingClientRect().top;
+    const maxOffset = Math.max(0, table.offsetHeight - thead.offsetHeight - 48);
+    const offset = Math.min(Math.max(0, -top), maxOffset);
+    thead.style.transform = offset ? `translateY(${offset}px)` : "";
+  };
+  window.addEventListener("scroll", update, true); // capture: bắt cả khi khung cuộn là phần tử cha, không phải window
+  window.addEventListener("resize", update);
+  new ResizeObserver(update).observe(table);
+  update();
+}
+
 // Phân trang dùng chung cho mọi bảng dữ liệu (Nhân sự, Sự cố, Hỗ trợ ticket,
 // Tỉ lệ khởi tạo) — cùng hành vi với bảng Danh sách nhiệm vụ: 20 dòng/trang
 // mặc định, chọn được 20/50/100, chỉ ảnh hưởng phần hiển thị (chọn/sửa/xóa

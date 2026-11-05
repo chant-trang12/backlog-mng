@@ -5,6 +5,7 @@
 // deptParam()) — mỗi phòng ban 1 danh sách riêng, KHÔNG hiển thị lẫn lộn.
 
 const cbnvPagination = createPagination("cbnv", () => renderCbnvTable(), "bản ghi");
+pinTableHead("cbnv-table"); // ghim tiêu đề khi cuộn trang xuống
 
 async function loadCbnvXepLoai() {
   if (!state.currentPeriodId) {

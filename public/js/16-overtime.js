@@ -3,6 +3,7 @@
 // (deptParam()) — server lọc cả 2, mỗi tháng/phòng 1 danh sách riêng.
 
 const otPagination = createPagination("ot", () => renderOvertimeTable(), "bản ghi");
+pinTableHead("ot-table"); // ghim tiêu đề khi cuộn trang xuống
 
 function otEsc(v) {
   return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
