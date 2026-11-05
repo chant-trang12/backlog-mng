@@ -51,6 +51,10 @@ const state = {
   otRecords: [],
   otSearch: "",
   otEditingId: null,
+  // Kế hoạch tổng hợp > Tổng hợp làm thêm giờ (18-overtime-summary.js).
+  otsRecords: [],
+  otsSearch: "",
+  otsEditingId: null,
   otParentId: null,
   tags: [],
   categoryOptions: [],
@@ -129,6 +133,7 @@ const el = {
   cbnvPeriodSelect: document.getElementById("cbnv-period-select"),
   gnvPeriodSelect: document.getElementById("gnv-period-select"),
   otPeriodSelect: document.getElementById("ot-period-select"),
+  otsumPeriodSelect: document.getElementById("otsum-period-select"),
   configTeamPeriod: document.getElementById("config-team-period"),
   configTeamDept: document.getElementById("config-team-dept"),
   homeFilterPeriod: document.getElementById("home-filter-period"),

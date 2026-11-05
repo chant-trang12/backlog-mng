@@ -72,12 +72,13 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#summary-plan-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["overtime", "cbnv", "gnv", "pptx"].forEach((tab) => {
+    ["overtime", "otsum", "cbnv", "gnv", "pptx"].forEach((tab) => {
       document.getElementById(`summary-plan-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
     // Chuyển tab -> làm mới dữ liệu của tab vừa mở (dữ liệu có thể đã đổi ở tab khác/đổi tháng/phòng ban).
     const loaders = {
       overtime: typeof loadOvertime === "function" ? loadOvertime : null,
+      otsum: typeof loadOvertimeSummary === "function" ? loadOvertimeSummary : null,
       cbnv: typeof loadCbnvXepLoai === "function" ? loadCbnvXepLoai : null,
       gnv: typeof loadGnv === "function" ? loadGnv : null,
       pptx: typeof loadPptx === "function" ? loadPptx : null,

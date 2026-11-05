@@ -2531,6 +2531,7 @@
           <div class="tab-panel-group">
           <div class="chrome-tabs" id="summary-plan-subnav">
             <span class="pill active" data-tab="overtime">Chi tiết làm thêm giờ</span>
+            <span class="pill" data-tab="otsum">Tổng hợp làm thêm giờ</span>
             <span class="pill" data-tab="cbnv">KQ xếp loại CBNV</span>
             <span class="pill" data-tab="gnv">GNV</span>
             <span class="pill" data-tab="pptx">Báo cáo PowerPoint<span id="sp-tab-badge" class="pill-badge" hidden title="Góp ý chưa xử lý">0</span></span>
@@ -2602,6 +2603,78 @@
                   <button type="button" id="ot-page-prev" class="small">‹ Trước</button>
                   <span id="ot-page-info" class="muted"></span>
                   <button type="button" id="ot-page-next" class="small">Sau ›</button>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div id="summary-plan-tab-otsum" hidden>
+            <section class="card">
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Tổng hợp làm thêm giờ</h2>
+                <div class="row" style="flex:0 0 auto">
+                  <button id="otsum-add-btn" class="btn-view write-action">+ Thêm mới</button>
+                  <button id="otsum-from-detail-btn" class="btn-edit write-action" title="Cộng giờ từng nhân sự từ tab Chi tiết làm thêm giờ của tháng này">Lấy từ Chi tiết</button>
+                  <button id="otsum-download-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải file mẫu</button>
+                  <button id="otsum-import-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
+                  <input type="file" id="otsum-import-input" accept=".xlsx,.xlsm" hidden />
+                  <button id="otsum-export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom:12px;align-items:center">
+                <div>
+                  <label for="otsum-period-select" style="margin:0">Tháng theo dõi</label>
+                  <select id="otsum-period-select"></select>
+                </div>
+                <div>
+                  <label for="otsum-search" style="margin:0">Tìm kiếm</label>
+                  <input type="text" id="otsum-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
+                </div>
+              </div>
+              <div class="table-wrap" id="otsum-table-wrap">
+                <table id="otsum-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2" style="width:60px">Stt</th>
+                      <th rowspan="2" style="min-width:110px">Mã nhân viên</th>
+                      <th rowspan="2" style="min-width:170px">Họ và Tên</th>
+                      <th rowspan="2" style="min-width:170px">Đơn vị</th>
+                      <th rowspan="2" style="min-width:120px">Bộ phận</th>
+                      <th colspan="2" style="min-width:180px">Làm thêm vào ban ngày<br/><span class="otsum-sub">(Không gồm ngày nghỉ cuối tuần)</span></th>
+                      <th colspan="2" style="min-width:200px">Làm thêm vào ban đêm (22h00-6h00) hoặc Ngày nghỉ cuối tuần</th>
+                      <th rowspan="2" style="min-width:130px" id="otsum-th-tong">Tổng số giờ làm thêm trong tháng</th>
+                      <th rowspan="2" style="min-width:150px">Số giờ làm thêm vượt so với quy định của luật (tối đa 40h/tháng)</th>
+                      <th rowspan="2" style="min-width:190px">Đánh giá<br/><span class="otsum-sub">(So với quy định của luật lao động tối đa không quá 40 giờ/tháng)</span></th>
+                      <th rowspan="2" style="min-width:140px">Tổng số giờ làm thêm các tháng trước trong năm</th>
+                      <th rowspan="2" style="min-width:140px">Tổng số giờ làm thêm lũy kế đến tháng hiện tại</th>
+                      <th rowspan="2" style="min-width:150px">Tỷ lệ thực hiện trong năm so với quy định của luật (200 h/năm)</th>
+                      <th rowspan="2" style="min-width:200px">Đánh giá<br/><span class="otsum-sub">(So với quy định của luật lao động, tối đa không quá 200 giờ/năm)</span></th>
+                      <th rowspan="2" style="min-width:180px">Ghi chú</th>
+                      <th rowspan="2" style="min-width:120px"></th>
+                    </tr>
+                    <tr>
+                      <th style="min-width:80px">Số giờ</th>
+                      <th style="min-width:80px">Số ngày</th>
+                      <th style="min-width:80px">Số giờ</th>
+                      <th style="min-width:80px">Số ngày</th>
+                    </tr>
+                  </thead>
+                  <tbody id="otsum-tbody"></tbody>
+                </table>
+                <p class="muted" id="otsum-empty" hidden style="padding:16px;text-align:center">Chưa có dữ liệu tổng hợp làm thêm giờ ở tháng/phòng ban đang xem.</p>
+              </div>
+              <div class="pagination-bar" id="otsum-pagination">
+                <div class="row">
+                  <label for="otsum-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="otsum-page-size">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <button type="button" id="otsum-page-prev" class="small">‹ Trước</button>
+                  <span id="otsum-page-info" class="muted"></span>
+                  <button type="button" id="otsum-page-next" class="small">Sau ›</button>
                 </div>
               </div>
             </section>
@@ -2737,6 +2810,29 @@
           </div>
           </div>
         </div>
+
+        <!-- Dialog Tổng hợp làm thêm giờ: thêm/sửa -->
+        <dialog id="otsum-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="otsum-form" method="dialog">
+            <h2 id="otsum-dialog-title">Thêm mới tổng hợp làm thêm giờ</h2>
+            <div class="field-row"><label for="otsum-f-ho-ten">Họ và Tên</label><select id="otsum-f-ho-ten"></select></div>
+            <div class="field-row"><label for="otsum-f-ma-nv">Mã nhân viên</label><input type="text" id="otsum-f-ma-nv" /></div>
+            <div class="field-row"><label for="otsum-f-don-vi">Đơn vị</label><input type="text" id="otsum-f-don-vi" /></div>
+            <div class="field-row"><label for="otsum-f-bo-phan">Bộ phận</label><input type="text" id="otsum-f-bo-phan" /></div>
+            <div class="field-row"><label for="otsum-f-ngay-gio">Ban ngày — Số giờ</label><input type="number" min="0" step="any" id="otsum-f-ngay-gio" /></div>
+            <div class="field-row"><label for="otsum-f-ngay-ngay">Ban ngày — Số ngày</label><input type="number" id="otsum-f-ngay-ngay" readonly tabindex="-1" placeholder="Tự tính = Số giờ / 8" /></div>
+            <div class="field-row"><label for="otsum-f-dem-gio">Ban đêm / nghỉ cuối tuần — Số giờ</label><input type="number" min="0" step="any" id="otsum-f-dem-gio" /></div>
+            <div class="field-row"><label for="otsum-f-dem-ngay">Ban đêm / nghỉ cuối tuần — Số ngày</label><input type="number" id="otsum-f-dem-ngay" readonly tabindex="-1" placeholder="Tự tính = Số giờ / 8" /></div>
+            <div class="field-row"><label for="otsum-f-truoc">Tổng số giờ làm thêm các tháng trước</label><div><input type="number" min="0" step="any" id="otsum-f-truoc" style="width:100%;box-sizing:border-box" placeholder="Để trống = tự cộng từ các tháng trước" /><small class="muted">Chỉ nhập khi các tháng trước chưa có trong hệ thống.</small></div></div>
+            <div class="field-row"><label for="otsum-f-ghi-chu">Ghi chú</label><textarea id="otsum-f-ghi-chu" rows="2"></textarea></div>
+            <p class="muted" style="margin:6px 0 0;font-size:.82rem">Tổng tháng, số giờ vượt (tối đa 40h/tháng), đánh giá, lũy kế, tỷ lệ (200h/năm) hệ thống tự tính.</p>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="otsum-cancel-btn" class="small">Huỷ</button>
+              <button type="submit" class="primary small">Lưu</button>
+            </div>
+          </form>
+        </dialog>
 
         <!-- Dialog Làm thêm giờ: thêm/sửa -->
         <dialog id="ot-dialog">
@@ -4524,6 +4620,7 @@
   <script src="js/15-summary-plan.js"></script>
   <script src="js/16-overtime.js"></script>
   <script src="js/17-pptx-reports.js"></script>
+  <script src="js/18-overtime-summary.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

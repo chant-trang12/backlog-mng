@@ -774,3 +774,88 @@ export function buildOvertimeWorkbook(
   sheet.views = [{ state: "frozen", ySplit: h }];
   return workbook.xlsx.writeBuffer();
 }
+
+
+// ---- Xuất Excel / File mẫu "Tổng hợp làm thêm giờ": 17 cột, tiêu đề 2 hàng (nhóm "Làm thêm vào ban ngày/ban đêm" gộp ngang,
+// còn lại gộp dọc), nền xanh lá nhạt như bảng mẫu. File mẫu: tiêu đề ở hàng 1-2 + 1 dòng ví dụ; Xuất: có dòng tiêu đề báo cáo.
+const OTS_WIDTHS = [6, 14, 24, 24, 18, 11, 11, 11, 11, 16, 20, 22, 20, 20, 20, 24, 24];
+
+export function buildOvertimeSummaryWorkbook(
+  rows: import("./overtimeSummary.service.js").SummaryRow[],
+  opts: { title?: string; month?: number; sample?: boolean } = {},
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "backlog-manager";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("Tổng hợp làm thêm giờ");
+  sheet.columns = OTS_WIDTHS.map((width) => ({ width }));
+  const total = OTS_WIDTHS.length;
+  let top = 1;
+  if (opts.title) {
+    sheet.mergeCells(1, 1, 1, total);
+    const t = sheet.getCell(1, 1);
+    t.value = opts.title;
+    t.font = { bold: true, size: 14 };
+    t.alignment = { horizontal: "center", vertical: "middle" };
+    sheet.getRow(1).height = 24;
+    top = 3;
+  }
+  const g = top;
+  const h = top + 1;
+  const head = (r: number, c: number, label: string) => {
+    const cell = sheet.getCell(r, c);
+    cell.value = label;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    fillCell(cell, OT_HEADER_FILL);
+    cell.border = THIN_BORDER;
+  };
+  const tall = (c: number, label: string) => {
+    sheet.mergeCells(g, c, h, c);
+    head(g, c, label);
+  };
+  const month = opts.month ? `tháng ${opts.month}` : "tháng";
+  tall(1, "Stt");
+  tall(2, "Mã nhân viên");
+  tall(3, "Họ và Tên");
+  tall(4, "Đơn vị");
+  tall(5, "Bộ phận");
+  sheet.mergeCells(g, 6, g, 7);
+  head(g, 6, "Làm thêm vào ban ngày\n(Không gồm ngày nghỉ cuối tuần)");
+  head(h, 6, "Số giờ");
+  head(h, 7, "Số ngày");
+  sheet.mergeCells(g, 8, g, 9);
+  head(g, 8, "Làm thêm vào ban đêm (22h00-6h00) hoặc Ngày nghỉ cuối tuần");
+  head(h, 8, "Số giờ");
+  head(h, 9, "Số ngày");
+  tall(10, `Tổng số giờ làm thêm trong ${month}`);
+  tall(11, "Số giờ làm thêm vượt so với quy định của luật (tối đa 40h/tháng)");
+  tall(12, "Đánh giá\n(So với quy định của luật lao động tối đa không quá 40 giờ/tháng)");
+  tall(13, "Tổng số giờ làm thêm các tháng trước trong năm");
+  tall(14, "Tổng số giờ làm thêm lũy kế đến tháng hiện tại");
+  tall(15, "Tỷ lệ thực hiện trong năm so với quy định của luật (200 h/năm)");
+  tall(16, "Đánh giá\n(So với quy định của luật lao động, tối đa không quá 200 giờ/năm)");
+  tall(17, "Ghi chú");
+  sheet.getRow(g).height = 40;
+  sheet.getRow(h).height = 70;
+
+  const pct = (n: number) => `${n.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%`;
+  const body: (string | number)[][] = opts.sample
+    ? [[1, "115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin", "BU CĐS", 0, 0, 4, 0.5, 4, 0, "Đạt", 12, 16, "8%", "Đạt", "Ví dụ — các cột tính toán (tổng, vượt, đánh giá, lũy kế, tỷ lệ) hệ thống tự tính khi nhập"]]
+    : rows.map((r, i) => [
+        i + 1, r.ma_nhan_vien ?? "", r.ho_va_ten, r.don_vi ?? "", r.bo_phan ?? "",
+        r.ban_ngay_so_gio ?? "", r.ban_ngay_so_ngay ?? "", r.ban_dem_so_gio ?? "", r.ban_dem_so_ngay ?? "",
+        r.tong_thang, r.vuot_quy_dinh, r.danh_gia_thang, r.tong_cac_thang_truoc, r.luy_ke, pct(r.ty_le), r.danh_gia_nam, r.ghi_chu ?? "",
+      ]);
+  body.forEach((vals, i) => {
+    vals.forEach((v, ci) => {
+      const cell = sheet.getCell(h + 1 + i, ci + 1);
+      cell.value = v;
+      const left = ci === 2 || ci === 3 || ci === 4 || ci === 16;
+      cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
+      cell.border = THIN_BORDER;
+    });
+  });
+  sheet.views = [{ state: "frozen", ySplit: h }];
+  return workbook.xlsx.writeBuffer();
+}

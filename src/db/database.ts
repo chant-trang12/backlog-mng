@@ -53,6 +53,7 @@ import { migrateCbnvXepLoaiTable } from "./migrations/summaryPlan.js";
 import { migrateGnvTables } from "./migrations/gnv.js";
 import { migrateOvertimeTable } from "./migrations/overtime.js";
 import { migrateReportPptxTables } from "./migrations/reportPptx.js";
+import { migrateOvertimeSummaryTable } from "./migrations/overtimeSummary.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { migrateMenuVisibility } from "./migrations/menuVisibility.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
@@ -127,6 +128,8 @@ export async function initDatabase(): Promise<void> {
     await migrateOvertimeTable();
     // report_* (tab "Báo cáo PowerPoint") — cần departments.
     await migrateReportPptxTables();
+    // overtime_summary_records (tab "Tổng hợp làm thêm giờ") — cần periods/departments.
+    await migrateOvertimeSummaryTable();
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();

@@ -31,6 +31,7 @@ import summaryPlanRoutes from "./routes/summaryPlan.routes.js";
 import gnvRoutes from "./routes/gnv.routes.js";
 import overtimeRoutes from "./routes/overtime.routes.js";
 import reportRoutes from "./routes/report.routes.js";
+import overtimeSummaryRoutes from "./routes/overtimeSummary.routes.js";
 import digitalFeatureRoutes from "./routes/digitalFeature.routes.js";
 import actionLogRoutes from "./routes/actionLog.routes.js";
 import permissionRoutes from "./routes/permission.routes.js";
@@ -264,6 +265,7 @@ export function createApp() {
   app.use("/api", gnvRoutes);
   app.use("/api", overtimeRoutes);
   app.use("/api", reportRoutes);
+  app.use("/api", overtimeSummaryRoutes);
   app.use("/api", digitalFeatureRoutes);
 
   app.use(notFound);

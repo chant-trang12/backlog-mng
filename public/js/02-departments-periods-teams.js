@@ -464,6 +464,7 @@ async function loadPeriods() {
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.innerHTML = optionsHtml;
   if (el.gnvPeriodSelect) el.gnvPeriodSelect.innerHTML = optionsHtml;
   if (el.otPeriodSelect) el.otPeriodSelect.innerHTML = optionsHtml;
+  if (el.otsumPeriodSelect) el.otsumPeriodSelect.innerHTML = optionsHtml;
 
   if (state.periods.length === 0) {
     state.currentPeriodId = null;
@@ -499,6 +500,7 @@ async function loadPeriods() {
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.value = String(state.currentPeriodId);
   if (el.gnvPeriodSelect) el.gnvPeriodSelect.value = String(state.currentPeriodId);
   if (el.otPeriodSelect) el.otPeriodSelect.value = String(state.currentPeriodId);
+  if (el.otsumPeriodSelect) el.otsumPeriodSelect.value = String(state.currentPeriodId);
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -510,6 +512,7 @@ async function loadPeriods() {
   if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
   if (typeof loadGnv === "function") await loadGnv();
   if (typeof loadOvertime === "function") await loadOvertime();
+  if (typeof loadOvertimeSummary === "function") await loadOvertimeSummary();
 }
 
 // Bộ lọc "Tháng"/"Team" riêng ở trang Home — mặc định theo tháng đang chọn ở
@@ -659,6 +662,7 @@ async function switchPeriod(newId) {
   if (el.cbnvPeriodSelect) el.cbnvPeriodSelect.value = v;
   if (el.gnvPeriodSelect) el.gnvPeriodSelect.value = v;
   if (el.otPeriodSelect) el.otPeriodSelect.value = v;
+  if (el.otsumPeriodSelect) el.otsumPeriodSelect.value = v;
   await loadTeams();
   await loadMembers();
   await loadComplianceRecords();
@@ -670,6 +674,7 @@ async function switchPeriod(newId) {
   // GNV + Làm thêm giờ cũng theo "Tháng theo dõi" — phải nạp lại khi đổi tháng.
   if (typeof loadGnv === "function") await loadGnv();
   if (typeof loadOvertime === "function") await loadOvertime();
+  if (typeof loadOvertimeSummary === "function") await loadOvertimeSummary();
 }
 
 el.periodSelect.addEventListener("change", () => switchPeriod(el.periodSelect.value));
@@ -677,6 +682,7 @@ el.teamPeriodSelect.addEventListener("change", () => switchPeriod(el.teamPeriodS
 el.cbnvPeriodSelect?.addEventListener("change", () => switchPeriod(el.cbnvPeriodSelect.value));
 el.gnvPeriodSelect?.addEventListener("change", () => switchPeriod(el.gnvPeriodSelect.value));
 el.otPeriodSelect?.addEventListener("change", () => switchPeriod(el.otPeriodSelect.value));
+el.otsumPeriodSelect?.addEventListener("change", () => switchPeriod(el.otsumPeriodSelect.value));
 el.configTeamPeriod.addEventListener("change", () => switchPeriod(el.configTeamPeriod.value));
 
 el.deletePeriodBtn.addEventListener("click", async () => {
