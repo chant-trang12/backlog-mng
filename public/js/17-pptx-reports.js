@@ -157,7 +157,7 @@ function renderPptxReportView() {
   if (sharedMode) {
     root.innerHTML = `${renderPptxScopeBar()}${
       pptx.report
-        ? `<div class="pptx-alert info" style="margin-bottom:12px">Báo cáo của <b>${pxEsc(pptx.report.department_name ?? "phòng ban khác")}</b>, được chia sẻ cho bạn: bạn xem, góp ý và xuất PowerPoint; không sửa được nội dung. <button type="button" class="small btn-view" id="pptx-back-shared">← Danh sách chia sẻ</button></div>${renderPptxReport()}`
+        ? `<div class="pptx-alert info pptx-shared-banner"><span>Báo cáo của <b>${pxEsc(pptx.report.department_name ?? "phòng ban khác")}</b>, được chia sẻ cho bạn: bạn xem, góp ý và xuất PowerPoint; không sửa được nội dung.</span><button type="button" class="small btn-edit" id="pptx-back-shared">← Danh sách chia sẻ</button></div>${renderPptxReport()}`
         : renderPptxSharedList()
     }`;
     bindPptxScopeBar();
