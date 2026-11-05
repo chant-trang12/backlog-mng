@@ -55,14 +55,47 @@ function otTotals(blocks) {
 const otDay = (n) => (n == null || n === "" ? "" : Number(n).toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 2 }));
 const otFmt = (n) => (Math.round(n * 100) / 100).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
+// Chia các khối (lượt tác động) thành trang theo số DÒNG: mỗi trang chứa tối đa pageSize dòng, trừ khi 1 lượt tự nó dài hơn.
+// Cập nhật thanh phân trang ("Hiển thị a–b trong N bản ghi" tính theo dòng, không theo lượt).
+function otPageBlocks(blocks) {
+  const size = otPagination.pageSize;
+  const pages = [];
+  let cur = [];
+  let n = 0;
+  for (const b of blocks) {
+    if (cur.length && n + b.rows.length > size) {
+      pages.push(cur);
+      cur = [];
+      n = 0;
+    }
+    cur.push(b);
+    n += b.rows.length;
+  }
+  if (cur.length) pages.push(cur);
+  const totalPages = Math.max(1, pages.length);
+  otPagination.page = Math.min(Math.max(1, otPagination.page), totalPages);
+  const pageBlocks = pages[otPagination.page - 1] ?? [];
+  const count = (list) => list.reduce((k, b) => k + b.rows.length, 0);
+  const totalRows = count(blocks);
+  const startRow = count(pages.slice(0, otPagination.page - 1).flat());
+  const endRow = startRow + count(pageBlocks);
+  const $ = (id) => document.getElementById(id);
+  $("ot-page-info").textContent = totalRows === 0 ? "0 / 0" : `Trang ${otPagination.page} / ${totalPages}`;
+  $("ot-page-prev").disabled = otPagination.page <= 1;
+  $("ot-page-next").disabled = otPagination.page >= totalPages;
+  $("ot-page-size").value = String(size);
+  const range = document.querySelector("#ot-pagination .pagination-range-info");
+  if (range) range.textContent = totalRows === 0 ? "Không có bản ghi nào" : `Hiển thị ${startRow + 1}–${endRow} trong ${totalRows} bản ghi`;
+  return { pageBlocks, startRow };
+}
+
 function renderOvertimeTable() {
   const visible = filteredOvertimeBlocks();
   document.getElementById("ot-empty").hidden = visible.length > 0;
-  // Phân trang theo KHỐI (không cắt đôi 1 lượt tác động giữa 2 trang).
-  const pageBlocks = otPagination.slice(visible);
-  // Stt chạy theo TỪNG DÒNG nhân sự (không theo lượt): dòng đầu trang = tổng số dòng của các khối ở các trang trước + 1.
-  const pageStartBlock = (otPagination.page - 1) * otPagination.pageSize;
-  let rowNo = visible.slice(0, pageStartBlock).reduce((n, b) => n + b.rows.length, 0);
+  // Phân trang theo SỐ DÒNG nhân sự hiển thị (không cắt đôi 1 lượt tác động giữa 2 trang).
+  const { pageBlocks, startRow } = otPageBlocks(visible);
+  // Stt chạy theo TỪNG DÒNG nhân sự (không theo lượt): dòng đầu trang = số dòng ở các trang trước + 1.
+  let rowNo = startRow;
   const multi = (v) => otEsc(v).replace(/\n/g, "<br/>");
   document.getElementById("ot-tbody").innerHTML = pageBlocks
     .map((blk) =>
