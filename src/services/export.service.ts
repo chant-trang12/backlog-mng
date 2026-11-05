@@ -842,7 +842,7 @@ export function buildOvertimeSummaryWorkbook(
 
   const pct = (n: number) => `${n.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%`;
   const body: (string | number)[][] = opts.sample
-    ? [[1, "115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin", "BU CĐS", 0, 0, 4, 0.5, 4, 0, "Trong giới hạn số giờ theo quy định của luật lao động", 12, 16, "8%", "Đạt", "Ví dụ — các cột tính toán (tổng, vượt, đánh giá, lũy kế, tỷ lệ) hệ thống tự tính khi nhập"]]
+    ? [[1, "115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin", "BU CĐS", 0, 0, 4, 0.5, 4, 0, "Trong giới hạn số giờ theo quy định của luật lao động", 12, 16, "8%", "Trong giới hạn số giờ theo quy định của luật lao động", "Ví dụ — các cột tính toán (tổng, vượt, đánh giá, lũy kế, tỷ lệ) hệ thống tự tính khi nhập"]]
     : rows.map((r, i) => [
         i + 1, r.ma_nhan_vien ?? "", r.ho_va_ten, r.don_vi ?? "", r.bo_phan ?? "",
         r.ban_ngay_so_gio ?? "", r.ban_ngay_so_ngay ?? "", r.ban_dem_so_gio ?? "", r.ban_dem_so_ngay ?? "",
@@ -857,7 +857,9 @@ export function buildOvertimeSummaryWorkbook(
       cell.border = THIN_BORDER;
     });
     // Đánh giá tháng = "Quá số giờ theo quy định của luật lao động" -> tô hồng ô đó.
+    // Đánh giá tháng (cột 12) / năm (cột 16) = "Quá số giờ theo quy định của luật lao động" -> tô hồng ô đó.
     if (!opts.sample && vals[11] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(h + 1 + i, 12), "FFFBD9DC");
+    if (!opts.sample && vals[15] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(h + 1 + i, 16), "FFFBD9DC");
   });
   sheet.views = [{ state: "frozen", ySplit: h }];
   return workbook.xlsx.writeBuffer();

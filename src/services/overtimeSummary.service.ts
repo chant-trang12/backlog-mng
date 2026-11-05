@@ -87,7 +87,7 @@ export interface SummaryRow {
 // Danh sách theo tháng + phòng ban kèm các cột tính toán:
 //  tổng tháng = giờ ban ngày + giờ ban đêm; vượt = tổng tháng - 40 nếu tổng > 40, ngược lại 0; đánh giá tháng: vượt = 0 "Trong giới hạn số giờ theo quy định của luật lao động" / vượt > 0 "Quá số giờ theo quy định của luật lao động";
 //  tổng các tháng trước = số nhập tay nếu có, KHÔNG thì cộng tổng tháng của CÙNG NHÂN SỰ (khớp mã NV, không có thì họ tên) ở các tháng
-//  trước trong cùng năm + cùng phòng; lũy kế = trước + tháng này; tỷ lệ = lũy kế / 200h; đánh giá năm: <=200h "Đạt" / "Vượt quy định".
+//  trước trong cùng năm + cùng phòng; lũy kế = trước + tháng này; tỷ lệ = lũy kế / 200h; đánh giá năm: <=200h "Trong giới hạn số giờ theo quy định của luật lao động" / >200h "Quá số giờ theo quy định của luật lao động".
 export async function listSummary(periodId: number, departmentId?: number | null) {
   const period = (await db("periods").where({ id: periodId }).first()) as { id: number; year: number; month: number } | undefined;
   const q = db("overtime_summary_records").where({ period_id: periodId, is_deleted: false });
@@ -122,7 +122,8 @@ export async function listSummary(periodId: number, departmentId?: number | null
       tong_cac_thang_truoc: truoc,
       luy_ke: luyKe,
       ty_le: round2((luyKe / LIMIT_YEAR_HOURS) * 100),
-      danh_gia_nam: luyKe === 0 ? "" : luyKe <= LIMIT_YEAR_HOURS ? "Đạt" : "Vượt quy định",
+      // Đánh giá năm giống đánh giá tháng: lũy kế <= 200h "Trong giới hạn...", > 200h "Quá số giờ...".
+      danh_gia_nam: luyKe > LIMIT_YEAR_HOURS ? EVAL_OVER_LIMIT : EVAL_IN_LIMIT,
     };
   });
   return { period, rows: out };
