@@ -2791,18 +2791,32 @@
         </dialog>
 
         <!-- Dialog Báo cáo PowerPoint: chia sẻ báo cáo (theo người hoặc cả phòng) -->
-        <dialog id="pptx-share-dialog" style="max-width:560px">
+        <dialog id="pptx-share-dialog" class="pptx-share-dialog">
           <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <div style="padding:22px 24px 18px">
-            <h2 id="pptx-share-title" style="margin:0 0 4px">Chia sẻ báo cáo</h2>
-            <p class="muted" style="margin:0 0 14px">Người được chia sẻ xem toàn bộ báo cáo, góp ý và xuất PowerPoint; không sửa được nội dung.</p>
-            <div class="gnv-pick-label">Chia sẻ cho từng người</div>
-            <input type="search" id="pptx-share-search" placeholder="Tìm theo tên hoặc tài khoản…" style="width:100%;box-sizing:border-box" />
-            <div id="pptx-share-results" class="pptx-share-results"></div>
-            <div class="gnv-pick-label" style="margin-top:14px">Hoặc chia sẻ cả phòng ban</div>
-            <div class="row" style="flex-wrap:nowrap"><select id="pptx-share-dept" style="flex:1;min-width:0"></select><button type="button" class="small primary" id="pptx-share-dept-btn">Chia sẻ cả phòng</button></div>
-            <div class="gnv-pick-label" style="margin-top:16px">Đã chia sẻ</div>
-            <div id="pptx-share-list"></div>
+          <div class="pptx-share-body">
+            <h2 id="pptx-share-title" style="margin:0">Chia sẻ báo cáo</h2>
+            <div class="pptx-share-perm">
+              <span class="pptx-share-perm-ok">✓ Xem toàn bộ báo cáo</span>
+              <span class="pptx-share-perm-ok">✓ Góp ý</span>
+              <span class="pptx-share-perm-ok">✓ Xuất PowerPoint</span>
+              <span class="pptx-share-perm-no">✕ Không sửa nội dung</span>
+            </div>
+
+            <section class="pptx-share-card">
+              <div class="pptx-share-card-title"><span>1</span> Chia sẻ cho từng người</div>
+              <input type="search" id="pptx-share-search" placeholder="Tìm theo tên hoặc tài khoản…" />
+              <div id="pptx-share-results" class="pptx-share-results"></div>
+            </section>
+
+            <section class="pptx-share-card">
+              <div class="pptx-share-card-title"><span>2</span> Hoặc chia sẻ cả phòng ban</div>
+              <div class="pptx-share-dept-row"><select id="pptx-share-dept"></select><button type="button" class="primary" id="pptx-share-dept-btn">Chia sẻ cả phòng</button></div>
+            </section>
+
+            <section class="pptx-share-card pptx-share-card-list">
+              <div class="pptx-share-card-title"><span>✓</span> Đã chia sẻ <em id="pptx-share-count"></em></div>
+              <div id="pptx-share-list"></div>
+            </section>
           </div>
         </dialog>
 

@@ -3937,3 +3937,30 @@ label.cbnv-flag-opt small { color: var(--muted); font-size: 0.78rem; }
 /* Nút "Chia sẻ" báo cáo: tím nhạt (khác nút "Phiên bản" xanh da trời). */
 button.pptx-btn-share { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
 button.pptx-btn-share:hover { background: #ddd6fe; }
+
+/* Hộp thoại Chia sẻ báo cáo: bố cục 3 thẻ rõ ràng (người / cả phòng / đã chia sẻ), có số thứ tự, avatar, nhãn loại chia sẻ. */
+dialog.pptx-share-dialog { max-width: 600px; width: 94vw; }
+.pptx-share-body { padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px; }
+.pptx-share-perm { display: flex; flex-wrap: wrap; gap: 6px; }
+.pptx-share-perm span { font-size: 0.78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.pptx-share-perm-ok { background: var(--sky-100); color: var(--sky-800); }
+.pptx-share-perm-no { background: var(--red-200); color: var(--red-800); }
+.pptx-share-card { background: var(--stone-50); border: 1px solid var(--stone-200); border-left: 4px solid var(--sky-600); border-radius: 10px; padding: 12px 14px; }
+.pptx-share-card-list { border-left-color: #7c3aed; background: #faf7ff; border-color: #e3dafb; border-left-color: #7c3aed; }
+.pptx-share-card-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
+.pptx-share-card-title span { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sky-600); color: #fff; font-size: 0.75rem; }
+.pptx-share-card-list .pptx-share-card-title span { background: #7c3aed; }
+.pptx-share-card-title em { font-style: normal; color: var(--muted); font-weight: 600; }
+#pptx-share-search { width: 100%; box-sizing: border-box; border: 2px solid var(--sky-300); background: #fff; border-radius: 8px; }
+.pptx-share-results { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 190px; overflow-y: auto; font-size: 0.88rem; }
+.pptx-share-user { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; }
+.pptx-share-user:hover { background: var(--sky-100); border-color: var(--sky-300); }
+.pptx-share-add { margin-left: auto; flex: 0 0 auto; padding: 3px 10px; border-radius: 999px; background: var(--sky-600); color: #fff; font-weight: 700; font-size: 0.78rem; }
+.pptx-share-dept-row { display: flex; gap: 8px; align-items: center; }
+.pptx-share-dept-row select { flex: 1; min-width: 0; border: 2px solid var(--sky-300); background: #fff; }
+.pptx-share-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 6px; background: #fff; border: 1px solid #e3dafb; border-radius: 8px; }
+.pptx-share-info { flex: 1; min-width: 0; font-size: 0.9rem; line-height: 1.5; }
+.pptx-share-info .pptx-pill { margin-left: 6px; }
+.pptx-share-info .muted { font-size: 0.78rem; }
+.pptx-share-avatar { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; background: var(--sky-100); color: var(--sky-800); border: 1px solid var(--sky-300); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+.pptx-share-avatar.is-dept { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }

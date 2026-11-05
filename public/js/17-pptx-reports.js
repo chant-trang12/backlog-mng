@@ -1320,7 +1320,7 @@ async function openPptxShareDialog() {
   const rep = pptx.report;
   px("pptx-share-title").textContent = `Chia sẻ ${rep.label}`;
   px("pptx-share-search").value = "";
-  px("pptx-share-results").innerHTML = '<span class="muted">Gõ tên hoặc tài khoản để tìm người.</span>';
+  px("pptx-share-results").innerHTML = '<span class="muted">Gõ tên hoặc tài khoản để tìm người cần chia sẻ.</span>';
   const depts = (state.departments ?? []).filter((d) => d.id !== rep.department_id);
   px("pptx-share-dept").innerHTML = '<option value="">— Chọn phòng ban —</option>' + depts.map((d) => `<option value="${d.id}">${pxEsc(d.name)}</option>`).join("");
   px("pptx-share-dialog").showModal();
@@ -1332,11 +1332,20 @@ async function renderPptxShareList() {
     pptx.report.share_count = shares.length;
     const btn = px("pptx-share-btn");
     if (btn) btn.textContent = `👥 Chia sẻ${shares.length ? ` (${shares.length})` : ""}`;
+    px("pptx-share-count").textContent = shares.length ? `(${shares.length})` : "";
     px("pptx-share-list").innerHTML = shares.length
       ? shares
-          .map((s) => `<div class="pptx-item"><span style="flex:1"><b>${pxEsc(s.type === "department" ? "Cả phòng: " + (s.department_name ?? "") : s.user_name ?? "")}</b>${s.type === "user" && s.user_department ? ` <span class="muted">· ${pxEsc(s.user_department)}</span>` : ""}<br/><span class="muted" style="font-size:.78rem">Chia sẻ bởi ${pxEsc(s.shared_by ?? "—")} · ${pxDateTime(s.created_at)}</span></span><button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`)
+          .map((s) => {
+            const isDept = s.type === "department";
+            const name = isDept ? s.department_name ?? "" : s.user_name ?? "";
+            return `<div class="pptx-share-row">
+              <span class="pptx-share-avatar${isDept ? " is-dept" : ""}">${isDept ? "🏢" : pxEsc((name.trim()[0] ?? "?").toUpperCase())}</span>
+              <span class="pptx-share-info"><b>${pxEsc(name)}</b><span class="pptx-pill ${isDept ? "info" : "muted-pill"}">${isDept ? "Cả phòng" : "Cá nhân"}</span><br/>
+                <span class="muted">${s.user_department ? pxEsc(s.user_department) + " · " : ""}${s.shared_by ? "Chia sẻ bởi " + pxEsc(s.shared_by) + " · " : ""}${pxDateTime(s.created_at)}</span></span>
+              <button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`;
+          })
           .join("")
-      : '<p class="muted">Chưa chia sẻ cho ai.</p>';
+      : '<p class="muted" style="margin:4px 0">Chưa chia sẻ cho ai.</p>';
   } catch (e) {
     showToast(e.message);
   }
@@ -1348,7 +1357,7 @@ px("pptx-share-search")?.addEventListener("input", (e) => {
     try {
       const users = await api(`/api/report-share-users?q=${encodeURIComponent(e.target.value.trim())}`);
       px("pptx-share-results").innerHTML = users.length
-        ? users.map((u) => `<button type="button" class="pptx-share-user" data-uid="${u.id}"><b>${pxEsc(u.name || u.username)}</b><span class="muted"> · ${pxEsc(u.department_name ?? "Chưa gán phòng ban")}</span><span class="pptx-share-add">+ Chia sẻ</span></button>`).join("")
+        ? users.map((u) => `<button type="button" class="pptx-share-user" data-uid="${u.id}"><span class="pptx-share-avatar">${pxEsc(((u.name || u.username || "?").trim()[0] ?? "?").toUpperCase())}</span><span class="pptx-share-info"><b>${pxEsc(u.name || u.username)}</b><br/><span class="muted">${pxEsc(u.department_name ?? "Chưa gán phòng ban")}</span></span><span class="pptx-share-add">+ Chia sẻ</span></button>`).join("")
         : '<span class="muted">Không tìm thấy người phù hợp.</span>';
     } catch (err) {
       showToast(err.message);
