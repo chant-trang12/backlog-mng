@@ -1341,7 +1341,7 @@ async function renderPptxShareList() {
             const isDept = s.type === "department";
             const name = isDept ? s.department_name ?? "" : s.user_name ?? "";
             return `<div class="pptx-share-row">
-              <span class="pptx-share-avatar${isDept ? " is-dept" : ""}">${isDept ? "🏢" : pxEsc((name.trim()[0] ?? "?").toUpperCase())}</span>
+              <span class="pptx-share-avatar${isDept ? " is-dept" : ""}">${isDept ? '<svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>' : pxEsc((name.trim()[0] ?? "?").toUpperCase())}</span>
               <span class="pptx-share-info"><b>${pxEsc(name)}</b><span class="pptx-pill ${isDept ? "info" : "muted-pill"}">${isDept ? "Cả phòng" : "Cá nhân"}</span><br/>
                 <span class="muted">${s.user_department ? pxEsc(s.user_department) + " · " : ""}${s.shared_by ? "Chia sẻ bởi " + pxEsc(s.shared_by) + " · " : ""}${pxDateTime(s.created_at)}</span></span>
               <button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`;

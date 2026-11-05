@@ -3989,3 +3989,5 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 .year-stepper button:hover:not(:disabled), .year-stepper button:focus-visible:not(:disabled) { background: var(--sky-700); color: #fff; }
 .year-stepper button:active:not(:disabled) { background: var(--sky-800); color: #fff; }
 .year-stepper-value { background: transparent; color: var(--sky-800); min-width: 52px; padding: 0; font-size: 1.15rem; }
+
+.pptx-share-avatar .icon { width: 18px; height: 18px; }
