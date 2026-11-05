@@ -122,9 +122,25 @@ export async function sharedWithMe(actor: Actor) {
   const byReport = new Map<number, any>();
   for (const s of shares) if (!byReport.has(s.report_id) || String(s.shared_at) > String(byReport.get(s.report_id).shared_at)) byReport.set(s.report_id, s);
   const reportIds = [...byReport.keys()];
-  const viewed = new Set<number>(
-    viewKey(actor) != null && reportIds.length ? ((await db("report_share_views").where({ user_id: viewKey(actor)! }).whereIn("report_id", reportIds).pluck("report_id")) as number[]) : [],
-  );
+  // Lần cuối tôi mở từng báo cáo (viewed_at) — mốc để tính "có cập nhật mới" từ lúc đó.
+  const key = viewKey(actor);
+  const viewedAt = new Map<number, any>();
+  if (key != null && reportIds.length) {
+    const rows = (await db("report_share_views").where({ user_id: key }).whereIn("report_id", reportIds).select("report_id", "viewed_at")) as any[];
+    for (const r of rows) viewedAt.set(Number(r.report_id), r.viewed_at);
+  }
+  // Cập nhật mới = góp ý mới của người khác + góp ý được Xử lý + nội dung báo cáo bị sửa, tất cả SAU lần mở gần nhất.
+  const updates = new Map<number, number>();
+  for (const id of reportIds) {
+    const v = viewedAt.get(id);
+    if (v == null) continue;
+    const base = () => db("report_comments").where({ report_id: id, is_deleted: false });
+    const cnt = async (q: any) => Number(((await q.count({ n: "*" }).first()) as any)?.n ?? 0);
+    const fresh = await cnt(base().where("created_at", ">", v).where((b) => (actor.userId != null ? b.whereNull("author_id").orWhereNot("author_id", actor.userId) : b)));
+    const resolved = await cnt(base().where({ status: "resolved" }).where("resolved_at", ">", v));
+    const changed = Number(((await db("reports").where({ id }).where("updated_at", ">", v).count({ n: "*" }).first()) as any)?.n ?? 0);
+    updates.set(id, fresh + resolved + (changed > 0 ? 1 : 0));
+  }
   const open = new Map<number, number>();
   if (reportIds.length) {
     const rows = (await db("report_comments").whereIn("report_id", reportIds).where({ is_deleted: false, status: "open" }).groupBy("report_id").select("report_id").count({ n: "*" })) as any[];
@@ -139,19 +155,23 @@ export async function sharedWithMe(actor: Actor) {
       status: s.status,
       shared_by: s.shared_by,
       shared_at: s.shared_at,
-      is_new: !viewed.has(s.report_id),
+      is_new: !viewedAt.has(s.report_id),
+      update_count: updates.get(s.report_id) ?? 0,
       open_comments: open.get(s.report_id) ?? 0,
     }))
     .sort((a, b) => String(b.shared_at).localeCompare(String(a.shared_at)));
 }
 
 export async function unseenSharedCount(actor: Actor): Promise<number> {
-  return (await sharedWithMe(actor)).filter((r) => r.is_new).length;
+  // Số báo cáo được chia sẻ cần chú ý: MỚI (chưa mở lần nào) hoặc CÓ CẬP NHẬT từ lần mở gần nhất.
+  return (await sharedWithMe(actor)).filter((r) => r.is_new || r.update_count > 0).length;
 }
 
 export async function markViewed(reportId: number, actor: Actor) {
   const key = viewKey(actor);
   if (key == null) return;
+  // Mỗi lần mở = "đã xem tới thời điểm này" -> các cập nhật trước đó hết là mới.
   const hit = await db("report_share_views").where({ report_id: reportId, user_id: key }).first();
-  if (!hit) await db("report_share_views").insert({ report_id: reportId, user_id: key });
+  if (hit) await db("report_share_views").where({ id: hit.id }).update({ viewed_at: db.fn.now() });
+  else await db("report_share_views").insert({ report_id: reportId, user_id: key });
 }

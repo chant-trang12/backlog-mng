@@ -3994,3 +3994,6 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 
 /* Avatar chia sẻ: icon nằm CHÍNH GIỮA vòng tròn (bỏ margin-right và vertical-align mặc định của .icon). */
 .pptx-share-avatar .icon { margin: 0; display: block; vertical-align: baseline; }
+
+/* Nhãn "N cập nhật mới" của báo cáo được chia sẻ + làm nổi dòng có cập nhật. */
+.pptx-pill.pink-pill { background: var(--red-200); color: var(--red-800); }

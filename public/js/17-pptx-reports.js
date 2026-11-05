@@ -131,7 +131,7 @@ function bindPptxScopeBar() {
 }
 async function loadPptxShared() {
   pptx.sharedList = (await api(`/api/reports/shared-with-me${pxDeptQ()}`)) ?? [];
-  pptx.unseenShared = pptx.sharedList.filter((r) => r.is_new).length;
+  pptx.unseenShared = pptx.sharedList.filter((r) => r.is_new || r.update_count > 0).length;
   if (pptx.report) return renderPptxReportView(); // đang mở 1 báo cáo được chia sẻ: giữ nguyên (chỉ làm mới danh sách/số liệu)
   pptx.report = null;
   renderPptxReportView();
@@ -144,7 +144,7 @@ function renderPptxSharedList() {
     ${
       list.length
         ? list.map((r) => `<button type="button" class="pptx-shared-item" data-id="${r.report_id}">
-            <span class="pptx-shared-title"><b>${pxEsc(r.label)}</b> · ${pxEsc(r.department_name ?? "")} ${r.is_new ? '<span class="pptx-pill warn">Mới</span>' : ""}</span>
+            <span class="pptx-shared-title"><b>${pxEsc(r.label)}</b> · ${pxEsc(r.department_name ?? "")} ${r.is_new ? '<span class="pptx-pill warn">Mới</span>' : r.update_count ? `<span class="pptx-pill pink-pill">● ${r.update_count} cập nhật mới</span>` : ""}</span>
             <span class="muted">Chia sẻ bởi ${pxEsc(r.shared_by ?? "—")} · ${pxDateTime(r.shared_at)}${r.open_comments ? ` · ${r.open_comments} góp ý chưa xử lý` : ""}</span></button>`).join("")
         : '<p class="muted">Chưa có báo cáo nào được chia sẻ với bạn.</p>'
     }</div>`;
