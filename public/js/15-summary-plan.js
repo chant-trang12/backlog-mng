@@ -26,10 +26,11 @@ function filteredCbnvRecords() {
 }
 
 // Tick "Nghỉ thai sản": các cột điểm/xếp loại (trừ cột "Xếp loại") hiện chữ "Nghỉ thai sản".
-// Tick "Không KI": riêng cột "Điểm đánh giá" hiện "Không KI" (nghỉ thai sản được ưu tiên nếu tick cả hai).
-function cbnvShow(r, value, isDiem = false) {
+// Tick "Không KI": cột "Điểm đánh giá" hiện "Không KI" và cột "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công
+// việc" hiện "Đạt yêu cầu" (nghỉ thai sản được ưu tiên nếu tick cả hai). kiText: chữ hiện khi tick Không KI.
+function cbnvShow(r, value, kiText = null) {
   if (r.nghi_thai_san) return '<span class="cbnv-flag cbnv-flag-thaisan">Nghỉ thai sản</span>';
-  if (isDiem && r.khong_ki) return '<span class="cbnv-flag cbnv-flag-khongki">Không KI</span>';
+  if (r.khong_ki && kiText) return kiText === "Không KI" ? '<span class="cbnv-flag cbnv-flag-khongki">Không KI</span>' : kiText;
   return value ?? "";
 }
 
@@ -53,8 +54,8 @@ function renderCbnvTable() {
       <td>${r.don_vi ?? ""}</td>
       <td>${r.department_name ?? ""}</td>
       <td>${r.to_nhom ?? ""}</td>
-      <td>${cbnvShow(r, r.diem_danh_gia, true)}</td>
-      <td>${cbnvShow(r, r.xep_loai_ket_qua)}</td>
+      <td>${cbnvShow(r, r.diem_danh_gia, "Không KI")}</td>
+      <td>${cbnvShow(r, r.xep_loai_ket_qua, "Đạt yêu cầu")}</td>
       <td>${cbnvShow(r, r.tuan_thu_dia_diem)}</td>
       <td>${cbnvShow(r, r.tuan_thu_noi_quy)}</td>
       <td>${r.xep_loai ?? ""}</td>

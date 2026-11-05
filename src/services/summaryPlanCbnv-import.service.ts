@@ -294,6 +294,7 @@ export async function importCbnvXepLoaiFromWorkbook(
     } else if (norm(val(row, col("diem_danh_gia"))) === "khong ki") {
       entry.khong_ki = true;
       entry.diem_danh_gia = null;
+      entry.xep_loai_ket_qua = null; // cột này hiển thị "Đạt yêu cầu" do tick Không KI, không phải dữ liệu gốc
     }
     if (!byDepartment.has(departmentId)) byDepartment.set(departmentId, []);
     byDepartment.get(departmentId)!.push(entry);
