@@ -30,6 +30,7 @@ export async function migrateGnvTables(): Promise<void> {
       table.integer("department_id").references("id").inTable("departments").onDelete("NO ACTION");
       table.integer("task_id").references("id").inTable("tasks").onDelete("NO ACTION");
       table.integer("parent_item_id");
+      table.text("tien_do_goc");
       table.integer("thu_tu").notNullable().defaultTo(0);
       table.text("muc_tieu");
       table.text("chi_so_kpi");
@@ -57,6 +58,13 @@ export async function migrateGnvTables(): Promise<void> {
   // Tỷ trọng DÙNG CHUNG + phương pháp đo đầu tiên); có giá trị = phương pháp
   // đo THÊM của cùng mục tiêu đó (chỉ giữ Phương pháp đo/mức chỉ tiêu/ngày/
   // kết quả/điểm riêng, phần dùng chung lấy từ dòng cha).
+  // tien_do_goc: Tiến độ của nhiệm vụ Backlog tại lúc dòng GNV được lấy/sửa tay lần cuối. Nếu Backlog đổi Tiến độ
+  // (khác tien_do_goc) thì GNV hiện Tiến độ mới; nếu không đổi thì hiện giá trị lưu ở GNV (có thể do user sửa tay).
+  if (!(await db.schema.hasColumn("gnv_items", "tien_do_goc"))) {
+    await db.schema.alterTable("gnv_items", (table) => {
+      table.text("tien_do_goc");
+    });
+  }
   if (!(await db.schema.hasColumn("gnv_items", "parent_item_id"))) {
     await db.schema.alterTable("gnv_items", (table) => {
       table.integer("parent_item_id");

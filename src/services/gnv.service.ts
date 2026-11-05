@@ -95,18 +95,19 @@ export async function listGnv(periodId: number, departmentId?: number | null): P
   }
   const groups = (await gq.orderBy("thu_tu", "asc").orderBy("id", "asc")) as GnvGroup[];
   const items = (await iq.orderBy("thu_tu", "asc").orderBy("id", "asc")) as GnvItem[];
-  // Dòng LẤY TỪ BACKLOG (có task_id): "Kết quả thực hiện chỉ tiêu" lấy TRỰC TIẾP từ cột Tiến độ của nhiệm vụ
-  // trong Backlog mỗi lần đọc — user cập nhật Tiến độ ở Backlog thì GNV hiện ngay, không phải sao chép lại.
+  // Dòng LẤY TỪ BACKLOG (có task_id): "Kết quả thực hiện chỉ tiêu" tự lấy từ cột Tiến độ của nhiệm vụ trong Backlog,
+  // NHƯNG vẫn sửa được ở GNV. Quy tắc: Tiến độ ở Backlog khác tien_do_goc (đã đổi từ lần lấy/sửa tay cuối) -> hiện
+  // Tiến độ mới của Backlog; không đổi -> hiện giá trị lưu ở GNV (có thể là nội dung user đã sửa tay).
   // Nhiệm vụ đã bị xoá khỏi Backlog thì giữ giá trị đã lưu.
   const taskIds = [...new Set(items.map((i) => i.task_id).filter((x): x is number => x != null))];
   if (taskIds.length) {
     const tasks = (await db("tasks").whereIn("id", taskIds).where({ is_deleted: false }).select("id", "tien_do")) as { id: number; tien_do: string | null }[];
-    const progress = new Map(tasks.map((t) => [t.id, t.tien_do]));
-    for (const it of items) {
-      if (it.task_id != null && progress.has(it.task_id)) {
-        it.ket_qua_thuc_hien = progress.get(it.task_id) ?? null;
-        (it as GnvItem & { ket_qua_tu_backlog?: boolean }).ket_qua_tu_backlog = true;
-      }
+    const progress = new Map(tasks.map((t) => [t.id, t.tien_do ?? null]));
+    for (const it of items as (GnvItem & { tien_do_goc?: string | null; lien_ket_backlog?: boolean })[]) {
+      if (it.task_id == null || !progress.has(it.task_id)) continue;
+      it.lien_ket_backlog = true;
+      const current = progress.get(it.task_id) ?? null;
+      if (current !== (it.tien_do_goc ?? null)) it.ket_qua_thuc_hien = current;
     }
   }
   // Thứ tự hiển thị: dòng mục tiêu rồi tới các phương pháp đo con của nó.
@@ -208,18 +209,18 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
   const it = await getItem(id);
   if (!it) return undefined;
   assertDepartmentInScope(scope, it.department_id);
-  // Dòng lấy từ Backlog: Kết quả thực hiện chỉ tiêu do Backlog (Tiến độ) quyết định, không ghi đè ở GNV.
-  const linked = it.task_id != null && !!(await db("tasks").where({ id: it.task_id, is_deleted: false }).first());
+  // Dòng lấy từ Backlog: user được sửa "Kết quả thực hiện chỉ tiêu" ở GNV. Ghi nhận Tiến độ Backlog hiện tại làm mốc
+  // (tien_do_goc) để chỉ khi Backlog đổi Tiến độ SAU ĐÓ thì GNV mới lấy lại giá trị mới. Để trống = lấy lại từ Backlog.
+  const task = it.task_id != null ? ((await db("tasks").where({ id: it.task_id, is_deleted: false }).select("tien_do").first()) as { tien_do: string | null } | undefined) : undefined;
+  const sync = (ketQua: string | null): { tien_do_goc?: string | null } => (task ? { tien_do_goc: ketQua ? task.tien_do ?? null : null } : {});
   if (it.parent_item_id != null) {
     const parent = await getItem(it.parent_item_id);
     validateLevels(input, parent?.don_vi_do ?? null);
-    const mf: Record<string, unknown> = { ...methodFields(input) };
-    if (linked) delete mf.ket_qua_thuc_hien;
-    const [row] = await db("gnv_items").where({ id }).update({ ...mf, updated_at: db.fn.now() }).returning("*");
+    const mf = methodFields(input);
+    const [row] = await db("gnv_items").where({ id }).update({ ...mf, ...sync(mf.ket_qua_thuc_hien), updated_at: db.fn.now() }).returning("*");
     return row as GnvItem;
   }
-  const fields: Record<string, unknown> & ReturnType<typeof itemFields> = itemFields(input);
-  if (linked) delete (fields as Record<string, unknown>).ket_qua_thuc_hien;
+  const fields = itemFields(input);
   await assertWeightWithinLimit(it.period_id, it.department_id, it.id, fields.ty_trong);
   const [row] = await db.transaction(async (trx) => {
     // Đổi Đơn vị đo -> mức chỉ tiêu của các phương pháp đo con không còn hợp kiểu.
@@ -228,7 +229,7 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
         .where({ parent_item_id: id, is_deleted: false })
         .update({ muc_toi_thieu: null, muc_mong_doi: null, muc_thach_thuc: null });
     }
-    return trx("gnv_items").where({ id }).update({ ...fields, updated_at: db.fn.now() }).returning("*");
+    return trx("gnv_items").where({ id }).update({ ...fields, ...sync(fields.ket_qua_thuc_hien), updated_at: db.fn.now() }).returning("*");
   });
   return row as GnvItem;
 }
@@ -291,6 +292,7 @@ export async function addItemsFromTasks(
         thu_tu: order++,
         phuong_phap_do: txt(t.nhiem_vu),
         ket_qua_thuc_hien: txt(t.tien_do),
+        tien_do_goc: t.tien_do ?? null,
       })
       .returning("*");
     if (opts.merge && !opts.parentItemId && parentId == null) parentId = (row as GnvItem).id;
