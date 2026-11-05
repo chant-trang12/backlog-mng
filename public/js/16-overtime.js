@@ -51,6 +51,8 @@ function otTotals(blocks) {
   }
   return t;
 }
+// Số ngày hiển thị dạng "0,0" / "0,5" (dấu phẩy thập phân, tối thiểu 1 chữ số lẻ).
+const otDay = (n) => (n == null || n === "" ? "" : Number(n).toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 2 }));
 const otFmt = (n) => (Math.round(n * 100) / 100).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
 
 function renderOvertimeTable() {
@@ -82,9 +84,9 @@ function renderOvertimeTable() {
           const shared2 = `<td>${otEsc(h0.bo_phan)}</td>
       <td>${otEsc(h0.khoang_thoi_gian)}</td>
       <td class="ot-center">${otEsc(h0.ban_ngay_so_gio)}</td>
-      <td class="ot-center">${otEsc(h0.ban_ngay_so_ngay)}</td>
+      <td class="ot-center">${otDay(h0.ban_ngay_so_ngay)}</td>
       <td class="ot-center">${otEsc(h0.ban_dem_so_gio)}</td>
-      <td class="ot-center">${otEsc(h0.ban_dem_so_ngay)}</td>
+      <td class="ot-center">${otDay(h0.ban_dem_so_ngay)}</td>
       <td>${multi(h0.ghi_chu)}</td>`;
           const btns = isHead
             ? `<button class="small btn-view write-action ot-add-person-btn">+ Nhân sự</button>
@@ -111,7 +113,7 @@ function renderOvertimeTable() {
   const tot = otTotals(visible);
   document.getElementById("ot-tfoot").innerHTML = visible.length
     ? `<tr class="ot-total-row"><td colspan="9"></td><td class="ot-center">Tổng:</td>
-        <td class="ot-center">${otFmt(tot.dg)}</td><td class="ot-center">${otFmt(tot.dn)}</td><td class="ot-center">${otFmt(tot.eg)}</td><td class="ot-center">${otFmt(tot.en)}</td><td colspan="2"></td></tr>`
+        <td class="ot-center">${otFmt(tot.dg)}</td><td class="ot-center">${otDay(tot.dn)}</td><td class="ot-center">${otFmt(tot.eg)}</td><td class="ot-center">${otDay(tot.en)}</td><td colspan="2"></td></tr>`
     : "";
   syncOtStickyHeadOffset();
 }

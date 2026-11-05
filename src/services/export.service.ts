@@ -757,6 +757,13 @@ export function buildOvertimeWorkbook(
     }
     rowNo++;
   }
+  // Cột Số ngày (12, 14): hiển thị "0,0" / "0,5" (1-2 chữ số lẻ; dấu thập phân theo ngôn ngữ của Excel).
+  for (let r = h + 1; r < rowNo; r++) {
+    for (const c of [12, 14]) {
+      const cell = sheet.getCell(r, c);
+      if (typeof cell.value === "number") cell.numFmt = "0.0#";
+    }
+  }
 
   // Địa điểm tác động (cột 5): chọn từ danh sách, áp cho 500 dòng kế tiếp.
   const locList = `"${["TT DL Hòa Lạc", "TT DL Pháp Vân", "TT DL Hoàng Hoa Thám", "TT DL Bình Dương"].join(",")}"`;
