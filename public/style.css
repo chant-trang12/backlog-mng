@@ -3975,3 +3975,6 @@ dialog.pptx-share-dialog { max-width: 600px; width: 94vw; }
 .pptx-shared-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 0; }
 .pptx-shared-banner > span { flex: 1 1 320px; min-width: 0; }
 .pptx-shared-banner button { flex: 0 0 auto; white-space: nowrap; }
+
+/* Banner báo cáo được chia sẻ: nền hồng nhạt (red-200), chữ đỏ đậm. */
+.pptx-alert.pptx-shared-banner { background: var(--red-200); color: var(--red-800); }
