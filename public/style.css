@@ -3910,3 +3910,6 @@ label.cbnv-flag-opt { display: flex; align-items: flex-start; gap: 10px; margin:
 label.cbnv-flag-opt input[type="checkbox"] { flex: 0 0 auto; width: auto; min-width: 0; margin: 3px 0 0; accent-color: var(--red-600); }
 label.cbnv-flag-opt span { display: flex; flex-direction: column; gap: 2px; }
 label.cbnv-flag-opt small { color: var(--muted); font-size: 0.78rem; }
+
+/* Dòng "Tổng:" cuối bảng Làm thêm giờ. */
+#ot-table tfoot td { font-weight: 700; background: #f1f7ea; border-top: 2px solid var(--stone-400); }

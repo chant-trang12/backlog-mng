@@ -727,11 +727,16 @@ export function buildOvertimeWorkbook(
     });
   } else {
     let stt = 0;
+    const sums = [0, 0, 0, 0];
     rows
       .filter((r) => r.parent_id == null)
       .forEach((head) => {
         [head, ...rows.filter((r) => r.parent_id === head.id)].forEach((p) => {
           stt++;
+          sums[0] += head.ban_ngay_so_gio ?? 0;
+          sums[1] += head.ban_ngay_so_ngay ?? 0;
+          sums[2] += head.ban_dem_so_gio ?? 0;
+          sums[3] += head.ban_dem_so_ngay ?? 0;
           [
             stt, dateText(head.ngay_tac_dong), head.noi_dung ?? "", head.so_ke_hoach ?? "", head.dia_diem ?? "",
             p.ma_nhan_vien ?? "", p.ho_va_ten, p.don_vi ?? "",
@@ -741,6 +746,16 @@ export function buildOvertimeWorkbook(
           rowNo++;
         });
       });
+    // Dòng "Tổng:" cuối bảng: cộng Số giờ/Số ngày ban ngày + ban đêm của mọi dòng nhân sự.
+    for (let c = 0; c < 15; c++) styleCell(rowNo, c, "");
+    styleCell(rowNo, 9, "Tổng:");
+    sums.forEach((v, k) => styleCell(rowNo, 10 + k, Math.round(v * 100) / 100));
+    for (let c = 1; c <= 15; c++) {
+      const cell = sheet.getCell(rowNo, c);
+      cell.font = { bold: true };
+      fillCell(cell, "FFF1F7EA");
+    }
+    rowNo++;
   }
 
   // Địa điểm tác động (cột 5): chọn từ danh sách, áp cho 500 dòng kế tiếp.

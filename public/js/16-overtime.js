@@ -39,6 +39,20 @@ function filteredOvertimeBlocks() {
   );
 }
 
+// Tổng Số giờ/Số ngày ban ngày + ban đêm: cộng theo TỪNG DÒNG nhân sự hiển thị (giá trị dùng chung của lượt × số nhân sự của lượt).
+function otTotals(blocks) {
+  const t = { dg: 0, dn: 0, eg: 0, en: 0 };
+  for (const b of blocks) {
+    const n = b.rows.length;
+    t.dg += (b.head.ban_ngay_so_gio ?? 0) * n;
+    t.dn += (b.head.ban_ngay_so_ngay ?? 0) * n;
+    t.eg += (b.head.ban_dem_so_gio ?? 0) * n;
+    t.en += (b.head.ban_dem_so_ngay ?? 0) * n;
+  }
+  return t;
+}
+const otFmt = (n) => (Math.round(n * 100) / 100).toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+
 function renderOvertimeTable() {
   const visible = filteredOvertimeBlocks();
   document.getElementById("ot-empty").hidden = visible.length > 0;
@@ -93,6 +107,12 @@ function renderOvertimeTable() {
         .join(""),
     )
     .join("");
+  // Dòng "Tổng:" cuối bảng (tính trên toàn bộ dữ liệu đang lọc, không chỉ trang hiện tại).
+  const tot = otTotals(visible);
+  document.getElementById("ot-tfoot").innerHTML = visible.length
+    ? `<tr class="ot-total-row"><td colspan="9"></td><td class="ot-center">Tổng:</td>
+        <td class="ot-center">${otFmt(tot.dg)}</td><td class="ot-center">${otFmt(tot.dn)}</td><td class="ot-center">${otFmt(tot.eg)}</td><td class="ot-center">${otFmt(tot.en)}</td><td colspan="2"></td></tr>`
+    : "";
   syncOtStickyHeadOffset();
 }
 

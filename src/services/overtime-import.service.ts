@@ -44,6 +44,8 @@ export async function importOvertimeFromWorkbook(
     const t = (c: number) => cellToText(row.getCell(c)).trim();
     const cols = Array.from({ length: 14 }, (_, i) => t(i + 2));
     if (cols.every((v) => v === "")) continue;
+    // Dòng "Tổng:" của file xuất ra (cột Khoảng thời gian ghi "Tổng:") — không phải dữ liệu, bỏ qua im lặng.
+    if (normalizeHeader(cols[8] ?? "").replace(/[:\s]/g, "") === "tong" && !cols[5]) continue;
     const input: UpsertOvertimeInput = {
       ngay_tac_dong: cols[0],
       noi_dung: cols[1],
