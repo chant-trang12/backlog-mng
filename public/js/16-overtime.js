@@ -162,6 +162,8 @@ function syncOtDays() {
 }
 ["ot-f-ngay-gio", "ot-f-dem-gio"].forEach((id) => document.getElementById(id)?.addEventListener("input", syncOtDays));
 
+const OT_DEFAULT_NOTE = "Không nghỉ sáng";
+
 async function openOvertimeDialog(record, ctx = {}) {
   renderOtMemberList(await ensureOtMembers(), record?.ho_va_ten ?? null);
   state.otEditingId = record?.id ?? null;
@@ -182,6 +184,13 @@ async function openOvertimeDialog(record, ctx = {}) {
     const v = record?.[key];
     document.getElementById(id).value = key === "ngay_tac_dong" ? (v ?? "").slice(0, 10) : (v ?? "");
   }
+  // Thêm MỚI lượt tác động: Ghi chú mặc định "Không nghỉ sáng" (sửa/xoá được).
+  if (!record && !ctx.parentId) document.getElementById("ot-f-ghi-chu").value = OT_DEFAULT_NOTE;
+  // Thêm/sửa nhân sự tham gia: Ghi chú dùng chung của lượt (lấy từ dòng đầu) — hiện để người nhập biết, nhân sự mới hiển thị đúng ghi chú này.
+  const note = document.getElementById("ot-child-note");
+  const head = isChild ? state.otRecords.find((r) => r.id === (ctx.parentId ?? record?.parent_id)) : null;
+  note.hidden = !(head && head.ghi_chu);
+  note.innerHTML = head?.ghi_chu ? `<b>Ghi chú của lượt tác động:</b> ${otEsc(head.ghi_chu)}` : "";
   syncOtDays();
   applyOtPeriodFields();
   document.getElementById("ot-dialog").showModal();
