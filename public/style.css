@@ -4020,3 +4020,7 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 /* Nút "Lấy từ Chi tiết" (Tổng hợp làm thêm giờ): tím nhạt, khác các nút vàng/cam trong thanh công cụ. */
 button.ots-btn-detail { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
 button.ots-btn-detail:hover { background: #ddd6fe; }
+
+/* Nút "Lấy từ Chi tiết": hồng nhạt (thay tím). */
+button.ots-btn-detail { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
+button.ots-btn-detail:hover { background: var(--red-300); }
