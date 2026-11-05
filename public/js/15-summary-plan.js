@@ -616,6 +616,10 @@ function openGnvItemDialog(ctx, item) {
   set("gnv-f-bat-dau", (item?.ngay_bat_dau ?? "").slice(0, 10));
   set("gnv-f-hoan-thanh", (item?.ngay_hoan_thanh ?? "").slice(0, 10));
   set("gnv-f-ket-qua", item?.ket_qua_thuc_hien);
+  // Dòng lấy từ Backlog: kết quả = Tiến độ của nhiệm vụ trong Backlog (chỉ đọc, sửa ở Backlog).
+  const ketQua = document.getElementById("gnv-f-ket-qua");
+  ketQua.readOnly = !!item?.ket_qua_tu_backlog;
+  document.getElementById("gnv-ket-qua-hint").hidden = !item?.ket_qua_tu_backlog;
   set("gnv-f-cbnv", item?.cbnv_tu_danh_gia);
   set("gnv-f-qltt", item?.qltt_danh_gia);
   document.getElementById("gnv-item-dialog").showModal();

@@ -95,6 +95,20 @@ export async function listGnv(periodId: number, departmentId?: number | null): P
   }
   const groups = (await gq.orderBy("thu_tu", "asc").orderBy("id", "asc")) as GnvGroup[];
   const items = (await iq.orderBy("thu_tu", "asc").orderBy("id", "asc")) as GnvItem[];
+  // Dòng LẤY TỪ BACKLOG (có task_id): "Kết quả thực hiện chỉ tiêu" lấy TRỰC TIẾP từ cột Tiến độ của nhiệm vụ
+  // trong Backlog mỗi lần đọc — user cập nhật Tiến độ ở Backlog thì GNV hiện ngay, không phải sao chép lại.
+  // Nhiệm vụ đã bị xoá khỏi Backlog thì giữ giá trị đã lưu.
+  const taskIds = [...new Set(items.map((i) => i.task_id).filter((x): x is number => x != null))];
+  if (taskIds.length) {
+    const tasks = (await db("tasks").whereIn("id", taskIds).where({ is_deleted: false }).select("id", "tien_do")) as { id: number; tien_do: string | null }[];
+    const progress = new Map(tasks.map((t) => [t.id, t.tien_do]));
+    for (const it of items) {
+      if (it.task_id != null && progress.has(it.task_id)) {
+        it.ket_qua_thuc_hien = progress.get(it.task_id) ?? null;
+        (it as GnvItem & { ket_qua_tu_backlog?: boolean }).ket_qua_tu_backlog = true;
+      }
+    }
+  }
   // Thứ tự hiển thị: dòng mục tiêu rồi tới các phương pháp đo con của nó.
   return groups.map((g) => {
     const mine = items.filter((i) => i.group_id === g.id);
@@ -194,13 +208,18 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
   const it = await getItem(id);
   if (!it) return undefined;
   assertDepartmentInScope(scope, it.department_id);
+  // Dòng lấy từ Backlog: Kết quả thực hiện chỉ tiêu do Backlog (Tiến độ) quyết định, không ghi đè ở GNV.
+  const linked = it.task_id != null && !!(await db("tasks").where({ id: it.task_id, is_deleted: false }).first());
   if (it.parent_item_id != null) {
     const parent = await getItem(it.parent_item_id);
     validateLevels(input, parent?.don_vi_do ?? null);
-    const [row] = await db("gnv_items").where({ id }).update({ ...methodFields(input), updated_at: db.fn.now() }).returning("*");
+    const mf: Record<string, unknown> = { ...methodFields(input) };
+    if (linked) delete mf.ket_qua_thuc_hien;
+    const [row] = await db("gnv_items").where({ id }).update({ ...mf, updated_at: db.fn.now() }).returning("*");
     return row as GnvItem;
   }
-  const fields = itemFields(input);
+  const fields: Record<string, unknown> & ReturnType<typeof itemFields> = itemFields(input);
+  if (linked) delete (fields as Record<string, unknown>).ket_qua_thuc_hien;
   await assertWeightWithinLimit(it.period_id, it.department_id, it.id, fields.ty_trong);
   const [row] = await db.transaction(async (trx) => {
     // Đổi Đơn vị đo -> mức chỉ tiêu của các phương pháp đo con không còn hợp kiểu.
