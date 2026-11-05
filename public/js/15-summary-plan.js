@@ -25,6 +25,14 @@ function filteredCbnvRecords() {
   );
 }
 
+// Tick "Nghỉ thai sản": các cột điểm/xếp loại (trừ cột "Xếp loại") hiện chữ "Nghỉ thai sản".
+// Tick "Không KI": riêng cột "Điểm đánh giá" hiện "Không KI" (nghỉ thai sản được ưu tiên nếu tick cả hai).
+function cbnvShow(r, value, isDiem = false) {
+  if (r.nghi_thai_san) return '<span class="cbnv-flag cbnv-flag-thaisan">Nghỉ thai sản</span>';
+  if (isDiem && r.khong_ki) return '<span class="cbnv-flag cbnv-flag-khongki">Không KI</span>';
+  return value ?? "";
+}
+
 function renderCbnvTable() {
   const visible = filteredCbnvRecords();
   const groupHeader = document.getElementById("cbnv-group-ketqua");
@@ -45,12 +53,12 @@ function renderCbnvTable() {
       <td>${r.don_vi ?? ""}</td>
       <td>${r.department_name ?? ""}</td>
       <td>${r.to_nhom ?? ""}</td>
-      <td>${r.diem_danh_gia ?? ""}</td>
-      <td>${r.xep_loai_ket_qua ?? ""}</td>
-      <td>${r.tuan_thu_dia_diem ?? ""}</td>
-      <td>${r.tuan_thu_noi_quy ?? ""}</td>
+      <td>${cbnvShow(r, r.diem_danh_gia, true)}</td>
+      <td>${cbnvShow(r, r.xep_loai_ket_qua)}</td>
+      <td>${cbnvShow(r, r.tuan_thu_dia_diem)}</td>
+      <td>${cbnvShow(r, r.tuan_thu_noi_quy)}</td>
       <td>${r.xep_loai ?? ""}</td>
-      <td>${r.xep_loai_muc_do ?? ""}</td>
+      <td>${cbnvShow(r, r.xep_loai_muc_do)}</td>
       <td>${(r.ghi_chu_de_xuat ?? "").replace(/\n/g, "<br/>")}</td>
       <td>${(r.chu_y ?? "").replace(/\n/g, "<br/>")}</td>
       <td><div class="actions-cell">
@@ -127,6 +135,8 @@ function openCbnvEditDialog(record) {
   // Mặc định "Hoàn thành" khi chưa có giá trị (user yêu cầu, giống Tuân thủ).
   document.getElementById("cbnv-f-xep-loai-muc-do").value = record.xep_loai_muc_do ?? "Hoàn thành";
   document.getElementById("cbnv-f-ghi-chu").value = record.ghi_chu_de_xuat ?? "";
+  document.getElementById("cbnv-f-thai-san").checked = !!record.nghi_thai_san;
+  document.getElementById("cbnv-f-khong-ki").checked = !!record.khong_ki;
   document.getElementById("cbnv-f-chu-y").value = record.chu_y ?? "";
   document.getElementById("cbnv-edit-dialog").showModal();
 }
@@ -151,6 +161,8 @@ document.getElementById("cbnv-edit-form")?.addEventListener("submit", async (e) 
     xep_loai: document.getElementById("cbnv-f-xep-loai").value,
     xep_loai_muc_do: document.getElementById("cbnv-f-xep-loai-muc-do").value.trim(),
     ghi_chu_de_xuat: document.getElementById("cbnv-f-ghi-chu").value.trim(),
+    nghi_thai_san: document.getElementById("cbnv-f-thai-san").checked,
+    khong_ki: document.getElementById("cbnv-f-khong-ki").checked,
     chu_y: document.getElementById("cbnv-f-chu-y").value.trim(),
   };
   if (!body.ho_va_ten) {

@@ -281,6 +281,20 @@ export async function importCbnvXepLoaiFromWorkbook(
       ghi_chu_de_xuat: val(row, col("ghi_chu_de_xuat")) || null,
       chu_y: val(row, col("chu_y")) || null,
     };
+    // File xuất ra ghi "Nghỉ thai sản" vào các cột điểm/xếp loại và "Không KI" vào cột Điểm đánh giá:
+    // nhập lại thì chuyển về tick tương ứng (giá trị rỗng), không lưu chữ đó thành dữ liệu.
+    const norm = (v: string) => normalizeHeader(v);
+    if (norm(val(row, col("diem_danh_gia"))) === "nghi thai san") {
+      entry.nghi_thai_san = true;
+      entry.xep_loai_ket_qua = null;
+      entry.tuan_thu_dia_diem = null;
+      entry.tuan_thu_noi_quy = null;
+      entry.xep_loai_muc_do = null;
+      entry.diem_danh_gia = null;
+    } else if (norm(val(row, col("diem_danh_gia"))) === "khong ki") {
+      entry.khong_ki = true;
+      entry.diem_danh_gia = null;
+    }
     if (!byDepartment.has(departmentId)) byDepartment.set(departmentId, []);
     byDepartment.get(departmentId)!.push(entry);
   });

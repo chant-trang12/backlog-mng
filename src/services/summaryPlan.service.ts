@@ -61,6 +61,8 @@ export async function createCbnvXepLoaiRecords(
       xep_loai: r.xep_loai?.trim() || null,
       xep_loai_muc_do: r.xep_loai_muc_do?.trim() || null,
       ghi_chu_de_xuat: r.ghi_chu_de_xuat?.trim() || null,
+      nghi_thai_san: !!r.nghi_thai_san,
+      khong_ki: !!r.khong_ki,
       chu_y: r.chu_y?.trim() || null,
     })),
   );
@@ -91,6 +93,8 @@ export async function updateCbnvXepLoaiRecord(
       xep_loai: input.xep_loai?.trim() || null,
       xep_loai_muc_do: input.xep_loai_muc_do?.trim() || null,
       ghi_chu_de_xuat: input.ghi_chu_de_xuat?.trim() || null,
+      nghi_thai_san: !!input.nghi_thai_san,
+      khong_ki: !!input.khong_ki,
       chu_y: input.chu_y?.trim() || null,
       updated_at: db.fn.now(),
     })

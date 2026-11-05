@@ -18,6 +18,8 @@ export interface CbnvXepLoaiRecord {
   xep_loai: string | null;
   xep_loai_muc_do: string | null;
   ghi_chu_de_xuat: string | null;
+  nghi_thai_san: boolean;
+  khong_ki: boolean;
   chu_y: string | null;
   created_at: string;
   updated_at: string;
@@ -41,6 +43,8 @@ export interface UpsertCbnvXepLoaiInput {
   xep_loai?: string | null;
   xep_loai_muc_do?: string | null;
   ghi_chu_de_xuat?: string | null;
+  nghi_thai_san?: boolean;
+  khong_ki?: boolean;
   chu_y?: string | null;
 }
 

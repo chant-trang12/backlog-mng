@@ -18,6 +18,14 @@ export async function migrateCbnvXepLoaiTable(): Promise<void> {
         t.text("ghi_chu_de_xuat");
       });
     }
+    // Tick "Nghỉ thai sản" / "Không KI": đổi cách HIỂN THỊ các cột điểm/xếp loại (giá trị gốc vẫn giữ nguyên).
+    for (const col of ["nghi_thai_san", "khong_ki"]) {
+      if (!(await db.schema.hasColumn("cbnv_xep_loai_records", col))) {
+        await db.schema.alterTable("cbnv_xep_loai_records", (t) => {
+          t.boolean(col).notNullable().defaultTo(false);
+        });
+      }
+    }
     return;
   }
 
@@ -41,6 +49,8 @@ export async function migrateCbnvXepLoaiTable(): Promise<void> {
     table.string("xep_loai", 20);
     table.string("xep_loai_muc_do", 100);
     table.text("ghi_chu_de_xuat");
+    table.boolean("nghi_thai_san").notNullable().defaultTo(false);
+    table.boolean("khong_ki").notNullable().defaultTo(false);
     table.text("chu_y");
     table.boolean("is_deleted").notNullable().defaultTo(false);
     table.dateTime("deleted_at");

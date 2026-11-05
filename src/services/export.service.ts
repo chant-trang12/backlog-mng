@@ -465,12 +465,13 @@ export async function exportCbnvXepLoaiToExcel(
       r.don_vi ?? "",
       r.department_name ?? "",
       r.to_nhom ?? "",
-      r.diem_danh_gia ?? "",
-      r.xep_loai_ket_qua ?? "",
-      r.tuan_thu_dia_diem ?? "",
-      r.tuan_thu_noi_quy ?? "",
+      // Tick "Nghỉ thai sản": 5 cột điểm/xếp loại ghi "Nghỉ thai sản"; tick "Không KI": cột Điểm ghi "Không KI".
+      r.nghi_thai_san ? "Nghỉ thai sản" : r.khong_ki ? "Không KI" : r.diem_danh_gia ?? "",
+      r.nghi_thai_san ? "Nghỉ thai sản" : r.xep_loai_ket_qua ?? "",
+      r.nghi_thai_san ? "Nghỉ thai sản" : r.tuan_thu_dia_diem ?? "",
+      r.nghi_thai_san ? "Nghỉ thai sản" : r.tuan_thu_noi_quy ?? "",
       r.xep_loai ?? "",
-      r.xep_loai_muc_do ?? "",
+      r.nghi_thai_san ? "Nghỉ thai sản" : r.xep_loai_muc_do ?? "",
       r.ghi_chu_de_xuat ?? "",
       r.chu_y ?? "",
     ];
