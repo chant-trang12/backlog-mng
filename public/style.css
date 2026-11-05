@@ -3913,3 +3913,7 @@ label.cbnv-flag-opt small { color: var(--muted); font-size: 0.78rem; }
 
 /* Dòng "Tổng:" cuối bảng Làm thêm giờ. */
 #ot-table tfoot td { font-weight: 700; background: #f1f7ea; border-top: 2px solid var(--stone-400); }
+
+/* Bảng "Chi tiết làm thêm giờ" và "KQ xếp loại CBNV": không giới hạn chiều cao — khung cao theo nội dung, trang cuộn dọc bình thường
+   (tiêu đề không còn ghim khi cuộn, thanh cuộn ngang vẫn giữ). */
+#ot-table-wrap, #cbnv-table-wrap { max-height: none; }
