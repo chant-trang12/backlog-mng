@@ -3978,3 +3978,7 @@ dialog.pptx-share-dialog { max-width: 600px; width: 94vw; }
 
 /* Banner báo cáo được chia sẻ: nền hồng nhạt (red-200), chữ đỏ đậm. */
 .pptx-alert.pptx-shared-banner { background: var(--red-200); color: var(--red-800); }
+
+/* Nút "Chia sẻ" báo cáo: cam (thay tím). */
+button.pptx-btn-share { background: var(--orange-100); border-color: var(--orange-300); color: var(--orange-800); }
+button.pptx-btn-share:hover { background: var(--orange-300); }
