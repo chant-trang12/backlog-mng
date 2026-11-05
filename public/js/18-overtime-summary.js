@@ -26,7 +26,8 @@ function filteredOvertimeSummary() {
 
 function otsRating(text) {
   if (!text) return "";
-  return text === "Đạt" ? '<span class="ots-pill ok">Đạt</span>' : `<span class="ots-pill bad">${otEsc(text)}</span>`;
+  const good = text === "Đạt" || text.startsWith("Trong");
+  return `<span class="ots-pill ${good ? "ok" : "bad"}">${otEsc(text)}</span>`;
 }
 
 function renderOvertimeSummary() {

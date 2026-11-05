@@ -4024,3 +4024,6 @@ button.ots-btn-detail:hover { background: #ddd6fe; }
 /* Nút "Lấy từ Chi tiết": hồng nhạt (thay tím). */
 button.ots-btn-detail { background: var(--red-200); border-color: var(--red-300); color: var(--red-800); }
 button.ots-btn-detail:hover { background: var(--red-300); }
+
+/* Nhãn đánh giá dài ("Trong giới hạn số giờ theo quy định…") được xuống dòng thay vì tràn cột. */
+.ots-pill { white-space: normal; line-height: 1.35; text-align: center; border-radius: 10px; }

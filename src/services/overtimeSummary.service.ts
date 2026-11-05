@@ -7,6 +7,8 @@ export class OvertimeSummaryError extends Error {}
 // Quy định luật lao động dùng để tính các cột đánh giá.
 export const LIMIT_MONTH_HOURS = 40;
 export const LIMIT_YEAR_HOURS = 200;
+export const EVAL_IN_LIMIT = "Trong giới hạn số giờ theo quy định của luật lao động";
+export const EVAL_OVER_LIMIT = "Quá số giờ theo quy định của luật lao động";
 
 export interface SummaryInput {
   ma_nhan_vien?: string | null;
@@ -83,7 +85,7 @@ export interface SummaryRow {
 }
 
 // Danh sách theo tháng + phòng ban kèm các cột tính toán:
-//  tổng tháng = giờ ban ngày + giờ ban đêm; vượt = max(0, tổng tháng - 40); đánh giá tháng: <=40h "Đạt" / "Vượt quy định";
+//  tổng tháng = giờ ban ngày + giờ ban đêm; vượt = tổng tháng - 40 nếu tổng > 40, ngược lại 0; đánh giá tháng: vượt = 0 "Trong giới hạn số giờ theo quy định của luật lao động" / vượt > 0 "Quá số giờ theo quy định của luật lao động";
 //  tổng các tháng trước = số nhập tay nếu có, KHÔNG thì cộng tổng tháng của CÙNG NHÂN SỰ (khớp mã NV, không có thì họ tên) ở các tháng
 //  trước trong cùng năm + cùng phòng; lũy kế = trước + tháng này; tỷ lệ = lũy kế / 200h; đánh giá năm: <=200h "Đạt" / "Vượt quy định".
 export async function listSummary(periodId: number, departmentId?: number | null) {
@@ -107,13 +109,16 @@ export async function listSummary(periodId: number, departmentId?: number | null
 
   const out: SummaryRow[] = rows.map((r) => {
     const tong = round2((r.ban_ngay_so_gio ?? 0) + (r.ban_dem_so_gio ?? 0));
+    // Vượt quy định = tổng tháng - 40 nếu tổng > 40, ngược lại 0.
+    const vuot = tong > LIMIT_MONTH_HOURS ? round2(tong - LIMIT_MONTH_HOURS) : 0;
     const truoc = round2(r.tong_cac_thang_truoc_nhap != null ? r.tong_cac_thang_truoc_nhap : earlier.filter((e) => samePerson(e.p, r)).reduce((s, e) => s + e.hours, 0));
     const luyKe = round2(truoc + tong);
     return {
       ...r,
       tong_thang: tong,
-      vuot_quy_dinh: round2(Math.max(0, tong - LIMIT_MONTH_HOURS)),
-      danh_gia_thang: tong === 0 ? "" : tong <= LIMIT_MONTH_HOURS ? "Đạt" : "Vượt quy định",
+      vuot_quy_dinh: vuot,
+      // Đánh giá tháng theo số giờ vượt: = 0 -> "Trong giới hạn...", > 0 -> "Quá số giờ...".
+      danh_gia_thang: vuot === 0 ? EVAL_IN_LIMIT : EVAL_OVER_LIMIT,
       tong_cac_thang_truoc: truoc,
       luy_ke: luyKe,
       ty_le: round2((luyKe / LIMIT_YEAR_HOURS) * 100),
