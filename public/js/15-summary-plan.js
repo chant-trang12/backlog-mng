@@ -131,7 +131,18 @@ function openCbnvEditDialog(record) {
   // trống "—".
   document.getElementById("cbnv-f-tuan-thu-dia-diem").value = record.tuan_thu_dia_diem ?? "Tuân thủ";
   document.getElementById("cbnv-f-tuan-thu-noi-quy").value = record.tuan_thu_noi_quy ?? "Tuân thủ";
-  document.getElementById("cbnv-f-xep-loai").value = record.xep_loai ?? "";
+  // Giá trị Xếp loại không có trong danh sách (VD "K" từ "Lấy thông tin xếp loại", dữ liệu import) -> thêm tạm
+  // để mở popup rồi Lưu KHÔNG làm mất giá trị (select gán giá trị lạ sẽ về rỗng).
+  const xepLoaiSel = document.getElementById("cbnv-f-xep-loai");
+  xepLoaiSel.querySelectorAll("option[data-legacy]").forEach((o) => o.remove());
+  if (record.xep_loai && ![...xepLoaiSel.options].some((o) => o.value === record.xep_loai)) {
+    const opt = document.createElement("option");
+    opt.value = record.xep_loai;
+    opt.textContent = record.xep_loai;
+    opt.dataset.legacy = "1";
+    xepLoaiSel.appendChild(opt);
+  }
+  xepLoaiSel.value = record.xep_loai ?? "";
   // Mặc định "Hoàn thành" khi chưa có giá trị (user yêu cầu, giống Tuân thủ).
   document.getElementById("cbnv-f-xep-loai-muc-do").value = record.xep_loai_muc_do ?? "Hoàn thành";
   document.getElementById("cbnv-f-ghi-chu").value = record.ghi_chu_de_xuat ?? "";
