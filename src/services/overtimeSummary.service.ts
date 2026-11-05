@@ -157,15 +157,19 @@ export async function importFromDetail(periodId: number, departmentId: number | 
   assertDepartmentInScope(scope, departmentId);
   const detail = (await db("overtime_records").where({ period_id: periodId, department_id: departmentId, is_deleted: false }).orderBy("id", "asc")) as any[];
   const heads = new Map<number, any>(detail.filter((r) => r.parent_id == null).map((r) => [r.id, r]));
-  const sums: { sample: any; dg: number; eg: number }[] = [];
+  const sums: { sample: any; dg: number; eg: number; ma: string | null; don_vi: string | null; bo_phan: string | null }[] = [];
   for (const r of detail) {
     const head = r.parent_id == null ? r : heads.get(r.parent_id);
     if (!head) continue;
     let cur = sums.find((s) => samePerson(s.sample, r));
     if (!cur) {
-      cur = { sample: r, dg: 0, eg: 0 };
+      cur = { sample: r, dg: 0, eg: 0, ma: null, don_vi: null, bo_phan: null };
       sums.push(cur);
     }
+    // Mã NV/Đơn vị của nhân sự; Bộ phận nằm ở DÒNG ĐẦU của lượt tác động (dùng chung) — lấy giá trị đầu tiên có nội dung.
+    cur.ma ||= r.ma_nhan_vien ?? null;
+    cur.don_vi ||= r.don_vi ?? null;
+    cur.bo_phan ||= head.bo_phan ?? null;
     // Giá trị giờ dùng chung nằm ở dòng đầu của lượt tác động; mỗi nhân sự của lượt nhận cùng số giờ đó.
     cur.dg += head.ban_ngay_so_gio ?? 0;
     cur.eg += head.ban_dem_so_gio ?? 0;
@@ -180,16 +184,19 @@ export async function importFromDetail(periodId: number, departmentId: number | 
       const hit = existing.find((e) => samePerson(e, s.sample));
       const vals = { ban_ngay_so_gio: dg, ban_ngay_so_ngay: days(dg), ban_dem_so_gio: eg, ban_dem_so_ngay: days(eg) };
       if (hit) {
-        await trx("overtime_summary_records").where({ id: hit.id }).update({ ...vals, updated_at: trx.fn.now() });
+        // Cập nhật số giờ; Mã NV/Đơn vị/Bộ phận chỉ ĐIỀN VÀO chỗ đang trống (không ghi đè nội dung đã nhập).
+        await trx("overtime_summary_records")
+          .where({ id: hit.id })
+          .update({ ...vals, ma_nhan_vien: hit.ma_nhan_vien || s.ma, don_vi: hit.don_vi || s.don_vi, bo_phan: hit.bo_phan || s.bo_phan, updated_at: trx.fn.now() });
         updated++;
       } else {
         await trx("overtime_summary_records").insert({
           period_id: periodId,
           department_id: departmentId,
-          ma_nhan_vien: s.sample.ma_nhan_vien ?? null,
+          ma_nhan_vien: s.ma,
           ho_va_ten: s.sample.ho_va_ten,
-          don_vi: s.sample.don_vi ?? null,
-          bo_phan: (heads.get(s.sample.parent_id ?? s.sample.id) ?? s.sample).bo_phan ?? null,
+          don_vi: s.don_vi,
+          bo_phan: s.bo_phan,
           ...vals,
         });
         created++;
