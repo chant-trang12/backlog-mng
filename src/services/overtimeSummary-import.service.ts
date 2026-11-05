@@ -32,6 +32,8 @@ export async function importOvertimeSummaryFromWorkbook(buffer: Buffer, periodId
   for (let r = headerRow + 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
     const t = (c: number) => cellToText(row.getCell(c)).trim();
+    // Hết bảng dữ liệu: dòng "Lưu ý…" hoặc bảng "Tổng hợp đơn vị" (file xuất ra) -> dừng, không đọc tiếp.
+    if (normalizeHeader(t(1)).startsWith("luu y") || normalizeHeader(t(3)).startsWith("tong hop don vi")) break;
     if (Array.from({ length: 16 }, (_, i) => t(i + 2)).every((v) => v === "")) continue;
     // Dòng "Tổng cộng" (file xuất ra) không phải dữ liệu — bỏ qua im lặng.
     if (normalizeHeader(t(3)) === "tong cong") continue;

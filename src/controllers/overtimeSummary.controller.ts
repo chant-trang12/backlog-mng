@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import {
+  getUnitSummary,
+  setUnitTarget,
   createSummaryRecords,
   deleteSummaryRecord,
   importFromDetail,
@@ -79,7 +81,10 @@ export async function summaryTemplateHandler(_req: Request, res: Response) {
 export async function exportSummaryHandler(req: Request, res: Response) {
   const r = await listFor(req);
   if (!r) return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
-  const buffer = await buildOvertimeSummaryWorkbook(r.rows, { title: `Tổng hợp làm thêm giờ — ${r.period.label}`, month: r.period.month });
+  const requested = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const dept = resolveListDepartmentId(scopeOf(req), requested);
+  const unit = typeof dept === "number" ? await getUnitSummary(r.period.id, dept) : null;
+  const buffer = await buildOvertimeSummaryWorkbook(r.rows, { title: `Tổng hợp làm thêm giờ — ${r.period.label}`, month: r.period.month, unit });
   res.setHeader("Content-Type", XLSX);
   res.setHeader("Content-Disposition", `attachment; filename="tong-hop-lam-them-gio.xlsx"`);
   res.send(Buffer.from(buffer));
@@ -100,6 +105,24 @@ export async function fromDetailHandler(req: Request, res: Response) {
   if (!(await getPeriod(periodId))) return res.status(400).json({ error: "period_id không hợp lệ" });
   try {
     res.json(await importFromDetail(periodId, writeDepartmentId(req, req.body?.department_id), scopeOf(req), !!req.body?.dry_run));
+  } catch (e) {
+    fail(res, e);
+  }
+}
+
+export async function unitSummaryHandler(req: Request, res: Response) {
+  const periodId = Number(req.query.period_id);
+  if (!(await getPeriod(periodId))) return res.status(400).json({ error: "Query 'period_id' không hợp lệ" });
+  const requested = req.query.department_id != null ? Number(req.query.department_id) : null;
+  const dept = resolveListDepartmentId(scopeOf(req), requested);
+  if (dept === SCOPE_EMPTY || dept == null) return res.json(null);
+  res.json(await getUnitSummary(periodId, dept));
+}
+export async function setUnitTargetHandler(req: Request, res: Response) {
+  const periodId = Number(req.body?.period_id);
+  if (!(await getPeriod(periodId))) return res.status(400).json({ error: "period_id không hợp lệ" });
+  try {
+    res.json(await setUnitTarget(periodId, writeDepartmentId(req, req.body?.department_id), req.body?.target_hours, scopeOf(req)));
   } catch (e) {
     fail(res, e);
   }

@@ -783,7 +783,7 @@ const OTS_WIDTHS = [6, 14, 24, 24, 18, 11, 11, 11, 11, 16, 20, 22, 20, 20, 20, 2
 
 export function buildOvertimeSummaryWorkbook(
   rows: import("./overtimeSummary.service.js").SummaryRow[],
-  opts: { title?: string; month?: number; sample?: boolean } = {},
+  opts: { title?: string; month?: number; sample?: boolean; unit?: import("./overtimeSummary.service.js").UnitSummary | null } = {},
 ): Promise<ExcelJS.Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "backlog-manager";
@@ -884,6 +884,44 @@ export function buildOvertimeSummaryWorkbook(
     const note = sheet.getCell(dataStart + body.length, 1);
     note.value = "Lưu ý: Mỗi nhân viên chỉ 1 dòng, gồm cả nhân sự trực NOC và các nhân sự khác";
     note.font = { italic: true };
+  }
+  // Bảng "Tổng hợp đơn vị" dưới bảng dữ liệu (sau 1 dòng trống): nhãn vàng + bảng 4 cột như mẫu.
+  if (!opts.sample && opts.unit) {
+    const u = opts.unit;
+    let ur = dataStart + body.length + 2;
+    const label = sheet.getCell(ur, 3);
+    label.value = "Tổng hợp đơn vị:";
+    label.font = { bold: true };
+    fillCell(label, "FFFFFF00");
+    ur += 2;
+    const hdr = (c: number, text: string) => {
+      const cell = sheet.getCell(ur, c);
+      cell.value = text;
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      cell.border = THIN_BORDER;
+    };
+    hdr(3, "Đánh giá theo đơn vị");
+    hdr(4, `Tổng số giờ làm thêm mục tiêu 6 tháng cuối năm ${u.year} của đơn vị`);
+    hdr(5, `Tổng số giờ làm thêm lũy kế thực hiện đến tháng ${u.month}/${u.year}`);
+    sheet.mergeCells(ur, 6, ur, 8);
+    hdr(6, `Tổng số giờ làm thêm còn được thực hiện đến tháng 12/${u.year}`);
+    sheet.getRow(ur).height = 95;
+    ur += 1;
+    const val = (c: number, v: string | number, bold = false) => {
+      const cell = sheet.getCell(ur, c);
+      cell.value = v;
+      cell.font = { bold };
+      cell.alignment = { horizontal: c === 3 ? "left" : "center", vertical: "middle", wrapText: true };
+      cell.border = THIN_BORDER;
+      if (typeof v === "number") cell.numFmt = "0.0#";
+    };
+    val(3, u.department_name ?? "");
+    val(4, u.target_hours ?? "");
+    val(5, u.luy_ke);
+    sheet.mergeCells(ur, 6, ur, 8);
+    val(6, u.con_lai ?? "", true);
+    sheet.getRow(ur).height = 36;
   }
   // Cột Số ngày (7, 9): "0,0" / "0,5"; (số thập phân theo ngôn ngữ Excel).
   for (let r = dataStart; r < dataStart + body.length; r++) {

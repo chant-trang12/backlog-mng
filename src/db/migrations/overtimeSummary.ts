@@ -4,6 +4,18 @@ import { db } from "../connection.js";
 // Chỉ lưu phần NHẬP (giờ/ngày ban ngày + ban đêm, ghi chú, tổng các tháng trước nhập tay nếu có); các cột còn lại (tổng
 // tháng, vượt quy định 40h/tháng, lũy kế, tỷ lệ 200h/năm, đánh giá) được TÍNH khi đọc — xem overtimeSummary.service.ts.
 export async function migrateOvertimeSummaryTable(): Promise<void> {
+  // Bảng "Tổng hợp đơn vị" dưới bảng dữ liệu: mục tiêu số giờ làm thêm 6 tháng cuối năm của đơn vị — mỗi (phòng ban, năm) 1 số, sửa được.
+  if (!(await db.schema.hasTable("overtime_unit_targets"))) {
+    await db.schema.createTable("overtime_unit_targets", (table) => {
+      table.increments("id").primary();
+      table.integer("department_id").notNullable().references("id").inTable("departments").onDelete("NO ACTION");
+      table.integer("year").notNullable();
+      table.float("target_hours");
+      table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      table.unique(["department_id", "year"]);
+    });
+  }
+
   if (await db.schema.hasTable("overtime_summary_records")) {
     // nguon: "chi_tiet" (tạo bởi nút Lấy từ Chi tiết) | "nhap_tay" (nhập tay/Import) | NULL (dòng có từ trước khi có cột này).
     // "Lấy từ Chi tiết" chỉ xoá các dòng KHÔNG còn trong Chi tiết nếu dòng đó không phải "nhap_tay".

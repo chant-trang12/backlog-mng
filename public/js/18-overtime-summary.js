@@ -16,7 +16,60 @@ async function loadOvertimeSummary() {
   }
   state.otsRecords = (await api(`/api/overtime-summary?period_id=${state.currentPeriodId}${deptParam()}`)) ?? [];
   renderOvertimeSummary();
+  await loadOtsUnit();
 }
+
+// ---- Bảng "Tổng hợp đơn vị" (dưới bảng dữ liệu): mục tiêu 6 tháng cuối năm SỬA ĐƯỢC; lũy kế + còn lại tự tính ----
+async function loadOtsUnit() {
+  const box = document.getElementById("otsum-unit");
+  if (!state.currentPeriodId || state.currentDepartmentId == null) {
+    box.hidden = true;
+    return;
+  }
+  try {
+    const u = await api(`/api/overtime-summary/unit?period_id=${state.currentPeriodId}${deptParam()}`);
+    renderOtsUnit(u);
+  } catch {
+    box.hidden = true;
+  }
+}
+const otsFx = (n) => (n == null ? "" : (Math.round(n * 100) / 100).toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 2 }));
+function renderOtsUnit(u) {
+  const box = document.getElementById("otsum-unit");
+  if (!u) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  document.getElementById("otsum-unit-th-target").textContent = `Tổng số giờ làm thêm mục tiêu 6 tháng cuối năm ${u.year} của đơn vị`;
+  document.getElementById("otsum-unit-th-luyke").textContent = `Tổng số giờ làm thêm lũy kế thực hiện đến tháng ${u.month}/${u.year}`;
+  document.getElementById("otsum-unit-th-conlai").textContent = `Tổng số giờ làm thêm còn được thực hiện đến tháng 12/${u.year}`;
+  document.getElementById("otsum-unit-name").textContent = u.department_name ?? "";
+  const input = document.getElementById("otsum-unit-target");
+  if (document.activeElement !== input) input.value = u.target_hours ?? "";
+  document.getElementById("otsum-unit-luyke").textContent = otsFx(u.luy_ke);
+  const conlai = document.getElementById("otsum-unit-conlai");
+  conlai.textContent = u.con_lai == null ? "" : otsFx(u.con_lai);
+  conlai.classList.toggle("ots-bad", u.con_lai != null && u.con_lai < 0);
+}
+async function saveOtsUnitTarget() {
+  const input = document.getElementById("otsum-unit-target");
+  try {
+    const u = await api("/api/overtime-summary/unit", {
+      method: "PUT",
+      body: JSON.stringify({ period_id: state.currentPeriodId, department_id: state.currentDepartmentId, target_hours: input.value.trim() }),
+    });
+    renderOtsUnit(u);
+    showToast("Đã lưu mục tiêu.", "success");
+  } catch (err) {
+    showToast(err.message);
+    loadOtsUnit();
+  }
+}
+document.getElementById("otsum-unit-target")?.addEventListener("change", saveOtsUnitTarget);
+document.getElementById("otsum-unit-target")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") e.target.blur();
+});
 
 function filteredOvertimeSummary() {
   const term = (state.otsSearch ?? "").trim().toLowerCase();
