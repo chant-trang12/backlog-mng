@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { Period, Task } from "../types/backlog.js";
+import { EVAL_OVER_LIMIT } from "./overtimeSummary.service.js";
 import { getPeriod } from "./period.service.js";
 import { listTasks } from "./task.service.js";
 import { listRoadmapItems } from "./roadmap.service.js";
@@ -855,6 +856,8 @@ export function buildOvertimeSummaryWorkbook(
       cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
       cell.border = THIN_BORDER;
     });
+    // Đánh giá tháng = "Quá số giờ theo quy định của luật lao động" -> tô hồng ô đó.
+    if (!opts.sample && vals[11] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(h + 1 + i, 12), "FFFBD9DC");
   });
   sheet.views = [{ state: "frozen", ySplit: h }];
   return workbook.xlsx.writeBuffer();
