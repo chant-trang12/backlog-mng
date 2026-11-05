@@ -263,5 +263,6 @@ async function checkAuth() {
         typeof refreshSpNavBadge === "function" ? refreshSpNavBadge() : null,
       ]),
     )
+    .then(() => restoreAfterDeptSwitch()) // vừa đổi phòng ban (đã tải lại trang): mở lại đúng trang/tab đang đứng
     .catch((err) => showToast(err.message));
 })();

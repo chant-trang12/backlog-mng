@@ -236,45 +236,34 @@ document.addEventListener("click", (e) => {
   document.querySelectorAll(".grade-hist-toggle.open").forEach((b) => b.classList.remove("open"));
 });
 
+const REOPEN_LS_KEY = "backlog.reopenAfterDeptSwitch";
+
+// Đổi phòng ban = tải lại TOÀN BỘ trang (như F5) để mọi màn hình/số liệu/chấm đỏ nạp lại đúng phòng mới, không sót
+// phần nào còn dữ liệu của phòng cũ. Phòng đã chọn được lưu ở localStorage nên sau khi tải lại vẫn đúng phòng này; ghi
+// nhớ thêm trang + tab con đang mở để quay lại đúng chỗ (xem restoreAfterDeptSwitch(), gọi cuối init ở 09-main.js).
 async function selectDepartment(id) {
   closeDeptPanel();
   if (id === state.currentDepartmentId) return;
-  state.currentDepartmentId = id;
   try {
     localStorage.setItem(DEPT_LS_KEY, String(id));
+    const navBtn = document.querySelector(".nav-item.active[data-page]");
+    const page = navBtn?.dataset.page ?? "home";
+    const tab = document.querySelector(`#page-${page} .chrome-tabs .pill.active`)?.dataset.tab ?? null;
+    sessionStorage.setItem(REOPEN_LS_KEY, JSON.stringify({ page, tab }));
   } catch {}
-  state.currentTeam = "";
-  state.currentTeamId = null;
-  state.memberFilterTeam = "";
-  renderDeptSwitcher();
+  window.location.reload();
+}
+
+// Sau khi tải lại do đổi phòng ban: mở lại đúng trang + tab con đã đứng trước đó (1 lần).
+function restoreAfterDeptSwitch() {
+  let saved = null;
   try {
-    await loadTeams(); // kéo theo loadTasks()
-    await loadMembers();
-    await loadRoadmap();
-    await loadCriteria(); // tiêu chí "thấy được" khác nhau theo từng phòng
-    // Yêu cầu tính năng scope theo phòng — đổi phòng phải nạp lại đúng danh
-    // sách phòng đó (nếu trang đang mở), tránh vẫn hiện danh sách của phòng cũ.
-    // Trang chưa mở thì chỉ cần cập nhật lại chấm đỏ ở menu trái theo phòng
-    // mới (loadFeatureRequests() ở nhánh trên đã tự cập nhật chấm đỏ rồi).
-    if (!pages["feature-requests"]?.hidden) {
-      await loadFeatureRequests().catch((err) => showToast(err.message));
-    } else {
-      await refreshFeatureRequestNavBadge().catch(() => {});
-    }
-    if (typeof refreshSpNavBadge === "function") await refreshSpNavBadge().catch(() => {});
-    // "Kế hoạch tổng hợp" — cùng kiểu lazy-reload: chỉ nạp lại ngay nếu
-    // trang đang mở sẵn, trang chưa mở thì tự nạp lại khi bấm vào (nav
-    // click handler, 09-main.js), tránh gọi API thừa cho trang đang đóng.
-    if (!pages["summary-plan"]?.hidden && typeof loadCbnvXepLoai === "function") {
-      await loadCbnvXepLoai().catch((err) => showToast(err.message));
-      if (typeof loadGnv === "function") await loadGnv().catch((err) => showToast(err.message));
-      if (typeof loadOvertime === "function") await loadOvertime().catch((err) => showToast(err.message));
-      if (typeof loadPptx === "function") await loadPptx().catch((err) => showToast(err.message));
-    }
-    syncHomeFromCurrentIfNeeded();
-  } catch (err) {
-    showToast(err.message);
-  }
+    saved = JSON.parse(sessionStorage.getItem(REOPEN_LS_KEY) || "null");
+    sessionStorage.removeItem(REOPEN_LS_KEY);
+  } catch {}
+  if (!saved?.page) return;
+  document.querySelector(`.nav-item[data-page="${saved.page}"]`)?.click();
+  if (saved.tab) document.querySelector(`#page-${saved.page} .chrome-tabs .pill[data-tab="${saved.tab}"]`)?.click();
 }
 
 function formatDateInput(value) {
