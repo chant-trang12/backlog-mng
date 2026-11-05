@@ -4029,3 +4029,6 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .ots-pill { white-space: normal; line-height: 1.35; text-align: center; border-radius: 10px; }
 
 #confirm-dialog-message { white-space: pre-line; }
+
+/* Dòng "Tổng cộng" tô vàng của bảng Tổng hợp làm thêm giờ. */
+#otsum-table tr.ots-total-row td { background: #fff200; font-weight: 700; }

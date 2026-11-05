@@ -848,19 +848,50 @@ export function buildOvertimeSummaryWorkbook(
         r.ban_ngay_so_gio ?? "", r.ban_ngay_so_ngay ?? "", r.ban_dem_so_gio ?? "", r.ban_dem_so_ngay ?? "",
         r.tong_thang, r.vuot_quy_dinh, r.danh_gia_thang, r.tong_cac_thang_truoc, r.luy_ke, pct(r.ty_le), r.danh_gia_nam, r.ghi_chu ?? "",
       ]);
+  // Dòng "Tổng cộng" tô vàng NGAY DƯỚI tiêu đề (xuất Excel): cộng các cột số của mọi nhân sự.
+  let dataStart = h + 1;
+  if (!opts.sample && rows.length) {
+    const sum = (f: (r: import("./overtimeSummary.service.js").SummaryRow) => number | null) => Math.round(rows.reduce((s, r) => s + (f(r) ?? 0), 0) * 100) / 100;
+    const totals: Record<number, number> = {
+      6: sum((r) => r.ban_ngay_so_gio), 7: sum((r) => r.ban_ngay_so_ngay), 8: sum((r) => r.ban_dem_so_gio), 9: sum((r) => r.ban_dem_so_ngay),
+      10: sum((r) => r.tong_thang), 11: sum((r) => r.vuot_quy_dinh), 13: sum((r) => r.tong_cac_thang_truoc), 14: sum((r) => r.luy_ke),
+    };
+    for (let c = 1; c <= total; c++) {
+      const cell = sheet.getCell(dataStart, c);
+      cell.value = c === 3 ? "Tổng cộng" : totals[c] ?? "";
+      cell.font = { bold: true };
+      cell.alignment = { vertical: "middle", horizontal: c === 3 ? "left" : "center" };
+      cell.border = THIN_BORDER;
+      if (typeof cell.value === "number") cell.numFmt = "0.0#";
+      fillCell(cell, "FFFFFF00");
+    }
+    dataStart += 1;
+  }
   body.forEach((vals, i) => {
     vals.forEach((v, ci) => {
-      const cell = sheet.getCell(h + 1 + i, ci + 1);
+      const cell = sheet.getCell(dataStart + i, ci + 1);
       cell.value = v;
       const left = ci === 2 || ci === 3 || ci === 4 || ci === 16;
       cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
       cell.border = THIN_BORDER;
     });
-    // Đánh giá tháng = "Quá số giờ theo quy định của luật lao động" -> tô hồng ô đó.
     // Đánh giá tháng (cột 12) / năm (cột 16) = "Quá số giờ theo quy định của luật lao động" -> tô hồng ô đó.
-    if (!opts.sample && vals[11] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(h + 1 + i, 12), "FFFBD9DC");
-    if (!opts.sample && vals[15] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(h + 1 + i, 16), "FFFBD9DC");
+    if (!opts.sample && vals[11] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(dataStart + i, 12), "FFFBD9DC");
+    if (!opts.sample && vals[15] === EVAL_OVER_LIMIT) fillCell(sheet.getCell(dataStart + i, 16), "FFFBD9DC");
   });
+  // Lưu ý cuối bảng.
+  if (!opts.sample) {
+    const note = sheet.getCell(dataStart + body.length, 1);
+    note.value = "Lưu ý: Mỗi nhân viên chỉ 1 dòng, gồm cả nhân sự trực NOC và các nhân sự khác";
+    note.font = { italic: true };
+  }
+  // Cột Số ngày (7, 9): "0,0" / "0,5"; (số thập phân theo ngôn ngữ Excel).
+  for (let r = dataStart; r < dataStart + body.length; r++) {
+    for (const c of [7, 9]) {
+      const cell = sheet.getCell(r, c);
+      if (typeof cell.value === "number") cell.numFmt = "0.0#";
+    }
+  }
   sheet.views = [{ state: "frozen", ySplit: h }];
   return workbook.xlsx.writeBuffer();
 }

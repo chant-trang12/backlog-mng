@@ -39,7 +39,15 @@ function renderOvertimeSummary() {
   document.getElementById("otsum-empty").hidden = visible.length > 0;
   const page = otsPagination.slice(visible);
   const start = (otsPagination.page - 1) * otsPagination.pageSize;
-  document.getElementById("otsum-tbody").innerHTML = page
+  // Dòng "Tổng cộng" (tô vàng) ngay dưới tiêu đề: cộng trên TOÀN BỘ dữ liệu đang lọc, không chỉ trang hiện tại.
+  const sum = (f) => visible.reduce((s, r) => s + (r[f] ?? 0), 0);
+  const fx = (n) => (Math.round(n * 100) / 100).toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  const totalRow = visible.length
+    ? `<tr class="ots-total-row"><td></td><td></td><td>Tổng cộng</td><td></td><td></td>
+        <td class="ot-center">${fx(sum("ban_ngay_so_gio"))}</td><td class="ot-center">${fx(sum("ban_ngay_so_ngay"))}</td><td class="ot-center">${fx(sum("ban_dem_so_gio"))}</td><td class="ot-center">${fx(sum("ban_dem_so_ngay"))}</td>
+        <td class="ot-center">${fx(sum("tong_thang"))}</td><td class="ot-center">${fx(sum("vuot_quy_dinh"))}</td><td></td><td class="ot-center">${fx(sum("tong_cac_thang_truoc"))}</td><td class="ot-center">${fx(sum("luy_ke"))}</td><td></td><td></td><td></td><td></td></tr>`
+    : "";
+  document.getElementById("otsum-tbody").innerHTML = totalRow + page
     .map(
       (r, i) => `
     <tr data-id="${r.id}">

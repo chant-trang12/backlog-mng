@@ -33,6 +33,8 @@ export async function importOvertimeSummaryFromWorkbook(buffer: Buffer, periodId
     const row = sheet.getRow(r);
     const t = (c: number) => cellToText(row.getCell(c)).trim();
     if (Array.from({ length: 16 }, (_, i) => t(i + 2)).every((v) => v === "")) continue;
+    // Dòng "Tổng cộng" (file xuất ra) không phải dữ liệu — bỏ qua im lặng.
+    if (normalizeHeader(t(3)) === "tong cong") continue;
     const input: SummaryInput = {
       ma_nhan_vien: t(2),
       ho_va_ten: t(3),
