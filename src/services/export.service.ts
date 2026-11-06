@@ -651,6 +651,11 @@ export async function exportGnvToExcel(
         if (def.fill || (k === 1 && c >= 12)) fillCell(cell, "FFDBEEF3");
         cell.border = THIN_BORDER;
       }
+      if (k === 1) {
+        const q = sheet.getCell(r, 14);
+        fillCell(q, "FFC00000");
+        q.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      }
       if (k === 2 && grade) {
         const g = sheet.getCell(r, 14);
         fillCell(g, "FFC00000");
