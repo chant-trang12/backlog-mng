@@ -762,18 +762,8 @@ document.addEventListener("click", (e) => {
   if (dialog?.open) dialog.close();
 });
 
-// Bấm ra NGOÀI popup (lên vùng backdrop) -> đóng lại, áp dụng chung cho
-// mọi <dialog> trong hệ thống — 1 handler ủy quyền, không gắn riêng từng
-// dialog. Click lên backdrop thực chất bắn sự kiện "click" với target =
-// chính thẻ <dialog> (backdrop nằm NGOÀI box nội dung của dialog, không
-// phải phần tử con) — click vào bất kỳ nội dung bên trong (form, input...)
-// đều có target là phần tử con, không khớp điều kiện này nên không đóng
-// nhầm. Đóng "cứng" (không lưu), giống bấm nút Hủy/X.
-document.addEventListener("click", (e) => {
-  if (e.target instanceof HTMLDialogElement && e.target.open) {
-    e.target.close();
-  }
-});
+// Bấm ra NGOÀI popup (lên vùng backdrop) KHÔNG đóng popup — chỉ đóng bằng
+// nút X / Hủy / Lưu (tránh mất dữ liệu đang nhập do lỡ tay click ra ngoài).
 
 // ---- Chuyển hướng đăng nhập có cầu chì chống lặp ----
 // Mọi chỗ cần đưa người dùng về /auth/login phải gọi redirectToLogin(). (1) Chỉ
