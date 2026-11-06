@@ -144,7 +144,9 @@ function renderOtsMemberList(members, currentName) {
   sel.innerHTML = html;
 }
 // Chọn nhân sự -> tự điền Đơn vị (= phòng ban) nếu đang trống.
-document.getElementById("otsum-f-ho-ten")?.addEventListener("change", (e) => {
+document.getElementById("otsum-f-ho-ten")?.addEventListener("change", async (e) => {
+  const code = await lookupUserCode(e.target.value);
+  if (code) document.getElementById("otsum-f-ma-nv").value = code;
   if (!(state.members ?? []).some((m) => m.name === e.target.value)) return;
   const donVi = document.getElementById("otsum-f-don-vi");
   const dept = (state.departments ?? []).find((d) => d.id === state.currentDepartmentId);

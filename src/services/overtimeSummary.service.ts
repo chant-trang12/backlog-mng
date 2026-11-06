@@ -1,3 +1,4 @@
+import { applyUserCodes } from "./user.service.js";
 import { db } from "../db/database.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { softDeleteWhere } from "./softDelete.util.js";
@@ -136,7 +137,7 @@ export async function listSummary(periodId: number, departmentId?: number | null
       danh_gia_nam: luyKe > LIMIT_YEAR_HOURS ? EVAL_OVER_LIMIT : EVAL_IN_LIMIT,
     };
   });
-  return { period, rows: out };
+  return { period, rows: await applyUserCodes(out) };
 }
 
 export async function getSummaryRecord(id: number) {
