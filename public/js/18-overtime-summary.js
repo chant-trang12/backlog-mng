@@ -146,7 +146,7 @@ function renderOtsMemberList(members, currentName) {
 // Chọn nhân sự -> tự điền Đơn vị (= phòng ban) nếu đang trống.
 document.getElementById("otsum-f-ho-ten")?.addEventListener("change", async (e) => {
   const code = await lookupUserCode(e.target.value);
-  if (code) document.getElementById("otsum-f-ma-nv").value = code;
+  document.getElementById("otsum-f-ma-nv").value = code ?? "";
   if (!(state.members ?? []).some((m) => m.name === e.target.value)) return;
   const donVi = document.getElementById("otsum-f-don-vi");
   const dept = (state.departments ?? []).find((d) => d.id === state.currentDepartmentId);
@@ -178,6 +178,11 @@ async function openOtsDialog(record) {
   state.otsEditingId = record?.id ?? null;
   document.getElementById("otsum-dialog-title").textContent = record ? "Sửa tổng hợp làm thêm giờ" : "Thêm mới tổng hợp làm thêm giờ";
   for (const [key, id] of Object.entries(OTS_FIELDS)) document.getElementById(id).value = record?.[key] ?? "";
+  state.userCodes = null;
+  if (record?.ho_va_ten) {
+    const code = await lookupUserCode(record.ho_va_ten);
+    if (code) document.getElementById("otsum-f-ma-nv").value = code;
+  }
   syncOtsDays();
   document.getElementById("otsum-dialog").showModal();
 }
