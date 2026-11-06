@@ -34,4 +34,28 @@ export async function migrateActionLogsTable(): Promise<void> {
       table.index("action");
     });
   }
+
+  // Backfill (idempotent): log cũ của các tab mới ghi lúc chưa khai báo nhãn nên
+  // module = NULL và mô tả còn tên route tiếng Anh ("Tạo mới overtime-summary").
+  // Chỉ đụng dòng module NULL + path đúng route -> chạy lại không ảnh hưởng.
+  const MAP: { prefix: string; token: string; entity: string }[] = [
+    { prefix: "/overtime-summary", token: "overtime-summary", entity: "Tổng hợp làm thêm giờ" },
+    { prefix: "/overtime", token: "overtime", entity: "Chi tiết làm thêm giờ" },
+    { prefix: "/gnv", token: "gnv", entity: "GNV" },
+    { prefix: "/report-templates", token: "report-templates", entity: "Mẫu báo cáo PowerPoint" },
+    { prefix: "/report-shares", token: "report-shares", entity: "Chia sẻ báo cáo" },
+    { prefix: "/report-comments", token: "report-comments", entity: "Bình luận báo cáo" },
+    { prefix: "/reports", token: "reports", entity: "Báo cáo PowerPoint" },
+  ];
+  if (await db.schema.hasTable("action_logs")) {
+    for (const m of MAP) {
+      const rows = db("action_logs").whereNull("module").where(function () {
+        this.where("path", m.prefix).orWhere("path", "like", `${m.prefix}/%`);
+      });
+      await rows.update({
+        description: db.raw("REPLACE(description, ?, ?)", [` ${m.token}`, ` ${m.entity}`]),
+        module: "Kế hoạch tổng hợp",
+      });
+    }
+  }
 }
