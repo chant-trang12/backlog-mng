@@ -146,9 +146,34 @@ export async function updateUser(
       role: input.role ?? existing.role,
       active: input.active !== undefined ? input.active : existing.active,
       department_id: input.department_id !== undefined ? input.department_id : existing.department_id,
+      ma_nhan_vien: input.ma_nhan_vien !== undefined ? (input.ma_nhan_vien?.trim() || null) : existing.ma_nhan_vien,
       updated_at: db.fn.now(),
     });
   return getUser(id);
+}
+
+const nameKey = (s: unknown) => String(s ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+
+// Họ và Tên (chuẩn hoá) -> Mã nhân viên của user có khai báo mã.
+export async function userCodeMap(): Promise<Map<string, string>> {
+  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien");
+  const map = new Map<string, string>();
+  for (const r of rows as { name: string; ma_nhan_vien: string }[]) {
+    if (r.ma_nhan_vien?.trim()) map.set(nameKey(r.name), r.ma_nhan_vien.trim());
+  }
+  return map;
+}
+
+// Điền Mã nhân viên từ bảng user (khớp theo Họ và Tên) — user có mã thì ưu tiên hơn giá trị đã lưu.
+export async function applyUserCodes<T extends { ho_va_ten: string; ma_nhan_vien: string | null }>(rows: T[]): Promise<T[]> {
+  const map = await userCodeMap();
+  if (map.size === 0) return rows;
+  return rows.map((r) => ({ ...r, ma_nhan_vien: map.get(nameKey(r.ho_va_ten)) ?? r.ma_nhan_vien }));
+}
+
+export async function listUserCodes(): Promise<{ name: string; ma_nhan_vien: string }[]> {
+  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien");
+  return (rows as { name: string; ma_nhan_vien: string }[]).filter((r) => r.ma_nhan_vien?.trim());
 }
 
 export async function deleteUser(id: number, actingUserId: number): Promise<boolean | { error: string }> {

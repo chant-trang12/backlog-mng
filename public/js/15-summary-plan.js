@@ -119,6 +119,11 @@ document.getElementById("cbnv-search")?.addEventListener("input", (e) => {
 
 // ---- Sửa ----
 
+document.getElementById("cbnv-f-ho-va-ten")?.addEventListener("change", async (e) => {
+  const code = await lookupUserCode(e.target.value);
+  if (code) document.getElementById("cbnv-f-ma-nhan-vien").value = code;
+});
+
 function openCbnvEditDialog(record) {
   if (!record) return;
   state.cbnvEditingId = record.id;

@@ -9,7 +9,15 @@ import {
   updateMemberHandler,
 } from "../controllers/member.controller.js";
 
+import { listUserCodes } from "../services/user.service.js";
+
 const router = Router();
+
+// Tên -> Mã nhân viên (khai báo ở Quản lý User) — mọi tài khoản đã đăng nhập đọc được,
+// dùng tự điền Mã NV ở form Làm thêm giờ / KQ xếp loại CBNV.
+router.get("/user-codes", async (_req, res) => {
+  res.json(await listUserCodes());
+});
 
 // Đặt trước "/members/:id" để tránh xung đột path.
 router.post("/members/delete-selected", deleteSelectedMembersHandler);

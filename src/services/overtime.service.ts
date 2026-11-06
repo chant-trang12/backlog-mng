@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import type { OvertimeRecord, UpsertOvertimeInput } from "../types/summaryPlan.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
+import { applyUserCodes } from "./user.service.js";
 import { softDeleteWhere } from "./softDelete.util.js";
 import { parseDateToIso } from "./workbook.util.js";
 
@@ -111,7 +112,8 @@ export async function listOvertime(periodId: number, departmentId?: number | nul
   const heads = all
     .filter((r) => r.parent_id == null)
     .sort((a, b) => (a.ngay_tac_dong ?? "").localeCompare(b.ngay_tac_dong ?? "") || a.id - b.id);
-  return heads.flatMap((h) => [h, ...all.filter((r) => r.parent_id === h.id)]);
+  const ordered = heads.flatMap((h) => [h, ...all.filter((r) => r.parent_id === h.id)]);
+  return applyUserCodes(ordered);
 }
 
 // Tạo hàng loạt các lượt tác động (mỗi khối = dòng đầu + nhân sự thêm) — dùng

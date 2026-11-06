@@ -1,3 +1,4 @@
+import { applyUserCodes } from "./user.service.js";
 import { db } from "../db/database.js";
 import type {
   CbnvKiEntry,
@@ -31,10 +32,11 @@ export async function listCbnvXepLoai(periodId: number, departmentId?: number | 
     .where("r.is_deleted", false);
   if (departmentId != null) query.where("r.department_id", departmentId);
   const rows = await query.orderBy("r.to_nhom", "asc").orderBy("r.ho_va_ten", "asc");
-  return (rows as (CbnvXepLoaiRecordWithDept & { member_chuc_vu: string | null })[]).map((row) => {
+  const mapped = (rows as (CbnvXepLoaiRecordWithDept & { member_chuc_vu: string | null })[]).map((row) => {
     const { member_chuc_vu, ...rest } = row;
     return { ...rest, chuc_danh: member_chuc_vu ?? rest.chuc_danh ?? null };
   });
+  return applyUserCodes(mapped);
 }
 
 export async function createCbnvXepLoaiRecords(

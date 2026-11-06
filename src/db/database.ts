@@ -37,6 +37,7 @@ import {
   migrateMembersTangKi,
   migrateMembersKiLyDo,
   migrateUsersDepartment,
+  migrateUsersMaNhanVien,
   migrateUsersTable,
   migrateSoftDeleteUsers,
 } from "./migrations/users.js";
@@ -111,6 +112,7 @@ export async function initDatabase(): Promise<void> {
     // users.department_id (Quy tắc 9.2) — cần bảng departments (migrateDepartments,
     // bước 23 ở trên) đã tồn tại sẵn.
     await migrateUsersDepartment();
+    await migrateUsersMaNhanVien();
     // members.ha_ki (nút "Hạ KI").
     await migrateMembersHaKi();
     // members.tang_ki (nút "Tăng KI" — đối nghịch với Hạ KI).

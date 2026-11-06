@@ -880,7 +880,7 @@ function filteredUsersConfig() {
   return (state.usersConfigAll || []).filter((u) => {
     if (role && u.role !== role) return false;
     if (departmentId && String(u.department_id ?? "") !== departmentId) return false;
-    if (term && !`${u.name} ${u.username} ${u.email ?? ""}`.toLowerCase().includes(term)) return false;
+    if (term && !`${u.name} ${u.username} ${u.email ?? ""} ${u.ma_nhan_vien ?? ""}`.toLowerCase().includes(term)) return false;
     return true;
   });
 }
@@ -912,6 +912,7 @@ function renderUsersConfig() {
       <td>${u.name}${isSelf ? ' <span class="muted">(bạn)</span>' : ""}</td>
       <td>${u.username}</td>
       <td>${u.email ?? ""}</td>
+      <td><input type="text" class="inline-cell-input user-manv-input" data-id="${u.id}" value="${(u.ma_nhan_vien ?? "").replace(/"/g, "&quot;")}" maxlength="100" placeholder="Mã NV" /></td>
       <td><select class="inline-cell-input user-role-select" data-id="${u.id}" ${isSelf ? "disabled" : ""}>${roleOptions}</select></td>
       <td><select class="inline-cell-input user-department-select" data-id="${u.id}">${deptOptions}</select></td>
       <td style="text-align:center">
@@ -924,6 +925,26 @@ function renderUsersConfig() {
     </tr>`;
     })
     .join("");
+
+  tbody.querySelectorAll(".user-manv-input").forEach((input) => {
+    input.dataset.prev = input.value;
+    const save = async () => {
+      if (input.value.trim() === input.dataset.prev.trim()) return;
+      try {
+        const updated = await api(`/api/users/${input.dataset.id}`, { method: "PUT", body: JSON.stringify({ ma_nhan_vien: input.value.trim() }) });
+        input.dataset.prev = input.value;
+        const target = (state.usersConfigAll || []).find((u) => u.id === Number(input.dataset.id));
+        if (target) target.ma_nhan_vien = updated?.ma_nhan_vien ?? null;
+        state.userCodes = null;
+        showToast("Đã lưu mã nhân viên.");
+      } catch (err) {
+        input.value = input.dataset.prev;
+        showToast(err.message || "Không lưu được mã nhân viên.");
+      }
+    };
+    input.addEventListener("change", save);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+  });
 
   tbody.querySelectorAll(".user-role-select").forEach((select) => {
     select.addEventListener("change", async () => {

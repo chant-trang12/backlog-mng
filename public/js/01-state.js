@@ -765,6 +765,22 @@ document.addEventListener("click", (e) => {
 // Bấm ra NGOÀI popup (lên vùng backdrop) KHÔNG đóng popup — chỉ đóng bằng
 // nút X / Hủy / Lưu (tránh mất dữ liệu đang nhập do lỡ tay click ra ngoài).
 
+// Mã nhân viên khai báo ở Quản lý User, tra theo Họ và Tên (dùng tự điền ở form
+// Làm thêm giờ / KQ xếp loại CBNV). Cache trong state.userCodes, xoá khi sửa mã.
+async function lookupUserCode(name) {
+  const key = String(name ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+  if (!key) return null;
+  if (!state.userCodes) {
+    try {
+      state.userCodes = (await api("/api/user-codes")) ?? [];
+    } catch {
+      state.userCodes = [];
+    }
+  }
+  const hit = state.userCodes.find((u) => String(u.name ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase() === key);
+  return hit?.ma_nhan_vien ?? null;
+}
+
 // ---- Chuyển hướng đăng nhập có cầu chì chống lặp ----
 // Mọi chỗ cần đưa người dùng về /auth/login phải gọi redirectToLogin(). (1) Chỉ
 // chuyển hướng 1 lần mỗi lần tải trang — nhiều API cùng 401 một lúc không được

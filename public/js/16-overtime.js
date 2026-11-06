@@ -276,7 +276,9 @@ function renderOtMemberList(members, currentName) {
   }
   sel.innerHTML = html;
 }
-document.getElementById("ot-f-ho-ten")?.addEventListener("change", (e) => {
+document.getElementById("ot-f-ho-ten")?.addEventListener("change", async (e) => {
+  const code = await lookupUserCode(e.target.value);
+  if (code) document.getElementById("ot-f-ma-nv").value = code;
   const member = (state.members ?? []).find((m) => m.name === e.target.value);
   if (!member) return;
   const donVi = document.getElementById("ot-f-don-vi");

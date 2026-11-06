@@ -33,6 +33,7 @@ export interface AppUser {
   active: boolean;
   // Phòng ban chủ quản (Quy tắc 9.2) — NULL = chưa gán, gán tay bởi Admin.
   department_id: number | null;
+  ma_nhan_vien: string | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -43,4 +44,6 @@ export interface UpdateAppUserInput {
   active?: boolean;
   // Phòng ban chủ quản (Quy tắc 9.2) — null để gỡ gán.
   department_id?: number | null;
+  // Mã nhân viên — null/"" để xoá.
+  ma_nhan_vien?: string | null;
 }

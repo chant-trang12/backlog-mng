@@ -42,6 +42,17 @@ export async function migrateUsersDepartment(): Promise<void> {
   }
 }
 
+// users.ma_nhan_vien — Mã nhân viên của tài khoản (nhập ở Cấu hình > Quản lý User),
+// dùng làm nguồn hiển thị cột "Mã nhân viên" ở Chi tiết làm thêm giờ và KQ xếp loại CBNV
+// (khớp theo Họ và Tên).
+export async function migrateUsersMaNhanVien(): Promise<void> {
+  if (!(await db.schema.hasColumn("users", "ma_nhan_vien"))) {
+    await db.schema.alterTable("users", (table) => {
+      table.string("ma_nhan_vien", 100);
+    });
+  }
+}
+
 // members.ha_ki — nút "Hạ KI" ở tab Nhân sự, hạ KI của nhân sự đó xuống 1
 // bậc khi hiển thị ở Home > Ranking > "Ranking thành viên team" (thang
 // A+ > A > B > C > D > E, xem homeLowerKiOneLevel ở app.js). Mặc định

@@ -13,7 +13,7 @@ export async function updateUserHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
 
-  const { role, active, department_id } = req.body ?? {};
+  const { role, active, department_id, ma_nhan_vien } = req.body ?? {};
   if (role !== undefined && !isValidRole(role)) {
     return res.status(400).json({ error: "Trường 'role' phải là admin/editor/viewer" });
   }
@@ -24,10 +24,14 @@ export async function updateUserHandler(req: Request, res: Response) {
     return res.status(400).json({ error: "Trường 'department_id' phải là số hoặc null" });
   }
 
+  if (ma_nhan_vien !== undefined && ma_nhan_vien !== null && (typeof ma_nhan_vien !== "string" || ma_nhan_vien.length > 100)) {
+    return res.status(400).json({ error: "Mã nhân viên phải là chuỗi tối đa 100 ký tự" });
+  }
+
   const actingUserId = req.appUser?.id;
   if (!actingUserId) return res.status(401).json({ error: "Không xác định được người dùng hiện tại" });
 
-  const result = await updateUser(id, actingUserId, { role, active, department_id });
+  const result = await updateUser(id, actingUserId, { role, active, department_id, ma_nhan_vien });
   if (result === undefined) return res.status(404).json({ error: "Không tìm thấy user" });
   if ("error" in result) return res.status(400).json({ error: result.error });
   res.json(result);
