@@ -569,7 +569,7 @@ export async function exportGnvToExcel(
 
   let r = h + 1;
   groups.forEach((grp, gi) => {
-    const sum = grp.items.reduce((s, it) => s + (it.parent_item_id == null ? it.ty_trong ?? 0 : 0), 0);
+    const sum = grp.items.reduce((s, it) => s + (it.ty_trong ?? 0), 0);
     const groupVals: (string | number)[] = [toRoman(gi + 1), grp.ten_nhom, "", "", "", grp.items.some((i) => i.ty_trong != null) ? `${Math.round(sum * 100) / 100}%` : ""];
     for (let c = 1; c <= total; c++) {
       const cell = sheet.getCell(r, c);
@@ -591,7 +591,7 @@ export async function exportGnvToExcel(
         const vals = [
           isHead ? hi + 1 : "", isHead ? head.muc_tieu ?? "" : "", isHead ? head.chi_so_kpi ?? "" : "",
           it.phuong_phap_do ?? "", isHead ? head.don_vi_do ?? "" : "",
-          isHead && head.ty_trong != null ? `${head.ty_trong}%` : "",
+          isHead && block.some((b) => b.ty_trong != null) ? `${Math.round(block.reduce((t, b) => t + (b.ty_trong ?? 0), 0) * 100) / 100}%` : "",
           gnvLevel(head.don_vi_do, it.muc_toi_thieu), gnvLevel(head.don_vi_do, it.muc_mong_doi), gnvLevel(head.don_vi_do, it.muc_thach_thuc),
           gnvDate(it.ngay_bat_dau), gnvDate(it.ngay_hoan_thanh), it.ket_qua_thuc_hien ?? "",
           it.cbnv_tu_danh_gia ?? "", it.qltt_danh_gia ?? "",
@@ -616,19 +616,17 @@ export async function exportGnvToExcel(
   if (groups.length > 0) {
     const totalWeight =
       Math.round(
-        groups.flatMap((x) => x.items).filter((i) => i.parent_item_id == null).reduce((s, i) => s + (i.ty_trong ?? 0), 0) * 100,
+        groups.flatMap((x) => x.items).reduce((s, i) => s + (i.ty_trong ?? 0), 0) * 100,
       ) / 100;
-    // Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên các mục tiêu (nhiều phương pháp đo -> trung bình điểm đã nhập).
+    // Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên từng dòng (mục tiêu + từng phương pháp đo).
     const weighted = (field: "cbnv_tu_danh_gia" | "qltt_danh_gia"): number | null => {
       let sum = 0;
       let any = false;
-      for (const grp of groups) {
-        for (const hd of grp.items.filter((x) => x.parent_item_id == null)) {
-          const scores = [hd, ...grp.items.filter((x) => x.parent_item_id === hd.id)].map((x) => x[field]).filter((v): v is number => v != null);
-          if (!scores.length || hd.ty_trong == null) continue;
-          any = true;
-          sum += (hd.ty_trong / 100) * (scores.reduce((t, v) => t + Number(v), 0) / scores.length);
-        }
+      for (const it of groups.flatMap((x) => x.items)) {
+        const score = it[field];
+        if (score == null || it.ty_trong == null) continue;
+        any = true;
+        sum += (it.ty_trong / 100) * Number(score);
       }
       return any ? Math.round(sum * 100) / 100 : null;
     };

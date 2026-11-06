@@ -31,6 +31,7 @@ function validateLevels(input: GnvItemInput, unitOverride?: string | null): void
 function methodFields(input: GnvItemInput) {
   return {
     phuong_phap_do: txt(input.phuong_phap_do),
+    ty_trong: num(input.ty_trong), // mỗi phương pháp đo có Tỷ trọng riêng; ô Tỷ trọng gộp của mục tiêu = tổng
     muc_toi_thieu: txt(input.muc_toi_thieu),
     muc_mong_doi: txt(input.muc_mong_doi),
     muc_thach_thuc: txt(input.muc_thach_thuc),
@@ -42,7 +43,7 @@ function methodFields(input: GnvItemInput) {
   };
 }
 
-// Tổng Tỷ trọng của các dòng MỤC TIÊU (không tính phương pháp đo con) trong cùng
+// Tổng Tỷ trọng của MỌI dòng (mục tiêu + từng phương pháp đo) trong cùng
 // tháng + phòng ban KHÔNG được vượt 100%.
 async function assertWeightWithinLimit(
   periodId: number,
@@ -52,7 +53,7 @@ async function assertWeightWithinLimit(
 ): Promise<void> {
   if (weight == null) return;
   if (weight < 0 || weight > 100) throw new GnvError("Tỷ trọng phải nằm trong khoảng 0–100%.");
-  const q = db("gnv_items").where({ period_id: periodId, is_deleted: false }).whereNull("parent_item_id").sum({ s: "ty_trong" });
+  const q = db("gnv_items").where({ period_id: periodId, is_deleted: false }).sum({ s: "ty_trong" });
   if (departmentId != null) q.where({ department_id: departmentId });
   if (excludeId != null) q.whereNot({ id: excludeId });
   const row = (await q.first()) as { s: number | null } | undefined;
@@ -188,6 +189,7 @@ export async function createItem(
     }
     validateLevels(input, parent.don_vi_do);
     fields = methodFields(input);
+    await assertWeightWithinLimit(g.period_id, g.department_id, null, fields.ty_trong as number | null);
   } else {
     fields = itemFields(input);
     await assertWeightWithinLimit(g.period_id, g.department_id, null, fields.ty_trong as number | null);
@@ -217,6 +219,7 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
     const parent = await getItem(it.parent_item_id);
     validateLevels(input, parent?.don_vi_do ?? null);
     const mf = methodFields(input);
+    await assertWeightWithinLimit(it.period_id, it.department_id, it.id, mf.ty_trong);
     const [row] = await db("gnv_items").where({ id }).update({ ...mf, ...sync(mf.ket_qua_thuc_hien), updated_at: db.fn.now() }).returning("*");
     return row as GnvItem;
   }
@@ -364,6 +367,7 @@ export async function copyFromPeriod(
         }
         existingKeys.add(norm(head.muc_tieu));
         addedWeight += head.ty_trong ?? 0;
+        if (withMethods) addedWeight += srcItems.filter((i) => i.parent_item_id === head.id).reduce((s, i) => s + (i.ty_trong ?? 0), 0);
         toInsert.push({ targetGroupId: target.id, head, order: order++ });
       }
     }
@@ -371,7 +375,6 @@ export async function copyFromPeriod(
     // Kiểm tra trần 100% TRƯỚC khi ghi mục tiêu (nhóm vừa tạo trong giao dịch sẽ tự rollback khi lỗi).
     const cur = (await trx("gnv_items")
       .where({ period_id: targetPeriodId, department_id: departmentId, is_deleted: false })
-      .whereNull("parent_item_id")
       .sum({ s: "ty_trong" })
       .first()) as { s: number | null } | undefined;
     const current = Number(cur?.s ?? 0);
@@ -407,6 +410,7 @@ export async function copyFromPeriod(
             parent_item_id: (newHead as GnvItem).id,
             thu_tu: o,
             phuong_phap_do: kid.phuong_phap_do,
+            ty_trong: kid.ty_trong,
           });
         }
       }

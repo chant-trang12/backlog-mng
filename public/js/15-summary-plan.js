@@ -475,8 +475,8 @@ function renderGnvTable() {
     .map((g, gi) => {
       // Tỷ trọng nhóm chỉ cộng dòng MỤC TIÊU (dòng phương pháp đo con dùng chung tỷ trọng của cha).
       const heads = g.items.filter((it) => it.parent_item_id == null);
-      const sum = heads.reduce((s, it) => s + (it.ty_trong ?? 0), 0);
-      const hasWeight = heads.some((it) => it.ty_trong != null);
+      const sum = g.items.reduce((s, it) => s + (it.ty_trong ?? 0), 0);
+      const hasWeight = g.items.some((it) => it.ty_trong != null);
       const groupRow = `
         <tr class="gnv-group-row" data-group-id="${g.id}">
           <td class="gnv-center">${gnvToRoman(gi + 1)}</td>
@@ -506,7 +506,7 @@ function renderGnvTable() {
                 : "";
               const shared2 = isHead
                 ? `<td class="gnv-center" rowspan="${span}">${gnvEsc(head.don_vi_do)}</td>
-          <td class="gnv-center" rowspan="${span}">${gnvPct(head.ty_trong)}</td>`
+          <td class="gnv-center" rowspan="${span}">${block.some((b) => b.ty_trong != null) ? gnvPct(block.reduce((s, b) => s + (b.ty_trong ?? 0), 0)) : ""}</td>`
                 : "";
               const btns = isHead
                 ? `<button class="small btn-view write-action gnv-add-method-btn">+ PP đo</button>
@@ -543,21 +543,19 @@ function renderGnvTable() {
 // Tổng Tỷ trọng toàn bảng (chỉ cộng dòng MỤC TIÊU) — 2 dòng cuối bảng như mẫu:
 // dòng nền xanh nhạt hiện "N%" và dòng "Σ = N%"; vượt 100% thì tô đỏ.
 function gnvTotalWeight(groups) {
-  const sum = groups.flatMap((g) => g.items).filter((i) => i.parent_item_id == null).reduce((s, i) => s + (i.ty_trong ?? 0), 0);
+  const sum = groups.flatMap((g) => g.items).reduce((s, i) => s + (i.ty_trong ?? 0), 0);
   return Math.round(sum * 100) / 100;
 }
-// Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên các MỤC TIÊU; điểm của 1 mục tiêu có nhiều phương pháp đo = trung bình các điểm đã nhập.
+// Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên từng dòng (mục tiêu và từng phương pháp đo, mỗi dòng có Tỷ trọng + Điểm riêng).
 // field: "cbnv_tu_danh_gia" | "qltt_danh_gia". Chưa có điểm nào -> null.
 function gnvWeightedScore(groups, field) {
   let sum = 0;
   let any = false;
-  for (const g of groups) {
-    for (const head of g.items.filter((i) => i.parent_item_id == null)) {
-      const scores = [head, ...g.items.filter((i) => i.parent_item_id === head.id)].map((i) => i[field]).filter((v) => v != null && v !== "");
-      if (!scores.length || head.ty_trong == null) continue;
-      any = true;
-      sum += (head.ty_trong / 100) * (scores.reduce((s, v) => s + Number(v), 0) / scores.length);
-    }
+  for (const it of groups.flatMap((g) => g.items)) {
+    const score = it[field];
+    if (score == null || score === "" || it.ty_trong == null) continue;
+    any = true;
+    sum += (it.ty_trong / 100) * Number(score);
   }
   return any ? Math.round(sum * 100) / 100 : null;
 }
@@ -675,11 +673,11 @@ document.getElementById("gnv-item-form")?.addEventListener("submit", async (e) =
     qltt_danh_gia: v("gnv-f-qltt"),
   };
   const isChild = !!gnvEditingItem.parentId || gnvEditingItem.isChild;
-  if (!isChild && body.ty_trong !== "") {
+  if (body.ty_trong !== "") {
     const w = Number(body.ty_trong);
     const others = state.gnvGroups
       .flatMap((g) => g.items)
-      .filter((i) => i.parent_item_id == null && i.id !== gnvEditingItem.id)
+      .filter((i) => i.id !== gnvEditingItem.id)
       .reduce((s, i) => s + (i.ty_trong ?? 0), 0);
     if (!(w >= 0) || Math.round((others + w) * 100) / 100 > 100) {
       const left = Math.max(0, Math.round((100 - others) * 100) / 100);
