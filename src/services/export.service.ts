@@ -623,27 +623,14 @@ export async function exportGnvToExcel(
       Math.round(
         groups.flatMap((x) => x.items).reduce((s, i) => s + (i.ty_trong ?? 0), 0) * 100,
       ) / 100;
-    // Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên từng dòng (mục tiêu + từng phương pháp đo).
+    // Tổng điểm = Σ (Tỷ trọng/100 × Điểm) từng dòng, giống công thức Excel SUMPRODUCT(cột Tỷ trọng; cột Điểm).
     const weighted = (field: "cbnv_tu_danh_gia" | "qltt_danh_gia"): number | null => {
       let sum = 0;
       let any = false;
-      for (const grp of groups) {
-        for (const hd of grp.items.filter((x) => x.parent_item_id == null)) {
-          const blk = [hd, ...grp.items.filter((x) => x.parent_item_id === hd.id)];
-          if (hd.ty_trong != null && blk.slice(1).every((c) => c.ty_trong == null)) {
-            // Cả mục tiêu dùng chung 1 tỷ trọng (dòng đầu): tỷ trọng × điểm trung bình các phương pháp đo.
-            const scores = blk.map((x) => x[field]).filter((v): v is number => v != null);
-            if (!scores.length) continue;
-            any = true;
-            sum += (hd.ty_trong / 100) * (scores.reduce((t, v) => t + Number(v), 0) / scores.length);
-          } else {
-            for (const it of blk) {
-              if (it[field] == null || it.ty_trong == null) continue;
-              any = true;
-              sum += (it.ty_trong / 100) * Number(it[field]);
-            }
-          }
-        }
+      for (const it of groups.flatMap((x) => x.items)) {
+        if (it[field] == null) continue;
+        any = true;
+        sum += ((it.ty_trong ?? 0) / 100) * Number(it[field]);
       }
       return any ? Math.round(sum * 100) / 100 : null;
     };
