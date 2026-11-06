@@ -4046,6 +4046,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 #otsum-unit-table th { background: #e2efda; color: #1c1917; text-align: center; vertical-align: middle; position: static; }
 #otsum-unit-table td { vertical-align: middle; }
 .ots-unit-input { width: 140px; text-align: center; font-weight: 700; border: 2px solid var(--sky-300); background: #f1f9ff; }
+.ots-unit-input.ots-auto { font-style: italic; }
 .ots-unit-input:focus { border-color: var(--sky-600); background: #fff; }
 
 /* Bảng Tổng hợp đơn vị: nội dung các ô căn giữa. */

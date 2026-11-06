@@ -250,6 +250,8 @@ export interface UnitSummary {
   month: number;
   target_hours: number | null;
   luy_ke: number | null;
+  // true = số tự tính (lũy kế tháng trước + tổng giờ tháng này), false = nhập tay hoặc để trống.
+  luy_ke_auto?: boolean;
   con_lai: number | null;
 }
 
@@ -259,8 +261,36 @@ export async function getUnitSummary(periodId: number, departmentId: number | nu
   const dept = departmentId != null ? ((await db("departments").where({ id: departmentId }).select("name").first()) as { name: string } | undefined) : undefined;
   const t = departmentId != null ? ((await db("overtime_unit_targets").where({ department_id: departmentId, year: period.year }).first()) as { target_hours: number | null } | undefined) : undefined;
   // Lũy kế thực hiện đến tháng: số NHẬP TAY (không còn lấy từ tổng cột "Lũy kế" của bảng); để trống nếu chưa nhập.
-  const p = departmentId != null ? ((await db("overtime_unit_progress").where({ department_id: departmentId, period_id: periodId }).first()) as { luy_ke_hours: number | null } | undefined) : undefined;
-  const luyKe = p?.luy_ke_hours ?? null;
+  // Lũy kế tháng n = số nhập tay của tháng n nếu có; không thì = lũy kế tháng liền trước (cũng theo quy tắc này) + tổng Số giờ (ban ngày + ban đêm)
+  // của tháng n. Chưa có tháng nào nhập tay ở các tháng trước -> để trống.
+  let luyKe: number | null = null;
+  let luyKeAuto = false;
+  if (departmentId != null) {
+    const months = (await db("periods").where({ year: period.year }).where("month", "<=", period.month).orderBy("month", "asc").select("id", "month")) as { id: number; month: number }[];
+    const ids = months.map((m) => m.id);
+    const manual = (await db("overtime_unit_progress").where({ department_id: departmentId }).whereIn("period_id", ids).select("period_id", "luy_ke_hours")) as { period_id: number; luy_ke_hours: number | null }[];
+    const sums = (await db("overtime_summary_records")
+      .where({ department_id: departmentId, is_deleted: false })
+      .whereIn("period_id", ids)
+      .groupBy("period_id")
+      .select("period_id")
+      .sum({ ngay: "ban_ngay_so_gio", dem: "ban_dem_so_gio" })) as { period_id: number; ngay: number | null; dem: number | null }[];
+    let running: number | null = null;
+    for (const m of months) {
+      const man = manual.find((x) => x.period_id === m.id)?.luy_ke_hours;
+      if (man != null) {
+        running = man;
+        luyKeAuto = false;
+      } else if (running != null) {
+        const s = sums.find((x) => x.period_id === m.id);
+        running = round2(running + Number(s?.ngay ?? 0) + Number(s?.dem ?? 0));
+        luyKeAuto = true;
+      } else {
+        luyKeAuto = false;
+      }
+    }
+    luyKe = running;
+  }
   const target = t?.target_hours ?? null;
   return {
     department_id: departmentId,
@@ -269,6 +299,7 @@ export async function getUnitSummary(periodId: number, departmentId: number | nu
     month: period.month,
     target_hours: target,
     luy_ke: luyKe,
+    luy_ke_auto: luyKeAuto,
     con_lai: target == null || luyKe == null ? null : round2(target - luyKe),
   };
 }

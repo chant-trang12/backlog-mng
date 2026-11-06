@@ -49,6 +49,8 @@ function renderOtsUnit(u) {
   if (document.activeElement !== input) input.value = u.target_hours ?? "";
   const luyke = document.getElementById("otsum-unit-luyke-input");
   if (document.activeElement !== luyke) luyke.value = u.luy_ke ?? "";
+  luyke.classList.toggle("ots-auto", !!u.luy_ke_auto);
+  luyke.title = u.luy_ke_auto ? "Tự tính = lũy kế tháng trước + tổng số giờ làm thêm tháng này. Sửa số để nhập tay." : "Bấm để sửa — tự lưu khi rời ô hoặc nhấn Enter";
   const conlai = document.getElementById("otsum-unit-conlai");
   conlai.textContent = u.con_lai == null ? "" : otsFx(u.con_lai);
   conlai.classList.toggle("ots-bad", u.con_lai != null && u.con_lai < 0);
