@@ -546,16 +546,32 @@ function gnvTotalWeight(groups) {
   const sum = groups.flatMap((g) => g.items).reduce((s, i) => s + (i.ty_trong ?? 0), 0);
   return Math.round(sum * 100) / 100;
 }
-// Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên từng dòng (mục tiêu và từng phương pháp đo, mỗi dòng có Tỷ trọng + Điểm riêng).
+// Tổng điểm = Σ (Tỷ trọng/100 × Điểm). Mỗi phương pháp đo có tỷ trọng riêng -> tính theo từng dòng; mục tiêu chỉ có tỷ trọng ở dòng đầu
+// (dùng chung cho các phương pháp đo) -> tỷ trọng × điểm trung bình của các phương pháp đo.
 // field: "cbnv_tu_danh_gia" | "qltt_danh_gia". Chưa có điểm nào -> null.
 function gnvWeightedScore(groups, field) {
   let sum = 0;
   let any = false;
-  for (const it of groups.flatMap((g) => g.items)) {
-    const score = it[field];
-    if (score == null || score === "" || it.ty_trong == null) continue;
-    any = true;
-    sum += (it.ty_trong / 100) * Number(score);
+  for (const g of groups) {
+    for (const head of g.items.filter((i) => i.parent_item_id == null)) {
+      const block = [head, ...g.items.filter((i) => i.parent_item_id === head.id)];
+      const scoreOf = (it) => (it[field] == null || it[field] === "" ? null : Number(it[field]));
+      const sharedWeight = head.ty_trong != null && block.slice(1).every((c) => c.ty_trong == null);
+      if (sharedWeight) {
+        // Cả mục tiêu dùng CHUNG 1 tỷ trọng (đặt ở dòng đầu): điểm = trung bình điểm các phương pháp đo.
+        const scores = block.map(scoreOf).filter((v) => v != null);
+        if (!scores.length) continue;
+        any = true;
+        sum += (head.ty_trong / 100) * (scores.reduce((t, v) => t + v, 0) / scores.length);
+      } else {
+        for (const it of block) {
+          const sc = scoreOf(it);
+          if (sc == null || it.ty_trong == null) continue;
+          any = true;
+          sum += (it.ty_trong / 100) * sc;
+        }
+      }
+    }
   }
   return any ? Math.round(sum * 100) / 100 : null;
 }
