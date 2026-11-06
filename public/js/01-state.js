@@ -783,6 +783,41 @@ async function lookupUserCode(name, departmentId = state.currentDepartmentId) {
   return same?.ma_nhan_vien ?? (hits.length === 1 ? hits[0].ma_nhan_vien : null);
 }
 
+// Danh sách <option> chọn Họ và Tên kèm Mã nhân viên ("Tên — Mã") cho form Làm thêm giờ / Tổng hợp.
+// Trùng tên cùng phòng ban (nhiều user cùng tên) -> mỗi user 1 dòng để phân biệt theo mã; giá trị (value) vẫn là Họ và Tên thuần,
+// mã đi kèm ở data-code.
+async function personOptionsHtml(members, currentName) {
+  await lookupUserCode("");
+  const norm = (s) => String(s ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+  const deptId = state.currentDepartmentId;
+  const opt = (name, code) =>
+    `<option value="${otEsc(name)}"${code ? ` data-code="${otEsc(code)}"` : ""}>${otEsc(name)}${code ? ` — ${otEsc(code)}` : ""}</option>`;
+  let html = '<option value="">— Chọn nhân sự —</option>';
+  for (const m of members) {
+    const hits = (state.userCodes ?? []).filter((u) => norm(u.name) === norm(m.name));
+    const same = hits.filter((u) => u.department_id === deptId);
+    const cands = same.length ? same : hits.length === 1 ? hits : [];
+    html += cands.length ? cands.map((u) => opt(m.name, u.ma_nhan_vien)).join("") : opt(m.name, "");
+  }
+  if (currentName && !members.some((m) => m.name === currentName)) html += opt(currentName, "");
+  return html;
+}
+
+// Chọn đúng dòng của (Họ và Tên, Mã) trong select ở trên (trùng tên thì phân biệt theo mã đã lưu).
+function selectPersonOption(sel, name, code) {
+  const opts = [...sel.options].filter((o) => o.value === (name ?? ""));
+  sel.value = name ?? "";
+  const exact = opts.find((o) => code && o.dataset.code === code);
+  if (exact) exact.selected = true;
+}
+
+// Mã NV của dòng đang chọn: ưu tiên data-code của option; option không có mã (tên nhập cũ) thì tra theo tên.
+async function selectedPersonCode(sel) {
+  const o = sel.selectedOptions[0];
+  if (!o || !o.value) return "";
+  return o.dataset.code ?? (await lookupUserCode(o.value)) ?? "";
+}
+
 // ---- Chuyển hướng đăng nhập có cầu chì chống lặp ----
 // Mọi chỗ cần đưa người dùng về /auth/login phải gọi redirectToLogin(). (1) Chỉ
 // chuyển hướng 1 lần mỗi lần tải trang — nhiều API cùng 401 một lúc không được

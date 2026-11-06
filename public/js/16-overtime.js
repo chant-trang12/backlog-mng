@@ -221,7 +221,7 @@ function syncOtDays() {
 const OT_DEFAULT_NOTE = "Không nghỉ sáng";
 
 async function openOvertimeDialog(record, ctx = {}) {
-  renderOtMemberList(await ensureOtMembers(), record?.ho_va_ten ?? null);
+  await renderOtMemberList(await ensureOtMembers(), record?.ho_va_ten ?? null);
   state.otEditingId = record?.id ?? null;
   state.otParentId = ctx.parentId ?? null;
   const isChild = !!ctx.parentId || (record && record.parent_id != null);
@@ -240,10 +240,10 @@ async function openOvertimeDialog(record, ctx = {}) {
     const v = record?.[key];
     document.getElementById(id).value = key === "ngay_tac_dong" ? (v ?? "").slice(0, 10) : (v ?? "");
   }
-  // Mã NV chỉ đọc: luôn lấy theo Họ và Tên từ bảng User (không có thì giữ giá trị đã lưu).
-  state.userCodes = null;
+  // Mã NV chỉ đọc: chọn đúng dòng (Họ và Tên, Mã) đã lưu; không có thì lấy theo bảng User.
+  selectPersonOption(document.getElementById("ot-f-ho-ten"), record?.ho_va_ten, record?.ma_nhan_vien);
   if (record?.ho_va_ten) {
-    const code = await lookupUserCode(record.ho_va_ten);
+    const code = await selectedPersonCode(document.getElementById("ot-f-ho-ten"));
     if (code) document.getElementById("ot-f-ma-nv").value = code;
   }
   // Thêm MỚI lượt tác động: Ghi chú mặc định "Không nghỉ sáng" (sửa/xoá được).
@@ -272,19 +272,12 @@ async function ensureOtMembers() {
   }
   return state.members;
 }
-function renderOtMemberList(members, currentName) {
-  const sel = document.getElementById("ot-f-ho-ten");
-  let html = '<option value="">— Chọn nhân sự —</option>' +
-    members.map((m) => `<option value="${otEsc(m.name)}">${otEsc(m.name)}</option>`).join("");
-  // Tên cũ không có trong danh sách (VD nhập từ file Import) -> thêm tạm để không mất.
-  if (currentName && !members.some((m) => m.name === currentName)) {
-    html += `<option value="${otEsc(currentName)}">${otEsc(currentName)}</option>`;
-  }
-  sel.innerHTML = html;
+async function renderOtMemberList(members, currentName) {
+  // Tên cũ không có trong danh sách (VD nhập từ file Import) được thêm tạm để không mất.
+  document.getElementById("ot-f-ho-ten").innerHTML = await personOptionsHtml(members, currentName);
 }
 document.getElementById("ot-f-ho-ten")?.addEventListener("change", async (e) => {
-  const code = await lookupUserCode(e.target.value);
-  document.getElementById("ot-f-ma-nv").value = code ?? "";
+  document.getElementById("ot-f-ma-nv").value = await selectedPersonCode(e.target);
   const member = (state.members ?? []).find((m) => m.name === e.target.value);
   if (!member) return;
   const donVi = document.getElementById("ot-f-don-vi");
