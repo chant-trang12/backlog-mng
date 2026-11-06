@@ -618,14 +618,47 @@ export async function exportGnvToExcel(
       Math.round(
         groups.flatMap((x) => x.items).filter((i) => i.parent_item_id == null).reduce((s, i) => s + (i.ty_trong ?? 0), 0) * 100,
       ) / 100;
-    [`${totalWeight}%`, `Σ = ${totalWeight}%`].forEach((label, k) => {
+    // Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên các mục tiêu (nhiều phương pháp đo -> trung bình điểm đã nhập).
+    const weighted = (field: "cbnv_tu_danh_gia" | "qltt_danh_gia"): number | null => {
+      let sum = 0;
+      let any = false;
+      for (const grp of groups) {
+        for (const hd of grp.items.filter((x) => x.parent_item_id == null)) {
+          const scores = [hd, ...grp.items.filter((x) => x.parent_item_id === hd.id)].map((x) => x[field]).filter((v): v is number => v != null);
+          if (!scores.length || hd.ty_trong == null) continue;
+          any = true;
+          sum += (hd.ty_trong / 100) * (scores.reduce((t, v) => t + Number(v), 0) / scores.length);
+        }
+      }
+      return any ? Math.round(sum * 100) / 100 : null;
+    };
+    const cbnvScore = weighted("cbnv_tu_danh_gia");
+    const qlttScore = weighted("qltt_danh_gia");
+    const grade =
+      qlttScore == null ? "" : qlttScore >= 4.5 ? "Vượt xa yêu cầu" : qlttScore >= 3.5 ? "Vượt yêu cầu" : qlttScore >= 2.5 ? "Đạt yêu cầu" : qlttScore >= 2 ? "Gần đạt yêu cầu" : "Không đạt yêu cầu";
+    const rowsDef: { vals: Record<number, string | number>; fill: boolean }[] = [
+      { vals: { 6: `${totalWeight}%`, 13: cbnvScore ?? "", 14: qlttScore ?? "" }, fill: true },
+      { vals: { 6: `Σ = ${totalWeight}%`, 12: "Tổng điểm", 13: "(Σ Tỷ trọng * Điểm)", 14: qlttScore ?? "" }, fill: false },
+      { vals: { 12: "Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc", 14: grade }, fill: false },
+    ];
+    rowsDef.forEach((def, k) => {
       for (let c = 1; c <= total; c++) {
         const cell = sheet.getCell(r, c);
-        cell.value = c === 6 ? label : "";
-        cell.font = { bold: true, color: totalWeight > 100 ? { argb: "FFC00000" } : undefined };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        if (k === 0) fillCell(cell, "FFDBEEF3");
+        cell.value = def.vals[c] ?? "";
+        cell.font = { bold: true, color: c === 6 && totalWeight > 100 ? { argb: "FFC00000" } : undefined };
+        cell.alignment = { horizontal: c === 12 ? "left" : "center", vertical: "middle", wrapText: true };
+        if (typeof cell.value === "number") cell.numFmt = "0.0#";
+        if (def.fill || (k === 1 && c >= 12)) fillCell(cell, "FFDBEEF3");
         cell.border = THIN_BORDER;
+      }
+      if (k === 2 && grade) {
+        const g = sheet.getCell(r, 14);
+        fillCell(g, "FFC00000");
+        g.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      }
+      if (k === 2) {
+        const l = sheet.getCell(r, 12);
+        fillCell(l, "FFDBEEF3");
       }
       r++;
     });

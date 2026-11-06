@@ -3589,6 +3589,11 @@ label.gnv-task input[type="checkbox"] { flex: 0 0 auto; width: auto; min-width: 
 #gnv-table tr.gnv-total-row td { background: #dbeef3; font-weight: 700; }
 #gnv-table tr.gnv-sigma-row td { background: #fff; font-weight: 700; }
 #gnv-table tr.gnv-total-over td.gnv-center { color: #c4132b; }
+#gnv-table tr.gnv-sigma-row td.gnv-score-label, #gnv-table tr.gnv-grade-row td.gnv-score-label { background: #dbeef3; font-weight: 700; text-align: left; }
+#gnv-table tr.gnv-sigma-row td.gnv-formula { background: #dbeef3; font-size: 0.78rem; }
+#gnv-table tr.gnv-grade-row td { background: #fff; }
+#gnv-table tr.gnv-grade-row td.gnv-center { background: #c00000; padding: 4px 8px; }
+#gnv-table .gnv-grade-pill { color: #fff; font-weight: 700; }
 
 /* Popup sao chép GNV: mục tiêu thụt vào dưới tên nhóm. */
 .gnv-copy-group { display: flex; flex-direction: column; gap: 6px; }

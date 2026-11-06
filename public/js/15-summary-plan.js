@@ -546,13 +546,35 @@ function gnvTotalWeight(groups) {
   const sum = groups.flatMap((g) => g.items).filter((i) => i.parent_item_id == null).reduce((s, i) => s + (i.ty_trong ?? 0), 0);
   return Math.round(sum * 100) / 100;
 }
+// Tổng điểm = Σ (Tỷ trọng/100 × Điểm) trên các MỤC TIÊU; điểm của 1 mục tiêu có nhiều phương pháp đo = trung bình các điểm đã nhập.
+// field: "cbnv_tu_danh_gia" | "qltt_danh_gia". Chưa có điểm nào -> null.
+function gnvWeightedScore(groups, field) {
+  let sum = 0;
+  let any = false;
+  for (const g of groups) {
+    for (const head of g.items.filter((i) => i.parent_item_id == null)) {
+      const scores = [head, ...g.items.filter((i) => i.parent_item_id === head.id)].map((i) => i[field]).filter((v) => v != null && v !== "");
+      if (!scores.length || head.ty_trong == null) continue;
+      any = true;
+      sum += (head.ty_trong / 100) * (scores.reduce((s, v) => s + Number(v), 0) / scores.length);
+    }
+  }
+  return any ? Math.round(sum * 100) / 100 : null;
+}
+const gnvScoreText = (n) => (n == null ? "" : n.toLocaleString("vi-VN", { maximumFractionDigits: 2 }));
+
 function gnvTotalRowsHtml(groups) {
   if (!groups.length) return "";
   const total = gnvTotalWeight(groups);
   const cls = total > 100 ? " gnv-total-over" : "";
+  const cbnv = gnvWeightedScore(groups, "cbnv_tu_danh_gia");
+  const qltt = gnvWeightedScore(groups, "qltt_danh_gia");
+  const xepLoai = qltt == null ? "" : cbnvXepLoaiKetQuaFromDiem(qltt);
+  // Cột: 5 cột đầu | Tỷ trọng | T/B/S + Ngày BĐ + Ngày HT (5) | Kết quả | CBNV | QLTT | thao tác.
   return `
-        <tr class="gnv-total-row${cls}"><td colspan="5"></td><td class="gnv-center">${total}%</td><td colspan="9"></td></tr>
-        <tr class="gnv-sigma-row${cls}"><td colspan="5"></td><td class="gnv-center">Σ = ${total}%</td><td colspan="9"></td></tr>`;
+        <tr class="gnv-total-row${cls}"><td colspan="5"></td><td class="gnv-center">${total}%</td><td colspan="5"></td><td></td><td class="gnv-center">${gnvScoreText(cbnv)}</td><td class="gnv-center">${gnvScoreText(qltt)}</td><td></td></tr>
+        <tr class="gnv-sigma-row${cls}"><td colspan="5"></td><td class="gnv-center">Σ = ${total}%</td><td colspan="5"></td><td class="gnv-score-label">Tổng điểm</td><td class="gnv-center gnv-formula">(Σ Tỷ trọng * Điểm)</td><td class="gnv-center">${gnvScoreText(qltt)}</td><td></td></tr>
+        <tr class="gnv-grade-row"><td colspan="5"></td><td></td><td colspan="5"></td><td class="gnv-score-label">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</td><td></td><td class="gnv-center">${xepLoai ? `<span class="gnv-grade-pill">${gnvEsc(xepLoai)}</span>` : ""}</td><td></td></tr>`;
 }
 
 function gnvFindGroup(id) {
