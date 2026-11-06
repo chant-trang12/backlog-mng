@@ -504,10 +504,15 @@ function renderGnvTable() {
           <td rowspan="${span}">${gnvEsc(head.muc_tieu)}</td>
           <td rowspan="${span}">${gnvEsc(head.chi_so_kpi)}</td>`
                 : "";
-              const shared2 = isHead
-                ? `<td class="gnv-center" rowspan="${span}">${gnvEsc(head.don_vi_do)}</td>
-          <td class="gnv-center" rowspan="${span}">${block.some((b) => b.ty_trong != null) ? gnvPct(block.reduce((s, b) => s + (b.ty_trong ?? 0), 0)) : ""}</td>`
-                : "";
+              // Tỷ trọng: các phương pháp đo nhập riêng -> mỗi dòng hiện tỷ trọng của chính nó (không gộp);
+              // không ai nhập riêng -> 1 ô gộp dọc hiện tỷ trọng của mục tiêu.
+              const perRow = block.slice(1).some((b) => b.ty_trong != null);
+              const weightCell = perRow
+                ? `<td class="gnv-center">${gnvPct(it.ty_trong)}</td>`
+                : isHead
+                  ? `<td class="gnv-center" rowspan="${span}">${gnvPct(head.ty_trong)}</td>`
+                  : "";
+              const shared2 = (isHead ? `<td class="gnv-center" rowspan="${span}">${gnvEsc(head.don_vi_do)}</td>` : "") + weightCell;
               const btns = isHead
                 ? `<button class="small btn-view write-action gnv-add-method-btn">+ PP đo</button>
             <button class="small btn-edit write-action gnv-edit-item-btn">Sửa</button>

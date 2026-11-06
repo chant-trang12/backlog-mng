@@ -586,12 +586,14 @@ export async function exportGnvToExcel(
     heads.forEach((head, hi) => {
       const block = [head, ...grp.items.filter((x) => x.parent_item_id === head.id)];
       const startRow = r;
+      // Các phương pháp đo nhập tỷ trọng riêng -> mỗi dòng hiện tỷ trọng của nó (không gộp ô); ngược lại gộp dọc 1 ô.
+      const perRow = block.slice(1).some((b) => b.ty_trong != null);
       block.forEach((it, bi) => {
         const isHead = bi === 0;
         const vals = [
           isHead ? hi + 1 : "", isHead ? head.muc_tieu ?? "" : "", isHead ? head.chi_so_kpi ?? "" : "",
           it.phuong_phap_do ?? "", isHead ? head.don_vi_do ?? "" : "",
-          isHead && block.some((b) => b.ty_trong != null) ? `${Math.round(block.reduce((t, b) => t + (b.ty_trong ?? 0), 0) * 100) / 100}%` : "",
+          (perRow || isHead) && it.ty_trong != null ? `${it.ty_trong}%` : "",
           gnvLevel(head.don_vi_do, it.muc_toi_thieu), gnvLevel(head.don_vi_do, it.muc_mong_doi), gnvLevel(head.don_vi_do, it.muc_thach_thuc),
           gnvDate(it.ngay_bat_dau), gnvDate(it.ngay_hoan_thanh), it.ket_qua_thuc_hien ?? "",
           it.cbnv_tu_danh_gia ?? "", it.qltt_danh_gia ?? "",
@@ -606,7 +608,7 @@ export async function exportGnvToExcel(
         r++;
       });
       if (block.length > 1) {
-        [1, 2, 3, 5, 6].forEach((c) => sheet.mergeCells(startRow, c, r - 1, c));
+        (perRow ? [1, 2, 3, 5] : [1, 2, 3, 5, 6]).forEach((c) => sheet.mergeCells(startRow, c, r - 1, c));
       }
     });
   });
