@@ -31,6 +31,7 @@ function validateLevels(input: GnvItemInput, unitOverride?: string | null): void
 function methodFields(input: GnvItemInput) {
   return {
     phuong_phap_do: txt(input.phuong_phap_do),
+    don_vi_do: txt(input.don_vi_do), // Đơn vị đo riêng của phương pháp đo; để trống = dùng đơn vị của mục tiêu
     ty_trong: num(input.ty_trong), // mỗi phương pháp đo có Tỷ trọng riêng; ô Tỷ trọng gộp của mục tiêu = tổng
     muc_toi_thieu: txt(input.muc_toi_thieu),
     muc_mong_doi: txt(input.muc_mong_doi),
@@ -187,7 +188,7 @@ export async function createItem(
     if (!parent || parent.group_id !== g.id || parent.parent_item_id != null) {
       throw new GnvError("Không tìm thấy mục tiêu để thêm phương pháp đo.");
     }
-    validateLevels(input, parent.don_vi_do);
+    validateLevels(input, txt(input.don_vi_do) ?? parent.don_vi_do);
     fields = methodFields(input);
     await assertWeightWithinLimit(g.period_id, g.department_id, null, fields.ty_trong as number | null);
   } else {
@@ -217,7 +218,7 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
   const sync = (ketQua: string | null): { tien_do_goc?: string | null } => (task ? { tien_do_goc: ketQua ? task.tien_do ?? null : null } : {});
   if (it.parent_item_id != null) {
     const parent = await getItem(it.parent_item_id);
-    validateLevels(input, parent?.don_vi_do ?? null);
+    validateLevels(input, txt(input.don_vi_do) ?? parent?.don_vi_do ?? null);
     const mf = methodFields(input);
     await assertWeightWithinLimit(it.period_id, it.department_id, it.id, mf.ty_trong);
     const [row] = await db("gnv_items").where({ id }).update({ ...mf, ...sync(mf.ket_qua_thuc_hien), updated_at: db.fn.now() }).returning("*");
@@ -230,6 +231,7 @@ export async function updateItem(id: number, input: GnvItemInput, scope: DataSco
     if (fields.don_vi_do !== it.don_vi_do) {
       await trx("gnv_items")
         .where({ parent_item_id: id, is_deleted: false })
+        .whereNull("don_vi_do") // chỉ các phương pháp đo đang dùng đơn vị của mục tiêu
         .update({ muc_toi_thieu: null, muc_mong_doi: null, muc_thach_thuc: null });
     }
     return trx("gnv_items").where({ id }).update({ ...fields, ...sync(fields.ket_qua_thuc_hien), updated_at: db.fn.now() }).returning("*");

@@ -588,13 +588,16 @@ export async function exportGnvToExcel(
       const startRow = r;
       // Các phương pháp đo nhập tỷ trọng riêng -> mỗi dòng hiện tỷ trọng của nó (không gộp ô); ngược lại gộp dọc 1 ô.
       const perRow = block.slice(1).some((b) => b.ty_trong != null);
+      // Đơn vị đo: phương pháp đo chọn đơn vị riêng -> mỗi dòng hiện đơn vị của nó (không gộp).
+      const perUnit = block.slice(1).some((b) => b.don_vi_do);
       block.forEach((it, bi) => {
+        const effUnit = it.don_vi_do ?? head.don_vi_do;
         const isHead = bi === 0;
         const vals = [
           isHead ? hi + 1 : "", isHead ? head.muc_tieu ?? "" : "", isHead ? head.chi_so_kpi ?? "" : "",
-          it.phuong_phap_do ?? "", isHead ? head.don_vi_do ?? "" : "",
+          it.phuong_phap_do ?? "", perUnit || isHead ? effUnit ?? "" : "",
           (perRow || isHead) && it.ty_trong != null ? `${it.ty_trong}%` : "",
-          gnvLevel(head.don_vi_do, it.muc_toi_thieu), gnvLevel(head.don_vi_do, it.muc_mong_doi), gnvLevel(head.don_vi_do, it.muc_thach_thuc),
+          gnvLevel(effUnit, it.muc_toi_thieu), gnvLevel(effUnit, it.muc_mong_doi), gnvLevel(effUnit, it.muc_thach_thuc),
           gnvDate(it.ngay_bat_dau), gnvDate(it.ngay_hoan_thanh), it.ket_qua_thuc_hien ?? "",
           it.cbnv_tu_danh_gia ?? "", it.qltt_danh_gia ?? "",
         ];
@@ -608,7 +611,7 @@ export async function exportGnvToExcel(
         r++;
       });
       if (block.length > 1) {
-        (perRow ? [1, 2, 3, 5] : [1, 2, 3, 5, 6]).forEach((c) => sheet.mergeCells(startRow, c, r - 1, c));
+        [1, 2, 3, ...(perUnit ? [] : [5]), ...(perRow ? [] : [6])].forEach((c) => sheet.mergeCells(startRow, c, r - 1, c));
       }
     });
   });

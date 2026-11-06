@@ -512,7 +512,15 @@ function renderGnvTable() {
                 : isHead
                   ? `<td class="gnv-center" rowspan="${span}">${gnvPct(head.ty_trong)}</td>`
                   : "";
-              const shared2 = (isHead ? `<td class="gnv-center" rowspan="${span}">${gnvEsc(head.don_vi_do)}</td>` : "") + weightCell;
+              // Đơn vị đo: có phương pháp đo chọn đơn vị riêng -> mỗi dòng hiện đơn vị của nó; không -> 1 ô gộp dọc.
+              const perUnit = block.slice(1).some((b) => b.don_vi_do);
+              const unitCell = perUnit
+                ? `<td class="gnv-center">${gnvEsc(it.don_vi_do ?? head.don_vi_do)}</td>`
+                : isHead
+                  ? `<td class="gnv-center" rowspan="${span}">${gnvEsc(head.don_vi_do)}</td>`
+                  : "";
+              const shared2 = unitCell + weightCell;
+              const effUnit = it.don_vi_do ?? head.don_vi_do;
               const btns = isHead
                 ? `<button class="small btn-view write-action gnv-add-method-btn">+ PP đo</button>
             <button class="small btn-edit write-action gnv-edit-item-btn">Sửa</button>
@@ -524,9 +532,9 @@ function renderGnvTable() {
           ${shared}
           <td>${gnvEsc(it.phuong_phap_do)}</td>
           ${shared2}
-          <td class="gnv-center">${gnvEsc(gnvLevelText(head.don_vi_do, it.muc_toi_thieu))}</td>
-          <td class="gnv-center">${gnvEsc(gnvLevelText(head.don_vi_do, it.muc_mong_doi))}</td>
-          <td class="gnv-center">${gnvEsc(gnvLevelText(head.don_vi_do, it.muc_thach_thuc))}</td>
+          <td class="gnv-center">${gnvEsc(gnvLevelText(effUnit, it.muc_toi_thieu))}</td>
+          <td class="gnv-center">${gnvEsc(gnvLevelText(effUnit, it.muc_mong_doi))}</td>
+          <td class="gnv-center">${gnvEsc(gnvLevelText(effUnit, it.muc_thach_thuc))}</td>
           <td class="gnv-center">${gnvEsc(formatDateDisplay(it.ngay_bat_dau))}</td>
           <td class="gnv-center">${gnvEsc(formatDateDisplay(it.ngay_hoan_thanh))}</td>
           <td>${gnvEsc(it.ket_qua_thuc_hien)}</td>
@@ -656,8 +664,9 @@ function openGnvItemDialog(ctx, item) {
   if (item?.don_vi_do && ![...unitSel.options].some((o) => o.value === item.don_vi_do)) {
     unitSel.insertAdjacentHTML("beforeend", `<option value="${gnvEsc(item.don_vi_do)}" data-legacy="1">${gnvEsc(item.don_vi_do)}</option>`);
   }
-  set("gnv-f-don-vi-do", item?.don_vi_do);
-  gnvLevelUnit = isChild ? ctx.headUnit ?? "" : item?.don_vi_do ?? "";
+  // Phương pháp đo con: mặc định theo đơn vị của mục tiêu, chọn được đơn vị khác.
+  set("gnv-f-don-vi-do", isChild ? item?.don_vi_do ?? ctx.headUnit ?? "" : item?.don_vi_do);
+  gnvLevelUnit = document.getElementById("gnv-f-don-vi-do").value;
   applyGnvLevelType(gnvLevelUnit);
   set("gnv-f-ty-trong", item?.ty_trong);
   set("gnv-f-toi-thieu", item?.muc_toi_thieu);
@@ -707,7 +716,9 @@ document.getElementById("gnv-item-form")?.addEventListener("submit", async (e) =
   }
   if (isChild && !body.phuong_phap_do) return showToast("Hãy nhập Phương pháp đo.");
   if (!isChild && !body.muc_tieu) return showToast("Hãy nhập Mục tiêu nhiệm vụ/công việc.");
-  const unitNow = isChild ? gnvLevelUnit : body.don_vi_do;
+  // Phương pháp đo con để đúng đơn vị của mục tiêu -> gửi rỗng (tiếp tục theo đơn vị của mục tiêu khi mục tiêu đổi).
+  if (isChild && body.don_vi_do === (gnvEditingItem.headUnit ?? "")) body.don_vi_do = "";
+  const unitNow = body.don_vi_do || (isChild ? gnvEditingItem.headUnit ?? "" : "");
   if (unitNow === "Số lượng" || unitNow === "Điểm") {
     const bad = [body.muc_toi_thieu, body.muc_mong_doi, body.muc_thach_thuc].some((x) => x !== "" && !/^[1-9]\d*$/.test(x));
     if (bad) return showToast("Mức chỉ tiêu phải là số nguyên dương.");
