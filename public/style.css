@@ -3587,7 +3587,7 @@ label.gnv-task input[type="checkbox"] { flex: 0 0 auto; width: auto; min-width: 
 
 /* Dòng tổng Tỷ trọng cuối bảng GNV: dòng 1 nền xanh nhạt đậm chữ, dòng 2 "Σ = N%". */
 #gnv-table tr.gnv-total-row td { background: #dbeef3; font-weight: 700; }
-#gnv-table tr.gnv-sigma-row td { background: #fff; font-weight: 700; }
+#gnv-table tr.gnv-sigma-row td { background: #dbeef3; font-weight: 700; }
 #gnv-table tr.gnv-total-over td.gnv-center { color: #c4132b; }
 #gnv-table tr.gnv-sigma-row td.gnv-score-label, #gnv-table tr.gnv-grade-row td.gnv-score-label { background: #dbeef3; font-weight: 700; text-align: left; }
 #gnv-table tr.gnv-sigma-row td.gnv-formula { background: #dbeef3; font-size: 0.78rem; }

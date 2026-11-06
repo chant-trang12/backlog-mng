@@ -648,7 +648,7 @@ export async function exportGnvToExcel(
         cell.font = { bold: true, color: c === 6 && totalWeight > 100 ? { argb: "FFC00000" } : undefined };
         cell.alignment = { horizontal: c === 12 ? "left" : "center", vertical: "middle", wrapText: true };
         if (typeof cell.value === "number") cell.numFmt = "0.0#";
-        if (def.fill || (k === 1 && c >= 12)) fillCell(cell, "FFDBEEF3");
+        if (def.fill || k === 1) fillCell(cell, "FFDBEEF3");
         cell.border = THIN_BORDER;
       }
       if (k === 1) {
