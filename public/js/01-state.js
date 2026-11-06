@@ -767,7 +767,7 @@ document.addEventListener("click", (e) => {
 
 // Mã nhân viên khai báo ở Quản lý User, tra theo Họ và Tên (dùng tự điền ở form
 // Làm thêm giờ / KQ xếp loại CBNV). Cache trong state.userCodes, xoá khi sửa mã.
-async function lookupUserCode(name) {
+async function lookupUserCode(name, departmentId = state.currentDepartmentId) {
   const key = String(name ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
   if (!key) return null;
   if (!state.userCodes) {
@@ -777,8 +777,10 @@ async function lookupUserCode(name) {
       state.userCodes = [];
     }
   }
-  const hit = state.userCodes.find((u) => String(u.name ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase() === key);
-  return hit?.ma_nhan_vien ?? null;
+  // Trùng tên giữa các phòng ban: ưu tiên user CÙNG phòng ban (departmentId); không có thì chỉ dùng khi tên đó chỉ có 1 user.
+  const hits = state.userCodes.filter((u) => String(u.name ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase() === key);
+  const same = departmentId != null ? hits.find((u) => u.department_id === departmentId) : null;
+  return same?.ma_nhan_vien ?? (hits.length === 1 ? hits[0].ma_nhan_vien : null);
 }
 
 // ---- Chuyển hướng đăng nhập có cầu chì chống lặp ----

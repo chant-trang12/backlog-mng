@@ -154,26 +154,38 @@ export async function updateUser(
 
 const nameKey = (s: unknown) => String(s ?? "").normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
 
-// Họ và Tên (chuẩn hoá) -> Mã nhân viên của user có khai báo mã.
-export async function userCodeMap(): Promise<Map<string, string>> {
-  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien");
-  const map = new Map<string, string>();
-  for (const r of rows as { name: string; ma_nhan_vien: string }[]) {
-    if (r.ma_nhan_vien?.trim()) map.set(nameKey(r.name), r.ma_nhan_vien.trim());
+// Mã nhân viên theo Họ và Tên (chuẩn hoá). Trùng tên giữa các phòng ban -> ưu tiên user CÙNG phòng ban với dòng dữ liệu;
+// không có user cùng phòng thì chỉ dùng khi tên đó chỉ có ĐÚNG 1 user (tránh lấy nhầm mã của người trùng tên phòng khác).
+type CodeEntry = { departmentId: number | null; code: string };
+export async function userCodeMap(): Promise<Map<string, CodeEntry[]>> {
+  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien", "department_id");
+  const map = new Map<string, CodeEntry[]>();
+  for (const r of rows as { name: string; ma_nhan_vien: string; department_id: number | null }[]) {
+    const code = r.ma_nhan_vien?.trim();
+    if (!code) continue;
+    const k = nameKey(r.name);
+    map.set(k, [...(map.get(k) ?? []), { departmentId: r.department_id ?? null, code }]);
   }
   return map;
 }
 
-// Điền Mã nhân viên từ bảng user (khớp theo Họ và Tên) — user có mã thì ưu tiên hơn giá trị đã lưu.
-export async function applyUserCodes<T extends { ho_va_ten: string; ma_nhan_vien: string | null }>(rows: T[]): Promise<T[]> {
-  const map = await userCodeMap();
-  if (map.size === 0) return rows;
-  return rows.map((r) => ({ ...r, ma_nhan_vien: map.get(nameKey(r.ho_va_ten)) ?? r.ma_nhan_vien }));
+export function pickUserCode(entries: CodeEntry[] | undefined, departmentId: number | null | undefined): string | null {
+  if (!entries?.length) return null;
+  const same = entries.find((e) => e.departmentId != null && e.departmentId === departmentId);
+  if (same) return same.code;
+  return entries.length === 1 ? entries[0].code : null;
 }
 
-export async function listUserCodes(): Promise<{ name: string; ma_nhan_vien: string }[]> {
-  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien");
-  return (rows as { name: string; ma_nhan_vien: string }[]).filter((r) => r.ma_nhan_vien?.trim());
+// Điền Mã nhân viên từ bảng user (khớp Họ và Tên + phòng ban của dòng) — user có mã thì ưu tiên hơn giá trị đã lưu.
+export async function applyUserCodes<T extends { ho_va_ten: string; ma_nhan_vien: string | null; department_id?: number | null }>(rows: T[]): Promise<T[]> {
+  const map = await userCodeMap();
+  if (map.size === 0) return rows;
+  return rows.map((r) => ({ ...r, ma_nhan_vien: pickUserCode(map.get(nameKey(r.ho_va_ten)), r.department_id) ?? r.ma_nhan_vien }));
+}
+
+export async function listUserCodes(): Promise<{ name: string; ma_nhan_vien: string; department_id: number | null }[]> {
+  const rows = await db("users").where({ is_deleted: false }).whereNotNull("ma_nhan_vien").select("name", "ma_nhan_vien", "department_id");
+  return (rows as { name: string; ma_nhan_vien: string; department_id: number | null }[]).filter((r) => r.ma_nhan_vien?.trim());
 }
 
 export async function deleteUser(id: number, actingUserId: number): Promise<boolean | { error: string }> {
