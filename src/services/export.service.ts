@@ -662,8 +662,8 @@ export async function exportGnvToExcel(
         g.font = { bold: true, color: { argb: "FFFFFFFF" } };
       }
       if (k === 2) {
-        const l = sheet.getCell(r, 12);
-        fillCell(l, "FFDBEEF3");
+        fillCell(sheet.getCell(r, 12), "FFDBEEF3");
+        fillCell(sheet.getCell(r, 13), "FFDBEEF3");
       }
       r++;
     });

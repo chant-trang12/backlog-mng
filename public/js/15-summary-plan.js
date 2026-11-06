@@ -575,7 +575,7 @@ function gnvTotalRowsHtml(groups) {
   return `
         <tr class="gnv-total-row${cls}"><td colspan="5"></td><td class="gnv-center">${total}%</td><td colspan="5"></td><td></td><td class="gnv-center">${gnvScoreText(cbnv)}</td><td class="gnv-center">${gnvScoreText(qltt)}</td><td></td></tr>
         <tr class="gnv-sigma-row${cls}"><td colspan="5"></td><td class="gnv-center">Σ = ${total}%</td><td colspan="5"></td><td class="gnv-score-label">Tổng điểm</td><td class="gnv-center gnv-formula">(Σ Tỷ trọng * Điểm)</td><td class="gnv-center gnv-score-red">${gnvScoreText(qltt)}</td><td></td></tr>
-        <tr class="gnv-grade-row"><td colspan="5"></td><td></td><td colspan="5"></td><td class="gnv-score-label">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</td><td></td><td class="gnv-center">${xepLoai ? `<span class="gnv-grade-pill">${gnvEsc(xepLoai)}</span>` : ""}</td><td></td></tr>`;
+        <tr class="gnv-grade-row"><td colspan="5"></td><td></td><td colspan="5"></td><td class="gnv-score-label">Xếp loại kết quả thực hiện mục tiêu nhiệm vụ/công việc</td><td class="gnv-score-blue"></td><td class="gnv-center">${xepLoai ? `<span class="gnv-grade-pill">${gnvEsc(xepLoai)}</span>` : ""}</td><td></td></tr>`;
 }
 
 function gnvFindGroup(id) {
