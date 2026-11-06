@@ -3999,7 +3999,7 @@ button.pptx-btn-share:hover { background: var(--orange-300); }
 .pptx-pill.pink-pill { background: var(--red-200); color: var(--red-800); }
 
 /* Tab "Tổng hợp làm thêm giờ": tiêu đề xanh lá nhạt như bảng mẫu, nhãn Đạt/Vượt quy định, số vượt đỏ. */
-#otsum-table-wrap { max-height: none; }
+#otsum-table-wrap, #otsum-unit .table-wrap { max-height: none; }
 #otsum-table th { background: #e2efda; color: #1c1917; text-align: center; vertical-align: middle; }
 #otsum-table .otsum-sub { font-weight: 400; font-size: 0.78rem; }
 #otsum-table td.ot-center { text-align: center; }
