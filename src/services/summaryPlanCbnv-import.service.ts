@@ -88,7 +88,8 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
   workbook.creator = "backlog-manager";
   workbook.created = new Date();
 
-  const LEFT_HEADERS = CBNV_XEP_LOAI_IMPORT_HEADERS.slice(0, 7);
+  // File mẫu KHÔNG có cột "Mã nhân viên" — mã lấy tự động từ bảng User (khớp theo Họ và Tên).
+  const LEFT_HEADERS = CBNV_XEP_LOAI_IMPORT_HEADERS.slice(0, 7).filter((h) => h !== "Mã nhân viên");
   const MID_HEADERS = CBNV_XEP_LOAI_IMPORT_HEADERS.slice(7, 13);
   const RIGHT_HEADERS = ["Ghi chú, đề xuất của người quản lý trực tiếp với CBNV", "Chú ý"];
   const TOTAL_COLUMNS = LEFT_HEADERS.length + MID_HEADERS.length + RIGHT_HEADERS.length;
@@ -112,7 +113,7 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
   };
 
   const sheet = workbook.addWorksheet("KQ xếp loại CBNV");
-  sheet.columns = [6, 14, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 30, 24].map((width) => ({ width }));
+  sheet.columns = [6, 22, 20, 16, 22, 16, 14, 26, 18, 18, 10, 22, 30, 24].map((width) => ({ width }));
 
   const groupRow = 1;
   const headerRow = 2;
@@ -153,7 +154,6 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
   // Dòng ví dụ (dòng 3) — 15 cột, cột 14 "Ghi chú, đề xuất..." để trống.
   const sampleRow = [
     1,
-    "115141",
     "Vũ Anh Dũng",
     "Trưởng phòng",
     "",
@@ -181,11 +181,11 @@ async function buildCbnvTemplateWorkbook(departments: string[]): Promise<ExcelJS
   // Xếp loại (12) — ghi danh mục vào sheet ẩn rồi tham chiếu, áp cho 500
   // dòng dữ liệu kế tiếp.
   const dropdowns: { column: number; options: string[] }[] = [
-    { column: 6, options: departments },
-    { column: 9, options: [...XEP_LOAI_KET_QUA_OPTIONS] },
+    { column: 5, options: departments },
+    { column: 8, options: [...XEP_LOAI_KET_QUA_OPTIONS] },
+    { column: 9, options: [...TUAN_THU_OPTIONS] },
     { column: 10, options: [...TUAN_THU_OPTIONS] },
-    { column: 11, options: [...TUAN_THU_OPTIONS] },
-    { column: 12, options: [...XEP_LOAI_OPTIONS] },
+    { column: 11, options: [...XEP_LOAI_OPTIONS] },
   ];
   const lookup = workbook.addWorksheet("Danh mục", { state: "hidden" });
   const VALID_ROWS = 500;
@@ -267,7 +267,8 @@ export async function importCbnvXepLoaiFromWorkbook(
     const diem = diemRaw === "" ? null : Number(diemRaw);
 
     const entry: UpsertCbnvXepLoaiInput = {
-      ma_nhan_vien: val(row, col("ma_nhan_vien")) || null,
+      // Mã nhân viên không nhập qua file — lấy từ bảng User theo Họ và Tên khi hiển thị.
+      ma_nhan_vien: null,
       ho_va_ten: hoVaTen,
       chuc_danh: val(row, col("chuc_danh")) || null,
       don_vi: val(row, col("don_vi")) || null,

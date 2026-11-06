@@ -35,6 +35,11 @@ export async function importOvertimeFromWorkbook(
   }
   if (!headerRow) throw new OvertimeError('Không tìm thấy cột "Stt" — tải file mẫu để đúng định dạng.');
 
+  // File mẫu mới không có cột "Mã Nhân viên" (mã lấy từ bảng User); file Xuất Excel/mẫu cũ vẫn có -> dò theo tiêu đề.
+  let hasMa = false;
+  for (let r = headerRow; r <= headerRow + 1; r++) {
+    for (let c = 1; c <= 8; c++) if (normalizeHeader(cellToText(sheet.getRow(r).getCell(c))).replace(/\s+/g, "") === "manhanvien") hasMa = true;
+  }
   const result: ImportOvertimeResult = { imported: 0, skipped: [] };
   const blocks: { head: UpsertOvertimeInput; children: UpsertOvertimeInput[] }[] = [];
   let lastSignature = "";
@@ -43,6 +48,10 @@ export async function importOvertimeFromWorkbook(
     const row = sheet.getRow(r);
     const t = (c: number) => cellToText(row.getCell(c)).trim();
     const cols = Array.from({ length: 14 }, (_, i) => t(i + 2));
+    // Không có cột Mã NV: chèn ô trống vào vị trí Mã NV để các cột sau giữ đúng chỉ số.
+    if (!hasMa) cols.splice(4, 0, "");
+    cols.length = 14;
+    cols[4] = ""; // Mã NV không nhập qua file
     if (cols.every((v) => v === "")) continue;
     // Dòng "Tổng:" của file xuất ra (cột Khoảng thời gian ghi "Tổng:") — không phải dữ liệu, bỏ qua im lặng.
     if (normalizeHeader(cols[8] ?? "").replace(/[:\s]/g, "") === "tong" && !cols[5]) continue;

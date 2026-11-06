@@ -27,18 +27,25 @@ export async function importOvertimeSummaryFromWorkbook(buffer: Buffer, periodId
   }
   if (!headerRow) throw new OvertimeSummaryError('Không tìm thấy cột "Stt" — tải file mẫu để đúng định dạng.');
 
+  // File mẫu mới không có cột "Mã nhân viên" (mã lấy từ bảng User); file Xuất Excel/mẫu cũ vẫn có -> dò theo tiêu đề.
+  let hasMa = false;
+  for (let r = headerRow; r <= headerRow + 1; r++) {
+    for (let c = 1; c <= 4; c++) if (normalizeHeader(cellToText(sheet.getRow(r).getCell(c))).replace(/\s+/g, "") === "manhanvien") hasMa = true;
+  }
   const result: ImportSummaryResult = { imported: 0, skipped: [] };
   const valid: SummaryInput[] = [];
   for (let r = headerRow + 2; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
-    const t = (c: number) => cellToText(row.getCell(c)).trim();
+    // Bố cục có Mã NV (cột 2): cột c giữ nguyên; không có: từ cột 2 trở đi dịch trái 1 cột -> quy về bố cục có Mã NV.
+    const raw = (c: number) => cellToText(row.getCell(c)).trim();
+    const t = (c: number) => (hasMa || c < 2 ? raw(c) : c === 2 ? "" : raw(c - 1));
     // Hết bảng dữ liệu: dòng "Lưu ý…" hoặc bảng "Tổng hợp đơn vị" (file xuất ra) -> dừng, không đọc tiếp.
     if (normalizeHeader(t(1)).startsWith("luu y") || normalizeHeader(t(3)).startsWith("tong hop don vi")) break;
     if (Array.from({ length: 16 }, (_, i) => t(i + 2)).every((v) => v === "")) continue;
     // Dòng "Tổng cộng" (file xuất ra) không phải dữ liệu — bỏ qua im lặng.
     if (normalizeHeader(t(3)) === "tong cong") continue;
     const input: SummaryInput = {
-      ma_nhan_vien: t(2),
+      ma_nhan_vien: "", // Mã NV không nhập qua file — lấy từ bảng User khi hiển thị
       ho_va_ten: t(3),
       don_vi: t(4),
       bo_phan: t(5),

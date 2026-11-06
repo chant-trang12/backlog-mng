@@ -650,8 +650,11 @@ export function buildOvertimeWorkbook(
   workbook.creator = "backlog-manager";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet("Làm thêm giờ");
-  sheet.columns = OT_WIDTHS.map((width) => ({ width }));
-  const total = OT_WIDTHS.length;
+  // File mẫu KHÔNG có cột Mã Nhân viên (mã lấy tự động từ bảng User); Xuất Excel vẫn có.
+  const sk = opts.sample ? 1 : 0;
+  const widths = sk ? OT_WIDTHS.filter((_, i) => i !== 5) : OT_WIDTHS;
+  sheet.columns = widths.map((width) => ({ width }));
+  const total = widths.length;
 
   let top = 1;
   if (opts.title) {
@@ -682,22 +685,26 @@ export function buildOvertimeWorkbook(
   tall(3, "Nội dung tác động");
   tall(4, "Số kế hoạch tác động");
   tall(5, "Địa điểm tác động");
-  sheet.mergeCells(g, 6, g, 7);
-  head(g, 6, "Người thực hiện");
-  head(h, 6, "Mã Nhân viên");
-  head(h, 7, "Họ và Tên");
-  tall(8, "Đơn vị");
-  tall(9, "Bộ phận");
-  tall(10, "Khoảng thời gian tác động");
-  sheet.mergeCells(g, 11, g, 12);
-  head(g, 11, "Làm thêm vào ban ngày");
-  head(h, 11, "Số giờ");
-  head(h, 12, "Số ngày");
-  sheet.mergeCells(g, 13, g, 14);
-  head(g, 13, "Làm thêm vào ban đêm");
-  head(h, 13, "Số giờ");
-  head(h, 14, "Số ngày");
-  tall(15, "Ghi chú");
+  if (sk) {
+    tall(6, "Họ và Tên");
+  } else {
+    sheet.mergeCells(g, 6, g, 7);
+    head(g, 6, "Người thực hiện");
+    head(h, 6, "Mã Nhân viên");
+    head(h, 7, "Họ và Tên");
+  }
+  tall(8 - sk, "Đơn vị");
+  tall(9 - sk, "Bộ phận");
+  tall(10 - sk, "Khoảng thời gian tác động");
+  sheet.mergeCells(g, 11 - sk, g, 12 - sk);
+  head(g, 11 - sk, "Làm thêm vào ban ngày");
+  head(h, 11 - sk, "Số giờ");
+  head(h, 12 - sk, "Số ngày");
+  sheet.mergeCells(g, 13 - sk, g, 14 - sk);
+  head(g, 13 - sk, "Làm thêm vào ban đêm");
+  head(h, 13 - sk, "Số giờ");
+  head(h, 14 - sk, "Số ngày");
+  tall(15 - sk, "Ghi chú");
   sheet.getRow(g).height = 22;
   sheet.getRow(h).height = 30;
 
@@ -709,7 +716,7 @@ export function buildOvertimeWorkbook(
   const styleCell = (r: number, ci: number, v: string | number) => {
     const cell = sheet.getCell(r, ci + 1);
     cell.value = v;
-    const left = ci === 2 || ci === 4 || ci === 14;
+    const left = ci === 2 || ci === 4 || ci === 14 - sk;
     cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
     cell.border = THIN_BORDER;
   };
@@ -720,8 +727,8 @@ export function buildOvertimeWorkbook(
     const shared = ["01/11/2026", "Nâng cấp hệ thống X", "KH-001", "TT DL Hòa Lạc"];
     const tail = ["BSS", "22:00 - 02:00", 0, 0, 4, 0.5, "Ví dụ — xoá các dòng ví dụ khi nhập thật"];
     [
-      { stt: 1, person: ["115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin"] },
-      { stt: 2, person: ["115142", "Nguyễn Văn A", "Phòng Công nghệ thông tin"] },
+      { stt: 1, person: ["Vũ Anh Dũng", "Phòng Công nghệ thông tin"] },
+      { stt: 2, person: ["Nguyễn Văn A", "Phòng Công nghệ thông tin"] },
     ].forEach((row) => {
       [row.stt, ...shared, ...row.person, ...tail].forEach((v, ci) => styleCell(rowNo, ci, v));
       rowNo++;
@@ -760,7 +767,7 @@ export function buildOvertimeWorkbook(
   }
   // Cột Số ngày (12, 14): hiển thị "0,0" / "0,5" (1-2 chữ số lẻ; dấu thập phân theo ngôn ngữ của Excel).
   for (let r = h + 1; r < rowNo; r++) {
-    for (const c of [12, 14]) {
+    for (const c of [12 - sk, 14 - sk]) {
       const cell = sheet.getCell(r, c);
       if (typeof cell.value === "number") cell.numFmt = "0.0#";
     }
@@ -789,8 +796,9 @@ export function buildOvertimeSummaryWorkbook(
   workbook.creator = "backlog-manager";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet("Tổng hợp làm thêm giờ");
-  sheet.columns = OTS_WIDTHS.map((width) => ({ width }));
-  const total = OTS_WIDTHS.length;
+  const otsWidths = opts.sample ? OTS_WIDTHS.filter((_, i) => i !== 1) : OTS_WIDTHS;
+  sheet.columns = otsWidths.map((width) => ({ width }));
+  const total = otsWidths.length;
   let top = 1;
   if (opts.title) {
     sheet.mergeCells(1, 1, 1, total);
@@ -815,34 +823,36 @@ export function buildOvertimeSummaryWorkbook(
     sheet.mergeCells(g, c, h, c);
     head(g, c, label);
   };
+  // File mẫu KHÔNG có cột Mã nhân viên (mã lấy tự động từ bảng User); Xuất Excel vẫn có.
+  const sk = opts.sample ? 1 : 0;
   const month = opts.month ? `tháng ${opts.month}` : "tháng";
   tall(1, "Stt");
-  tall(2, "Mã nhân viên");
-  tall(3, "Họ và Tên");
-  tall(4, "Đơn vị");
-  tall(5, "Bộ phận");
-  sheet.mergeCells(g, 6, g, 7);
-  head(g, 6, "Làm thêm vào ban ngày\n(Không gồm ngày nghỉ cuối tuần)");
-  head(h, 6, "Số giờ");
-  head(h, 7, "Số ngày");
-  sheet.mergeCells(g, 8, g, 9);
-  head(g, 8, "Làm thêm vào ban đêm (22h00-6h00) hoặc Ngày nghỉ cuối tuần");
-  head(h, 8, "Số giờ");
-  head(h, 9, "Số ngày");
-  tall(10, `Tổng số giờ làm thêm trong ${month}`);
-  tall(11, "Số giờ làm thêm vượt so với quy định của luật (tối đa 40h/tháng)");
-  tall(12, "Đánh giá\n(So với quy định của luật lao động tối đa không quá 40 giờ/tháng)");
-  tall(13, "Tổng số giờ làm thêm các tháng trước trong năm");
-  tall(14, "Tổng số giờ làm thêm lũy kế đến tháng hiện tại");
-  tall(15, "Tỷ lệ thực hiện trong năm so với quy định của luật (200 h/năm)");
-  tall(16, "Đánh giá\n(So với quy định của luật lao động, tối đa không quá 200 giờ/năm)");
-  tall(17, "Ghi chú");
+  if (!sk) tall(2, "Mã nhân viên");
+  tall(3 - sk, "Họ và Tên");
+  tall(4 - sk, "Đơn vị");
+  tall(5 - sk, "Bộ phận");
+  sheet.mergeCells(g, 6 - sk, g, 7 - sk);
+  head(g, 6 - sk, "Làm thêm vào ban ngày\n(Không gồm ngày nghỉ cuối tuần)");
+  head(h, 6 - sk, "Số giờ");
+  head(h, 7 - sk, "Số ngày");
+  sheet.mergeCells(g, 8 - sk, g, 9 - sk);
+  head(g, 8 - sk, "Làm thêm vào ban đêm (22h00-6h00) hoặc Ngày nghỉ cuối tuần");
+  head(h, 8 - sk, "Số giờ");
+  head(h, 9 - sk, "Số ngày");
+  tall(10 - sk, `Tổng số giờ làm thêm trong ${month}`);
+  tall(11 - sk, "Số giờ làm thêm vượt so với quy định của luật (tối đa 40h/tháng)");
+  tall(12 - sk, "Đánh giá\n(So với quy định của luật lao động tối đa không quá 40 giờ/tháng)");
+  tall(13 - sk, "Tổng số giờ làm thêm các tháng trước trong năm");
+  tall(14 - sk, "Tổng số giờ làm thêm lũy kế đến tháng hiện tại");
+  tall(15 - sk, "Tỷ lệ thực hiện trong năm so với quy định của luật (200 h/năm)");
+  tall(16 - sk, "Đánh giá\n(So với quy định của luật lao động, tối đa không quá 200 giờ/năm)");
+  tall(17 - sk, "Ghi chú");
   sheet.getRow(g).height = 40;
   sheet.getRow(h).height = 70;
 
   const pct = (n: number) => `${n.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%`;
   const body: (string | number)[][] = opts.sample
-    ? [[1, "115141", "Vũ Anh Dũng", "Phòng Công nghệ thông tin", "BU CĐS", 0, 0, 4, 0.5, 4, 0, "Trong giới hạn số giờ theo quy định của luật lao động", 12, 16, "8%", "Trong giới hạn số giờ theo quy định của luật lao động", "Ví dụ — các cột tính toán (tổng, vượt, đánh giá, lũy kế, tỷ lệ) hệ thống tự tính khi nhập"]]
+    ? [[1, "Vũ Anh Dũng", "Phòng Công nghệ thông tin", "BU CĐS", 0, 0, 4, 0.5, 4, 0, "Trong giới hạn số giờ theo quy định của luật lao động", 12, 16, "8%", "Trong giới hạn số giờ theo quy định của luật lao động", "Ví dụ — các cột tính toán (tổng, vượt, đánh giá, lũy kế, tỷ lệ) hệ thống tự tính khi nhập"]]
     : rows.map((r, i) => [
         i + 1, r.ma_nhan_vien ?? "", r.ho_va_ten, r.don_vi ?? "", r.bo_phan ?? "",
         r.ban_ngay_so_gio ?? "", r.ban_ngay_so_ngay ?? "", r.ban_dem_so_gio ?? "", r.ban_dem_so_ngay ?? "",
@@ -871,7 +881,7 @@ export function buildOvertimeSummaryWorkbook(
     vals.forEach((v, ci) => {
       const cell = sheet.getCell(dataStart + i, ci + 1);
       cell.value = v;
-      const left = ci === 2 || ci === 3 || ci === 4 || ci === 16;
+      const left = [2, 3, 4, 16].includes(ci + sk);
       cell.alignment = { wrapText: true, vertical: "middle", horizontal: left ? "left" : "center" };
       cell.border = THIN_BORDER;
     });
