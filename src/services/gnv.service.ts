@@ -16,13 +16,14 @@ const num = (v: unknown): number | null => {
 };
 
 // Mức chỉ tiêu (T/B/S) phụ thuộc Đơn vị đo: Thời gian = ngày YYYY-MM-DD;
-// Số lượng/Điểm = số nguyên dương; Tỷ lệ % = số (không âm).
+// Số lượng = số nguyên không âm (cho phép 0); Điểm = số nguyên dương; Tỷ lệ % = số (không âm).
 function validateLevels(input: GnvItemInput, unitOverride?: string | null): void {
   const unit = unitOverride !== undefined ? unitOverride : txt(input.don_vi_do);
   for (const v of [txt(input.muc_toi_thieu), txt(input.muc_mong_doi), txt(input.muc_thach_thuc)]) {
     if (v == null) continue;
     if (unit === "Thời gian" && !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new GnvError("Mức chỉ tiêu phải là ngày khi Đơn vị đo là Thời gian.");
-    if ((unit === "Số lượng" || unit === "Điểm") && !/^[1-9]\d*$/.test(v)) throw new GnvError("Mức chỉ tiêu phải là số nguyên dương khi Đơn vị đo là Số lượng/Điểm.");
+    if (unit === "Số lượng" && !/^\d+$/.test(v)) throw new GnvError("Mức chỉ tiêu phải là số nguyên không âm (cho phép 0) khi Đơn vị đo là Số lượng.");
+    if (unit === "Điểm" && !/^[1-9]\d*$/.test(v)) throw new GnvError("Mức chỉ tiêu phải là số nguyên dương khi Đơn vị đo là Điểm.");
     if (unit === "Tỷ lệ %" && !(Number.isFinite(Number(v)) && Number(v) >= 0)) throw new GnvError("Mức chỉ tiêu phải là số tỷ lệ % hợp lệ.");
   }
 }

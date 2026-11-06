@@ -423,7 +423,7 @@ function applyGnvLevelType(unit) {
     if (unit === "Thời gian") el.type = "date";
     else if (unit === "Số lượng" || unit === "Điểm") {
       el.type = "number";
-      el.min = "1";
+      el.min = unit === "Số lượng" ? "0" : "1"; // Số lượng cho phép 0
       el.step = "1";
     } else if (unit === "Tỷ lệ %") {
       el.type = "number";
@@ -720,8 +720,9 @@ document.getElementById("gnv-item-form")?.addEventListener("submit", async (e) =
   if (isChild && body.don_vi_do === (gnvEditingItem.headUnit ?? "")) body.don_vi_do = "";
   const unitNow = body.don_vi_do || (isChild ? gnvEditingItem.headUnit ?? "" : "");
   if (unitNow === "Số lượng" || unitNow === "Điểm") {
-    const bad = [body.muc_toi_thieu, body.muc_mong_doi, body.muc_thach_thuc].some((x) => x !== "" && !/^[1-9]\d*$/.test(x));
-    if (bad) return showToast("Mức chỉ tiêu phải là số nguyên dương.");
+    const re = unitNow === "Số lượng" ? /^\d+$/ : /^[1-9]\d*$/;
+    const bad = [body.muc_toi_thieu, body.muc_mong_doi, body.muc_thach_thuc].some((x) => x !== "" && !re.test(x));
+    if (bad) return showToast(unitNow === "Số lượng" ? "Mức chỉ tiêu phải là số nguyên không âm (nhập được 0)." : "Mức chỉ tiêu phải là số nguyên dương.");
   }
   try {
     if (gnvEditingItem.id) {
