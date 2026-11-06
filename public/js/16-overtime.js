@@ -240,6 +240,12 @@ async function openOvertimeDialog(record, ctx = {}) {
     const v = record?.[key];
     document.getElementById(id).value = key === "ngay_tac_dong" ? (v ?? "").slice(0, 10) : (v ?? "");
   }
+  // Mã NV chỉ đọc: luôn lấy theo Họ và Tên từ bảng User (không có thì giữ giá trị đã lưu).
+  state.userCodes = null;
+  if (record?.ho_va_ten) {
+    const code = await lookupUserCode(record.ho_va_ten);
+    if (code) document.getElementById("ot-f-ma-nv").value = code;
+  }
   // Thêm MỚI lượt tác động: Ghi chú mặc định "Không nghỉ sáng" (sửa/xoá được).
   if (!record && !ctx.parentId) document.getElementById("ot-f-ghi-chu").value = OT_DEFAULT_NOTE;
   // Thêm/sửa nhân sự tham gia: Ghi chú dùng chung của lượt (lấy từ dòng đầu) — hiện để người nhập biết, nhân sự mới hiển thị đúng ghi chú này.
@@ -278,7 +284,7 @@ function renderOtMemberList(members, currentName) {
 }
 document.getElementById("ot-f-ho-ten")?.addEventListener("change", async (e) => {
   const code = await lookupUserCode(e.target.value);
-  if (code) document.getElementById("ot-f-ma-nv").value = code;
+  document.getElementById("ot-f-ma-nv").value = code ?? "";
   const member = (state.members ?? []).find((m) => m.name === e.target.value);
   if (!member) return;
   const donVi = document.getElementById("ot-f-don-vi");
