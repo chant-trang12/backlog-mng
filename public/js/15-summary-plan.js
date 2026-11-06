@@ -569,7 +569,8 @@ function gnvTotalRowsHtml(groups) {
   const cls = total > 100 ? " gnv-total-over" : "";
   const cbnv = gnvWeightedScore(groups, "cbnv_tu_danh_gia");
   const qltt = gnvWeightedScore(groups, "qltt_danh_gia");
-  const xepLoai = qltt == null ? "" : cbnvXepLoaiKetQuaFromDiem(qltt);
+  // Theo công thức mẫu: <2 Không đạt | <2,5 Gần đạt | <3,5 Đạt | <4,5 Vượt yêu cầu | <=5 Vượt xa yêu cầu | còn lại (>5) để trống.
+  const xepLoai = qltt == null || qltt > 5 ? "" : cbnvXepLoaiKetQuaFromDiem(qltt);
   // Cột: 5 cột đầu | Tỷ trọng | T/B/S + Ngày BĐ + Ngày HT (5) | Kết quả | CBNV | QLTT | thao tác.
   return `
         <tr class="gnv-total-row${cls}"><td colspan="5"></td><td class="gnv-center">${total}%</td><td colspan="5"></td><td></td><td class="gnv-center">${gnvScoreText(cbnv)}</td><td class="gnv-center">${gnvScoreText(qltt)}</td><td></td></tr>

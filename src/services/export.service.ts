@@ -635,7 +635,7 @@ export async function exportGnvToExcel(
     const cbnvScore = weighted("cbnv_tu_danh_gia");
     const qlttScore = weighted("qltt_danh_gia");
     const grade =
-      qlttScore == null ? "" : qlttScore >= 4.5 ? "Vượt xa yêu cầu" : qlttScore >= 3.5 ? "Vượt yêu cầu" : qlttScore >= 2.5 ? "Đạt yêu cầu" : qlttScore >= 2 ? "Gần đạt yêu cầu" : "Không đạt yêu cầu";
+      qlttScore == null || qlttScore > 5 ? "" : qlttScore >= 4.5 ? "Vượt xa yêu cầu" : qlttScore >= 3.5 ? "Vượt yêu cầu" : qlttScore >= 2.5 ? "Đạt yêu cầu" : qlttScore >= 2 ? "Gần đạt yêu cầu" : "Không đạt yêu cầu";
     const rowsDef: { vals: Record<number, string | number>; fill: boolean }[] = [
       { vals: { 6: `${totalWeight}%`, 13: cbnvScore ?? "", 14: qlttScore ?? "" }, fill: true },
       { vals: { 6: `Σ = ${totalWeight}%`, 12: "Tổng điểm", 13: "(Σ Tỷ trọng * Điểm)", 14: qlttScore ?? "" }, fill: false },
