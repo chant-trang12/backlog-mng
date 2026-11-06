@@ -47,29 +47,34 @@ function renderOtsUnit(u) {
   document.getElementById("otsum-unit-name").textContent = u.department_name ?? "";
   const input = document.getElementById("otsum-unit-target");
   if (document.activeElement !== input) input.value = u.target_hours ?? "";
-  document.getElementById("otsum-unit-luyke").textContent = otsFx(u.luy_ke);
+  const luyke = document.getElementById("otsum-unit-luyke-input");
+  if (document.activeElement !== luyke) luyke.value = u.luy_ke ?? "";
   const conlai = document.getElementById("otsum-unit-conlai");
   conlai.textContent = u.con_lai == null ? "" : otsFx(u.con_lai);
   conlai.classList.toggle("ots-bad", u.con_lai != null && u.con_lai < 0);
 }
-async function saveOtsUnitTarget() {
-  const input = document.getElementById("otsum-unit-target");
+async function saveOtsUnitTarget(e) {
+  // Chỉ gửi ô vừa sửa: mục tiêu hoặc lũy kế thực hiện.
+  const input = e?.target ?? document.getElementById("otsum-unit-target");
+  const field = input.id === "otsum-unit-luyke-input" ? "luy_ke_hours" : "target_hours";
   try {
     const u = await api("/api/overtime-summary/unit", {
       method: "PUT",
-      body: JSON.stringify({ period_id: state.currentPeriodId, department_id: state.currentDepartmentId, target_hours: input.value.trim() }),
+      body: JSON.stringify({ period_id: state.currentPeriodId, department_id: state.currentDepartmentId, [field]: input.value.trim() }),
     });
     renderOtsUnit(u);
-    showToast("Đã lưu mục tiêu.", "success");
+    showToast(field === "luy_ke_hours" ? "Đã lưu lũy kế." : "Đã lưu mục tiêu.", "success");
   } catch (err) {
     showToast(err.message);
     loadOtsUnit();
   }
 }
-document.getElementById("otsum-unit-target")?.addEventListener("change", saveOtsUnitTarget);
-document.getElementById("otsum-unit-target")?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") e.target.blur();
-});
+for (const id of ["otsum-unit-target", "otsum-unit-luyke-input"]) {
+  document.getElementById(id)?.addEventListener("change", saveOtsUnitTarget);
+  document.getElementById(id)?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") e.target.blur();
+  });
+}
 
 function filteredOvertimeSummary() {
   const term = (state.otsSearch ?? "").trim().toLowerCase();

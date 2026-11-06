@@ -241,24 +241,26 @@ export async function importFromDetail(
   return result;
 }
 
-// ---- Bảng "Tổng hợp đơn vị": mục tiêu 6 tháng cuối năm (nhập, sửa được) | lũy kế thực hiện đến tháng hiện tại (= tổng Lũy kế của mọi
-// nhân sự trong bảng) | còn được thực hiện đến tháng 12 (= mục tiêu - lũy kế).
+// ---- Bảng "Tổng hợp đơn vị": mục tiêu 6 tháng cuối năm (nhập, sửa được) | lũy kế thực hiện đến tháng hiện tại (nhập, sửa được) |
+// còn được thực hiện đến tháng 12 (= mục tiêu - lũy kế, chỉ có khi đã nhập cả hai).
 export interface UnitSummary {
   department_id: number | null;
   department_name: string | null;
   year: number;
   month: number;
   target_hours: number | null;
-  luy_ke: number;
+  luy_ke: number | null;
   con_lai: number | null;
 }
 
 export async function getUnitSummary(periodId: number, departmentId: number | null): Promise<UnitSummary | null> {
-  const { period, rows } = await listSummary(periodId, departmentId);
+  const period = (await db("periods").where({ id: periodId }).first()) as { id: number; year: number; month: number } | undefined;
   if (!period) return null;
   const dept = departmentId != null ? ((await db("departments").where({ id: departmentId }).select("name").first()) as { name: string } | undefined) : undefined;
   const t = departmentId != null ? ((await db("overtime_unit_targets").where({ department_id: departmentId, year: period.year }).first()) as { target_hours: number | null } | undefined) : undefined;
-  const luyKe = round2(rows.reduce((s, r) => s + r.luy_ke, 0));
+  // Lũy kế thực hiện đến tháng: số NHẬP TAY (không còn lấy từ tổng cột "Lũy kế" của bảng); để trống nếu chưa nhập.
+  const p = departmentId != null ? ((await db("overtime_unit_progress").where({ department_id: departmentId, period_id: periodId }).first()) as { luy_ke_hours: number | null } | undefined) : undefined;
+  const luyKe = p?.luy_ke_hours ?? null;
   const target = t?.target_hours ?? null;
   return {
     department_id: departmentId,
@@ -267,18 +269,27 @@ export async function getUnitSummary(periodId: number, departmentId: number | nu
     month: period.month,
     target_hours: target,
     luy_ke: luyKe,
-    con_lai: target == null ? null : round2(target - luyKe),
+    con_lai: target == null || luyKe == null ? null : round2(target - luyKe),
   };
 }
 
-export async function setUnitTarget(periodId: number, departmentId: number | null, hours: unknown, scope: DataScope): Promise<UnitSummary | null> {
+export async function setUnitTarget(periodId: number, departmentId: number | null, hours: unknown, scope: DataScope, luyKe?: unknown): Promise<UnitSummary | null> {
   if (departmentId == null) throw new OvertimeSummaryError("Hãy chọn 1 phòng ban cụ thể trước.");
   assertDepartmentInScope(scope, departmentId);
   const period = (await db("periods").where({ id: periodId }).first()) as { year: number } | undefined;
   if (!period) throw new OvertimeSummaryError("Tháng không hợp lệ.");
-  const value = num(hours, "Tổng số giờ làm thêm mục tiêu 6 tháng cuối năm");
-  const hit = await db("overtime_unit_targets").where({ department_id: departmentId, year: period.year }).first();
-  if (hit) await db("overtime_unit_targets").where({ id: hit.id }).update({ target_hours: value, updated_at: db.fn.now() });
-  else await db("overtime_unit_targets").insert({ department_id: departmentId, year: period.year, target_hours: value });
+  // Mỗi trường chỉ cập nhật khi client gửi (undefined = giữ nguyên).
+  if (hours !== undefined) {
+    const value = num(hours, "Tổng số giờ làm thêm mục tiêu 6 tháng cuối năm");
+    const hit = await db("overtime_unit_targets").where({ department_id: departmentId, year: period.year }).first();
+    if (hit) await db("overtime_unit_targets").where({ id: hit.id }).update({ target_hours: value, updated_at: db.fn.now() });
+    else await db("overtime_unit_targets").insert({ department_id: departmentId, year: period.year, target_hours: value });
+  }
+  if (luyKe !== undefined) {
+    const value = num(luyKe, "Tổng số giờ làm thêm lũy kế thực hiện");
+    const hit = await db("overtime_unit_progress").where({ department_id: departmentId, period_id: periodId }).first();
+    if (hit) await db("overtime_unit_progress").where({ id: hit.id }).update({ luy_ke_hours: value, updated_at: db.fn.now() });
+    else await db("overtime_unit_progress").insert({ department_id: departmentId, period_id: periodId, luy_ke_hours: value });
+  }
   return getUnitSummary(periodId, departmentId);
 }

@@ -16,6 +16,18 @@ export async function migrateOvertimeSummaryTable(): Promise<void> {
     });
   }
 
+  // "Lũy kế thực hiện đến tháng n" của đơn vị: số NHẬP TAY theo (phòng ban, tháng) — để trống nếu chưa nhập.
+  if (!(await db.schema.hasTable("overtime_unit_progress"))) {
+    await db.schema.createTable("overtime_unit_progress", (table) => {
+      table.increments("id").primary();
+      table.integer("department_id").notNullable().references("id").inTable("departments").onDelete("NO ACTION");
+      table.integer("period_id").notNullable().references("id").inTable("periods").onDelete("CASCADE");
+      table.float("luy_ke_hours");
+      table.dateTime("updated_at").notNullable().defaultTo(db.fn.now());
+      table.unique(["department_id", "period_id"]);
+    });
+  }
+
   if (await db.schema.hasTable("overtime_summary_records")) {
     // nguon: "chi_tiet" (tạo bởi nút Lấy từ Chi tiết) | "nhap_tay" (nhập tay/Import) | NULL (dòng có từ trước khi có cột này).
     // "Lấy từ Chi tiết" chỉ xoá các dòng KHÔNG còn trong Chi tiết nếu dòng đó không phải "nhap_tay".

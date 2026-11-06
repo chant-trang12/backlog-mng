@@ -968,7 +968,7 @@ export function buildOvertimeSummaryWorkbook(
     };
     val(3, u.department_name ?? "");
     val(4, u.target_hours ?? "");
-    val(5, u.luy_ke);
+    val(5, u.luy_ke ?? "");
     sheet.mergeCells(ur, 6, ur, 8);
     val(6, u.con_lai ?? "", true);
     sheet.getRow(ur).height = 36;

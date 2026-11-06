@@ -122,7 +122,7 @@ export async function setUnitTargetHandler(req: Request, res: Response) {
   const periodId = Number(req.body?.period_id);
   if (!(await getPeriod(periodId))) return res.status(400).json({ error: "period_id không hợp lệ" });
   try {
-    res.json(await setUnitTarget(periodId, writeDepartmentId(req, req.body?.department_id), req.body?.target_hours, scopeOf(req)));
+    res.json(await setUnitTarget(periodId, writeDepartmentId(req, req.body?.department_id), req.body?.target_hours, scopeOf(req), req.body?.luy_ke_hours));
   } catch (e) {
     fail(res, e);
   }
