@@ -35,7 +35,7 @@ const WK_FIELDS = {
 };
 const wkFieldsOf = (section) => WK_FIELDS[section === "A" ? "A" : section === "C" ? "C" : "B"];
 
-const wkState = { year: null, week: null, data: null, editing: null /* { id? , section } */ };
+const wkState = { year: null, week: null, data: null, editing: null /* { id? , section } */, scope: "mine" /* mine | shared */, shared: [], unseen: 0, viewing: false /* đang xem 1 BC tuần được chia sẻ (chỉ đọc) */ };
 
 // ---- Tuần ISO ----
 function wkMonday(year, week) {
@@ -108,6 +108,9 @@ function wkFillPickers() {
 }
 
 async function loadWeekly() {
+  wkRenderScopeBar();
+  if (wkState.scope === "shared") return loadWkShared();
+  wkSetShareMode(false);
   if (wkState.year == null) {
     // Mặc định: tuần liền trước (báo cáo tổng kết tuần vừa qua).
     const d = new Date();
@@ -125,6 +128,7 @@ async function loadWeekly() {
   }
   wkState.data = await api(`/api/weekly-reports?year=${wkState.year}&week=${wkState.week}${deptParam()}`);
   renderWeekly();
+  wkRenderShareList(); // cập nhật số người đã chia sẻ trên nút "Chia sẻ"
 }
 
 function wkRowActions(r, first, last) {
@@ -383,11 +387,20 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-note { margin: 12px 0 0; }
 .wk-sign { text-align: right; margin: 22px 0 0; }
 `;
+// Bỏ cột thao tác + nút thêm/sửa/xóa (dùng cho bản in PDF và khi xem BC tuần được chia sẻ — chỉ đọc); chỉnh lại colspan cho khớp.
+function wkStripEditUi(root) {
+  if (root.dataset.wkStripped) return; // đã bỏ rồi (vd. đang xem bản chia sẻ chỉ đọc rồi bấm Xuất PDF)
+  root.dataset.wkStripped = "1";
+  root.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button, .wk-col-actions").forEach((n) => n.remove());
+  root.querySelectorAll("tr.wk-group td[colspan]").forEach((td) => (td.colSpan = 8));
+  root.querySelectorAll("td.wk-empty").forEach((td) => (td.colSpan = Math.max(1, td.colSpan - 1)));
+  root.querySelectorAll("tr.wk-group td div").forEach((d) => (d.style.display = "block"));
+}
+
 function wkPrintHtml() {
   const paper = document.querySelector("#wk-doc .wk-paper")?.cloneNode(true);
   if (!paper) return null;
-  // Bỏ cột thao tác + nút; chỉnh lại colspan của dòng nhóm/dòng trống cho khớp số cột còn lại.
-  paper.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button, .wk-col-actions").forEach((n) => n.remove());
+  wkStripEditUi(paper);
   // Bản in: bảng B/C đang đặt độ rộng theo px (có thể rộng hơn trang) -> quy về % theo đúng tỉ lệ các cột còn lại, vừa khổ A4.
   paper.querySelectorAll("table.wk-fixed").forEach((t) => {
     const cols = [...t.querySelectorAll("colgroup col")];
@@ -395,9 +408,6 @@ function wkPrintHtml() {
     cols.forEach((c) => (c.style.width = `${((parseFloat(c.style.width) / total) * 100).toFixed(2)}%`));
     t.style.width = "100%";
   });
-  paper.querySelectorAll("tr.wk-group td[colspan]").forEach((td) => (td.colSpan = 8));
-  paper.querySelectorAll("td.wk-empty").forEach((td) => (td.colSpan = Math.max(1, td.colSpan - 1)));
-  paper.querySelectorAll("tr.wk-group td div").forEach((d) => (d.style.display = "block"));
   const title = `BC tuan ${wkState.data.week.week}-${wkState.data.week.year}`;
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${title}</title><style>${WK_PRINT_CSS}</style></head><body>${paper.outerHTML}</body></html>`;
 }
@@ -418,3 +428,171 @@ function wkExportPdf() {
   document.body.appendChild(frame);
 }
 document.getElementById("wk-export-btn")?.addEventListener("click", wkExportPdf);
+
+// ---- Chia sẻ BC tuần (giống Báo cáo PowerPoint): chia sẻ cho từng người / cả phòng; người nhận chỉ xem + xuất PDF ----
+const wkQ = () => (state.currentDepartmentId != null ? `?department_id=${state.currentDepartmentId}` : "");
+const wkDt = (v) => {
+  const d = new Date(String(v).replace(" ", "T") + (String(v).includes("T") || String(v).includes("Z") ? "" : "Z"));
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+};
+
+function wkRenderScopeBar() {
+  const bar = document.getElementById("wk-scope-bar");
+  if (!bar) return;
+  const btn = (scope, label, n) =>
+    `<button type="button" class="gnv-seg-btn${wkState.scope === scope ? " active" : ""}" data-scope="${scope}">${label}${n ? ` <span class="pptx-pill pink-pill">${n}</span>` : ""}</button>`;
+  bar.innerHTML = `<div class="gnv-seg pptx-scope-bar">${btn("mine", "BC tuần của phòng tôi", 0)}${btn("shared", "Được chia sẻ với tôi", wkState.unseen)}</div>`;
+  bar.querySelectorAll("[data-scope]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (wkState.scope === b.dataset.scope && !wkState.viewing) return;
+      wkState.scope = b.dataset.scope;
+      wkState.viewing = false;
+      loadWeekly().catch((err) => showToast(err.message));
+    }),
+  );
+}
+
+// Chế độ hiển thị: shared-list = danh sách được chia sẻ; shared-view = đang xem 1 báo cáo chỉ đọc; mine = của phòng tôi.
+function wkSetShareMode(mode /* false | "list" | "view" */) {
+  const mine = mode === false;
+  document.getElementById("wk-picker-card").hidden = !mine;
+  document.getElementById("wk-shared-list").hidden = mode !== "list";
+  document.getElementById("wk-doc-card").hidden = mode === "list";
+  for (const id of ["wk-share-btn", "wk-copy-btn", "wk-company-btn"]) {
+    const b = document.getElementById(id);
+    if (b) b.hidden = !mine;
+  }
+  document.getElementById("wk-shared-banner").hidden = mode !== "view";
+}
+
+async function refreshWkBadge() {
+  try {
+    const s = await api(`/api/weekly-reports/shared-unseen-count${wkQ()}`);
+    wkState.unseen = s?.count ?? 0;
+    window.__wkUnseen = wkState.unseen;
+    const badge = document.getElementById("wk-tab-badge");
+    if (badge) {
+      badge.hidden = !(wkState.unseen > 0);
+      badge.textContent = String(wkState.unseen);
+    }
+    if (typeof updateSpNavBadge === "function") updateSpNavBadge(window.__spBase ?? 0);
+    wkRenderScopeBar();
+  } catch {
+    // lỗi mạng tạm thời: giữ nguyên chấm cũ
+  }
+}
+
+async function loadWkShared() {
+  wkSetShareMode("list");
+  wkState.viewing = false;
+  const box = document.getElementById("wk-shared-list");
+  wkState.shared = (await api(`/api/weekly-reports/shared-with-me${wkQ()}`)) ?? [];
+  wkState.unseen = wkState.shared.filter((r) => r.is_new || r.update_count > 0).length;
+  window.__wkUnseen = wkState.unseen;
+  wkRenderScopeBar();
+  const list = wkState.shared;
+  box.innerHTML = `<h2 style="margin:0 0 12px">BC tuần được chia sẻ với tôi</h2>${
+    list.length
+      ? list
+          .map(
+            (r) => `<button type="button" class="pptx-shared-item" data-id="${r.report_id}">
+        <span class="pptx-shared-title"><b>Tuần ${r.week}/${r.year}</b> (${wkRangeText(r.year, r.week)}) · ${wkEsc(r.department_name ?? "")} ${r.is_new ? '<span class="pptx-pill warn">Mới</span>' : r.update_count ? '<span class="pptx-pill pink-pill">● có cập nhật mới</span>' : ""}</span>
+        <span class="muted">Chia sẻ bởi ${wkEsc(r.shared_by ?? "—")} · ${wkDt(r.shared_at)}</span></button>`,
+          )
+          .join("")
+      : '<p class="muted" style="padding:12px 0">Chưa có BC tuần nào được chia sẻ cho bạn.</p>'
+  }`;
+  box.querySelectorAll(".pptx-shared-item").forEach((b) => b.addEventListener("click", () => wkOpenShared(Number(b.dataset.id)).catch((err) => showToast(err.message))));
+  if (typeof updateSpNavBadge === "function") updateSpNavBadge(window.__spBase ?? 0);
+  const badge = document.getElementById("wk-tab-badge");
+  if (badge) {
+    badge.hidden = !(wkState.unseen > 0);
+    badge.textContent = String(wkState.unseen);
+  }
+}
+
+async function wkOpenShared(id) {
+  const data = await api(`/api/weekly-reports/shared/${id}${wkQ()}`);
+  wkState.data = data;
+  wkState.viewing = true;
+  wkSetShareMode("view");
+  renderWeekly();
+  wkStripEditUi(document.querySelector("#wk-doc .wk-paper"));
+  document.getElementById("wk-shared-banner").innerHTML = `<div class="pptx-alert info pptx-shared-banner"><span>BC tuần ${data.week.week}/${data.week.year} của <b>${wkEsc(data.department_name ?? "phòng ban khác")}</b>, được chia sẻ cho bạn: bạn xem và xuất PDF; không sửa được nội dung.</span><button type="button" class="small btn-edit" id="wk-back-shared">← Danh sách chia sẻ</button></div>`;
+  document.getElementById("wk-back-shared").addEventListener("click", () => loadWkShared().catch((err) => showToast(err.message)));
+  refreshWkBadge();
+}
+
+// ---- Hộp thoại Chia sẻ ----
+async function wkOpenShareDialog() {
+  if (state.currentDepartmentId == null) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  document.getElementById("wk-share-title").textContent = `Chia sẻ BC tuần ${wkState.week}/${wkState.year}`;
+  document.getElementById("wk-share-search").value = "";
+  document.getElementById("wk-share-results").innerHTML = '<span class="muted">Gõ tên hoặc tài khoản để tìm người cần chia sẻ.</span>';
+  const depts = (state.departments ?? []).filter((d) => d.id !== state.currentDepartmentId);
+  document.getElementById("wk-share-dept").innerHTML = '<option value="">— Chọn phòng ban —</option>' + depts.map((d) => `<option value="${d.id}">${wkEsc(d.name)}</option>`).join("");
+  document.getElementById("wk-share-dialog").showModal();
+  await wkRenderShareList();
+}
+async function wkRenderShareList() {
+  try {
+    const shares = await api(`/api/weekly-reports/shares?year=${wkState.year}&week=${wkState.week}${deptParam()}`);
+    const btn = document.getElementById("wk-share-btn");
+    if (btn) btn.innerHTML = `<svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Chia sẻ${shares.length ? ` (${shares.length})` : ""}`;
+    document.getElementById("wk-share-count").textContent = shares.length ? `(${shares.length})` : "";
+    document.getElementById("wk-share-list").innerHTML = shares.length
+      ? shares
+          .map((s) => {
+            const isDept = s.type === "department";
+            const name = isDept ? s.department_name ?? "" : s.user_name ?? "";
+            return `<div class="pptx-share-row">
+              <span class="pptx-share-avatar${isDept ? " is-dept" : ""}">${isDept ? '<svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>' : wkEsc((name.trim()[0] ?? "?").toUpperCase())}</span>
+              <span class="pptx-share-info"><b>${wkEsc(name)}</b><span class="pptx-pill ${isDept ? "info" : "muted-pill"}">${isDept ? "Cả phòng" : "Cá nhân"}</span><br/>
+                <span class="muted">${s.user_department ? wkEsc(s.user_department) + " · " : ""}${s.shared_by ? "Chia sẻ bởi " + wkEsc(s.shared_by) + " · " : ""}${wkDt(s.created_at)}</span></span>
+              <button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`;
+          })
+          .join("")
+      : '<p class="muted" style="margin:4px 0">Chưa chia sẻ cho ai.</p>';
+  } catch (e) {
+    showToast(e.message);
+  }
+}
+document.getElementById("wk-share-btn")?.addEventListener("click", wkOpenShareDialog);
+let wkShareTimer = null;
+document.getElementById("wk-share-search")?.addEventListener("input", (e) => {
+  clearTimeout(wkShareTimer);
+  wkShareTimer = setTimeout(async () => {
+    try {
+      const users = await api(`/api/report-share-users?q=${encodeURIComponent(e.target.value.trim())}`);
+      document.getElementById("wk-share-results").innerHTML = users.length
+        ? users.map((u) => `<button type="button" class="pptx-share-user" data-uid="${u.id}"><span class="pptx-share-avatar">${wkEsc(((u.name || u.username || "?").trim()[0] ?? "?").toUpperCase())}</span><span class="pptx-share-info"><b>${wkEsc(u.name || u.username)}</b><br/><span class="muted">${wkEsc(u.department_name ?? "Chưa gán phòng ban")}</span></span><span class="pptx-share-add">+ Chia sẻ</span></button>`).join("")
+        : '<span class="muted">Không tìm thấy người phù hợp.</span>';
+    } catch (err) {
+      showToast(err.message);
+    }
+  }, 300);
+});
+document.getElementById("wk-share-dialog")?.addEventListener("click", async (e) => {
+  const add = e.target.closest("[data-uid]");
+  const del = e.target.closest("[data-share-del]");
+  const base = { year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId };
+  try {
+    if (add) {
+      await api("/api/weekly-reports/shares", { method: "POST", body: JSON.stringify({ ...base, user_id: Number(add.dataset.uid) }) });
+      showToast("Đã chia sẻ.", "success");
+      await wkRenderShareList();
+    } else if (del) {
+      if (!(await confirmDialog("Thu hồi chia sẻ? Người này sẽ không xem được báo cáo nữa.", { title: "Thu hồi chia sẻ", okText: "Thu hồi" }))) return;
+      await api(`/api/weekly-reports/shares/${del.dataset.shareDel}`, { method: "DELETE" });
+      await wkRenderShareList();
+    } else if (e.target.id === "wk-share-dept-btn") {
+      const did = Number(document.getElementById("wk-share-dept").value);
+      if (!did) return showToast("Hãy chọn phòng ban.");
+      await api("/api/weekly-reports/shares", { method: "POST", body: JSON.stringify({ ...base, target_department_id: did }) });
+      showToast("Đã chia sẻ cho cả phòng.", "success");
+      await wkRenderShareList();
+    }
+  } catch (err) {
+    showToast(err.message);
+  }
+});

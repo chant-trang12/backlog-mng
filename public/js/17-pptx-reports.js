@@ -360,11 +360,14 @@ function renderPptxComments(f) {
 // Chấm đỏ ở menu trái: số góp ý CHƯA XỬ LÝ của phòng đang xem (cùng kiểu chấm đỏ của Yêu cầu tính năng).
 function updateSpNavBadge(count) {
   // Cùng 1 số ở menu trái và ở tab "Báo cáo PowerPoint" (để biết vào tab nào có góp ý mới).
+  window.__spBase = count;
+  // Menu trái = góp ý/chia sẻ PowerPoint + BC tuần được chia sẻ (window.__wkUnseen); tab Báo cáo PowerPoint chỉ phần PowerPoint.
   for (const id of ["sp-nav-badge", "sp-tab-badge"]) {
     const badge = document.getElementById(id);
     if (!badge) continue;
-    badge.hidden = !(count > 0);
-    badge.textContent = count > 99 ? "99+" : String(count);
+    const n = id === "sp-nav-badge" ? count + (window.__wkUnseen ?? 0) : count;
+    badge.hidden = !(n > 0);
+    badge.textContent = n > 99 ? "99+" : String(n);
   }
 }
 async function refreshSpNavBadge() {

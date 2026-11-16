@@ -2534,7 +2534,7 @@
             <span class="pill" data-tab="otsum">Tổng hợp làm thêm giờ</span>
             <span class="pill" data-tab="cbnv">KQ xếp loại CBNV</span>
             <span class="pill" data-tab="gnv">GNV</span>
-            <span class="pill" data-tab="wk">BC tuần</span>
+            <span class="pill" data-tab="wk">BC tuần<span id="wk-tab-badge" class="pill-badge" hidden title="BC tuần được chia sẻ cho bạn (mới/có cập nhật)">0</span></span>
             <span class="pill" data-tab="pptx">Báo cáo PowerPoint<span id="sp-tab-badge" class="pill-badge" hidden title="Góp ý chưa xử lý">0</span></span>
           </div>
           <div id="summary-plan-tab-overtime">
@@ -2609,7 +2609,9 @@
             </section>
           </div>
           <div id="summary-plan-tab-wk" hidden>
-            <section class="card wk-picker-card">
+            <div id="wk-scope-bar"></div>
+            <section class="card" id="wk-shared-list" hidden></section>
+            <section class="card wk-picker-card" id="wk-picker-card">
               <div class="row wk-picker" style="align-items:center;gap:8px;flex-wrap:wrap">
                 <label for="wk-year" style="margin:0">Năm</label>
                 <select id="wk-year"></select>
@@ -2623,10 +2625,12 @@
               </div>
               <div id="wk-range-info" class="wk-range-info"></div>
             </section>
-            <section class="card">
+            <section class="card" id="wk-doc-card">
+              <div id="wk-shared-banner" hidden></div>
               <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
                 <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">BC tuần</h2>
                 <div class="row" style="flex:0 0 auto">
+                  <button id="wk-share-btn" class="pptx-btn-share write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Chia sẻ</button>
                   <button id="wk-copy-btn" class="btn-view write-action" title="Lấy các dòng của tuần liền trước làm khung cho tuần này">Sao chép từ tuần trước</button>
                   <button id="wk-company-btn" class="btn-edit write-action">Sửa tiêu đề</button>
                   <button id="wk-export-btn" class="wk-pdf-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PDF</button>
@@ -2859,6 +2863,32 @@
           </div>
           </div>
         </div>
+
+        <!-- Dialog BC tuần: chia sẻ báo cáo (theo người hoặc cả phòng) -->
+        <dialog id="wk-share-dialog" class="pptx-share-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <div class="pptx-share-body">
+            <h2 id="wk-share-title" style="margin:0">Chia sẻ BC tuần</h2>
+            <div class="pptx-share-perm">
+              <span class="pptx-share-perm-ok">✓ Xem toàn bộ báo cáo</span>
+              <span class="pptx-share-perm-ok">✓ Xuất PDF</span>
+              <span class="pptx-share-perm-no">✕ Không sửa nội dung</span>
+            </div>
+            <section class="pptx-share-card">
+              <div class="pptx-share-card-title"><span>1</span> Chia sẻ cho từng người</div>
+              <input type="search" id="wk-share-search" placeholder="Tìm theo tên hoặc tài khoản…" />
+              <div id="wk-share-results" class="pptx-share-results"></div>
+            </section>
+            <section class="pptx-share-card">
+              <div class="pptx-share-card-title"><span>2</span> Hoặc chia sẻ cả phòng ban</div>
+              <div class="pptx-share-dept-row"><select id="wk-share-dept"></select><button type="button" class="primary" id="wk-share-dept-btn">Chia sẻ cả phòng</button></div>
+            </section>
+            <section class="pptx-share-card pptx-share-card-list">
+              <div class="pptx-share-card-title"><span>✓</span> Đã chia sẻ <em id="wk-share-count"></em></div>
+              <div id="wk-share-list"></div>
+            </section>
+          </div>
+        </dialog>
 
         <!-- Dialog BC tuần: thêm/sửa 1 dòng (các trường dựng theo mục A/B/C trong 19-weekly-report.js) -->
         <dialog id="wk-row-dialog">

@@ -261,6 +261,7 @@ async function checkAuth() {
         loadRoadmap(),
         refreshFeatureRequestNavBadge(),
         typeof refreshSpNavBadge === "function" ? refreshSpNavBadge() : null,
+        typeof refreshWkBadge === "function" ? refreshWkBadge() : null,
       ]),
     )
     .then(() => restoreAfterDeptSwitch()) // vừa đổi phòng ban (đã tải lại trang): mở lại đúng trang/tab đang đứng

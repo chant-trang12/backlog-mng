@@ -38,4 +38,29 @@ export async function migrateWeeklyReportTables(): Promise<void> {
       table.index(["report_id"]);
     });
   }
+  // Chia sẻ BC tuần: theo TỪNG NGƯỜI (user_id) hoặc CẢ PHÒNG (department_id); người nhận chỉ XEM + xuất PDF, không sửa.
+  // Không đặt FK tới users/departments (tránh vòng cascade MSSQL), giống report_shares của Báo cáo PowerPoint.
+  if (!(await db.schema.hasTable("weekly_report_shares"))) {
+    await db.schema.createTable("weekly_report_shares", (table) => {
+      table.increments("id").primary();
+      table.integer("report_id").notNullable().references("id").inTable("weekly_reports").onDelete("CASCADE");
+      table.string("share_type", 20).notNullable(); // user | department
+      table.integer("user_id");
+      table.integer("department_id");
+      table.string("shared_by", 255);
+      table.integer("shared_by_id");
+      table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+      table.index(["report_id"]);
+    });
+  }
+  // Lần cuối mỗi người mở 1 BC tuần được chia sẻ -> mốc để tính "mới" / "có cập nhật" (chấm đỏ thông báo).
+  if (!(await db.schema.hasTable("weekly_report_views"))) {
+    await db.schema.createTable("weekly_report_views", (table) => {
+      table.increments("id").primary();
+      table.integer("report_id").notNullable().references("id").inTable("weekly_reports").onDelete("CASCADE");
+      table.integer("user_id").notNullable();
+      table.dateTime("viewed_at").notNullable().defaultTo(db.fn.now());
+      table.unique(["report_id", "user_id"]);
+    });
+  }
 }

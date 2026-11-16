@@ -113,14 +113,19 @@ function normalizeRow(section: WeeklySection, input: Record<string, unknown>) {
   return out;
 }
 
-async function deptName(departmentId: number): Promise<string | null> {
+// Báo cáo có thay đổi nội dung -> cập nhật updated_at (để người được chia sẻ thấy "có cập nhật mới").
+async function touch(reportId: number) {
+  await db("weekly_reports").where({ id: reportId }).update({ updated_at: db.fn.now() });
+}
+
+export async function deptName(departmentId: number): Promise<string | null> {
   const d = (await db("departments").where({ id: departmentId }).select("name").first()) as { name: string } | undefined;
   return d?.name ?? null;
 }
-async function findReport(departmentId: number, year: number, week: number) {
+export async function findReport(departmentId: number, year: number, week: number) {
   return (await db("weekly_reports").where({ department_id: departmentId, year, week }).first()) as WeeklyReportRow | undefined;
 }
-async function getOrCreateReport(departmentId: number, year: number, week: number, by: string | null) {
+export async function getOrCreateReport(departmentId: number, year: number, week: number, by: string | null) {
   const hit = await findReport(departmentId, year, week);
   if (hit) return hit;
   const [row] = await db("weekly_reports").insert({ department_id: departmentId, year, week, created_by: by }).returning("*");
@@ -152,6 +157,7 @@ export async function createRow(departmentId: number, year: number, week: number
   const [row] = await db("weekly_report_rows")
     .insert({ report_id: report.id, section: sec, thu_tu: Number(max?.m ?? 0) + 1, ...fields })
     .returning("*");
+  await touch(report.id);
   return row as WeeklyRow;
 }
 
@@ -169,6 +175,7 @@ export async function updateRow(id: number, input: Record<string, unknown>, scop
   const fields = normalizeRow(hit.row.section, input);
   if (hit.row.section === "B2" || hit.row.section === "C") fields.chu_tri = await deptName(hit.report.department_id);
   const [row] = await db("weekly_report_rows").where({ id }).update({ ...fields, updated_at: db.fn.now() }).returning("*");
+  await touch(hit.report.id);
   return row as WeeklyRow;
 }
 
@@ -177,6 +184,7 @@ export async function deleteRow(id: number, scope: DataScope): Promise<boolean> 
   if (!hit) return false;
   assertDepartmentInScope(scope, hit.report.department_id);
   await db("weekly_report_rows").where({ id }).delete();
+  await touch(hit.report.id);
   return true;
 }
 
@@ -195,6 +203,7 @@ export async function moveRow(id: number, direction: "up" | "down", scope: DataS
     [order[i], order[j]] = [order[j], order[i]];
     for (let k = 0; k < order.length; k++) await trx("weekly_report_rows").where({ id: order[k] }).update({ thu_tu: k + 1 });
   });
+  await touch(hit.report.id);
   return true;
 }
 
@@ -240,5 +249,6 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
       trang_thai: r.section === "A" ? null : "Đang thực hiện",
     });
   }
+  await touch(report.id);
   return { copied: prevRows.length };
 }
