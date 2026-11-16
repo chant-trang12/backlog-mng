@@ -560,7 +560,7 @@ async function wkRenderShareList() {
               <span class="pptx-share-avatar${isDept ? " is-dept" : ""}">${isDept ? '<svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>' : wkEsc((name.trim()[0] ?? "?").toUpperCase())}</span>
               <span class="pptx-share-info"><b>${wkEsc(name)}</b><span class="pptx-pill ${isDept ? "info" : "muted-pill"}">${isDept ? "Cả phòng" : "Cá nhân"}</span><br/>
                 <span class="muted">${s.user_department ? wkEsc(s.user_department) + " · " : ""}${s.shared_by ? "Chia sẻ bởi " + wkEsc(s.shared_by) + " · " : ""}${wkDt(s.created_at)}</span></span>
-              <button type="button" class="small btn-delete" data-share-del="${s.id}">Thu hồi</button></div>`;
+              <button type="button" class="small btn-revoke write-action" data-share-del="${s.id}">Thu hồi</button></div>`;
           })
           .join("")
       : '<p class="muted" style="margin:4px 0">Chưa chia sẻ cho ai.</p>';

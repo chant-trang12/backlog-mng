@@ -44,8 +44,13 @@ const EDITABLE: [string, string, string][] = [
 ];
 const DELETES: [string, string][] = [
   ["DELETE", "/weekly-reports/rows/5"],
-  ["DELETE", "/weekly-reports/shares/3"],
   ["DELETE", "/reports/3"],
+  ["DELETE", "/reports/3/images/img1"],
+  ["DELETE", "/report-comments/3"],
+];
+// Thu hồi chia sẻ: ngoại lệ — editor/bgd được (cần quyền "Sửa").
+const REVOKES: [string, string][] = [
+  ["DELETE", "/weekly-reports/shares/3"],
   ["DELETE", "/report-shares/3"],
 ];
 
@@ -57,13 +62,22 @@ describe("Quyền BC tuần + Báo cáo PowerPoint", () => {
         expect(r.nextCalled, `${role} ${label} (${method} ${path})`).toBe(true);
       }
     });
-    it(`${role}: xóa / thu hồi vẫn bị chặn (chỉ admin)`, async () => {
+    it(`${role}: thu hồi chia sẻ được`, async () => {
+      for (const [method, path] of REVOKES) {
+        const r = await call(role, method, path);
+        expect(r.nextCalled, `${role} ${method} ${path}`).toBe(true);
+      }
+    });
+    it(`${role}: xóa dữ liệu khác vẫn bị chặn (chỉ admin)`, async () => {
       for (const [method, path] of DELETES) {
         const r = await call(role, method, path);
         expect(r.status, `${role} ${method} ${path}`).toBe(403);
       }
     });
   }
+  it("viewer: không thu hồi chia sẻ được", async () => {
+    for (const [method, path] of REVOKES) expect((await call("viewer", method, path)).status).toBe(403);
+  });
   it("viewer: không thêm / sửa / chia sẻ được", async () => {
     for (const [label, method, path] of EDITABLE) {
       const r = await call("viewer", method, path);
@@ -73,7 +87,7 @@ describe("Quyền BC tuần + Báo cáo PowerPoint", () => {
   it("admin / subadmin: làm được tất cả, kể cả xóa", async () => {
     for (const role of ["admin", "subadmin"] as const) {
       for (const [, method, path] of EDITABLE) expect((await call(role, method, path)).nextCalled).toBe(true);
-      for (const [method, path] of DELETES) expect((await call(role, method, path)).nextCalled).toBe(true);
+      for (const [method, path] of [...DELETES, ...REVOKES]) expect((await call(role, method, path)).nextCalled).toBe(true);
     }
   });
 });

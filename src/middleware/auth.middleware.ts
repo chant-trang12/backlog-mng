@@ -132,6 +132,10 @@ const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // 1 hành động "chấm điểm" theo nghĩa rộng (xem task.routes.ts).
 const TASK_GRADE_PATH = /^\/tasks\/\d+\/(grade|grade-deductions)$/;
 
+// Ngoại lệ có chủ đích của Quy tắc 9.1: THU HỒI CHIA SẺ báo cáo (BC tuần: DELETE /weekly-reports/shares/:id; Báo cáo PowerPoint: DELETE /report-shares/:id)
+// — editor/bgd có quyền "Sửa" ở chức năng Kế hoạch tổng hợp được thu hồi (chia sẻ và thu hồi đi cặp với nhau). Xóa dữ liệu khác vẫn chỉ admin.
+const SHARE_REVOKE_PATH = /^\/(weekly-reports\/shares|report-shares)\/\d+$/;
+
 const ROLE_LABEL: Record<string, string> = { editor: "editor", bgd: "BGĐ", viewer: "viewer" };
 
 /**
@@ -184,6 +188,15 @@ export async function requireWrite(req: Request, res: Response, next: NextFuncti
   }
 
   const { module: moduleLabel, action } = resolveModuleAndAction(req);
+
+  if (req.method === "DELETE" && SHARE_REVOKE_PATH.test(req.path)) {
+    const perm = await getRolePermission("ke_hoach_tong_hop", role);
+    if (!perm?.can_edit) {
+      res.status(403).json({ error: `Tài khoản ${ROLE_LABEL[role] ?? role} không có quyền "Sửa" ở chức năng này — liên hệ Admin (Cấu hình → Phân quyền).` });
+      return;
+    }
+    return next();
+  }
 
   if (req.method === "DELETE" || action === "xoa") {
     res.status(403).json({ error: `Tài khoản ${ROLE_LABEL[role] ?? role} không có quyền xóa dữ liệu — liên hệ Admin.` });

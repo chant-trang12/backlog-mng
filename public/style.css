@@ -947,6 +947,9 @@ button.btn-muted-disabled,
 button.btn-muted-disabled:hover { background: var(--border); border-color: var(--border); color: var(--muted); cursor: not-allowed; }
 button.btn-delete { background: var(--delete-light); border-color: var(--red-300); color: var(--delete); }
 button.btn-delete:hover { background: var(--delete-light-hover); }
+/* "Thu hồi" chia sẻ báo cáo: cùng màu nút xóa nhưng editor/bgd vẫn thấy (ngoại lệ Quy tắc 9.1 — xem SHARE_REVOKE_PATH, auth.middleware.ts). */
+button.btn-revoke { background: var(--delete-light); border-color: var(--red-300); color: var(--delete); }
+button.btn-revoke:hover { background: var(--delete-light-hover); }
 /* Cùng màu đỏ nhạt với .btn-delete nhưng KHÔNG mang ý nghĩa "xóa dữ liệu"
    (Quy tắc 9.1 chỉ admin được xóa) — dùng cho nút "Xin Hủy nhiệm vụ" (popup
    Cập nhật tiến độ), vốn chỉ là đổi Trạng thái sang "Hủy" (editor vẫn sửa
