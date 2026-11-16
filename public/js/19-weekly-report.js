@@ -248,11 +248,25 @@ function openWkRowDialog(section, row) {
         if (f.type === "area") input = `<textarea id="${id}" rows="3">${wkEsc(v)}</textarea>`;
         else if (f.type === "status")
           input = `<select id="${id}"><option value="">—</option>${WK_STATUSES.map((s) => `<option value="${wkEsc(s)}"${s === v ? " selected" : ""}>${wkEsc(s)}</option>`).join("")}</select>`;
-        else input = `<input type="text" id="${id}" value="${wkEsc(v)}"${f.list ? ' list="wk-mang-list"' : ""} />`;
+        else if (f.list) {
+          // Mảng công việc: chọn từ danh sách mảng đã có (dropdown chung của hệ thống) hoặc "+ Mảng mới…" rồi gõ tên.
+          // Thêm dòng mới: mặc định chọn mảng cuối cùng đang có (thường là thêm dòng cho cùng mảng); chưa có mảng nào -> nhập mảng mới.
+          const cur = row ? String(v ?? "") : mangs[mangs.length - 1] ?? "";
+          const known = !!cur && mangs.includes(cur);
+          input = `<div class="wk-mang-pick"><select id="${id}">${mangs.map((m) => `<option value="${wkEsc(m)}"${known && m === cur ? " selected" : ""}>${wkEsc(m)}</option>`).join("")}<option value="__new__"${!known ? " selected" : ""}>+ Mảng mới…</option></select>
+            <input type="text" id="${id}-new" placeholder="Nhập tên mảng công việc mới" value="${known ? "" : wkEsc(cur)}"${known ? " hidden" : ""} /></div>`;
+        } else input = `<input type="text" id="${id}" value="${wkEsc(v)}" />`;
         return `<div class="field-row"><label for="${id}">${f.label}</label>${input}</div>`;
       })
-      .join("") + `<datalist id="wk-mang-list">${mangs.map((m) => `<option value="${wkEsc(m)}"></option>`).join("")}</datalist>` +
+      .join("") +
     '<p class="wk-hint">Mỗi dòng 1 ý; dòng bắt đầu bằng "- " sẽ hiện thành gạch đầu dòng.</p>';
+  const mangSel = document.getElementById("wk-f-mang_cong_viec");
+  mangSel?.addEventListener("change", () => {
+    const isNew = mangSel.value === "__new__";
+    const inp = document.getElementById("wk-f-mang_cong_viec-new");
+    inp.hidden = !isNew;
+    if (isNew) inp.focus();
+  });
   document.getElementById("wk-row-dialog").showModal();
 }
 document.getElementById("wk-doc")?.addEventListener("click", async (e) => {
@@ -288,7 +302,10 @@ document.getElementById("wk-row-form")?.addEventListener("submit", async (e) => 
   e.preventDefault();
   const { section, id } = wkState.editing;
   const body = {};
-  for (const f of wkFieldsOf(section)) body[f.key] = document.getElementById(`wk-f-${f.key}`).value.trim();
+  for (const f of wkFieldsOf(section)) {
+    const el = document.getElementById(`wk-f-${f.key}`);
+    body[f.key] = f.list && el.value === "__new__" ? document.getElementById(`wk-f-${f.key}-new`).value.trim() : el.value.trim();
+  }
   try {
     if (id) await api(`/api/weekly-reports/rows/${id}`, { method: "PUT", body: JSON.stringify(body) });
     else await api("/api/weekly-reports/rows", { method: "POST", body: JSON.stringify({ ...body, section, year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId }) });
