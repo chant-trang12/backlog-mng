@@ -405,8 +405,19 @@ function wkPrintHtml() {
   paper.querySelectorAll("table.wk-fixed").forEach((t) => {
     const cols = [...t.querySelectorAll("colgroup col")];
     const total = cols.reduce((s, c) => s + parseFloat(c.style.width), 0);
-    cols.forEach((c) => (c.style.width = `${((parseFloat(c.style.width) / total) * 100).toFixed(2)}%`));
+    let pct = cols.map((c) => (parseFloat(c.style.width) / total) * 100);
+    // Cột hẹp (Chủ trì, Trạng thái) tối thiểu 8,5% để chữ không bị xuống dòng từng chữ trên khổ giấy; các cột còn lại co lại tương ứng.
+    const minOf = (i) => (i === 0 ? 4.5 : MIN); // cột STT tối thiểu 4,5%
+    const MIN = 8.5;
+    const fixedIdx = pct.map((p, i) => (p < minOf(i) ? i : -1)).filter((i) => i >= 0);
+    if (fixedIdx.length) {
+      const extra = fixedIdx.reduce((s, i) => s + (minOf(i) - pct[i]), 0);
+      const flexTotal = pct.reduce((s, p, i) => (fixedIdx.includes(i) ? s : s + p), 0);
+      pct = pct.map((p, i) => (fixedIdx.includes(i) ? minOf(i) : p * (1 - extra / flexTotal)));
+    }
+    cols.forEach((c, i) => (c.style.width = `${pct[i].toFixed(2)}%`));
     t.style.width = "100%";
+    t.style.minWidth = "0"; // bỏ min-width của màn hình (bảng B/C rộng hơn khổ giấy sẽ bị cắt cột)
   });
   const title = `BC tuan ${wkState.data.week.week}-${wkState.data.week.year}`;
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${title}</title><style>${WK_PRINT_CSS}</style></head><body>${paper.outerHTML}</body></html>`;
