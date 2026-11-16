@@ -192,13 +192,13 @@ function renderWeekly() {
       <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:14%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-b" style="min-width:1560px"><colgroup><col style="width:3%"><col style="width:9%"><col style="width:6.5%"><col style="width:24%"><col style="width:13%"><col style="width:7%"><col style="width:8%"><col style="width:20%"><col style="width:6.5%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Nhiệm vụ</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
         ${groupRow("I. NHIỆM VỤ PHỐI HỢP", "B1")}${bcRows(b1, true)}
         ${groupRow("II. NHIỆM VỤ TRỰC TIẾP", "B2")}${bcRows(b2, true)}
       </tbody></table></div>
 
       <div class="wk-sec-head"><h4>C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN</h4>${wkAddBtn("C")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Văn bản</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-c" style="min-width:1480px"><colgroup><col style="width:3%"><col style="width:14%"><col style="width:7%"><col style="width:26%"><col style="width:10%"><col style="width:11%"><col style="width:22%"><col style="width:7%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Văn bản</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
         cRows.length ? bcRows(cRows, false) : '<tr><td colspan="9" class="muted wk-empty">Chưa có dòng nào.</td></tr>'
       }</tbody></table></div>
       <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)</i></p>
@@ -368,7 +368,7 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-sec-head { margin: 16px 0 6px; }
 .wk-sec-head h4 { margin: 0; color: #000; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
-.wk-table.wk-a { table-layout: fixed; }
+.wk-table.wk-a, .wk-table.wk-fixed { table-layout: fixed; }
 .wk-table th { background: #ee0033; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
 .wk-table td { border: 1px solid #7f7f7f; vertical-align: middle; padding: 3px 5px; }
 .wk-table tr { page-break-inside: avoid; }
@@ -388,6 +388,13 @@ function wkPrintHtml() {
   if (!paper) return null;
   // Bỏ cột thao tác + nút; chỉnh lại colspan của dòng nhóm/dòng trống cho khớp số cột còn lại.
   paper.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button, .wk-col-actions").forEach((n) => n.remove());
+  // Bản in: bảng B/C đang đặt độ rộng theo px (có thể rộng hơn trang) -> quy về % theo đúng tỉ lệ các cột còn lại, vừa khổ A4.
+  paper.querySelectorAll("table.wk-fixed").forEach((t) => {
+    const cols = [...t.querySelectorAll("colgroup col")];
+    const total = cols.reduce((s, c) => s + parseFloat(c.style.width), 0);
+    cols.forEach((c) => (c.style.width = `${((parseFloat(c.style.width) / total) * 100).toFixed(2)}%`));
+    t.style.width = "100%";
+  });
   paper.querySelectorAll("tr.wk-group td[colspan]").forEach((td) => (td.colSpan = 8));
   paper.querySelectorAll("td.wk-empty").forEach((td) => (td.colSpan = Math.max(1, td.colSpan - 1)));
   paper.querySelectorAll("tr.wk-group td div").forEach((d) => (d.style.display = "block"));
