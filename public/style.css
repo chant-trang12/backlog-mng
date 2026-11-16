@@ -4071,7 +4071,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .wk-title { text-align: center; color: #c00032; margin: 28px 0 10px; font-size: 1.25rem; line-height: 1.5; }
 .wk-sub { text-align: center; margin: 0 0 28px; line-height: 1.6; }
 .wk-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 8px; }
-.wk-sec-head h4 { margin: 0; color: #c00032; }
+.wk-sec-head h4 { margin: 0; color: #000; }
 .wk-wrap { max-height: none; margin-top: 0; }
 .wk-table { width: 100%; border-collapse: collapse; }
 .wk-table th { background: var(--header-bg); color: #fff; text-align: center; vertical-align: middle; position: static; border: 1px solid var(--border); }

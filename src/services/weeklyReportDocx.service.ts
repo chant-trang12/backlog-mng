@@ -95,7 +95,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
 
   // ---- A
   const aW = [700, 1700, 2400, 3900, 3500, 3198];
-  parts.push(para(run(`A. NHIỆM VỤ CỦA ${phong.replace(/^PHÒNG\s+/, "P.")} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})`, { bold: true, color: RED, size: 26 }), { before: 120, after: 120 }));
+  parts.push(para(run(`A. NHIỆM VỤ CỦA ${phong.replace(/^PHÒNG\s+/, "P.")} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})`, { bold: true, color: "000000", size: 26 }), { before: 120, after: 120 }));
   const aRows = byS("A");
   let aXml = row([hdrCell(aW[0], "STT"), hdrCell(aW[1], "Mảng công việc"), hdrCell(aW[2], "Mục tiêu"), hdrCell(aW[3], "Nội dung công việc"), hdrCell(aW[4], `Kết quả thực hiện tuần ${N}`), hdrCell(aW[5], `Kế hoạch tuần ${N1}`)], true);
   let stt = 0;
@@ -116,7 +116,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
 
   // ---- B
   const bW = [600, 2600, 1300, 2400, 1500, 1600, 1900, 2000, 1498];
-  parts.push(para(run("B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN", { bold: true, color: RED, size: 26 }), { before: 360, after: 120 }));
+  parts.push(para(run("B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN", { bold: true, color: "000000", size: 26 }), { before: 360, after: 120 }));
   const statusCell = (w: number, v: string | null) => body(w, v, { align: "center", bold: v === "Đang thực hiện" || v === "Hoàn thành", fill: v ? STATUS_FILL[v] : undefined, valign: "center" });
   let bXml = row([hdrCell(bW[0], "STT"), hdrCell(bW[1], "Nhiệm vụ"), hdrCell(bW[2], "Chủ trì"), hdrCell(bW[3], `Tiến độ thực hiện tuần ${N}`), hdrCell(bW[4], "Nội dung"), hdrCell(bW[5], "Khó khăn"), hdrCell(bW[6], "Đề xuất"), hdrCell(bW[7], `Kế hoạch tuần ${N1}`), hdrCell(bW[8], "Trạng thái")], true);
   const groupRow = (label: string, widths: number[]) =>
@@ -140,7 +140,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
 
   // ---- C
   const cW = [600, 3000, 1500, 2700, 1800, 2000, 2400, 1398];
-  parts.push(para(run("C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN", { bold: true, color: RED, size: 26 }), { before: 360, after: 120 }));
+  parts.push(para(run("C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN", { bold: true, color: "000000", size: 26 }), { before: 360, after: 120 }));
   let cXml = row([hdrCell(cW[0], "STT"), hdrCell(cW[1], "Văn bản"), hdrCell(cW[2], "Chủ trì"), hdrCell(cW[3], `Tiến độ thực hiện tuần ${N}`), hdrCell(cW[4], "Khó khăn"), hdrCell(cW[5], "Đề xuất"), hdrCell(cW[6], `Kế hoạch tuần ${N1}`), hdrCell(cW[7], "Trạng thái")], true);
   cXml += bodyRowsBC(byS("C"), cW, false);
   parts.push(table(cW, cXml));

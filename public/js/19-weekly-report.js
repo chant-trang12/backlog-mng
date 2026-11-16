@@ -340,7 +340,7 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-title { text-align: center; color: #c00032; margin: 22px 0 8px; font-size: 16pt; line-height: 1.4; }
 .wk-sub { text-align: center; margin: 0 0 22px; line-height: 1.5; }
 .wk-sec-head { margin: 16px 0 6px; }
-.wk-sec-head h4 { margin: 0; color: #c00032; font-size: 12.5pt; }
+.wk-sec-head h4 { margin: 0; color: #000; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
 .wk-table th { background: #ee0033; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
 .wk-table td { border: 1px solid #7f7f7f; vertical-align: top; padding: 3px 5px; }
