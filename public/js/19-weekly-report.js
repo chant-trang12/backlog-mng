@@ -79,17 +79,32 @@ function wkText(v) {
 }
 
 // ---- Chọn tuần ----
+function wkCurrentWeek() {
+  return wkIsoWeekOf(new Date());
+}
 function wkFillPickers() {
   const yearSel = document.getElementById("wk-year");
   const weekSel = document.getElementById("wk-week");
   if (!yearSel || !weekSel) return;
+  const now = wkCurrentWeek();
   const cur = new Date().getFullYear();
   yearSel.innerHTML = [cur - 2, cur - 1, cur, cur + 1].map((y) => `<option value="${y}">${y}</option>`).join("");
   yearSel.value = String(wkState.year);
   const n = wkWeeksInYear(wkState.year);
-  weekSel.innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}">Tuần ${i + 1} (${wkRangeText(wkState.year, i + 1)})</option>`).join("");
+  weekSel.innerHTML = Array.from({ length: n }, (_, i) => {
+    const w = i + 1;
+    const mark = now.year === wkState.year && now.week === w ? "  ● tuần này" : "";
+    return `<option value="${w}">Tuần ${w} · ${wkRangeText(wkState.year, w)}${mark}</option>`;
+  }).join("");
   weekSel.value = String(Math.min(wkState.week, n));
-  document.getElementById("wk-range").textContent = `Từ ${wkRangeText(wkState.year, wkState.week)}`;
+  // Dòng tóm tắt: tuần báo cáo + tuần kế hoạch + nhãn vị trí so với tuần hiện tại.
+  const mon = wkMonday(wkState.year, wkState.week);
+  const nxt = new Date(mon);
+  nxt.setUTCDate(mon.getUTCDate() + 7);
+  const nw = wkIsoWeekOf(new Date(nxt.getUTCFullYear(), nxt.getUTCMonth(), nxt.getUTCDate()));
+  const diff = (wkState.year - now.year) * 53 + (wkState.week - now.week);
+  const rel = wkState.year === now.year && wkState.week === now.week ? ["Tuần hiện tại", "wk-chip-now"] : wkState.year === now.year && wkState.week === now.week - 1 ? ["Tuần vừa qua", "wk-chip-prev"] : diff > 0 ? ["Tuần tương lai", "wk-chip-future"] : ["Tuần đã qua", "wk-chip-past"];
+  document.getElementById("wk-range-info").innerHTML = `<span class="wk-chip ${rel[1]}">${rel[0]}</span> Báo cáo kết quả <b>tuần ${wkState.week}</b> (${wkRangeText(wkState.year, wkState.week)}) · Kế hoạch <b>tuần ${nw.week}</b> (${wkRangeText(nw.year, nw.week)})`;
 }
 
 async function loadWeekly() {
@@ -210,6 +225,12 @@ function wkStep(delta) {
   loadWeekly().catch((err) => showToast(err.message));
 }
 document.getElementById("wk-prev")?.addEventListener("click", () => wkStep(-1));
+document.getElementById("wk-today")?.addEventListener("click", () => {
+  const w = wkCurrentWeek();
+  wkState.year = w.year;
+  wkState.week = w.week;
+  loadWeekly().catch((err) => showToast(err.message));
+});
 document.getElementById("wk-next")?.addEventListener("click", () => wkStep(1));
 
 // ---- Thêm / sửa dòng ----

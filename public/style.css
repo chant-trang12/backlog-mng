@@ -4056,6 +4056,13 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 #otsum-unit-table td { text-align: center; }
 
 /* Tab "BC tuần": bản xem trước giống mẫu Báo cáo giao ban tuần (tiêu đề bảng xanh đen, dòng nhóm hồng, trạng thái tô màu). */
+#wk-week { min-width: 300px; }
+.wk-range-info { margin: 10px 0 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--stone-600); }
+.wk-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.wk-chip-now { background: #fcd9db; color: var(--red-800); }
+.wk-chip-prev { background: var(--sky-100); color: var(--sky-800); }
+.wk-chip-past { background: var(--stone-100); color: var(--stone-600); }
+.wk-chip-future { background: var(--amber-100); color: var(--amber-800); }
 .wk-paper { margin-top: 14px; }
 .wk-head { display: flex; justify-content: space-between; gap: 24px; text-align: center; margin-bottom: 18px; }
 .wk-head-col { flex: 1; }
