@@ -112,10 +112,8 @@ async function loadWeekly() {
   if (wkState.scope === "shared") return loadWkShared();
   wkSetShareMode(false);
   if (wkState.year == null) {
-    // Mặc định: tuần liền trước (báo cáo tổng kết tuần vừa qua).
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    const w = wkIsoWeekOf(d);
+    // Mặc định: tuần hiện tại.
+    const w = wkCurrentWeek();
     wkState.year = w.year;
     wkState.week = w.week;
   }
