@@ -122,7 +122,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
     w[w.length - 1] += total - w.reduce((a, b) => a + b, 0);
     return w;
   };
-  const bW = scaleTo([3, 9, 6.5, 24, 13, 7, 8, 20, 6.5]);
+  const bW = scaleTo([3, 9, 6.5, 22, 12, 7, 17, 17, 6.5]);
   parts.push(para(run("B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN", { bold: true, color: "000000", size: 26 }), { before: 360, after: 120 }));
   const statusCell = (w: number, v: string | null) => body(w, v, { align: "center", bold: v === "Đang thực hiện" || v === "Hoàn thành", fill: v ? STATUS_FILL[v] : undefined, valign: "center" });
   let bXml = row([hdrCell(bW[0], "STT"), hdrCell(bW[1], "Nhiệm vụ"), hdrCell(bW[2], "Chủ trì"), hdrCell(bW[3], `Tiến độ thực hiện tuần ${N}`), hdrCell(bW[4], "Nội dung"), hdrCell(bW[5], "Khó khăn"), hdrCell(bW[6], "Đề xuất"), hdrCell(bW[7], `Kế hoạch tuần ${N1}`), hdrCell(bW[8], "Trạng thái")], true);
@@ -146,7 +146,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
   parts.push(table(bW, bXml));
 
   // ---- C
-  const cW = scaleTo([3, 14, 7, 26, 10, 11, 22, 7]);
+  const cW = scaleTo([3, 13, 7, 22.5, 10, 19, 19, 6.5]);
   parts.push(para(run("C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN", { bold: true, color: "000000", size: 26 }), { before: 360, after: 120 }));
   let cXml = row([hdrCell(cW[0], "STT"), hdrCell(cW[1], "Văn bản"), hdrCell(cW[2], "Chủ trì"), hdrCell(cW[3], `Tiến độ thực hiện tuần ${N}`), hdrCell(cW[4], "Khó khăn"), hdrCell(cW[5], "Đề xuất"), hdrCell(cW[6], `Kế hoạch tuần ${N1}`), hdrCell(cW[7], "Trạng thái")], true);
   cXml += bodyRowsBC(byS("C"), cW, false);
