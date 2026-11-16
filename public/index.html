@@ -2534,6 +2534,7 @@
             <span class="pill" data-tab="otsum">Tổng hợp làm thêm giờ</span>
             <span class="pill" data-tab="cbnv">KQ xếp loại CBNV</span>
             <span class="pill" data-tab="gnv">GNV</span>
+            <span class="pill" data-tab="wk">BC tuần</span>
             <span class="pill" data-tab="pptx">Báo cáo PowerPoint<span id="sp-tab-badge" class="pill-badge" hidden title="Góp ý chưa xử lý">0</span></span>
           </div>
           <div id="summary-plan-tab-overtime">
@@ -2605,6 +2606,28 @@
                   <button type="button" id="ot-page-next" class="small">Sau ›</button>
                 </div>
               </div>
+            </section>
+          </div>
+          <div id="summary-plan-tab-wk" hidden>
+            <section class="card">
+              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">BC tuần</h2>
+                <div class="row" style="flex:0 0 auto">
+                  <button id="wk-copy-btn" class="btn-edit write-action" title="Lấy các dòng của tuần liền trước làm khung cho tuần này">Sao chép từ tuần trước</button>
+                  <button id="wk-company-btn" class="btn-edit write-action">Sửa tiêu đề</button>
+                  <button id="wk-export-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Word</button>
+                </div>
+              </div>
+              <div class="row wk-picker" style="align-items:center;gap:8px;flex-wrap:wrap">
+                <label for="wk-year" style="margin:0">Năm</label>
+                <select id="wk-year"></select>
+                <label for="wk-week" style="margin:0">Tuần</label>
+                <select id="wk-week"></select>
+                <button type="button" id="wk-prev" class="small" title="Tuần trước">‹</button>
+                <button type="button" id="wk-next" class="small" title="Tuần sau">›</button>
+                <span id="wk-range" class="muted"></span>
+              </div>
+              <div id="wk-doc" class="wk-doc"></div>
             </section>
           </div>
           <div id="summary-plan-tab-otsum" hidden>
@@ -2831,6 +2854,31 @@
           </div>
           </div>
         </div>
+
+        <!-- Dialog BC tuần: thêm/sửa 1 dòng (các trường dựng theo mục A/B/C trong 19-weekly-report.js) -->
+        <dialog id="wk-row-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="wk-row-form" method="dialog">
+            <h2 id="wk-row-title">Thêm dòng</h2>
+            <div id="wk-row-fields"></div>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="wk-row-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
+        <dialog id="wk-company-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="wk-company-form" method="dialog">
+            <h2>Sửa tiêu đề báo cáo</h2>
+            <div class="field-row"><label for="wk-company-name">Tên công ty (dòng đầu)</label><input type="text" id="wk-company-name" /></div>
+            <p class="muted" style="margin:6px 0 0;font-size:.82rem">Tên phòng ban lấy theo phòng ban đang chọn. Áp dụng cho tuần đang xem.</p>
+            <div class="row" style="justify-content:flex-end;margin-top:12px">
+              <button type="button" id="wk-company-cancel-btn">Hủy</button>
+              <button type="submit" class="primary">Lưu</button>
+            </div>
+          </form>
+        </dialog>
 
         <!-- Dialog Tổng hợp làm thêm giờ: thêm/sửa -->
         <dialog id="otsum-dialog">
@@ -4651,6 +4699,7 @@
   <script src="js/16-overtime.js"></script>
   <script src="js/17-pptx-reports.js"></script>
   <script src="js/18-overtime-summary.js"></script>
+  <script src="js/19-weekly-report.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

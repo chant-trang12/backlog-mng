@@ -4054,3 +4054,34 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 
 /* Bảng Tổng hợp đơn vị: nội dung các ô căn giữa. */
 #otsum-unit-table td { text-align: center; }
+
+/* Tab "BC tuần": bản xem trước giống mẫu Báo cáo giao ban tuần (tiêu đề bảng xanh đen, dòng nhóm hồng, trạng thái tô màu). */
+.wk-paper { margin-top: 14px; }
+.wk-head { display: flex; justify-content: space-between; gap: 24px; text-align: center; margin-bottom: 18px; }
+.wk-head-col { flex: 1; }
+.wk-title { text-align: center; color: #c00032; margin: 18px 0 4px; font-size: 1.25rem; }
+.wk-sub { text-align: center; margin: 0 0 18px; }
+.wk-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 8px; }
+.wk-sec-head h4 { margin: 0; color: #c00032; }
+.wk-wrap { max-height: none; margin-top: 0; }
+.wk-table { width: 100%; border-collapse: collapse; }
+.wk-table th { background: #1f2a44; color: #fff; text-align: center; vertical-align: middle; position: static; border: 1px solid #7f7f7f; }
+.wk-table td { border: 1px solid #c9c9c9; vertical-align: top; }
+.wk-table td.wk-center { text-align: center; vertical-align: middle; }
+.wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
+.wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
+.wk-table td.wk-empty { text-align: center; padding: 14px; }
+.wk-table td.wk-actions { vertical-align: middle; white-space: nowrap; }
+.wk-table th.wk-actions-h { width: 1%; background: transparent; border: 0; }
+.wk-li { padding-left: 10px; text-indent: -10px; }
+.wk-st-done { background: #c6e0b4; font-weight: 700; }
+.wk-st-doing { background: #ebefa9; font-weight: 700; }
+.wk-st-stuck { background: #f8cbad; }
+.wk-st-none { background: #e7e6e6; }
+.wk-note { margin: 14px 0 0; }
+.wk-sign { text-align: right; margin: 26px 0 0; }
+#wk-row-dialog .field-row, #wk-company-dialog .field-row { display: grid; grid-template-columns: 190px 1fr; align-items: start; }
+#wk-row-dialog .field-row > label, #wk-company-dialog .field-row > label { margin: 0; padding-top: 6px; }
+#wk-row-dialog .field-row > input, #wk-row-dialog .field-row > select, #wk-row-dialog .field-row > textarea, #wk-company-dialog input { width: 100%; box-sizing: border-box; }
+#wk-row-dialog { min-width: min(680px, 92vw); }
+.wk-table td.wk-actions .actions-cell { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; }

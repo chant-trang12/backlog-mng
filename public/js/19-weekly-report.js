@@ -1,0 +1,315 @@
+// Tab "BC tuần" (Kế hoạch tổng hợp): Báo cáo giao ban tuần theo phòng ban — chọn Năm + Tuần (ISO), nhập 3 mục A/B/C,
+// xem trước giống mẫu Word, xuất .docx. Dữ liệu theo (phòng ban, năm, tuần), KHÔNG phụ thuộc "Tháng theo dõi".
+
+const WK_STATUSES = ["Hoàn thành", "Đang thực hiện", "Vướng mắc / cần gia hạn", "Chưa cập nhật"];
+const WK_STATUS_CLASS = { "Hoàn thành": "wk-st-done", "Đang thực hiện": "wk-st-doing", "Vướng mắc / cần gia hạn": "wk-st-stuck", "Chưa cập nhật": "wk-st-none" };
+
+// Trường nhập theo mục (key = cột weekly_report_rows). type: text | area | status.
+const WK_FIELDS = {
+  A: [
+    { key: "mang_cong_viec", label: "Mảng công việc", type: "text", list: true },
+    { key: "muc_tieu", label: "Mục tiêu", type: "area" },
+    { key: "noi_dung", label: "Nội dung công việc", type: "area" },
+    { key: "tien_do", label: "Kết quả thực hiện tuần", type: "area" },
+    { key: "ke_hoach", label: "Kế hoạch tuần sau", type: "area" },
+  ],
+  B: [
+    { key: "ten", label: "Nhiệm vụ", type: "area" },
+    { key: "chu_tri", label: "Chủ trì", type: "text" },
+    { key: "tien_do", label: "Tiến độ thực hiện tuần", type: "area" },
+    { key: "noi_dung", label: "Nội dung", type: "area" },
+    { key: "kho_khan", label: "Khó khăn", type: "area" },
+    { key: "de_xuat", label: "Đề xuất", type: "area" },
+    { key: "ke_hoach", label: "Kế hoạch tuần sau", type: "area" },
+    { key: "trang_thai", label: "Trạng thái", type: "status" },
+  ],
+  C: [
+    { key: "ten", label: "Văn bản", type: "area" },
+    { key: "chu_tri", label: "Chủ trì", type: "text" },
+    { key: "tien_do", label: "Tiến độ thực hiện tuần", type: "area" },
+    { key: "kho_khan", label: "Khó khăn", type: "area" },
+    { key: "de_xuat", label: "Đề xuất", type: "area" },
+    { key: "ke_hoach", label: "Kế hoạch tuần sau", type: "area" },
+    { key: "trang_thai", label: "Trạng thái", type: "status" },
+  ],
+};
+const wkFieldsOf = (section) => WK_FIELDS[section === "A" ? "A" : section === "C" ? "C" : "B"];
+
+const wkState = { year: null, week: null, data: null, editing: null /* { id? , section } */ };
+
+// ---- Tuần ISO ----
+function wkMonday(year, week) {
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dow = jan4.getUTCDay() || 7;
+  return new Date(Date.UTC(year, 0, 4 - (dow - 1) + (week - 1) * 7));
+}
+function wkIsoWeekOf(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dow = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dow);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return { year: t.getUTCFullYear(), week: Math.ceil(((t - y0) / 86400000 + 1) / 7) };
+}
+const wkDmy = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const wkDm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+function wkRangeText(year, week) {
+  const m = wkMonday(year, week);
+  const s = new Date(m);
+  s.setUTCDate(m.getUTCDate() + 6);
+  const f = (d) => d.toISOString().slice(0, 10);
+  return `${wkDm(f(m))} – ${wkDmy(f(s))}`;
+}
+function wkWeeksInYear(year) {
+  return wkIsoWeekOf(new Date(year, 11, 28)).week; // 28/12 luôn thuộc tuần cuối của năm ISO
+}
+
+function wkEsc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+// Văn bản nhiều dòng -> HTML, dòng bắt đầu "- "/"• " thành gạch đầu dòng.
+function wkText(v) {
+  if (v == null || v === "") return "";
+  return String(v)
+    .split("\n")
+    .map((l) => {
+      const m = l.match(/^\s*[-•*]\s+(.*)$/);
+      return m ? `<div class="wk-li">• ${wkEsc(m[1])}</div>` : `<div>${wkEsc(l)}</div>`;
+    })
+    .join("");
+}
+
+// ---- Chọn tuần ----
+function wkFillPickers() {
+  const yearSel = document.getElementById("wk-year");
+  const weekSel = document.getElementById("wk-week");
+  if (!yearSel || !weekSel) return;
+  const cur = new Date().getFullYear();
+  yearSel.innerHTML = [cur - 2, cur - 1, cur, cur + 1].map((y) => `<option value="${y}">${y}</option>`).join("");
+  yearSel.value = String(wkState.year);
+  const n = wkWeeksInYear(wkState.year);
+  weekSel.innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}">Tuần ${i + 1} (${wkRangeText(wkState.year, i + 1)})</option>`).join("");
+  weekSel.value = String(Math.min(wkState.week, n));
+  document.getElementById("wk-range").textContent = `Từ ${wkRangeText(wkState.year, wkState.week)}`;
+}
+
+async function loadWeekly() {
+  if (wkState.year == null) {
+    // Mặc định: tuần liền trước (báo cáo tổng kết tuần vừa qua).
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    const w = wkIsoWeekOf(d);
+    wkState.year = w.year;
+    wkState.week = w.week;
+  }
+  wkFillPickers();
+  const doc = document.getElementById("wk-doc");
+  if (state.currentDepartmentId == null) {
+    wkState.data = null;
+    doc.innerHTML = '<p class="muted" style="padding:16px;text-align:center">Hãy chọn 1 phòng ban cụ thể ở bộ chuyển đổi phòng ban.</p>';
+    return;
+  }
+  wkState.data = await api(`/api/weekly-reports?year=${wkState.year}&week=${wkState.week}${deptParam()}`);
+  renderWeekly();
+}
+
+function wkRowActions(r, first, last) {
+  return `<td class="wk-actions"><div class="actions-cell">
+    <button class="small write-action wk-move" data-dir="up" data-id="${r.id}" title="Lên" ${first ? "disabled" : ""}>↑</button>
+    <button class="small write-action wk-move" data-dir="down" data-id="${r.id}" title="Xuống" ${last ? "disabled" : ""}>↓</button>
+    <button class="small btn-edit write-action wk-edit" data-id="${r.id}">Sửa</button>
+    <button class="small btn-delete wk-del" data-id="${r.id}">Xóa</button></div></td>`;
+}
+const wkStatusTd = (v) => `<td class="wk-center ${WK_STATUS_CLASS[v] ?? ""}">${wkEsc(v ?? "")}</td>`;
+const wkAddBtn = (section, label = "+ Thêm dòng") => `<button type="button" class="small btn-view write-action wk-add" data-section="${section}">${label}</button>`;
+
+function renderWeekly() {
+  const d = wkState.data;
+  const doc = document.getElementById("wk-doc");
+  if (!d) return;
+  const wk = d.week;
+  const phong = (d.department_name ?? "").toUpperCase();
+  const N = wk.week;
+  const N1 = wk.next_week;
+  const by = (s) => d.rows.filter((r) => r.section === s);
+
+  // ---- A: gộp STT + Mảng công việc cho các dòng liên tiếp cùng mảng ----
+  const aRows = by("A");
+  let aHtml = "";
+  let stt = 0;
+  for (let i = 0; i < aRows.length; i++) {
+    const r = aRows[i];
+    const first = i === 0 || aRows[i - 1].mang_cong_viec !== r.mang_cong_viec;
+    let span = 1;
+    if (first) {
+      stt++;
+      while (i + span < aRows.length && aRows[i + span].mang_cong_viec === r.mang_cong_viec) span++;
+    }
+    aHtml += `<tr data-id="${r.id}">${
+      first ? `<td class="wk-center" rowspan="${span}"><b>${stt}</b></td><td class="wk-mang" rowspan="${span}"><b>${wkEsc(r.mang_cong_viec)}</b></td>` : ""
+    }<td>${wkText(r.muc_tieu)}</td><td>${wkText(r.noi_dung)}</td><td>${wkText(r.tien_do)}</td><td>${wkText(r.ke_hoach)}</td>${wkRowActions(r, i === 0, i === aRows.length - 1)}</tr>`;
+  }
+  if (!aRows.length) aHtml = '<tr><td colspan="7" class="muted wk-empty">Chưa có dòng nào.</td></tr>';
+
+  const bcRows = (rows, withNoiDung) =>
+    rows
+      .map(
+        (r, i) => `<tr data-id="${r.id}"><td class="wk-center">${i + 1}</td><td><b>${wkText(r.ten)}</b></td><td class="wk-center">${wkEsc(r.chu_tri)}</td><td>${wkText(r.tien_do)}</td>${
+          withNoiDung ? `<td>${wkText(r.noi_dung)}</td>` : ""
+        }<td>${wkText(r.kho_khan)}</td><td>${wkText(r.de_xuat)}</td><td>${wkText(r.ke_hoach)}</td>${wkStatusTd(r.trang_thai)}${wkRowActions(r, i === 0, i === rows.length - 1)}</tr>`,
+      )
+      .join("");
+  const b1 = by("B1");
+  const b2 = by("B2");
+  const cRows = by("C");
+  const groupRow = (label, section) =>
+    `<tr class="wk-group"><td></td><td colspan="9"><div style="display:flex;justify-content:space-between;align-items:center"><b>${label}</b>${wkAddBtn(section)}</div></td></tr>`;
+
+  doc.innerHTML = `
+    <div class="wk-paper">
+      <div class="wk-head">
+        <div class="wk-head-col"><b>${wkEsc(d.ten_cong_ty.toUpperCase())}</b><br/><b>${wkEsc(phong)}</b></div>
+        <div class="wk-head-col"><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br/><b>Độc lập - Tự do - Hạnh phúc</b></div>
+      </div>
+      <h3 class="wk-title">BÁO CÁO GIAO BAN TUẦN ${wkEsc(phong)}</h3>
+      <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
+
+      <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th style="width:150px">Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h"></th></tr></thead><tbody>${aHtml}</tbody></table></div>
+
+      <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h"></th></tr></thead><tbody>
+        ${groupRow("I. NHIỆM VỤ PHỐI HỢP", "B1")}${bcRows(b1, true)}
+        ${groupRow("II. NHIỆM VỤ TRỰC TIẾP", "B2")}${bcRows(b2, true)}
+      </tbody></table></div>
+
+      <div class="wk-sec-head"><h4>C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN</h4>${wkAddBtn("C")}</div>
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Văn bản</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h"></th></tr></thead><tbody>${
+        cRows.length ? bcRows(cRows, false) : '<tr><td colspan="9" class="muted wk-empty">Chưa có dòng nào.</td></tr>'
+      }</tbody></table></div>
+      <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)</i></p>
+      <p class="wk-sign"><b>TRƯỞNG ${wkEsc(phong)}</b></p>
+    </div>`;
+}
+
+// ---- Chọn tuần ----
+document.getElementById("wk-year")?.addEventListener("change", (e) => {
+  wkState.year = Number(e.target.value);
+  wkState.week = Math.min(wkState.week, wkWeeksInYear(wkState.year));
+  loadWeekly().catch((err) => showToast(err.message));
+});
+document.getElementById("wk-week")?.addEventListener("change", (e) => {
+  wkState.week = Number(e.target.value);
+  loadWeekly().catch((err) => showToast(err.message));
+});
+function wkStep(delta) {
+  const m = wkMonday(wkState.year, wkState.week);
+  m.setUTCDate(m.getUTCDate() + 7 * delta);
+  const w = wkIsoWeekOf(new Date(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate()));
+  wkState.year = w.year;
+  wkState.week = w.week;
+  loadWeekly().catch((err) => showToast(err.message));
+}
+document.getElementById("wk-prev")?.addEventListener("click", () => wkStep(-1));
+document.getElementById("wk-next")?.addEventListener("click", () => wkStep(1));
+
+// ---- Thêm / sửa dòng ----
+function openWkRowDialog(section, row) {
+  wkState.editing = { section, id: row?.id ?? null };
+  const names = { A: "mảng công việc", B1: "nhiệm vụ phối hợp", B2: "nhiệm vụ trực tiếp", C: "văn bản VOffice" };
+  document.getElementById("wk-row-title").textContent = `${row ? "Sửa" : "Thêm"} ${names[section]}`;
+  const mangs = [...new Set((wkState.data?.rows ?? []).filter((r) => r.section === "A").map((r) => r.mang_cong_viec).filter(Boolean))];
+  document.getElementById("wk-row-fields").innerHTML =
+    wkFieldsOf(section)
+      .map((f) => {
+        const id = `wk-f-${f.key}`;
+        const v = row?.[f.key] ?? "";
+        let input;
+        if (f.type === "area") input = `<textarea id="${id}" rows="3">${wkEsc(v)}</textarea>`;
+        else if (f.type === "status")
+          input = `<select id="${id}"><option value="">—</option>${WK_STATUSES.map((s) => `<option value="${wkEsc(s)}"${s === v ? " selected" : ""}>${wkEsc(s)}</option>`).join("")}</select>`;
+        else input = `<input type="text" id="${id}" value="${wkEsc(v)}"${f.list ? ' list="wk-mang-list"' : ""} />`;
+        return `<div class="field-row"><label for="${id}">${f.label}</label>${input}</div>`;
+      })
+      .join("") + `<datalist id="wk-mang-list">${mangs.map((m) => `<option value="${wkEsc(m)}"></option>`).join("")}</datalist>` +
+    '<p class="muted" style="margin:4px 0 0;font-size:.82rem">Mỗi dòng 1 ý; dòng bắt đầu bằng "- " sẽ hiện thành gạch đầu dòng.</p>';
+  document.getElementById("wk-row-dialog").showModal();
+}
+document.getElementById("wk-doc")?.addEventListener("click", async (e) => {
+  const add = e.target.closest(".wk-add");
+  if (add) return openWkRowDialog(add.dataset.section, null);
+  const id = Number(e.target.closest("button[data-id]")?.dataset.id);
+  if (!id) return;
+  const row = (wkState.data?.rows ?? []).find((r) => r.id === id);
+  if (e.target.closest(".wk-edit")) return openWkRowDialog(row.section, row);
+  const mv = e.target.closest(".wk-move");
+  if (mv) {
+    try {
+      await api(`/api/weekly-reports/rows/${id}/move`, { method: "POST", body: JSON.stringify({ direction: mv.dataset.dir }) });
+      await loadWeekly();
+    } catch (err) {
+      showToast(err.message);
+    }
+    return;
+  }
+  if (e.target.closest(".wk-del")) {
+    if (!(await confirmDialog("Xóa dòng này khỏi báo cáo tuần?", { title: "Xóa dòng", okText: "Xóa" }))) return;
+    try {
+      await api(`/api/weekly-reports/rows/${id}`, { method: "DELETE" });
+      await loadWeekly();
+      showToast("Đã xóa.", "success");
+    } catch (err) {
+      showToast(err.message);
+    }
+  }
+});
+document.getElementById("wk-row-cancel-btn")?.addEventListener("click", () => document.getElementById("wk-row-dialog").close());
+document.getElementById("wk-row-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { section, id } = wkState.editing;
+  const body = {};
+  for (const f of wkFieldsOf(section)) body[f.key] = document.getElementById(`wk-f-${f.key}`).value.trim();
+  try {
+    if (id) await api(`/api/weekly-reports/rows/${id}`, { method: "PUT", body: JSON.stringify(body) });
+    else await api("/api/weekly-reports/rows", { method: "POST", body: JSON.stringify({ ...body, section, year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId }) });
+    document.getElementById("wk-row-dialog").close();
+    await loadWeekly();
+    showToast("Đã lưu.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Tiêu đề / sao chép / xuất ----
+document.getElementById("wk-company-btn")?.addEventListener("click", () => {
+  if (!wkState.data) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  document.getElementById("wk-company-name").value = wkState.data.ten_cong_ty ?? "";
+  document.getElementById("wk-company-dialog").showModal();
+});
+document.getElementById("wk-company-cancel-btn")?.addEventListener("click", () => document.getElementById("wk-company-dialog").close());
+document.getElementById("wk-company-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    await api("/api/weekly-reports/company", {
+      method: "PUT",
+      body: JSON.stringify({ year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId, ten_cong_ty: document.getElementById("wk-company-name").value.trim() }),
+    });
+    document.getElementById("wk-company-dialog").close();
+    await loadWeekly();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+document.getElementById("wk-copy-btn")?.addEventListener("click", async () => {
+  if (state.currentDepartmentId == null) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  try {
+    const r = await api("/api/weekly-reports/copy-previous", { method: "POST", body: JSON.stringify({ year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId }) });
+    await loadWeekly();
+    showToast(`Đã sao chép ${r.copied} dòng từ tuần trước.`, "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+document.getElementById("wk-export-btn")?.addEventListener("click", () => {
+  if (state.currentDepartmentId == null) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  window.location.href = `/api/weekly-reports/export?year=${wkState.year}&week=${wkState.week}${deptParam()}`;
+});

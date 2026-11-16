@@ -72,7 +72,7 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
   pill.addEventListener("click", () => {
     document.querySelectorAll("#summary-plan-subnav .pill").forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
-    ["overtime", "otsum", "cbnv", "gnv", "pptx"].forEach((tab) => {
+    ["overtime", "otsum", "cbnv", "gnv", "wk", "pptx"].forEach((tab) => {
       document.getElementById(`summary-plan-tab-${tab}`).hidden = tab !== pill.dataset.tab;
     });
     // Chuyển tab -> làm mới dữ liệu của tab vừa mở (dữ liệu có thể đã đổi ở tab khác/đổi tháng/phòng ban).
@@ -81,12 +81,13 @@ document.querySelectorAll("#summary-plan-subnav .pill").forEach((pill) => {
       otsum: typeof loadOvertimeSummary === "function" ? loadOvertimeSummary : null,
       cbnv: typeof loadCbnvXepLoai === "function" ? loadCbnvXepLoai : null,
       gnv: typeof loadGnv === "function" ? loadGnv : null,
+      wk: typeof loadWeekly === "function" ? loadWeekly : null,
       pptx: typeof loadPptx === "function" ? loadPptx : null,
     };
     // Mỗi lần chuyển tab: đưa "Tháng theo dõi" về THÁNG MẶC ĐỊNH (tháng hiện tại) — nếu đang lệch thì
     // đổi tháng (switchPeriod đã nạp lại CBNV/GNV/Làm thêm giờ), không thì chỉ nạp lại tab vừa mở.
     const def = typeof defaultPeriodId === "function" ? defaultPeriodId() : null;
-    if (def != null && def !== state.currentPeriodId && pill.dataset.tab !== "pptx") {
+    if (def != null && def !== state.currentPeriodId && pill.dataset.tab !== "pptx" && pill.dataset.tab !== "wk") {
       switchPeriod(def).catch((err) => showToast(err.message));
     } else {
       loaders[pill.dataset.tab]?.().catch((err) => showToast(err.message));
