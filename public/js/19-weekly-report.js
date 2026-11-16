@@ -130,7 +130,7 @@ async function loadWeekly() {
 function wkRowActions(r, first, last) {
   return `<td class="wk-actions"><div class="actions-cell">
     <button class="small btn-view write-action wk-move" data-dir="up" data-id="${r.id}" title="Lên" ${first ? "disabled" : ""}>↑</button>
-    <button class="small btn-view write-action wk-move" data-dir="down" data-id="${r.id}" title="Xuống" ${last ? "disabled" : ""}>↓</button>
+    <button class="small btn-export write-action wk-move" data-dir="down" data-id="${r.id}" title="Xuống" ${last ? "disabled" : ""}>↓</button>
     <button class="small btn-edit write-action wk-edit" data-id="${r.id}">Sửa</button>
     <button class="small btn-delete wk-del" data-id="${r.id}">Xóa</button></div></td>`;
 }
