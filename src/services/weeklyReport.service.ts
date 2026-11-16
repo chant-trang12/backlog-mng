@@ -214,8 +214,8 @@ export async function setCompany(departmentId: number, year: number, week: numbe
   return getWeekly(departmentId, year, week);
 }
 
-// Sao chép từ tuần liền trước (cùng phòng ban): "Kế hoạch tuần N" của tuần trước trở thành nội dung/tiến độ khởi đầu của tuần này;
-// các trường kết quả/khó khăn/đề xuất/kế hoạch để trống để nhập mới; Trạng thái giữ như tuần trước, dòng đã Hoàn thành thì bỏ qua. Chỉ khi tuần này chưa có dòng nào.
+// Sao chép từ tuần liền trước (cùng phòng ban): "Kế hoạch tuần N" của tuần trước trở thành "Tiến độ / Kết quả thực hiện" khởi đầu của tuần này;
+// khó khăn/đề xuất/kế hoạch để trống để nhập mới; Trạng thái giữ như tuần trước, dòng đã Hoàn thành thì bỏ qua. Chỉ khi tuần này chưa có dòng nào.
 export async function copyFromPrevious(departmentId: number, year: number, week: number, scope: DataScope, by: string | null): Promise<{ copied: number; skipped: number }> {
   assertDepartmentInScope(scope, departmentId);
   const cur = await findReport(departmentId, year, week);
@@ -244,8 +244,9 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
       muc_tieu: r.muc_tieu,
       ten: r.ten,
       chu_tri: r.chu_tri,
-      noi_dung: r.section === "A" ? r.ke_hoach ?? r.noi_dung : r.noi_dung,
-      tien_do: null,
+      noi_dung: r.noi_dung,
+      // "Tiến độ / Kết quả thực hiện tuần này" lấy sẵn nội dung "Kế hoạch tuần sau" của tuần được sao chép (để cập nhật tiếp).
+      tien_do: r.ke_hoach,
       kho_khan: null,
       de_xuat: null,
       ke_hoach: null,
