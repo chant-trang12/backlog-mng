@@ -355,7 +355,7 @@ document.getElementById("wk-copy-btn")?.addEventListener("click", async () => {
   try {
     const r = await api("/api/weekly-reports/copy-previous", { method: "POST", body: JSON.stringify({ year: wkState.year, week: wkState.week, department_id: state.currentDepartmentId }) });
     await loadWeekly();
-    showToast(`Đã sao chép ${r.copied} dòng từ tuần trước.`, "success");
+    showToast(`Đã sao chép ${r.copied} dòng từ tuần trước${r.skipped ? ` (bỏ qua ${r.skipped} dòng đã hoàn thành)` : ""}.`, "success");
   } catch (err) {
     showToast(err.message);
   }

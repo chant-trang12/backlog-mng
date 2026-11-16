@@ -215,8 +215,8 @@ export async function setCompany(departmentId: number, year: number, week: numbe
 }
 
 // Sao chép từ tuần liền trước (cùng phòng ban): "Kế hoạch tuần N" của tuần trước trở thành nội dung/tiến độ khởi đầu của tuần này;
-// các trường kết quả/khó khăn/đề xuất/kế hoạch để trống để nhập mới. Chỉ khi tuần này chưa có dòng nào.
-export async function copyFromPrevious(departmentId: number, year: number, week: number, scope: DataScope, by: string | null): Promise<{ copied: number }> {
+// các trường kết quả/khó khăn/đề xuất/kế hoạch để trống để nhập mới; Trạng thái giữ như tuần trước, dòng đã Hoàn thành thì bỏ qua. Chỉ khi tuần này chưa có dòng nào.
+export async function copyFromPrevious(departmentId: number, year: number, week: number, scope: DataScope, by: string | null): Promise<{ copied: number; skipped: number }> {
   assertDepartmentInScope(scope, departmentId);
   const cur = await findReport(departmentId, year, week);
   if (cur) {
@@ -232,7 +232,10 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
   if (!prevRows.length) throw new WeeklyReportError("Tuần liền trước chưa có dòng nào để sao chép.");
   const report = await getOrCreateReport(departmentId, year, week, by);
   if (!cur && prevReport.ten_cong_ty) await db("weekly_reports").where({ id: report.id }).update({ ten_cong_ty: prevReport.ten_cong_ty });
-  for (const r of prevRows) {
+  // Mục B/C: giữ nguyên Trạng thái hiện tại của tuần trước; dòng đã "Hoàn thành" thì bỏ qua (không chuyển sang tuần mới). Mục A không có trạng thái -> chép hết.
+  const carry = prevRows.filter((r) => r.section === "A" || r.trang_thai !== "Hoàn thành");
+  if (!carry.length) throw new WeeklyReportError("Tuần liền trước chỉ còn các dòng đã hoàn thành — không có gì để sao chép.");
+  for (const r of carry) {
     await db("weekly_report_rows").insert({
       report_id: report.id,
       section: r.section,
@@ -246,9 +249,9 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
       kho_khan: null,
       de_xuat: null,
       ke_hoach: null,
-      trang_thai: r.section === "A" ? null : "Đang thực hiện",
+      trang_thai: r.section === "A" ? null : r.trang_thai,
     });
   }
   await touch(report.id);
-  return { copied: prevRows.length };
+  return { copied: carry.length, skipped: prevRows.length - carry.length };
 }
