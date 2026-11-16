@@ -252,7 +252,7 @@ function openWkRowDialog(section, row) {
         return `<div class="field-row"><label for="${id}">${f.label}</label>${input}</div>`;
       })
       .join("") + `<datalist id="wk-mang-list">${mangs.map((m) => `<option value="${wkEsc(m)}"></option>`).join("")}</datalist>` +
-    '<p class="muted" style="margin:4px 0 0;font-size:.82rem">Mỗi dòng 1 ý; dòng bắt đầu bằng "- " sẽ hiện thành gạch đầu dòng.</p>';
+    '<p class="wk-hint">Mỗi dòng 1 ý; dòng bắt đầu bằng "- " sẽ hiện thành gạch đầu dòng.</p>';
   document.getElementById("wk-row-dialog").showModal();
 }
 document.getElementById("wk-doc")?.addEventListener("click", async (e) => {

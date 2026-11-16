@@ -4089,10 +4089,18 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .wk-st-none { background: #e7e6e6; }
 .wk-note { margin: 14px 0 0; }
 .wk-sign { text-align: right; margin: 26px 0 0; }
-#wk-row-dialog .field-row, #wk-company-dialog .field-row { display: grid; grid-template-columns: 190px 1fr; align-items: start; }
-#wk-row-dialog .field-row > label, #wk-company-dialog .field-row > label { margin: 0; padding-top: 6px; }
-#wk-row-dialog .field-row > input, #wk-row-dialog .field-row > select, #wk-row-dialog .field-row > textarea, #wk-company-dialog input { width: 100%; box-sizing: border-box; }
-#wk-row-dialog { min-width: min(680px, 92vw); }
+#wk-row-dialog { width: min(760px, 94vw); }
+#wk-company-dialog { width: min(560px, 94vw); }
+#wk-row-dialog form, #wk-company-dialog form { display: flex; flex-direction: column; gap: 14px; }
+#wk-row-dialog h2, #wk-company-dialog h2 { margin: 0 0 4px; }
+#wk-row-fields { display: flex; flex-direction: column; gap: 14px; }
+#wk-row-dialog .field-row, #wk-company-dialog .field-row { display: grid; grid-template-columns: 170px 1fr; column-gap: 16px; align-items: start; margin: 0; }
+#wk-row-dialog .field-row > label, #wk-company-dialog .field-row > label { margin: 0; padding-top: 8px; font-weight: 600; color: var(--stone-700); }
+#wk-row-dialog .field-row > input, #wk-row-dialog .field-row > select, #wk-row-dialog .field-row > textarea, #wk-company-dialog input { width: 100%; box-sizing: border-box; margin: 0; }
+#wk-row-dialog .field-row > textarea { min-height: 76px; resize: vertical; }
+#wk-row-dialog .wk-hint { margin: 0; padding-left: 186px; font-size: 0.82rem; color: var(--stone-600); }
+#wk-row-dialog .wk-actions-bar, #wk-company-dialog .wk-actions-bar { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--border); }
+@media (max-width: 600px) { #wk-row-dialog .field-row, #wk-company-dialog .field-row { grid-template-columns: 1fr; } #wk-row-dialog .wk-hint { padding-left: 0; } }
 button.wk-pdf-btn { background: #fcd9db; border-color: var(--red-300); color: var(--red-800); }
 button.wk-pdf-btn:hover { background: var(--red-300); }
 .wk-table td.wk-actions .actions-cell { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; }
