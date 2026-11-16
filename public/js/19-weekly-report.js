@@ -189,16 +189,16 @@ function renderWeekly() {
       <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
 
       <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th style="width:150px">Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h"></th></tr></thead><tbody>${aHtml}</tbody></table></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th style="width:150px">Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h"></th></tr></thead><tbody>
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
         ${groupRow("I. NHIỆM VỤ PHỐI HỢP", "B1")}${bcRows(b1, true)}
         ${groupRow("II. NHIỆM VỤ TRỰC TIẾP", "B2")}${bcRows(b2, true)}
       </tbody></table></div>
 
       <div class="wk-sec-head"><h4>C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN</h4>${wkAddBtn("C")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Văn bản</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h"></th></tr></thead><tbody>${
+      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Văn bản</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
         cRows.length ? bcRows(cRows, false) : '<tr><td colspan="9" class="muted wk-empty">Chưa có dòng nào.</td></tr>'
       }</tbody></table></div>
       <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)</i></p>
@@ -342,7 +342,7 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-sec-head { margin: 16px 0 6px; }
 .wk-sec-head h4 { margin: 0; color: #c00032; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
-.wk-table th { background: #1f2a44; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
+.wk-table th { background: #ee0033; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
 .wk-table td { border: 1px solid #7f7f7f; vertical-align: top; padding: 3px 5px; }
 .wk-table tr { page-break-inside: avoid; }
 .wk-table td.wk-center { text-align: center; vertical-align: middle; }
