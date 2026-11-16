@@ -335,10 +335,10 @@ const WK_PRINT_CSS = `
 @page { size: A4 landscape; margin: 10mm; }
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #000; margin: 0; }
-.wk-head { display: flex; justify-content: space-between; text-align: center; margin-bottom: 14px; }
+.wk-head { display: flex; justify-content: space-between; text-align: center; margin-bottom: 22px; line-height: 1.6; }
 .wk-head-col { flex: 1; }
-.wk-title { text-align: center; color: #c00032; margin: 16px 0 4px; font-size: 16pt; }
-.wk-sub { text-align: center; margin: 0 0 14px; }
+.wk-title { text-align: center; color: #c00032; margin: 22px 0 8px; font-size: 16pt; line-height: 1.4; }
+.wk-sub { text-align: center; margin: 0 0 22px; line-height: 1.5; }
 .wk-sec-head { margin: 16px 0 6px; }
 .wk-sec-head h4 { margin: 0; color: #c00032; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }

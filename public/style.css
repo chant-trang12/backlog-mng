@@ -4066,10 +4066,10 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .wk-chip-past { background: var(--stone-100); color: var(--stone-600); }
 .wk-chip-future { background: var(--amber-100); color: var(--amber-800); }
 .wk-paper { margin-top: 14px; }
-.wk-head { display: flex; justify-content: space-between; gap: 24px; text-align: center; margin-bottom: 18px; }
+.wk-head { display: flex; justify-content: space-between; gap: 24px; text-align: center; margin-bottom: 26px; line-height: 1.7; }
 .wk-head-col { flex: 1; }
-.wk-title { text-align: center; color: #c00032; margin: 18px 0 4px; font-size: 1.25rem; }
-.wk-sub { text-align: center; margin: 0 0 18px; }
+.wk-title { text-align: center; color: #c00032; margin: 28px 0 10px; font-size: 1.25rem; line-height: 1.5; }
+.wk-sub { text-align: center; margin: 0 0 28px; line-height: 1.6; }
 .wk-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 8px; }
 .wk-sec-head h4 { margin: 0; color: #c00032; }
 .wk-wrap { max-height: none; margin-top: 0; }
