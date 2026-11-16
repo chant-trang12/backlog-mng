@@ -309,7 +309,57 @@ document.getElementById("wk-copy-btn")?.addEventListener("click", async () => {
     showToast(err.message);
   }
 });
-document.getElementById("wk-export-btn")?.addEventListener("click", () => {
-  if (state.currentDepartmentId == null) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
-  window.location.href = `/api/weekly-reports/export?year=${wkState.year}&week=${wkState.week}${deptParam()}`;
-});
+// Xuất PDF: dựng bản in (A4 ngang, bỏ cột thao tác/nút) trong iframe ẩn rồi mở hộp thoại in — chọn "Lưu dưới dạng PDF".
+const WK_PRINT_CSS = `
+@page { size: A4 landscape; margin: 10mm; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #000; margin: 0; }
+.wk-head { display: flex; justify-content: space-between; text-align: center; margin-bottom: 14px; }
+.wk-head-col { flex: 1; }
+.wk-title { text-align: center; color: #c00032; margin: 16px 0 4px; font-size: 16pt; }
+.wk-sub { text-align: center; margin: 0 0 14px; }
+.wk-sec-head { margin: 16px 0 6px; }
+.wk-sec-head h4 { margin: 0; color: #c00032; font-size: 12.5pt; }
+.wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+.wk-table th { background: #1f2a44; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
+.wk-table td { border: 1px solid #7f7f7f; vertical-align: top; padding: 3px 5px; }
+.wk-table tr { page-break-inside: avoid; }
+.wk-table td.wk-center { text-align: center; vertical-align: middle; }
+.wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
+.wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
+.wk-li { padding-left: 10px; text-indent: -10px; }
+.wk-st-done { background: #c6e0b4; font-weight: 700; }
+.wk-st-doing { background: #ebefa9; font-weight: 700; }
+.wk-st-stuck { background: #f8cbad; }
+.wk-st-none { background: #e7e6e6; }
+.wk-note { margin: 12px 0 0; }
+.wk-sign { text-align: right; margin: 22px 0 0; }
+`;
+function wkPrintHtml() {
+  const paper = document.querySelector("#wk-doc .wk-paper")?.cloneNode(true);
+  if (!paper) return null;
+  // Bỏ cột thao tác + nút; chỉnh lại colspan của dòng nhóm/dòng trống cho khớp số cột còn lại.
+  paper.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button").forEach((n) => n.remove());
+  paper.querySelectorAll("tr.wk-group td[colspan]").forEach((td) => (td.colSpan = 8));
+  paper.querySelectorAll("td.wk-empty").forEach((td) => (td.colSpan = Math.max(1, td.colSpan - 1)));
+  paper.querySelectorAll("tr.wk-group td div").forEach((d) => (d.style.display = "block"));
+  const title = `BC tuan ${wkState.data.week.week}-${wkState.data.week.year}`;
+  return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${title}</title><style>${WK_PRINT_CSS}</style></head><body>${paper.outerHTML}</body></html>`;
+}
+function wkExportPdf() {
+  if (!wkState.data) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  const html = wkPrintHtml();
+  if (!html) return showToast("Chưa có nội dung để xuất.");
+  const frame = document.createElement("iframe");
+  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  frame.srcdoc = html;
+  frame.onload = () => {
+    setTimeout(() => {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+      setTimeout(() => frame.remove(), 60000);
+    }, 200);
+  };
+  document.body.appendChild(frame);
+}
+document.getElementById("wk-export-btn")?.addEventListener("click", wkExportPdf);
