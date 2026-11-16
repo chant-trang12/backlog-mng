@@ -145,6 +145,8 @@ export async function createRow(departmentId: number, year: number, week: number
   if (!WEEKLY_SECTIONS.includes(section as WeeklySection)) throw new WeeklyReportError("Mục không hợp lệ.");
   const sec = section as WeeklySection;
   const fields = normalizeRow(sec, input);
+  // Nhiệm vụ trực tiếp: Chủ trì luôn là phòng ban đang lập báo cáo (không sửa được).
+  if (sec === "B2") fields.chu_tri = await deptName(departmentId);
   const report = await getOrCreateReport(departmentId, year, week, by);
   const max = (await db("weekly_report_rows").where({ report_id: report.id, section: sec }).max({ m: "thu_tu" }).first()) as { m: number | null } | undefined;
   const [row] = await db("weekly_report_rows")
@@ -165,6 +167,7 @@ export async function updateRow(id: number, input: Record<string, unknown>, scop
   if (!hit) return undefined;
   assertDepartmentInScope(scope, hit.report.department_id);
   const fields = normalizeRow(hit.row.section, input);
+  if (hit.row.section === "B2") fields.chu_tri = await deptName(hit.report.department_id);
   const [row] = await db("weekly_report_rows").where({ id }).update({ ...fields, updated_at: db.fn.now() }).returning("*");
   return row as WeeklyRow;
 }

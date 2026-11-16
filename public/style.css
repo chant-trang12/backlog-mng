@@ -4098,6 +4098,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 #wk-row-dialog .field-row > label, #wk-company-dialog .field-row > label { margin: 0; padding-top: 8px; font-weight: 600; color: var(--stone-700); }
 #wk-row-dialog .field-row > input, #wk-row-dialog .field-row > select, #wk-row-dialog .field-row > textarea, #wk-company-dialog input { width: 100%; box-sizing: border-box; margin: 0; }
 #wk-row-dialog .field-row > textarea { min-height: 76px; resize: vertical; }
+#wk-row-dialog input[readonly] { background: var(--stone-100); color: var(--stone-600); cursor: default; }
 #wk-row-dialog .wk-mang-pick { display: flex; flex-direction: column; gap: 8px; }
 #wk-row-dialog .wk-mang-pick select, #wk-row-dialog .wk-mang-pick input { width: 100%; box-sizing: border-box; margin: 0; }
 #wk-row-dialog .wk-hint { margin: 0; padding-left: 186px; font-size: 0.82rem; color: var(--stone-600); }

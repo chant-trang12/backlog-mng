@@ -248,7 +248,10 @@ function openWkRowDialog(section, row) {
         if (f.type === "area") input = `<textarea id="${id}" rows="3">${wkEsc(v)}</textarea>`;
         else if (f.type === "status")
           input = `<select id="${id}"><option value="">—</option>${WK_STATUSES.map((s) => `<option value="${wkEsc(s)}"${s === v ? " selected" : ""}>${wkEsc(s)}</option>`).join("")}</select>`;
-        else if (f.key === "chu_tri" && section === "B1") {
+        else if (f.key === "chu_tri" && section === "B2") {
+          // Nhiệm vụ trực tiếp: Chủ trì mặc định là phòng ban đang lập báo cáo, không sửa được.
+          input = `<input type="text" id="${id}" value="${wkEsc(wkState.data?.department_name ?? "")}" readonly tabindex="-1" />`;
+        } else if (f.key === "chu_tri" && section === "B1") {
           // Nhiệm vụ phối hợp: Chủ trì chọn trong danh sách phòng ban của hệ thống (giá trị cũ ngoài danh sách vẫn giữ để không mất).
           const names = (state.departments ?? []).map((d) => d.name);
           const cur = String(v ?? "");
