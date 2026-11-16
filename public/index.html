@@ -2609,6 +2609,20 @@
             </section>
           </div>
           <div id="summary-plan-tab-wk" hidden>
+            <section class="card wk-picker-card">
+              <div class="row wk-picker" style="align-items:center;gap:8px;flex-wrap:wrap">
+                <label for="wk-year" style="margin:0">Năm</label>
+                <select id="wk-year"></select>
+                <label for="wk-week" style="margin:0">Tuần</label>
+                <select id="wk-week"></select>
+                <span class="wk-nav">
+                  <button type="button" id="wk-prev" class="small" title="Tuần trước">‹ Tuần trước</button>
+                  <button type="button" id="wk-today" class="small btn-export" title="Về tuần hiện tại">Tuần này</button>
+                  <button type="button" id="wk-next" class="small" title="Tuần sau">Tuần sau ›</button>
+                </span>
+              </div>
+              <div id="wk-range-info" class="wk-range-info"></div>
+            </section>
             <section class="card">
               <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
                 <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">BC tuần</h2>
@@ -2618,16 +2632,6 @@
                   <button id="wk-export-btn" class="wk-pdf-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PDF</button>
                 </div>
               </div>
-              <div class="row wk-picker" style="align-items:center;gap:8px;flex-wrap:wrap">
-                <label for="wk-year" style="margin:0">Năm</label>
-                <select id="wk-year"></select>
-                <label for="wk-week" style="margin:0">Tuần</label>
-                <select id="wk-week"></select>
-                <button type="button" id="wk-prev" class="small" title="Tuần trước">‹ Tuần trước</button>
-                <button type="button" id="wk-next" class="small" title="Tuần sau">Tuần sau ›</button>
-                <button type="button" id="wk-today" class="small btn-view" title="Về tuần hiện tại">Tuần này</button>
-              </div>
-              <div id="wk-range-info" class="wk-range-info"></div>
               <div id="wk-doc" class="wk-doc"></div>
             </section>
           </div>
