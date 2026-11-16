@@ -129,8 +129,8 @@ async function loadWeekly() {
 
 function wkRowActions(r, first, last) {
   return `<td class="wk-actions"><div class="actions-cell">
-    <button class="small write-action wk-move" data-dir="up" data-id="${r.id}" title="Lên" ${first ? "disabled" : ""}>↑</button>
-    <button class="small write-action wk-move" data-dir="down" data-id="${r.id}" title="Xuống" ${last ? "disabled" : ""}>↓</button>
+    <button class="small btn-view write-action wk-move" data-dir="up" data-id="${r.id}" title="Lên" ${first ? "disabled" : ""}>↑</button>
+    <button class="small btn-view write-action wk-move" data-dir="down" data-id="${r.id}" title="Xuống" ${last ? "disabled" : ""}>↓</button>
     <button class="small btn-edit write-action wk-edit" data-id="${r.id}">Sửa</button>
     <button class="small btn-delete wk-del" data-id="${r.id}">Xóa</button></div></td>`;
 }
@@ -189,7 +189,7 @@ function renderWeekly() {
       <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
 
       <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:14%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col class="wk-col-actions" style="width:176px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:14%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
       <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>

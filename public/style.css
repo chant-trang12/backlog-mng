@@ -4082,7 +4082,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
 .wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
 .wk-table td.wk-empty { text-align: center; padding: 14px; }
-.wk-table td.wk-actions { vertical-align: middle; white-space: nowrap; }
+.wk-table td.wk-actions { vertical-align: middle; padding: 4px; }
 .wk-table th.wk-actions-h { width: 1%; white-space: nowrap; }
 .wk-li { padding-left: 10px; text-indent: -10px; }
 .wk-st-done { background: #c6e0b4; font-weight: 700; }
@@ -4108,4 +4108,4 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 @media (max-width: 600px) { #wk-row-dialog .field-row, #wk-company-dialog .field-row { grid-template-columns: 1fr; } #wk-row-dialog .wk-hint { padding-left: 0; } }
 button.wk-pdf-btn { background: #fcd9db; border-color: var(--red-300); color: var(--red-800); }
 button.wk-pdf-btn:hover { background: var(--red-300); }
-.wk-table td.wk-actions .actions-cell { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; }
+.wk-table td.wk-actions .actions-cell { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px; width: 96px; margin: 0 auto; }
