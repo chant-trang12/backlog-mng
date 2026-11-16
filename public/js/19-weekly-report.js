@@ -189,7 +189,7 @@ function renderWeekly() {
       <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
 
       <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th style="width:150px">Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:14%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col class="wk-col-actions" style="width:176px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
       <div class="table-wrap wk-wrap"><table class="wk-table"><thead><tr><th style="width:56px">STT</th><th>Nhiệm vụ</th><th style="width:110px">Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th style="width:120px">Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
@@ -368,6 +368,7 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-sec-head { margin: 16px 0 6px; }
 .wk-sec-head h4 { margin: 0; color: #000; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+.wk-table.wk-a { table-layout: fixed; }
 .wk-table th { background: #ee0033; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
 .wk-table td { border: 1px solid #7f7f7f; vertical-align: middle; padding: 3px 5px; }
 .wk-table tr { page-break-inside: avoid; }
@@ -386,7 +387,7 @@ function wkPrintHtml() {
   const paper = document.querySelector("#wk-doc .wk-paper")?.cloneNode(true);
   if (!paper) return null;
   // Bỏ cột thao tác + nút; chỉnh lại colspan của dòng nhóm/dòng trống cho khớp số cột còn lại.
-  paper.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button").forEach((n) => n.remove());
+  paper.querySelectorAll(".wk-actions, .wk-actions-h, .wk-add, .wk-sec-head button, .wk-col-actions").forEach((n) => n.remove());
   paper.querySelectorAll("tr.wk-group td[colspan]").forEach((td) => (td.colSpan = 8));
   paper.querySelectorAll("td.wk-empty").forEach((td) => (td.colSpan = Math.max(1, td.colSpan - 1)));
   paper.querySelectorAll("tr.wk-group td div").forEach((d) => (d.style.display = "block"));

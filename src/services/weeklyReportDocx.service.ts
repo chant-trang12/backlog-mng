@@ -94,7 +94,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
   );
 
   // ---- A
-  const aW = [700, 1700, 2400, 3900, 3500, 3198];
+  const aW = [700, 1700, 2400, 3533, 3533, 3532]; // 3 cột Nội dung / Kết quả / Kế hoạch bằng nhau
   parts.push(para(run(`A. NHIỆM VỤ CỦA ${phong.replace(/^PHÒNG\s+/, "P.")} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})`, { bold: true, color: "000000", size: 26 }), { before: 120, after: 120 }));
   const aRows = byS("A");
   let aXml = row([hdrCell(aW[0], "STT"), hdrCell(aW[1], "Mảng công việc"), hdrCell(aW[2], "Mục tiêu"), hdrCell(aW[3], "Nội dung công việc"), hdrCell(aW[4], `Kết quả thực hiện tuần ${N}`), hdrCell(aW[5], `Kế hoạch tuần ${N1}`)], true);
