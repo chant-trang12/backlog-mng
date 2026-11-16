@@ -4084,4 +4084,6 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 #wk-row-dialog .field-row > label, #wk-company-dialog .field-row > label { margin: 0; padding-top: 6px; }
 #wk-row-dialog .field-row > input, #wk-row-dialog .field-row > select, #wk-row-dialog .field-row > textarea, #wk-company-dialog input { width: 100%; box-sizing: border-box; }
 #wk-row-dialog { min-width: min(680px, 92vw); }
+button.wk-pdf-btn { background: #fcd9db; border-color: var(--red-300); color: var(--red-800); }
+button.wk-pdf-btn:hover { background: var(--red-300); }
 .wk-table td.wk-actions .actions-cell { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px; align-items: center; }
