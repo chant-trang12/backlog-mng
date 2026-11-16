@@ -248,7 +248,13 @@ function openWkRowDialog(section, row) {
         if (f.type === "area") input = `<textarea id="${id}" rows="3">${wkEsc(v)}</textarea>`;
         else if (f.type === "status")
           input = `<select id="${id}"><option value="">—</option>${WK_STATUSES.map((s) => `<option value="${wkEsc(s)}"${s === v ? " selected" : ""}>${wkEsc(s)}</option>`).join("")}</select>`;
-        else if (f.list) {
+        else if (f.key === "chu_tri" && section === "B1") {
+          // Nhiệm vụ phối hợp: Chủ trì chọn trong danh sách phòng ban của hệ thống (giá trị cũ ngoài danh sách vẫn giữ để không mất).
+          const names = (state.departments ?? []).map((d) => d.name);
+          const cur = String(v ?? "");
+          const opts = cur && !names.includes(cur) ? [cur, ...names] : names;
+          input = `<select id="${id}"><option value="">—</option>${opts.map((n) => `<option value="${wkEsc(n)}"${n === cur ? " selected" : ""}>${wkEsc(n)}</option>`).join("")}</select>`;
+        } else if (f.list) {
           // Mảng công việc: chọn từ danh sách mảng đã có (dropdown chung của hệ thống) hoặc "+ Mảng mới…" rồi gõ tên.
           // Thêm dòng mới: mặc định chọn mảng cuối cùng đang có (thường là thêm dòng cho cùng mảng); chưa có mảng nào -> nhập mảng mới.
           const cur = row ? String(v ?? "") : mangs[mangs.length - 1] ?? "";
