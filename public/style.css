@@ -3611,6 +3611,9 @@ label.gnv-copy-item { margin-left: 22px; }
 #gnv-pick-dialog label.gnv-task input[type="checkbox"],
 #gnv-pick-dialog label.gnv-pick-all input[type="checkbox"] { accent-color: var(--sky-600); }
 #gnv-pick-dialog .gnv-task-team { background: var(--sky-100); color: var(--sky-800); }
+/* Badge team trong popup Lấy từ Backlog: dùng đúng màu team như bảng Backlog/Cấu hình (teamColorClass). */
+#gnv-pick-dialog .gnv-task-team-badge { flex: 0 0 auto; }
+#gnv-pick-dialog label.gnv-task.is-used .gnv-task-team-badge { opacity: 0.6; }
 
 /* Tab "Làm thêm giờ": tiêu đề nền xanh lá nhạt chữ đậm như bảng mẫu; 2 hàng
    tiêu đề ghim liên tiếp (hàng 2 dưới hàng 1, chiều cao đo bằng JS). */

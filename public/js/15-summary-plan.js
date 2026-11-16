@@ -763,7 +763,7 @@ function renderGnvPickList() {
         return `<label class="gnv-task${used ? " is-used" : ""}${gnvPickSelected.has(t.id) ? " is-selected" : ""}">
           <input type="checkbox" value="${t.id}" ${used ? "disabled" : ""} ${gnvPickSelected.has(t.id) ? "checked" : ""} />
           <span class="gnv-task-name">${gnvEsc(t.nhiem_vu)}</span>
-          <span class="gnv-task-team">${gnvEsc(t.team)}</span>
+          <span class="status-badge gnv-task-team-badge ${teamColorClass(t.team)}">${gnvEsc(t.team)}</span>
           ${used ? '<span class="gnv-task-used">Đã có trong GNV</span>' : ""}
         </label>`;
       })
