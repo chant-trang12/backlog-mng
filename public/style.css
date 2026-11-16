@@ -4115,5 +4115,6 @@ button.wk-pdf-btn:hover { background: var(--red-300); }
 .wk-table.wk-fixed th.wk-actions-h, .wk-table.wk-fixed td.wk-actions { position: sticky; right: 0; z-index: 3; }
 .wk-table.wk-fixed td.wk-actions { background: #fff; box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.25); }
 .wk-table.wk-fixed tr.wk-group .wk-add { position: sticky; right: 8px; }
-#wk-scope-bar { margin-bottom: 12px; }
+#wk-scope-bar { margin: 18px 0 16px; }
+#wk-scope-bar .gnv-seg { gap: 6px; padding: 6px; }
 #wk-shared-banner { margin-bottom: 12px; }
