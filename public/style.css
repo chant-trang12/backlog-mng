@@ -4116,8 +4116,8 @@ button.wk-pdf-btn:hover { background: var(--red-300); }
 .wk-table.wk-fixed td.wk-actions { background: #fff; box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.25); }
 .wk-table.wk-fixed tr.wk-group .wk-add { position: sticky; right: 8px; }
 #wk-scope-bar { margin: 18px 0 16px; display: flex; justify-content: flex-end; }
-#wk-scope-bar .gnv-seg { gap: 8px; padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
-#wk-scope-bar .gnv-seg-btn { background: var(--stone-100); color: var(--stone-700); border: 1px solid transparent; box-shadow: none; }
+#wk-scope-bar .gnv-seg { width: auto; max-width: 100%; gap: 8px; padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+#wk-scope-bar .gnv-seg-btn { white-space: nowrap; flex: 0 0 auto; padding-left: 22px; padding-right: 22px; background: var(--stone-100); color: var(--stone-700); border: 1px solid transparent; box-shadow: none; }
 #wk-scope-bar .gnv-seg-btn:hover { background: var(--red-100); }
 #wk-scope-bar .gnv-seg-btn.active { background: #fcd9db; color: var(--red-800); border-color: var(--red-300); box-shadow: none; }
 #wk-shared-banner { margin-bottom: 12px; }
