@@ -112,7 +112,7 @@ export async function addGnvItemsFromTasksHandler(req: Request, res: Response) {
     const parentRaw = req.body?.parent_item_id;
     const parentItemId = parentRaw ? parsePositiveInt(String(parentRaw)) : null;
     if (parentRaw && !parentItemId) return res.status(400).json({ error: "parent_item_id không hợp lệ" });
-    res.json(await svc.addItemsFromTasks(groupId, taskIds, scopeOf(req), { merge: !!req.body?.merge, parentItemId }));
+    res.json(await svc.addItemsFromTasks(groupId, taskIds, scopeOf(req), { merge: !!req.body?.merge, parentItemId, field: req.body?.field === "dod" ? "dod" : "nhiem_vu" }));
   } catch (e) {
     if (e instanceof svc.GnvError) return res.status(400).json({ error: e.message });
     throw e;

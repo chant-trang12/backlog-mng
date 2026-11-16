@@ -260,7 +260,7 @@ export async function addItemsFromTasks(
   groupId: number,
   taskIds: number[],
   scope: DataScope,
-  opts: { merge?: boolean; parentItemId?: number | null } = {},
+  opts: { merge?: boolean; parentItemId?: number | null; field?: "nhiem_vu" | "dod" } = {},
 ): Promise<{ added: number; skipped: number }> {
   const g = await getGroup(groupId);
   if (!g) throw new GnvError("Không tìm thấy nhóm.");
@@ -296,7 +296,8 @@ export async function addItemsFromTasks(
         task_id: t.id,
         parent_item_id: parentId,
         thu_tu: order++,
-        phuong_phap_do: txt(t.nhiem_vu),
+        // Nội dung lấy theo lựa chọn: Tên nhiệm vụ hoặc DOD (nhiệm vụ chưa có DOD thì lấy Tên nhiệm vụ).
+        phuong_phap_do: opts.field === "dod" ? txt(t.dod) ?? txt(t.nhiem_vu) : txt(t.nhiem_vu),
         ket_qua_thuc_hien: txt(t.tien_do),
         tien_do_goc: t.tien_do ?? null,
       })

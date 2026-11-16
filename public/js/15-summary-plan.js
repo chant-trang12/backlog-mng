@@ -729,6 +729,7 @@ let gnvPickTasks = [];
 let gnvPickUsed = new Set();
 let gnvPickSelected = new Set();
 let gnvPickMode = "each"; // each | merge | parent
+let gnvPickField = "nhiem_vu"; // nhiem_vu | dod — lấy Tên nhiệm vụ hay DOD của Backlog vào cột Phương pháp đo
 
 const GNV_PICK_HINTS = {
   each: "Mỗi nhiệm vụ tạo thành 1 dòng mục tiêu riêng; tên nhiệm vụ nằm ở cột Phương pháp đo.",
@@ -804,6 +805,7 @@ async function openGnvPickDialog(groupId) {
   parentBtn.disabled = heads.length === 0;
   parentBtn.title = heads.length === 0 ? "Nhóm này chưa có mục tiêu nào" : "";
   setGnvPickMode("each");
+  document.querySelector('#gnv-pick-field-seg [data-field="nhiem_vu"]')?.click(); // mặc định lấy theo Tên nhiệm vụ
   document.getElementById("gnv-pick-period").textContent = `Backlog ${period?.label ?? ""}`;
   document.getElementById("gnv-pick-total").textContent = `${gnvPickTasks.length} nhiệm vụ`;
   document.getElementById("gnv-pick-search").value = "";
@@ -831,13 +833,23 @@ document.getElementById("gnv-pick-all")?.addEventListener("change", (e) => {
     .forEach((t) => (e.target.checked ? gnvPickSelected.add(t.id) : gnvPickSelected.delete(t.id)));
   renderGnvPickList();
 });
+document.getElementById("gnv-pick-field-seg")?.addEventListener("click", (e) => {
+  const b = e.target.closest(".gnv-seg-btn");
+  if (!b) return;
+  gnvPickField = b.dataset.field;
+  document.querySelectorAll("#gnv-pick-field-seg .gnv-seg-btn").forEach((x) => x.classList.toggle("active", x === b));
+  document.getElementById("gnv-pick-field-hint").textContent =
+    gnvPickField === "dod"
+      ? "Nội dung ghi vào cột Phương pháp đo = DOD của nhiệm vụ (nhiệm vụ chưa có DOD thì lấy Tên nhiệm vụ)."
+      : "Nội dung ghi vào cột Phương pháp đo = Tên nhiệm vụ trong Backlog.";
+});
 document.getElementById("gnv-pick-cancel-btn")?.addEventListener("click", () => document.getElementById("gnv-pick-dialog").close());
 document.getElementById("gnv-pick-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const task_ids = [...gnvPickSelected];
   if (task_ids.length === 0) return showToast("Hãy chọn ít nhất 1 nhiệm vụ.");
   try {
-    const payload = { group_id: gnvPickGroupId, task_ids };
+    const payload = { group_id: gnvPickGroupId, task_ids, field: gnvPickField };
     if (gnvPickMode === "merge") payload.merge = true;
     else if (gnvPickMode === "parent") payload.parent_item_id = Number(document.getElementById("gnv-pick-parent").value);
     const r = await api("/api/gnv/items/from-tasks", { method: "POST", body: JSON.stringify(payload) });
