@@ -366,7 +366,7 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-sec-head h4 { margin: 0; color: #000; font-size: 12.5pt; }
 .wk-table { width: 100%; border-collapse: collapse; table-layout: auto; }
 .wk-table th { background: #ee0033; color: #fff; text-align: center; border: 1px solid #7f7f7f; padding: 3px 5px; }
-.wk-table td { border: 1px solid #7f7f7f; vertical-align: top; padding: 3px 5px; }
+.wk-table td { border: 1px solid #7f7f7f; vertical-align: middle; padding: 3px 5px; }
 .wk-table tr { page-break-inside: avoid; }
 .wk-table td.wk-center { text-align: center; vertical-align: middle; }
 .wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }

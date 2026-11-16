@@ -59,7 +59,7 @@ const table = (widths: number[], rows: string, borders = true) =>
 const hdrCell = (w: number, label: string): Cell => ({ w, fill: NAVY, content: para(run(label, { bold: true, color: "FFFFFF" }), { align: "center" }) });
 const body = (w: number, v: string | null | undefined, o: Partial<Cell> & { align?: "left" | "center"; bold?: boolean } = {}): Cell => ({
   w,
-  valign: o.valign ?? "top",
+  valign: o.valign ?? "center",
   fill: o.fill,
   span: o.span,
   vmerge: o.vmerge,

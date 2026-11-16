@@ -4075,7 +4075,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 .wk-wrap { max-height: none; margin-top: 0; }
 .wk-table { width: 100%; border-collapse: collapse; }
 .wk-table th { background: var(--header-bg); color: #fff; text-align: center; vertical-align: middle; position: static; border: 1px solid var(--border); }
-.wk-table td { border: 1px solid #c9c9c9; vertical-align: top; }
+.wk-table td { border: 1px solid #c9c9c9; vertical-align: middle; }
 .wk-table td.wk-center { text-align: center; vertical-align: middle; }
 .wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
 .wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
