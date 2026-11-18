@@ -4059,7 +4059,7 @@ button.ots-btn-detail:hover { background: var(--red-300); }
 #otsum-unit-table td { text-align: center; }
 
 /* Tab "BC tuần": bản xem trước giống mẫu Báo cáo giao ban tuần (tiêu đề bảng xanh đen, dòng nhóm hồng, trạng thái tô màu). */
-#wk-week { min-width: 300px; }
+#wk-week { min-width: 360px; }
 .wk-nav { display: inline-flex; gap: 8px; align-items: center; }
 .wk-picker-card { margin-bottom: 14px; }
 .wk-range-info { margin: 12px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--stone-600); }

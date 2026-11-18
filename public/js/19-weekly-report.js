@@ -12,6 +12,7 @@ const WK_FIELDS = {
     { key: "noi_dung", label: "Nội dung công việc", type: "area" },
     { key: "tien_do", label: "Kết quả thực hiện tuần", type: "area" },
     { key: "ke_hoach", label: "Kế hoạch tuần sau", type: "area" },
+    { key: "trang_thai", label: "Trạng thái", type: "status" },
   ],
   B: [
     { key: "ten", label: "Nhiệm vụ", type: "area" },
@@ -163,9 +164,9 @@ function renderWeekly() {
     }
     aHtml += `<tr data-id="${r.id}">${
       first ? `<td class="wk-center" rowspan="${span}"><b>${stt}</b></td><td class="wk-mang" rowspan="${span}"><b>${wkEsc(r.mang_cong_viec)}</b></td>` : ""
-    }<td>${wkText(r.muc_tieu)}</td><td>${wkText(r.noi_dung)}</td><td>${wkText(r.tien_do)}</td><td>${wkText(r.ke_hoach)}</td>${wkRowActions(r, i === 0, i === aRows.length - 1)}</tr>`;
+    }<td>${wkText(r.muc_tieu)}</td><td>${wkText(r.noi_dung)}</td><td>${wkText(r.tien_do)}</td><td>${wkText(r.ke_hoach)}</td>${wkStatusTd(r.trang_thai)}${wkRowActions(r, i === 0, i === aRows.length - 1)}</tr>`;
   }
-  if (!aRows.length) aHtml = '<tr><td colspan="7" class="muted wk-empty">Chưa có dòng nào.</td></tr>';
+  if (!aRows.length) aHtml = '<tr><td colspan="8" class="muted wk-empty">Chưa có dòng nào.</td></tr>';
 
   const bcRows = (rows, withNoiDung) =>
     rows
@@ -191,7 +192,7 @@ function renderWeekly() {
       <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
 
       <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:14%"><col style="width:19%"><col style="width:19%"><col style="width:19%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:4%"><col style="width:10%"><col style="width:13%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:9%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
       <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-b" style="min-width:1900px"><colgroup><col style="width:3%"><col style="width:18%"><col style="width:6.5%"><col style="width:17%"><col style="width:9%"><col style="width:14%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:5.5%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Nhiệm vụ</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>

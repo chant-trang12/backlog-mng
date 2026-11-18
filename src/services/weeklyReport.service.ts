@@ -93,7 +93,7 @@ const txt = (v: unknown): string | null => {
 
 // Các trường nhập theo từng mục.
 const FIELDS: Record<WeeklySection, (keyof WeeklyRow)[]> = {
-  A: ["mang_cong_viec", "muc_tieu", "noi_dung", "tien_do", "ke_hoach"],
+  A: ["mang_cong_viec", "muc_tieu", "noi_dung", "tien_do", "ke_hoach", "trang_thai"],
   B1: ["ten", "chu_tri", "tien_do", "noi_dung", "kho_khan", "de_xuat", "ke_hoach", "trang_thai"],
   B2: ["ten", "chu_tri", "tien_do", "noi_dung", "kho_khan", "de_xuat", "ke_hoach", "trang_thai"],
   C: ["ten", "chu_tri", "tien_do", "kho_khan", "de_xuat", "ke_hoach", "trang_thai"],
@@ -232,8 +232,8 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
   if (!prevRows.length) throw new WeeklyReportError("Tuần liền trước chưa có dòng nào để sao chép.");
   const report = await getOrCreateReport(departmentId, year, week, by);
   if (!cur && prevReport.ten_cong_ty) await db("weekly_reports").where({ id: report.id }).update({ ten_cong_ty: prevReport.ten_cong_ty });
-  // Mục B/C: giữ nguyên Trạng thái hiện tại của tuần trước; dòng đã "Hoàn thành" thì bỏ qua (không chuyển sang tuần mới). Mục A không có trạng thái -> chép hết.
-  const carry = prevRows.filter((r) => r.section === "A" || r.trang_thai !== "Hoàn thành");
+  // Giữ nguyên Trạng thái hiện tại của tuần trước; dòng đã "Hoàn thành" thì bỏ qua (không chuyển sang tuần mới); dòng chưa có trạng thái vẫn chép.
+  const carry = prevRows.filter((r) => r.trang_thai !== "Hoàn thành");
   if (!carry.length) throw new WeeklyReportError("Tuần liền trước chỉ còn các dòng đã hoàn thành — không có gì để sao chép.");
   for (const r of carry) {
     await db("weekly_report_rows").insert({
@@ -250,7 +250,7 @@ export async function copyFromPrevious(departmentId: number, year: number, week:
       kho_khan: null,
       de_xuat: null,
       ke_hoach: null,
-      trang_thai: r.section === "A" ? null : r.trang_thai,
+      trang_thai: r.trang_thai,
     });
   }
   await touch(report.id);

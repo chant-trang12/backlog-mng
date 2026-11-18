@@ -94,10 +94,17 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
   );
 
   // ---- A
-  const aW = [700, 1700, 2400, 3533, 3533, 3532]; // 3 cột Nội dung / Kết quả / Kế hoạch bằng nhau
+  const scaleTo = (px: number[], total = 15398) => {
+    const sum = px.reduce((a, b) => a + b, 0);
+    const w = px.map((p) => Math.round((p / sum) * total));
+    w[w.length - 1] += total - w.reduce((a, b) => a + b, 0);
+    return w;
+  };
+  const statusCell = (w: number, v: string | null) => body(w, v, { align: "center", bold: v === "Đang thực hiện" || v === "Hoàn thành", fill: v ? STATUS_FILL[v] : undefined, valign: "center" });
+  const aW = scaleTo([4, 10, 13, 18, 18, 18, 9]); // 3 cột Nội dung / Kết quả / Kế hoạch bằng nhau + Trạng thái
   parts.push(para(run(`A. NHIỆM VỤ CỦA ${phong.replace(/^PHÒNG\s+/, "P.")} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})`, { bold: true, color: "000000", size: 26 }), { before: 120, after: 120 }));
   const aRows = byS("A");
-  let aXml = row([hdrCell(aW[0], "STT"), hdrCell(aW[1], "Mảng công việc"), hdrCell(aW[2], "Mục tiêu"), hdrCell(aW[3], "Nội dung công việc"), hdrCell(aW[4], `Kết quả thực hiện tuần ${N}`), hdrCell(aW[5], `Kế hoạch tuần ${N1}`)], true);
+  let aXml = row([hdrCell(aW[0], "STT"), hdrCell(aW[1], "Mảng công việc"), hdrCell(aW[2], "Mục tiêu"), hdrCell(aW[3], "Nội dung công việc"), hdrCell(aW[4], `Kết quả thực hiện tuần ${N}`), hdrCell(aW[5], `Kế hoạch tuần ${N1}`), hdrCell(aW[6], "Trạng thái")], true);
   let stt = 0;
   aRows.forEach((r, i) => {
     const first = i === 0 || aRows[i - 1].mang_cong_viec !== r.mang_cong_viec;
@@ -109,22 +116,16 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
       body(aW[3], r.noi_dung),
       body(aW[4], r.tien_do),
       body(aW[5], r.ke_hoach),
+      statusCell(aW[6], r.trang_thai),
     ]);
   });
-  if (!aRows.length) aXml += row([body(aW[0], "", {}), body(aW[1], "", {}), body(aW[2], "", {}), body(aW[3], "", {}), body(aW[4], "", {}), body(aW[5], "", {})]);
+  if (!aRows.length) aXml += row([body(aW[0], "", {}), body(aW[1], "", {}), body(aW[2], "", {}), body(aW[3], "", {}), body(aW[4], "", {}), body(aW[5], "", {}), body(aW[6], "", {})]);
   parts.push(table(aW, aXml));
 
   // ---- B
   // Độ rộng cột theo tỉ lệ như màn hình: Tiến độ / Nội dung / Kế hoạch rộng hơn nhiều, Trạng thái nhỏ lại.
-  const scaleTo = (px: number[], total = 15398) => {
-    const sum = px.reduce((a, b) => a + b, 0);
-    const w = px.map((p) => Math.round((p / sum) * total));
-    w[w.length - 1] += total - w.reduce((a, b) => a + b, 0);
-    return w;
-  };
   const bW = scaleTo([3, 18, 6.5, 17, 9, 14, 13.5, 13.5, 5.5]);
   parts.push(para(run("B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN", { bold: true, color: "000000", size: 26 }), { before: 360, after: 120 }));
-  const statusCell = (w: number, v: string | null) => body(w, v, { align: "center", bold: v === "Đang thực hiện" || v === "Hoàn thành", fill: v ? STATUS_FILL[v] : undefined, valign: "center" });
   let bXml = row([hdrCell(bW[0], "STT"), hdrCell(bW[1], "Nhiệm vụ"), hdrCell(bW[2], "Chủ trì"), hdrCell(bW[3], `Tiến độ thực hiện tuần ${N}`), hdrCell(bW[4], "Nội dung"), hdrCell(bW[5], "Khó khăn"), hdrCell(bW[6], "Đề xuất"), hdrCell(bW[7], `Kế hoạch tuần ${N1}`), hdrCell(bW[8], "Trạng thái")], true);
   const groupRow = (label: string, widths: number[]) =>
     row([
