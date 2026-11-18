@@ -147,9 +147,13 @@ export async function listFeatureRequestsHandler(req: Request, res: Response) {
 }
 
 export async function createFeatureRequestHandler(req: Request, res: Response) {
-  const { he_thong, tieu_de, target_department_id } = req.body ?? {};
+  const { he_thong, tieu_de, target_department_id, nguoi_de_xuat } = req.body ?? {};
   if (!isNonEmptyText(he_thong) || !isNonEmptyText(tieu_de)) {
     return res.status(400).json({ error: "Trường 'he_thong' và 'tieu_de' là bắt buộc" });
+  }
+  // "Nhân sự đầu mối" (nguoi_de_xuat) bắt buộc khi THÊM yêu cầu (form Thêm yêu cầu + Import Excel).
+  if (!isNonEmptyText(nguoi_de_xuat)) {
+    return res.status(400).json({ error: "Trường 'Nhân sự đầu mối' là bắt buộc" });
   }
   const targetDepartmentId = Number(target_department_id);
   if (!Number.isFinite(targetDepartmentId) || targetDepartmentId <= 0) {

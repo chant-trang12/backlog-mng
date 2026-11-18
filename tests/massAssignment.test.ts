@@ -172,6 +172,7 @@ describe("ATTT: Mass Assignment — whitelist trường + validate danh mục/en
         he_thong: "Hệ thống MA",
         tieu_de: "FR mass assignment",
         target_department_id: dept.body.id,
+        nguoi_de_xuat: "Nguyễn Văn A",
         trang_thai: "Đã duyệt",
         linked_task_id: 123,
         id: 99999,
@@ -187,7 +188,7 @@ describe("ATTT: Mass Assignment — whitelist trường + validate danh mục/en
     const dept = await request(app).post("/api/departments").send({ name: "MA Phòng FR 2" });
     const fr = await request(app)
       .post("/api/feature-requests")
-      .send({ he_thong: "Hệ thống MA", tieu_de: "FR update", target_department_id: dept.body.id });
+      .send({ he_thong: "Hệ thống MA", tieu_de: "FR update", target_department_id: dept.body.id, nguoi_de_xuat: "Nguyễn Văn A" });
     expect(fr.status).toBe(201);
 
     const updated = await request(app)

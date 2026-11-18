@@ -20,7 +20,7 @@ async function makeDept(app: ReturnType<typeof createApp>, name: string) {
 async function createFr(app: ReturnType<typeof createApp>, tieuDe: string, targetId: number, heThong = "HT") {
   return request(app)
     .post("/api/feature-requests")
-    .send({ he_thong: heThong, tieu_de: tieuDe, target_department_id: targetId });
+    .send({ he_thong: heThong, tieu_de: tieuDe, target_department_id: targetId, nguoi_de_xuat: "Nguyễn Văn A" });
 }
 
 describe("Yêu cầu tính năng: không thêm trùng Tiêu đề (thêm mới + import)", () => {
@@ -73,10 +73,11 @@ describe("Yêu cầu tính năng: không thêm trùng Tiêu đề (thêm mới +
         "Đơn vị đề xuất",
         "Phòng ban thực hiện",
         "Ưu tiên",
+        "Nhân sự đầu mối",
       ],
       [
-        [1, "Soạn thảo công văn online", "HT", "Soạn thảo công văn", `FR Dup phòng E`, `FR Dup phòng E`, "Cao"],
-        [2, "Lưu hồ sơ điện tử tập trung", "HT", "Lưu hồ sơ", `FR Dup phòng E`, `FR Dup phòng E`, "Trung bình"],
+        [1, "Soạn thảo công văn online", "HT", "Soạn thảo công văn", `FR Dup phòng E`, `FR Dup phòng E`, "Cao", "Nguyễn Văn A"],
+        [2, "Lưu hồ sơ điện tử tập trung", "HT", "Lưu hồ sơ", `FR Dup phòng E`, `FR Dup phòng E`, "Trung bình", "Nguyễn Văn A"],
       ],
     );
     const res = await request(app)
@@ -107,11 +108,12 @@ describe("Yêu cầu tính năng: không thêm trùng Tiêu đề (thêm mới +
         "Đơn vị đề xuất",
         "Phòng ban thực hiện",
         "Ưu tiên",
+        "Nhân sự đầu mối",
       ],
       [
-        [1, "Trình ký điện tử nội bộ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao"],
-        [2, "Trình ký điện tử nội bộ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao"],
-        [3, "  trình ký  điện tử NỘI BỘ  ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao"],
+        [1, "Trình ký điện tử nội bộ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao", "Nguyễn Văn A"],
+        [2, "Trình ký điện tử nội bộ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao", "Nguyễn Văn A"],
+        [3, "  trình ký  điện tử NỘI BỘ  ", "HT", "Trình ký", `FR Dup phòng F`, `FR Dup phòng F`, "Cao", "Nguyễn Văn A"],
       ],
     );
     const res = await request(app)

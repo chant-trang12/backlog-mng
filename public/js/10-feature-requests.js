@@ -917,6 +917,8 @@ function openFeatureRequestDialog(item) {
   document.getElementById("fr-ke-hoach-software").value = item?.ke_hoach_software ?? "";
   document.getElementById("fr-ket-qua-mong-muon").value = item?.ket_qua_mong_muon ?? "";
   document.getElementById("fr-nguoi-de-xuat").value = item?.nguoi_de_xuat ?? "";
+  // "Nhân sự đầu mối" bắt buộc khi THÊM yêu cầu mới (sửa yêu cầu cũ chưa có đầu mối thì không ép).
+  document.getElementById("fr-nguoi-de-xuat").required = !item;
   document.getElementById("fr-thoi-gian-mong-muon").value = item?.thoi_gian_mong_muon ?? "";
   document.getElementById("fr-do-uu-tien").value = item?.do_uu_tien ?? "Trung bình";
 
@@ -985,6 +987,11 @@ document.getElementById("feature-request-form")?.addEventListener("submit", asyn
   const targetDeptValue = document.getElementById("fr-target-department").value;
   if (!targetDeptValue) {
     showToast("Hãy chọn Phòng ban đích trước khi lưu.");
+    return;
+  }
+  if (!id && !document.getElementById("fr-nguoi-de-xuat").value.trim()) {
+    showToast('Hãy nhập "Nhân sự đầu mối" (bắt buộc).');
+    document.getElementById("fr-nguoi-de-xuat").focus();
     return;
   }
   const payload = {

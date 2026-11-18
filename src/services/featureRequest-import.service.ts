@@ -278,6 +278,12 @@ export async function importFeatureRequestsFromWorkbook(
       continue;
     }
 
+    // "Nhân sự đầu mối" bắt buộc — dòng để trống bị bỏ qua (giống form Thêm yêu cầu).
+    if (!val(row, col("dau_moi"))) {
+      result.skipped.push({ row: rowNo, label, reason: 'Thiếu "Nhân sự đầu mối" (bắt buộc)' });
+      continue;
+    }
+
     // Tiêu đề (bắt buộc ở DB) — lấy từ cột "Tiêu đề"; nếu trống tự lấy từ
     // Hoạt động/nghiệp vụ, fallback Đề xuất/Mô tả (cắt 200 ký tự).
     const tieuDe = (val(row, col("tieu_de")) || hoatDong || deXuat || moTa).slice(0, 200);

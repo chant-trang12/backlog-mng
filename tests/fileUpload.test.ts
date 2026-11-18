@@ -28,6 +28,7 @@ async function createFeatureRequest(app: ReturnType<typeof createApp>): Promise<
       he_thong: "CRM",
       tieu_de: `Test đính kèm ATTT ${Date.now()}-${frUniqueSeq}`,
       target_department_id: 1,
+      nguoi_de_xuat: "Nguyễn Văn A",
     });
   expect(created.status).toBe(201);
   return created.body.id;

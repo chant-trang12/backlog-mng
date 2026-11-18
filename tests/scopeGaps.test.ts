@@ -145,7 +145,7 @@ describe("Validate kiểu/danh mục (Mass Assignment vòng 2)", () => {
     const app = createApp();
     const depts = await request(app).get("/api/departments");
     const target = depts.body[0].id;
-    const base = { he_thong: "Website", target_department_id: target };
+    const base = { he_thong: "Website", target_department_id: target, nguoi_de_xuat: "Nguyễn Văn A" };
 
     const badPriority = await request(app).post("/api/feature-requests").send({ ...base, tieu_de: uniq("P"), do_uu_tien: "IDC_TEST" });
     expect(badPriority.status).toBe(400);

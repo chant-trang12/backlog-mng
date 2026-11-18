@@ -334,7 +334,7 @@ describe("ATTT: Stored XSS — mọi đầu vào ghi đều bị strip ký tự 
         run: () =>
           request(app)
             .post("/api/feature-requests")
-            .send({ he_thong: PAYLOAD, tieu_de: `Yêu cầu${PAYLOAD}`, target_department_id: deptId }),
+            .send({ he_thong: PAYLOAD, tieu_de: `Yêu cầu${PAYLOAD}`, target_department_id: deptId, nguoi_de_xuat: "Nguyễn Văn A" }),
       },
       {
         name: "POST /api/tasks/:id/items (Việc con)",
