@@ -23,7 +23,7 @@
   let activeIndex = -1;
 
   function enhanceable(select) {
-    return select instanceof HTMLSelectElement && !select.multiple && select.size <= 1 && !select.disabled;
+    return select instanceof HTMLSelectElement && !select.multiple && select.size <= 1 && !select.disabled && !select.dataset.multiFilter;
   }
 
   function close({ focus = true } = {}) {

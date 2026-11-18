@@ -239,18 +239,18 @@ async function refreshFeatureRequestNavBadge() {
   }
 }
 
+// 3 bộ lọc chọn NHIỀU giá trị (Hệ thống, Đơn vị đề xuất, Đơn vị thực hiện số hoá) — xem 01b-multi-filter.js.
+const frMfHeThong = setupMultiFilter("fr-filter-he-thong", () => frResetPageAndRender());
+const frMfDonVi = setupMultiFilter("fr-filter-don-vi", () => frResetPageAndRender());
+const frMfDonViThucHien = setupMultiFilter("fr-filter-don-vi-thuc-hien", () => frResetPageAndRender());
+
 function populateFrHeThongFilter() {
-  const select = document.getElementById("fr-filter-he-thong");
-  if (!select) return;
-  const current = select.value;
   const heThongSet = new Set(state.featureRequests.map((r) => r.he_thong).filter(Boolean));
-  select.innerHTML =
-    `<option value="">Tất cả</option>` +
+  frMfHeThong.setOptions(
     Array.from(heThongSet)
       .sort((a, b) => a.localeCompare(b))
-      .map((h) => `<option value="${h}">${h}</option>`)
-      .join("");
-  select.value = heThongSet.has(current) ? current : "";
+      .map((h) => ({ value: h, label: h })),
+  );
 }
 
 // "Quý thực hiện" không lưu DB (suy từ thoi_gian_mong_muon — xem frQuarterOf
@@ -274,39 +274,27 @@ function populateFrQuarterFilter() {
 }
 
 function populateFrDonViDeXuatFilter() {
-  const select = document.getElementById("fr-filter-don-vi");
-  if (!select) return;
-  const current = select.value;
-  select.innerHTML =
-    `<option value="">Tất cả</option>` +
-    state.departments.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
-  select.value = current;
+  frMfDonVi.setOptions(state.departments.map((d) => ({ value: String(d.id), label: d.name })));
 }
 
 function populateFrDonViThucHienFilter() {
-  const select = document.getElementById("fr-filter-don-vi-thuc-hien");
-  if (!select) return;
-  const current = select.value;
-  select.innerHTML =
-    `<option value="">Tất cả</option>` +
-    state.departments.map((d) => `<option value="${d.id}">${d.name}</option>`).join("");
-  select.value = current;
+  frMfDonViThucHien.setOptions(state.departments.map((d) => ({ value: String(d.id), label: d.name })));
 }
 
 function filteredFeatureRequests() {
   const term = (document.getElementById("fr-filter-search")?.value ?? "").trim().toLowerCase();
   const status = document.getElementById("fr-filter-status")?.value ?? "";
-  const heThong = document.getElementById("fr-filter-he-thong")?.value ?? "";
+  const heThong = frMfHeThong.selected; // Set — rỗng = Tất cả
   const quy = document.getElementById("fr-filter-quy")?.value ?? "";
-  const donVi = document.getElementById("fr-filter-don-vi")?.value ?? "";
-  const donViThucHien = document.getElementById("fr-filter-don-vi-thuc-hien")?.value ?? "";
+  const donVi = frMfDonVi.selected;
+  const donViThucHien = frMfDonViThucHien.selected;
   const uuTien = document.getElementById("fr-filter-uu-tien")?.value ?? "";
   return state.featureRequests.filter((r) => {
     if (status && r.trang_thai !== status) return false;
-    if (heThong && r.he_thong !== heThong) return false;
+    if (heThong.size && !heThong.has(r.he_thong)) return false;
     if (quy && frQuarterOf(r.thoi_gian_mong_muon) !== quy) return false;
-    if (donVi && String(r.department_id ?? "") !== donVi) return false;
-    if (donViThucHien && String(r.target_department_id ?? "") !== donViThucHien) return false;
+    if (donVi.size && !donVi.has(String(r.department_id ?? ""))) return false;
+    if (donViThucHien.size && !donViThucHien.has(String(r.target_department_id ?? ""))) return false;
     if (uuTien && r.do_uu_tien !== uuTien) return false;
     if (
       term &&
@@ -1232,10 +1220,7 @@ function frResetPageAndRender() {
 }
 document.getElementById("fr-filter-search")?.addEventListener("input", frResetPageAndRender);
 document.getElementById("fr-filter-status")?.addEventListener("change", frResetPageAndRender);
-document.getElementById("fr-filter-he-thong")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-quy")?.addEventListener("change", frResetPageAndRender);
-document.getElementById("fr-filter-don-vi")?.addEventListener("change", frResetPageAndRender);
-document.getElementById("fr-filter-don-vi-thuc-hien")?.addEventListener("change", frResetPageAndRender);
 document.getElementById("fr-filter-uu-tien")?.addEventListener("change", frResetPageAndRender);
 
 // ---- Import Excel biểu mẫu Quy trình số hóa ----
