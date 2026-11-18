@@ -72,6 +72,16 @@ function setupMultiFilter(selectId, onChange) {
       popup.style.top = `${r.bottom + 4}px`;
     }
   }
+  // Nút "Chọn tất cả" sáng màu khi mọi dòng đang hiện đã được tick (và có ít nhất 1 dòng).
+  function syncAllBtn() {
+    const btn = popup?.querySelector('[data-act="all"]');
+    if (!btn) return;
+    const term = (popup.querySelector(".dd-search")?.value ?? "").trim().toLowerCase();
+    const visible = mf.options.filter((o) => !term || o.label.toLowerCase().includes(term));
+    const on = visible.length > 0 && visible.every((o) => mf.selected.has(o.value));
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", String(on));
+  }
   function renderList(list, term) {
     list.textContent = "";
     const t = term.trim().toLowerCase();
@@ -87,11 +97,13 @@ function setupMultiFilter(selectId, onChange) {
         if (mf.selected.has(o.value)) mf.selected.delete(o.value);
         else mf.selected.add(o.value);
         row.classList.toggle("is-selected", mf.selected.has(o.value));
+        syncAllBtn();
         mf.change();
       });
       list.appendChild(row);
     }
     if (!rows.length) list.insertAdjacentHTML("beforeend", '<div class="dd-empty">Không có lựa chọn phù hợp</div>');
+    syncAllBtn();
   }
   function open() {
     if (popup) return close();
