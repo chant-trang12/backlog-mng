@@ -137,7 +137,8 @@ function wkRowActions(r, first, last) {
     <button class="small btn-edit write-action wk-edit" data-id="${r.id}">Sửa</button>
     <button class="small btn-delete wk-del" data-id="${r.id}">Xóa</button></div></td>`;
 }
-const wkStatusTd = (v) => `<td class="wk-center ${WK_STATUS_CLASS[v] ?? ""}">${wkEsc(v ?? "")}</td>`;
+// Trạng thái hiển thị dạng badge (viên thuốc màu) giữa ô.
+const wkStatusTd = (v) => `<td class="wk-center">${v ? `<span class="wk-badge ${WK_STATUS_CLASS[v] ?? ""}">${wkEsc(v)}</span>` : ""}</td>`;
 const wkAddBtn = (section, label = "+ Thêm dòng") => `<button type="button" class="small btn-view write-action wk-add" data-section="${section}">${label}</button>`;
 
 function renderWeekly() {
@@ -192,16 +193,16 @@ function renderWeekly() {
       <p class="wk-sub"><i>Tuần ${N} (từ ngày ${wkDm(wk.start)} đến ngày ${wkDmy(wk.end)}) – Kế hoạch tuần ${N1} (từ ngày ${wkDm(wk.next_start)} đến ngày ${wkDmy(wk.next_end)})</i></p>
 
       <div class="wk-sec-head"><h4>A. NHIỆM VỤ CỦA ${wkEsc(phong.replace(/^PHÒNG\s+/, "P."))} THEO MẢNG CÔNG VIỆC (KẾT QUẢ TUẦN ${N} VÀ KẾ HOẠCH TUẦN ${N1})</h4>${wkAddBtn("A")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:4%"><col style="width:10%"><col style="width:13%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:9%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-a"><colgroup><col style="width:4%"><col style="width:10%"><col style="width:12%"><col style="width:16%"><col style="width:16%"><col style="width:16%"><col style="width:14%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Mảng công việc</th><th>Mục tiêu</th><th>Nội dung công việc</th><th>Kết quả thực hiện tuần ${N}</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${aHtml}</tbody></table></div>
 
       <div class="wk-sec-head"><h4>B. NHIỆM VỤ ĐƯỢC GIAO VOFFICE THEO KẾT LUẬN</h4></div>
-      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-b" style="min-width:1900px"><colgroup><col style="width:3%"><col style="width:18%"><col style="width:6.5%"><col style="width:17%"><col style="width:9%"><col style="width:14%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:5.5%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Nhiệm vụ</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-b" style="min-width:1900px"><colgroup><col style="width:3%"><col style="width:18%"><col style="width:6.5%"><col style="width:17%"><col style="width:9%"><col style="width:14%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:8%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Nhiệm vụ</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Nội dung</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>
         ${groupRow("I. NHIỆM VỤ PHỐI HỢP", "B1")}${bcRows(b1, true)}
         ${groupRow("II. NHIỆM VỤ TRỰC TIẾP", "B2")}${bcRows(b2, true)}
       </tbody></table></div>
 
       <div class="wk-sec-head"><h4>C. VĂN BẢN VOFFICE ĐƯỢC GIAO THỰC HIỆN</h4>${wkAddBtn("C")}</div>
-      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-c" style="min-width:1800px"><colgroup><col style="width:3%"><col style="width:24%"><col style="width:6%"><col style="width:17%"><col style="width:18%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:5%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Văn bản</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
+      <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-c" style="min-width:1800px"><colgroup><col style="width:3%"><col style="width:24%"><col style="width:6%"><col style="width:17%"><col style="width:18%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:8%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Văn bản</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
         cRows.length ? bcRows(cRows, false) : '<tr><td colspan="9" class="muted wk-empty">Chưa có dòng nào.</td></tr>'
       }</tbody></table></div>
       <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)</i></p>
@@ -379,10 +380,11 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
 .wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
 .wk-li { padding-left: 10px; text-indent: -10px; }
-.wk-st-done { background: #c6e0b4; font-weight: 700; }
-.wk-st-doing { background: #ebefa9; font-weight: 700; }
-.wk-st-stuck { background: #f8cbad; }
-.wk-st-none { background: #e7e6e6; }
+.wk-badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; line-height: 1.35; text-align: center; }
+.wk-st-done { background: #c6e0b4; color: #27561b; }
+.wk-st-doing { background: #ebefa9; color: #5f5f08; }
+.wk-st-stuck { background: #f8cbad; color: #9a3412; }
+.wk-st-none { background: #e7e6e6; color: #57534e; }
 .wk-note { margin: 12px 0 0; }
 .wk-sign { text-align: right; margin: 22px 0 0; }
 `;
