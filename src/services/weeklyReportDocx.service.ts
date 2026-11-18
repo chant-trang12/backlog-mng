@@ -12,10 +12,10 @@ const NAVY = "1F2A44";
 const RED = "C00032";
 const PINK = "F2DCDB";
 const STATUS_FILL: Record<string, string> = {
-  "Hoàn thành": "C6E0B4",
-  "Đang thực hiện": "EBEFA9",
-  "Vướng mắc / cần gia hạn": "F8CBAD",
-  "Chưa cập nhật": "E7E6E6",
+  "Hoàn thành": "DCE8D2",
+  "Đang thực hiện": "FFEDD5",
+  "Vướng mắc / cần gia hạn": "FCD9DB",
+  "Chưa cập nhật": "FEF3C7",
 };
 
 interface RunOpts {
@@ -154,7 +154,7 @@ export async function buildWeeklyReportDocx(data: WeeklyData): Promise<Buffer> {
   parts.push(table(cW, cXml));
 
   parts.push(
-    para(run("Ghi chú trạng thái: ", { bold: true }) + run("Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)", { italic: true }), { before: 200, after: 360 }),
+    para(run("Ghi chú trạng thái: ", { bold: true }) + run("Hoàn thành (xanh) · Đang thực hiện (cam) · Vướng mắc / cần gia hạn (đỏ) · Chưa cập nhật (vàng)", { italic: true }), { before: 200, after: 360 }),
   );
   parts.push(para(run(`TRƯỞNG ${phong}`, { bold: true }), { align: "right", before: 120 }));
 

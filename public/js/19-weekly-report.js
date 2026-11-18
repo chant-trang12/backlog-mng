@@ -2,7 +2,8 @@
 // xem trước giống mẫu Word, xuất .docx. Dữ liệu theo (phòng ban, năm, tuần), KHÔNG phụ thuộc "Tháng theo dõi".
 
 const WK_STATUSES = ["Hoàn thành", "Đang thực hiện", "Vướng mắc / cần gia hạn", "Chưa cập nhật"];
-const WK_STATUS_CLASS = { "Hoàn thành": "wk-st-done", "Đang thực hiện": "wk-st-doing", "Vướng mắc / cần gia hạn": "wk-st-stuck", "Chưa cập nhật": "wk-st-none" };
+// Màu badge trạng thái dùng đúng class badge của hệ thống (như cột Trạng thái ở Backlog).
+const WK_STATUS_CLASS = { "Hoàn thành": "status-hoan-thanh", "Đang thực hiện": "status-dang-thuc-hien", "Vướng mắc / cần gia hạn": "status-huy", "Chưa cập nhật": "status-default" };
 
 // Trường nhập theo mục (key = cột weekly_report_rows). type: text | area | status.
 const WK_FIELDS = {
@@ -138,7 +139,7 @@ function wkRowActions(r, first, last) {
     <button class="small btn-delete wk-del" data-id="${r.id}">Xóa</button></div></td>`;
 }
 // Trạng thái hiển thị dạng badge (viên thuốc màu) giữa ô.
-const wkStatusTd = (v) => `<td class="wk-center">${v ? `<span class="wk-badge ${WK_STATUS_CLASS[v] ?? ""}">${wkEsc(v)}</span>` : ""}</td>`;
+const wkStatusTd = (v) => `<td class="wk-center">${v ? `<span class="status-badge wk-badge ${WK_STATUS_CLASS[v] ?? "status-default"}">${wkEsc(v)}</span>` : ""}</td>`;
 const wkAddBtn = (section, label = "+ Thêm dòng") => `<button type="button" class="small btn-view write-action wk-add" data-section="${section}">${label}</button>`;
 
 function renderWeekly() {
@@ -205,7 +206,7 @@ function renderWeekly() {
       <div class="table-wrap wk-wrap"><table class="wk-table wk-fixed wk-c" style="min-width:1800px"><colgroup><col style="width:3%"><col style="width:24%"><col style="width:6%"><col style="width:17%"><col style="width:18%"><col style="width:13.5%"><col style="width:13.5%"><col style="width:8%"><col class="wk-col-actions" style="width:108px"></colgroup><thead><tr><th>STT</th><th>Văn bản</th><th>Chủ trì</th><th>Tiến độ thực hiện tuần ${N}</th><th>Khó khăn</th><th>Đề xuất</th><th>Kế hoạch tuần ${N1}</th><th>Trạng thái</th><th class="wk-actions-h">Thao tác</th></tr></thead><tbody>${
         cRows.length ? bcRows(cRows, false) : '<tr><td colspan="9" class="muted wk-empty">Chưa có dòng nào.</td></tr>'
       }</tbody></table></div>
-      <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (vàng) · Vướng mắc / cần gia hạn (cam) · Chưa cập nhật (xám)</i></p>
+      <p class="wk-note"><b>Ghi chú trạng thái:</b> <i>Hoàn thành (xanh) · Đang thực hiện (cam) · Vướng mắc / cần gia hạn (đỏ) · Chưa cập nhật (vàng)</i></p>
       <p class="wk-sign"><b>TRƯỞNG ${wkEsc(phong)}</b></p>
     </div>`;
 }
@@ -380,11 +381,11 @@ body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #00
 .wk-table td.wk-mang { background: #f2f2f2; vertical-align: middle; }
 .wk-table tr.wk-group td { background: #f2dcdb; color: #7b1f2a; }
 .wk-li { padding-left: 10px; text-indent: -10px; }
-.wk-badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; line-height: 1.35; text-align: center; }
-.wk-st-done { background: #c6e0b4; color: #27561b; }
-.wk-st-doing { background: #ebefa9; color: #5f5f08; }
-.wk-st-stuck { background: #f8cbad; color: #9a3412; }
-.wk-st-none { background: #e7e6e6; color: #57534e; }
+.status-badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 0.8rem; line-height: 1.35; text-align: center; }
+.status-hoan-thanh { background: #dce8d2; color: #3e5a30; }
+.status-dang-thuc-hien { background: #ffedd5; color: #9a3412; }
+.status-huy { background: #fcd9db; color: #ee0033; }
+.status-default { background: #fef3c7; color: #92400e; }
 .wk-note { margin: 12px 0 0; }
 .wk-sign { text-align: right; margin: 22px 0 0; }
 `;
