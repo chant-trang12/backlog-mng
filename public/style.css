@@ -4133,9 +4133,9 @@ select.mf-active { border-color: var(--red-600); font-weight: 600; }
 .mf-actions button.is-on { background: #fcd9db; border-color: var(--red-300); color: var(--red-800); font-weight: 700; }
 
 /* ---- Xem trước báo cáo PowerPoint dạng slide (20-pptx-preview.js): popup 3/4 màn hình ---- */
-/* Xem trước: xám đen — khác hẳn Chia sẻ (cam), Phiên bản (xanh dương), Sao chép (vàng), Xuất (đỏ đặc), Xóa (hồng). */
-button.pptx-btn-preview { background: var(--stone-700); border-color: var(--stone-700); color: #fff; }
-button.pptx-btn-preview:hover { background: var(--stone-800); border-color: var(--stone-800); }
+/* Xem trước: xanh ngọc (teal) — khác Chia sẻ (cam), Phiên bản (xanh dương), Sao chép (vàng), Xuất (đỏ đặc), Xóa (hồng). */
+button.pptx-btn-preview { background: #d7f0ee; border-color: #8fd3cc; color: #0e6e64; }
+button.pptx-btn-preview:hover { background: #b9e4e0; }
 dialog.pv-dialog { width: 75vw; max-width: none; height: 75vh; max-height: none; overflow: hidden; }
 dialog.pv-dialog[open] { display: flex; flex-direction: column; }
 .pv-head { display: flex; align-items: center; gap: 14px; padding: 12px 56px 10px 18px; border-bottom: 1px solid var(--border); }
