@@ -4136,7 +4136,7 @@ select.mf-active { border-color: var(--red-600); font-weight: 600; }
 /* Xem trước: xanh ngọc (teal) — khác Chia sẻ (cam), Phiên bản (xanh dương), Sao chép (vàng), Xuất (đỏ đặc), Xóa (hồng). */
 button.pptx-btn-preview { background: #d7f0ee; border-color: #8fd3cc; color: #0e6e64; }
 button.pptx-btn-preview:hover { background: #b9e4e0; }
-dialog.pv-dialog { width: 75vw; max-width: none; height: 75vh; max-height: none; overflow: hidden; }
+dialog.pv-dialog { width: 94vw; max-width: none; height: 92vh; max-height: none; overflow: hidden; }
 dialog.pv-dialog[open] { display: flex; flex-direction: column; }
 .pv-head { display: flex; align-items: center; gap: 14px; padding: 12px 56px 10px 18px; border-bottom: 1px solid var(--border); }
 .pv-nav { margin-left: auto; display: flex; gap: 6px; }
@@ -4196,4 +4196,4 @@ dialog.pv-dialog[open] { display: flex; flex-direction: column; }
 .pv-cm-form textarea { width: 100%; }
 .pv-pick-hint { font-size: 0.82rem; margin: 0; }
 .pv-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 18px; border-top: 1px solid var(--border); font-size: 0.82rem; }
-@media (max-width: 1100px) { dialog.pv-dialog { width: 96vw; height: 92vh; } .pv-body { grid-template-columns: 0 minmax(0, 1fr) 260px; } .pv-thumbs { display: none; } }
+@media (max-width: 1100px) { dialog.pv-dialog { width: 98vw; height: 96vh; } .pv-body { grid-template-columns: 0 minmax(0, 1fr) 260px; } .pv-thumbs { display: none; } }
