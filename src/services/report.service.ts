@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "../db/database.js";
 import { assertDepartmentInScope, type DataScope } from "./scope.util.js";
 import { fillPptx, type FillData } from "./pptx.service.js";
+import { buildPreviewModel } from "./pptxPreview.service.js";
 import { ReportError, getTemplateFile, type TemplateField } from "./reportTemplate.service.js";
 import { listReportComments } from "./reportComment.service.js";
 import { imageMetaByCode, imageRowsForExport } from "./reportImage.service.js";
@@ -378,20 +379,16 @@ export function ratio(r: { ke_hoach: number | null; thuc_hien: number | null }):
   return r.ke_hoach && r.thuc_hien != null ? (r.thuc_hien / r.ke_hoach) * 100 : null;
 }
 
-export async function exportReport(id: number, byUser: string | null, scope: DataScope, actor: Actor) {
-  const report = await getRawReport(id);
-  if (!report) throw new ReportError("Không tìm thấy báo cáo.");
-  await assertCanView(report, scope, actor);
+// Dữ liệu điền vào mẫu (dùng chung cho Xuất PowerPoint và Xem trước dạng slide): FillData + id từng dòng bảng
+// (để Xem trước biết dòng nào của đầu mục nào khi sửa trực tiếp) + danh sách đầu mục bắt buộc còn trống.
+export async function buildFillData(reportId: number, report: any, fields: TemplateField[]) {
   const type = report.period_type as PeriodType;
-  const tplFile = await getTemplateFile(report.department_id, type);
-  if (!tplFile) throw new ReportError("Chưa có file mẫu cho loại kỳ này.");
-  const fields = await loadFields(tplFile.id);
-  const sections = await loadSections(id);
+  const sections = await loadSections(reportId);
   const label = periodLabel(type, report.year, report.idx);
-
   const data: FillData = {};
+  const rowIds = new Map<string, string[]>();
   const missingRequired: string[] = [];
-  const imageRows = new Map((await imageRowsForExport(id)).map((r: any) => [r.field_code, r]));
+  const imageRows = new Map((await imageRowsForExport(reportId)).map((r: any) => [r.field_code, r]));
   for (const f of fields) {
     const c = sections.get(f.code);
     if (f.kind === "image") {
@@ -406,16 +403,31 @@ export async function exportReport(id: number, byUser: string | null, scope: Dat
     if (f.kind === "auto") data[f.code] = { kind: "auto", text: label };
     else if (f.kind === "paragraph") data[f.code] = { kind: "paragraph", text: c?.text ?? "" };
     else if (f.kind === "list") data[f.code] = { kind: "list", items: (c?.items ?? []).filter((i) => i.text && i.selected !== false).map((i) => i.text) };
-    else
+    else {
+      const shown = (c?.rows ?? []).filter((r) => r.ten);
+      rowIds.set(f.code, shown.map((r) => r.id));
       data[f.code] = {
         kind: "table",
-        rows: (c?.rows ?? []).filter((r) => r.ten).map((r) => {
+        rows: shown.map((r) => {
           const p = ratio(r);
           return { ten: r.ten, don_vi: r.don_vi, ke_hoach: fmtNum(r.ke_hoach), thuc_hien: fmtNum(r.thuc_hien), ty_le: p == null ? "" : `${p.toLocaleString("vi-VN", { maximumFractionDigits: 1 })}%` };
         }),
       };
+    }
     if (f.required && f.kind !== "auto" && isEmpty(f.kind, c)) missingRequired.push(f.label);
   }
+  return { data, rowIds, missingRequired };
+}
+
+export async function exportReport(id: number, byUser: string | null, scope: DataScope, actor: Actor) {
+  const report = await getRawReport(id);
+  if (!report) throw new ReportError("Không tìm thấy báo cáo.");
+  await assertCanView(report, scope, actor);
+  const type = report.period_type as PeriodType;
+  const tplFile = await getTemplateFile(report.department_id, type);
+  if (!tplFile) throw new ReportError("Chưa có file mẫu cho loại kỳ này.");
+  const fields = await loadFields(tplFile.id);
+  const { data, missingRequired } = await buildFillData(id, report, fields);
   // Góp ý của báo cáo -> Comment của slide trong file xuất (kèm tên đầu mục + trạng thái).
   const labelByCode = new Map(fields.map((f) => [f.code, f.label]));
   const slideByCode = new Map(fields.map((f) => [f.code, f.slide_no]));
@@ -448,4 +460,16 @@ export async function getVersionFile(versionId: number, scope: DataScope, actor:
   if (!report) return null;
   await assertCanView(report, scope, actor);
   return v as { file_name: string; file_data: Buffer };
+}
+
+// ---- Xem trước dạng slide ----
+export async function previewReport(id: number, scope: DataScope, actor: Actor) {
+  const report = await getRawReport(id);
+  if (!report) throw new ReportError("Không tìm thấy báo cáo.");
+  await assertCanView(report, scope, actor);
+  const tplFile = await getTemplateFile(report.department_id, report.period_type as PeriodType);
+  if (!tplFile) throw new ReportError("Chưa có file mẫu cho loại kỳ này.");
+  const fields = await loadFields(tplFile.id);
+  const { data, rowIds } = await buildFillData(id, report, fields);
+  return buildPreviewModel(Buffer.from(tplFile.file_data), data, { reportId: id, rowIds });
 }

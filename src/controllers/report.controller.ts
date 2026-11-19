@@ -158,6 +158,16 @@ export async function deleteReportHandler(req: Request, res: Response) {
   if (!(await rep.deleteReport(id, scopeOf(req)))) return res.status(404).json({ error: "Không tìm thấy báo cáo" });
   res.status(204).end();
 }
+// Xem trước dạng slide: mô hình JSON của từng slide (mẫu + dữ liệu hiện tại) — người xem (kể cả được chia sẻ) đều xem được.
+export async function previewReportHandler(req: Request, res: Response) {
+  const id = idOf(req);
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    res.json(await rep.previewReport(id, scopeOf(req), actorOf(req)));
+  } catch (e) {
+    fail(res, e);
+  }
+}
 export async function exportReportHandler(req: Request, res: Response) {
   const id = idOf(req);
   if (!id) return res.status(400).json({ error: "id không hợp lệ" });

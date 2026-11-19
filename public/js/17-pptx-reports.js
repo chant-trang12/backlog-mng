@@ -285,6 +285,7 @@ function renderPptxReport() {
             <div class="row" style="gap:8px">
               ${prevBtn}
               <button class="pptx-btn-share" id="pptx-share-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Chia sẻ${rep.share_count ? ` (${rep.share_count})` : ""}</button>
+              <button class="pptx-btn-preview" id="pptx-preview-btn" title="Xem trước dạng slide trước khi xuất"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-eye"/></svg>Xem trước</button>
               <button class="btn-view" id="pptx-versions-btn">Phiên bản</button>
               <button class="primary" id="pptx-export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PowerPoint</button>
               <button class="btn-delete write-action" id="pptx-delete-report" title="Xoá báo cáo">Xóa</button>
@@ -703,6 +704,7 @@ function bindPptxReport() {
   px("pptx-refresh")?.addEventListener("click", refreshPptxFromChildren);
   px("pptx-export-btn").addEventListener("click", exportPptxReport);
   px("pptx-versions-btn").addEventListener("click", showPptxVersions);
+  px("pptx-preview-btn")?.addEventListener("click", () => openPptxPreview());
   px("pptx-share-btn")?.addEventListener("click", openPptxShareDialog);
   px("pptx-delete-report").addEventListener("click", async () => {
     if (!(await confirmDialog(`Xóa báo cáo ${pptx.report.label}?`, { title: "Xác nhận xóa", okText: "Xóa" }))) return;

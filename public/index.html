@@ -2977,6 +2977,32 @@
         </dialog>
 
         <!-- Dialog Báo cáo PowerPoint: xác nhận thay file mẫu (so sánh mã giữ chỗ) -->
+        <!-- Xem trước báo cáo PowerPoint dạng slide (3/4 màn hình): xem, góp ý và sửa trực tiếp trước khi xuất -->
+        <dialog id="pptx-preview-dialog" class="pv-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <div class="pv-head">
+            <h2 id="pv-title" style="margin:0">Xem trước</h2>
+            <span id="pv-pos" class="muted"></span>
+            <div class="pv-nav">
+              <button type="button" class="small" id="pv-prev" title="Slide trước (←)">‹ Trước</button>
+              <button type="button" class="small" id="pv-next" title="Slide sau (→)">Sau ›</button>
+            </div>
+          </div>
+          <div id="pv-editbar" class="pv-editbar" hidden></div>
+          <div class="pv-body">
+            <div class="pv-thumbs" id="pv-thumbs"></div>
+            <div class="pv-stage" id="pv-stage"><div class="pv-slide-wrap" id="pv-slide-wrap"><div class="pv-slide" id="pv-slide"></div></div></div>
+            <aside class="pv-side" id="pv-side"></aside>
+          </div>
+          <div class="pv-foot">
+            <span class="muted" id="pv-hint">Bấm vào nội dung trên slide để sửa trực tiếp hoặc góp ý. Bản xem trước chỉ minh hoạ; font, hiệu ứng chính xác lấy từ file mẫu khi xuất.</span>
+            <div class="row" style="gap:8px;flex:0 0 auto">
+              <button type="button" id="pv-close-btn">Đóng</button>
+              <button type="button" class="primary" id="pv-export-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PowerPoint</button>
+            </div>
+          </div>
+        </dialog>
+
         <dialog id="pptx-diff-dialog">
           <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
           <form id="pptx-diff-form" method="dialog">
@@ -4736,6 +4762,7 @@
   <script src="js/17-pptx-reports.js"></script>
   <script src="js/18-overtime-summary.js"></script>
   <script src="js/19-weekly-report.js"></script>
+  <script src="js/20-pptx-preview.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
 </body>

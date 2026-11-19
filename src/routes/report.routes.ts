@@ -24,6 +24,7 @@ router.post("/reports/:id/sections/:code/pull-previous", c.pullPreviousHandler);
 router.post("/reports/:id/copy-previous", c.copyPreviousHandler);
 router.post("/reports/:id/refresh", c.refreshHandler);
 router.post("/reports/:id/export", c.exportReportHandler);
+router.get("/reports/:id/preview", c.previewReportHandler);
 router.get("/reports/:id/versions", c.listVersionsHandler);
 router.get("/reports/:id/images/:code", c.getImageHandler);
 router.put("/reports/:id/images/:code", express.raw({ type: () => true, limit: "6mb" }), c.putImageHandler);
