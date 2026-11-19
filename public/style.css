@@ -4153,7 +4153,8 @@ dialog.pv-dialog[open] { display: flex; flex-direction: column; }
 .pv-thumb i { font-style: normal; color: var(--stone-600); font-size: 0.72rem; }
 .pv-thumb em { font-style: normal; grid-column: 2; font-size: 0.72rem; color: var(--stone-600); }
 .pv-thumb em.has-open { color: var(--red-700); font-weight: 700; }
-.pv-stage { position: relative; overflow: hidden; background: #e7e5e4; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.pv-center { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pv-stage { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; background: #e7e5e4; display: flex; align-items: center; justify-content: center; min-width: 0; }
 .pv-slide-wrap { position: relative; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); background: #fff; flex: none; }
 .pv-slide { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; font-family: Arial, "Segoe UI", sans-serif; color: #1c1917; }
 .pv-slide * { box-sizing: border-box; }
@@ -4197,3 +4198,12 @@ dialog.pv-dialog[open] { display: flex; flex-direction: column; }
 .pv-pick-hint { font-size: 0.82rem; margin: 0; }
 .pv-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 18px; border-top: 1px solid var(--border); font-size: 0.82rem; }
 @media (max-width: 1100px) { dialog.pv-dialog { width: 98vw; height: 96vh; } .pv-body { grid-template-columns: 0 minmax(0, 1fr) 260px; } .pv-thumbs { display: none; } }
+.pv-notes { position: relative; flex: 0 0 auto; max-height: 26%; min-height: 70px; overflow-y: auto; border-top: 2px solid var(--border); background: #fff; padding: 8px 14px 10px; }
+.pv-notes[hidden] { display: none; }
+.pv-notes-head { font-weight: 700; font-size: 0.85rem; color: var(--stone-700); margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+.pv-notes-body { font-size: 0.9rem; line-height: 1.45; white-space: pre-wrap; border-radius: 6px; padding: 2px 4px; }
+.pv-notes-body.pv-empty::after { content: "Bấm để nhập ghi chú…"; color: var(--stone-600); font-style: italic; }
+.pv-note-p { min-height: 1em; }
+.pv-note-p.pv-hit:hover, .pv-notes-body.pv-hit:hover { outline: 2px dashed rgba(238, 0, 51, 0.55); outline-offset: 1px; }
+.pv-notes .pv-cm-badge.pv-cm-inline { position: static; pointer-events: none; font-size: 0.75rem; padding: 1px 8px; border-width: 1px; }
+.pv-edit.pv-edit-notes { position: absolute; left: 10px; right: 10px; top: 32px; bottom: 8px; z-index: 20; font-size: 0.9rem; border-width: 3px; width: auto; }

@@ -169,6 +169,7 @@ function pvRenderSlide() {
   el.style.backgroundImage = bg?.image ? `url("${pv.model.media[bg.image]}")` : "none";
   el.style.backgroundSize = "100% 100%";
   el.innerHTML = slide.shapes.map(pvShapeHtml).join("");
+  pvRenderNotes(slide);
   pvQ("pv-pos").textContent = `Slide ${pv.no} / ${pv.model.slides.length}`;
   pvQ("pv-prev").disabled = pv.no <= 1;
   pvQ("pv-next").disabled = pv.no >= pv.model.slides.length;
@@ -185,6 +186,60 @@ function pvRenderSlide() {
     }
   });
 }
+// Ghi chú thuyết trình (khung Notes dưới slide): hiện ngay dưới slide, bấm vào để sửa / góp ý như các đầu mục khác.
+function pvRenderNotes(slide) {
+  const box = pvQ("pv-notes");
+  const notes = slide.notes;
+  if (!notes?.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  const codes = [...new Set(notes.map((p) => p.code).filter(Boolean))];
+  const hasText = notes.some((p) => p.runs.some((r) => r.t.trim()));
+  const editable = codes.some((c) => ["paragraph", "list"].includes(pxField(c)?.kind));
+  box.innerHTML = `<div class="pv-notes-head">📝 Ghi chú${pvCommentBadge(codes).replace("pv-cm-badge", "pv-cm-badge pv-cm-inline")}</div>
+    <div class="pv-notes-body${codes.length ? " pv-hit" : ""}${!hasText && editable ? " pv-empty" : ""}" ${codes.length ? `data-code="${pxEsc(codes[0])}"` : ""}>${notes
+      .map((p) => `<div class="pv-note-p${p.code ? " pv-hit" : ""}" ${p.code ? `data-code="${pxEsc(p.code)}"` : ""}>${p.bullet ? "• " : ""}${p.runs.map((r) => (r.t === "\n" ? "<br/>" : `<span${r.b ? ' style="font-weight:700"' : ""}>${pxEsc(r.t)}</span>`)).join("") || "&nbsp;"}</div>`)
+      .join("")}</div>`;
+}
+pvQ("pv-notes")?.addEventListener("click", (e) => {
+  if (pv.editing) return;
+  const hit = e.target.closest("[data-code]");
+  if (!hit) return;
+  const code = hit.dataset.code;
+  pv.code = code;
+  pvMarkActive();
+  pvRenderSide();
+  const f = pxField(code);
+  if (!f || pv.ro || !["paragraph", "list"].includes(f.kind)) return;
+  pvStartNotesEdit(f);
+});
+function pvStartNotesEdit(f) {
+  const body = pvQ("pv-notes").querySelector(".pv-notes-body");
+  const items = f.kind === "list" ? (f.content.items ?? []).filter((i) => i.selected !== false) : [];
+  const ta = document.createElement("textarea");
+  ta.className = "pv-edit pv-edit-notes";
+  ta.value = f.kind === "list" ? items.map((i) => i.text).join("\n") : f.content.text ?? "";
+  ta.placeholder = f.kind === "list" ? "Mỗi dòng một ý…" : "Nhập ghi chú…";
+  pvQ("pv-notes").appendChild(ta);
+  pv.editing = { code: f.code, kind: f.kind };
+  const save = () => pvSaveText(f, ta.value);
+  pvEditBar(`${f.label} (ghi chú)`, save);
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      pvCancelEdit();
+    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      save();
+    }
+  });
+  body.scrollIntoView({ block: "nearest" });
+  ta.focus();
+}
+
 function pvFit() {
   const stage = pvQ("pv-stage");
   const W = pv.model.slide_w / PT;
@@ -200,7 +255,7 @@ window.addEventListener("resize", () => {
   if (pvQ("pptx-preview-dialog")?.open && pv.model) pvFit();
 });
 function pvMarkActive() {
-  pvQ("pv-slide").querySelectorAll(".pv-hit").forEach((n) => n.classList.toggle("is-active", !!pv.code && (n.dataset.code === pv.code)));
+  pvQ("pptx-preview-dialog").querySelectorAll(".pv-hit").forEach((n) => n.classList.toggle("is-active", !!pv.code && n.dataset.code === pv.code));
 }
 
 // ---- Bấm vào slide: chọn đầu mục + sửa trực tiếp ----
@@ -238,7 +293,7 @@ function pvEditBar(label, onSave) {
 function pvCancelEdit() {
   pv.editing = null;
   pvQ("pv-editbar").hidden = true;
-  pvQ("pv-slide").querySelectorAll(".pv-edit").forEach((n) => n.remove());
+  pvQ("pptx-preview-dialog").querySelectorAll(".pv-edit").forEach((n) => n.remove());
 }
 function pvOverlayRect(el) {
   const s = pvQ("pv-slide").getBoundingClientRect();

@@ -56,3 +56,24 @@ describe("buildPreviewModel (xem trước slide)", () => {
     expect(text).not.toContain("{{");
   });
 });
+
+describe("buildPreviewModel — ghi chú thuyết trình (Notes)", () => {
+  it("đọc khung Notes của slide, điền mã và gắn mã đầu mục", async () => {
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(await buildSamplePptx("quarter"));
+    const NS = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"';
+    zip.file(
+      "ppt/notesSlides/notesSlide1.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:notes ${NS}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Ghi chú"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="vi-VN"/><a:t>{{danh_gia}}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>`,
+    );
+    const rels = await zip.file("ppt/slides/_rels/slide2.xml.rels")!.async("string");
+    zip.file("ppt/slides/_rels/slide2.xml.rels", rels.replace("</Relationships>", '<Relationship Id="rIdN1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>'));
+    const buf = await zip.generateAsync({ type: "nodebuffer" });
+    const data: FillData = { danh_gia: { kind: "paragraph", text: "Ghi chú dòng 1\nGhi chú dòng 2" } };
+    const m = await buildPreviewModel(buf, data, { reportId: 1, rowIds: new Map() });
+    const notes = m.slides[1].notes!;
+    expect(notes.map((p) => p.runs.map((r) => r.t).join(""))).toEqual(["Ghi chú dòng 1", "Ghi chú dòng 2"]);
+    expect(notes.every((p) => p.code === "danh_gia")).toBe(true);
+    expect(m.slides[0].notes).toBeUndefined();
+  });
+});

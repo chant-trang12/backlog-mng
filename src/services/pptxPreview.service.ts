@@ -124,7 +124,7 @@ export interface PShape {
   src?: string; code?: string; caption?: string; has_image?: boolean; url?: string;
   deco?: boolean; // hình trang trí từ layout/master
 }
-export interface PSlide { no: number; bg?: { color?: string; image?: string }; shapes: PShape[] }
+export interface PSlide { no: number; bg?: { color?: string; image?: string }; shapes: PShape[]; notes?: PPara[] } // notes: ghi chú thuyết trình (khung Notes dưới slide)
 export interface PreviewModel { slide_w: number; slide_h: number; slides: PSlide[]; media: Record<string, string> } // media: khoá -> data URI (ảnh nền/ảnh trong mẫu, dùng chung nhiều slide)
 
 const TOKEN_RE = /\{\{\s*([\p{L}\p{N}_]+)(?:\.([\p{L}\p{N}_]+))?\s*\}\}/gu;
@@ -479,7 +479,22 @@ export async function buildPreviewModel(template: Buffer, data: FillData, opts: 
     if (masterXml && treeOf(masterXml)) shapes.push(...(await renderTree(treeOf(masterXml)!, sctx, masterRels, ID, (ph, sp) => ({ ...inhOf(undefined), inh: { lst: [], styles, kind: "other", fontScale: 1 } }), true)));
     if (layoutXml && treeOf(layoutXml)) shapes.push(...(await renderTree(treeOf(layoutXml)!, sctx, layoutRels, ID, (ph, sp) => ({ inh: { lst: [], styles, kind: "other", fontScale: 1 } }), true)));
     shapes.push(...(await renderTree(treeOf(slideXml)!, sctx, rels, ID, (ph) => inhOf(ph), false)));
-    model.slides.push({ no, bg, shapes });
+    // Ghi chú thuyết trình (Notes) của slide: đoạn văn trong khung nội dung (ph body) của notesSlide, điền mã như slide.
+    let notes: PPara[] | undefined;
+    const notesPath = [...rels.values()].find((r) => r.type === "notesSlide")?.target;
+    if (notesPath && zip.file(notesPath)) {
+      const nx = parseXml(await zip.file(notesPath)!.async("string"));
+      const sps = kids(path(nx, "p:cSld", "p:spTree"), "p:sp");
+      const body = sps.find((sp) => phOf(sp)?.a.type === "body") ?? sps.find((sp) => !phOf(sp) && kid(sp, "p:txBody"));
+      if (body) {
+        const tx = kid(body, "p:txBody");
+        const inh: Inherit = { lst: [kid(tx, "a:lstStyle")].filter(Boolean) as XNode[], styles: undefined, kind: "other", fontScale: 1 };
+        const codes = new Set<string>();
+        const paras = fillParagraphs(kids(tx, "a:p"), inh, theme, data, false, codes);
+        if (paras.some((p) => p.runs.some((r) => r.t.trim()) || p.code)) notes = paras;
+      }
+    }
+    model.slides.push({ no, bg, shapes, notes });
   }
   return model;
 }
