@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import type { CreateHeThongInput, HeThongOption, UpdateHeThongInput } from "../types/cskh.js";
+import { nextSystemCode } from "./system.service.js";
 import { normalizeVietnameseText, resolveUniqueName } from "../utils/uniqueName.js";
 
 export async function listHeThong(): Promise<HeThongOption[]> {
@@ -16,7 +17,7 @@ export async function createHeThong(input: CreateHeThongInput): Promise<HeThongO
   const maxRow = await db("he_thong_options").max({ m: "thu_tu" }).first();
   const thuTu = Number((maxRow as any)?.m ?? -1) + 1;
   const [created] = await db("he_thong_options")
-    .insert({ ten_he_thong: await resolveUniqueName("he_thong_options", "ten_he_thong", input.ten_he_thong), thu_tu: thuTu })
+    .insert({ ten_he_thong: await resolveUniqueName("he_thong_options", "ten_he_thong", input.ten_he_thong), thu_tu: thuTu, ma_he_thong: await nextSystemCode(), updated_at: db.fn.now() })
     .returning("*");
   return created as HeThongOption;
 }
@@ -40,5 +41,7 @@ export async function updateHeThong(
 
 export async function deleteHeThong(id: number): Promise<boolean> {
   const count = await db("he_thong_options").where({ id }).delete();
+  // Tính năng của hệ thống bị xoá -> về "Chưa phân loại" (không mất dữ liệu, gán lại được).
+  if (count > 0) await db("system_features").where({ system_id: id }).update({ system_id: null });
   return count > 0;
 }

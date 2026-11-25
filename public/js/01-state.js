@@ -65,21 +65,6 @@ const state = {
   loaiYeuCauOptions: [], // danh mục "Loại yêu cầu" của Yêu cầu tính năng (/api/loai-yeu-cau) — KHÁC objectiveOptions (Mục tiêu), xem 10-feature-requests.js
   memberParticipationOptions: [],
   featureRequests: [],
-  digitalFeatures: [], // danh sách tính năng số hoá (trang "Quản lý tính năng số hoá")
-  selectedDigitalFeatureIds: new Set(), // checkbox "xóa nhiều" ở bảng tính năng số hoá
-  currentDigitalFeatureId: null, // tính năng đang mở ở trang chi tiết (tab "Màn hình, Tính năng & Phân quyền"...)
-  digitalFeatureScreens: [], // màn hình của tính năng đang mở chi tiết (tab 2)
-  selectedDfScreenIds: new Set(), // checkbox "xóa nhiều" ở bảng màn hình
-  hiddenDfScreenColumns: new Set(), // cột bị ẩn trong menu "Cột hiển thị" của bảng màn hình
-  digitalFeatureMasterData: [], // danh mục master data của tính năng đang mở chi tiết (tab 3)
-  selectedDfMdIds: new Set(), // checkbox "xóa nhiều" ở bảng danh mục
-  hiddenDfMdColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng danh mục
-  digitalFeatureDataObjects: [], // đối tượng dữ liệu & vòng đời của tính năng đang mở chi tiết (tab 4)
-  selectedDfDoIds: new Set(), // checkbox "xóa nhiều" ở bảng đối tượng dữ liệu
-  hiddenDfDoColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng đối tượng
-  digitalFeatureIntegrations: [], // tích hợp & sự kiện của tính năng đang mở chi tiết (tab 5)
-  selectedDfIntIds: new Set(), // checkbox "xóa nhiều" ở bảng tích hợp
-  hiddenDfIntColumns: new Set(), // cột bị ẩn trong menu "Cấu hình cột" của bảng tích hợp
   selectedFeatureRequestIds: new Set(),
   usersConfigAll: [], // toàn bộ user đã tải (chưa lọc) — cache để lọc/phân trang ở phía client
   permissionsConfig: null, // { functions, roles, rows } từ GET /api/role-permissions — Cấu hình > Phân quyền
@@ -619,11 +604,6 @@ const attendancePagination = createPagination("attendance", () => renderAttendan
 const roadmapPagination = createPagination("roadmap", () => renderRoadmap(), "dòng roadmap");
 const workRulePagination = createPagination("noiquy", () => renderWorkRuleTable(), "bản ghi nội quy");
 const frPagination = createPagination("fr", () => renderFeatureRequestTable(), "yêu cầu");
-const dfPagination = createPagination("df", () => renderDigitalFeatures(), "tính năng số hoá");
-const dfsPagination = createPagination("dfs", () => renderDigitalFeatureScreens(), "màn hình");
-const dfmdPagination = createPagination("dfmd", () => renderDigitalFeatureMasterData(), "danh mục");
-const dfdoPagination = createPagination("dfdo", () => renderDigitalFeatureDataObjects(), "đối tượng dữ liệu");
-const dfintPagination = createPagination("dfint", () => renderDigitalFeatureIntegrations(), "tích hợp");
 const usersConfigPagination = createPagination("users-config", () => renderUsersConfig(), "user");
 const departmentConfigPagination = createPagination("department-config", () => renderDepartmentConfig(), "phòng ban");
 const actionLogPagination = createPagination("al", () => renderActionLogTable(), "nhật ký");

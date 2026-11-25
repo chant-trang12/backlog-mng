@@ -127,6 +127,27 @@ export async function migrateFeatureRequestTables(): Promise<void> {
       table.binary("attachment_data");
     });
   }
+  // Lịch thực hiện do ĐƠN VỊ THỰC HIỆN xác nhận (khác "Thời gian mong muốn" của đơn vị đề xuất) + nhật ký điều chỉnh.
+  if (!(await db.schema.hasColumn("feature_requests", "thoi_gian_du_kien"))) {
+    await db.schema.alterTable("feature_requests", (table) => {
+      table.string("thoi_gian_du_kien", 10).nullable();
+      table.text("ly_do_dieu_chinh").nullable();
+      table.string("du_kien_boi", 255).nullable();
+      table.dateTime("du_kien_at").nullable();
+    });
+  }
+  if (!(await db.schema.hasTable("feature_request_schedule_log"))) {
+    await db.schema.createTable("feature_request_schedule_log", (table) => {
+      table.increments("id").primary();
+      table.integer("feature_request_id").notNullable();
+      table.string("tu_ngay", 10).nullable(); // lịch trước đó (dự kiến cũ, hoặc thời gian mong muốn nếu là lần đầu)
+      table.string("den_ngay", 10).nullable();
+      table.text("ly_do").nullable();
+      table.string("nguoi_thuc_hien", 255).nullable();
+      table.string("don_vi", 255).nullable();
+      table.dateTime("created_at").notNullable().defaultTo(db.fn.now());
+    });
+  }
   // Dữ liệu demo cũ có thể còn trang_thai theo bộ giá trị trước đó (Mới/
   // Đang xem xét/Đã duyệt/Từ chối/Đang triển khai/Hoàn thành) — quy về 3
   // giá trị mới cho khớp luồng Duyệt/Từ chối vừa chốt, tránh badge hiện

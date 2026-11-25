@@ -24,6 +24,11 @@ export interface FeatureRequest {
   quy_trinh_hien: string | null;
   ke_hoach_software: string | null;
   thoi_gian_mong_muon: string | null;
+  // Lịch do đơn vị thực hiện xác nhận (YYYY-MM-DD) + lý do lệch so với thời gian mong muốn.
+  thoi_gian_du_kien: string | null;
+  ly_do_dieu_chinh: string | null;
+  du_kien_boi: string | null;
+  du_kien_at: string | null;
   department_id: number | null; // phòng đề xuất (nguồn)
   target_department_id: number | null; // phòng đích (nơi tiếp nhận/xử lý)
   nguoi_de_xuat: string | null;

@@ -1,9 +1,12 @@
 import "dotenv/config";
 import { createApp } from "./app.js";
 import { db } from "./db/database.js";
+import { syncFeatureRequests } from "./services/systemFeature.service.js";
 
 const port = process.env.PORT ?? 3001;
 const app = createApp();
+// Mọi Yêu cầu tính năng -> có mặt ở menu "Hệ thống & Tính năng" (idempotent).
+syncFeatureRequests().catch((err) => console.error("Đồng bộ tính năng hệ thống lỗi:", err));
 
 const server = app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port} (pid=${process.pid}, cwd=${process.cwd()}, NODE_ENV=${process.env.NODE_ENV ?? "-"})`);

@@ -2,6 +2,9 @@ import type { Request, Response } from "express";
 import type { CreateFeatureRequestInput, UpdateFeatureRequestInput } from "../types/featureRequest.js";
 import {
   approveFeatureRequest,
+  ScheduleError,
+  setFeatureRequestSchedule,
+  listFeatureRequestScheduleLog,
   createFeatureRequest,
   deleteFeatureRequest,
   deleteFeatureRequestAttachment,
@@ -371,10 +374,46 @@ async function requireTargetScope(
 export async function approveFeatureRequestHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
-  if (!(await requireTargetScope(req, res, id))) return;
-  const updated = await approveFeatureRequest(id);
-  if (!updated) return res.status(400).json({ error: "Yêu cầu không ở trạng thái Chờ duyệt" });
-  res.json(updated);
+  const target = await requireTargetScope(req, res, id);
+  if (!target) return;
+  try {
+    const updated = await approveFeatureRequest(id, { ...(req.body ?? {}), actor: scheduleActor(req, target.target_department_name) });
+    if (!updated) return res.status(400).json({ error: "Yêu cầu không ở trạng thái Chờ duyệt" });
+    res.json(updated);
+  } catch (e) {
+    if (e instanceof ScheduleError) return res.status(400).json({ error: e.message });
+    throw e;
+  }
+}
+
+function scheduleActor(req: Request, deptName: string | null | undefined) {
+  const u = (req as any).appUser as { name?: string; username?: string } | undefined;
+  return { name: u?.name || u?.username || null, deptName: deptName ?? null };
+}
+
+// POST /api/feature-requests/:id/schedule — đơn vị THỰC HIỆN xác nhận/điều chỉnh lịch (khác thời gian mong muốn của bên đề xuất).
+export async function scheduleFeatureRequestHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const target = await requireTargetScope(req, res, id);
+  if (!target) return;
+  try {
+    const row = await setFeatureRequestSchedule(id, req.body ?? {}, scheduleActor(req, target.target_department_name));
+    if (!row) return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
+    res.json(row);
+  } catch (e) {
+    if (e instanceof ScheduleError) return res.status(400).json({ error: e.message });
+    throw e;
+  }
+}
+
+// GET /api/feature-requests/:id/schedule-log — lịch sử điều chỉnh (cả 2 phía xem được).
+export async function scheduleLogHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "id không hợp lệ" });
+  const existing = await getFeatureRequest(id);
+  if (!existing || !isFeatureRequestInScope(scopeOf(req), existing)) return res.status(404).json({ error: "Không tìm thấy yêu cầu" });
+  res.json(await listFeatureRequestScheduleLog(id));
 }
 
 export async function rejectFeatureRequestHandler(req: Request, res: Response) {

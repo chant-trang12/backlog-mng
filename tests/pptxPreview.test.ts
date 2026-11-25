@@ -77,3 +77,33 @@ describe("buildPreviewModel — ghi chú thuyết trình (Notes)", () => {
     expect(m.slides[0].notes).toBeUndefined();
   });
 });
+
+describe("buildPreviewModel — ảnh bìa / nền", () => {
+  // Chèn vào slide 1 của mẫu: 1 ảnh lớn (> 1,5MB) tô cho hình khối (a:blipFill trong spPr, có cắt xén) + nền chuyển màu.
+  async function withCover(sizeBytes: number) {
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(await buildSamplePptx("quarter"));
+    const png = Buffer.concat([Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"), Buffer.alloc(sizeBytes)]);
+    zip.file("ppt/media/cover.png", png);
+    const relsPath = "ppt/slides/_rels/slide1.xml.rels";
+    let rels = await zip.file(relsPath)!.async("string");
+    rels = rels.replace("</Relationships>", '<Relationship Id="rIdCover" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/cover.png"/></Relationships>');
+    zip.file(relsPath, rels);
+    let xml = await zip.file("ppt/slides/slide1.xml")!.async("string");
+    const shape = '<p:sp><p:nvSpPr><p:cNvPr id="99" name="Cover"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="9144000" cy="5143500"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:blipFill><a:blip r:embed="rIdCover"/><a:srcRect l="10000" t="20000"/><a:stretch><a:fillRect/></a:stretch></a:blipFill></p:spPr></p:sp>';
+    xml = xml.replace("</p:spTree>", `${shape}</p:spTree>`);
+    xml = xml.replace(/<p:cSld([^>]*)>/, '<p:cSld$1><p:bg><p:bgPr><a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="0000FF"/></a:gs></a:gsLst><a:lin ang="5400000"/></a:gradFill></p:bgPr></p:bg>');
+    zip.file("ppt/slides/slide1.xml", xml);
+    return zip.generateAsync({ type: "nodebuffer" });
+  }
+
+  it("ảnh bìa lớn hơn 1,5MB vẫn được giữ; hình khối tô ảnh thành ảnh có cắt xén; nền chuyển màu thành CSS", async () => {
+    const m = await buildPreviewModel(await withCover(3_000_000), {}, { reportId: 1, rowIds: new Map() });
+    const s = m.slides[0];
+    const cover = s.shapes.find((x) => x.t === "image" && x.crop);
+    expect(cover).toBeTruthy();
+    expect(cover!.crop).toEqual([0.1, 0.2, 0, 0]);
+    expect(m.media[cover!.src!].length).toBeGreaterThan(3_000_000);
+    expect(s.bg?.css).toMatch(/^linear-gradient\(180deg, #FF0000 0%, #0000FF 100%\)$/);
+  });
+});

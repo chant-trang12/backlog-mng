@@ -33,7 +33,7 @@
         <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Team &amp; Nhân sự</button>
         <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg>Roadmap năm</button>
         <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
-        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Tính năng số hóa</button>
+        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Hệ thống &amp; Tính năng</button>
         <button class="nav-item" data-page="reports"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Báo cáo - Thống kê</button>
         <button class="nav-item" data-page="summary-plan"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg>Kế hoạch tổng hợp<span id="sp-nav-badge" class="nav-badge" hidden title="Góp ý báo cáo PowerPoint chưa xử lý">0</span></button>
         <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình</button>
@@ -1070,685 +1070,313 @@
           </section>
         </div>
 
-        <!-- ---- Trang Quản lý tính năng số hoá — danh sách các tính năng
-             cần quản lý: bộ lọc, thêm mới/sửa/xóa, import/export Excel,
-             bảng có scroll ngang + phân trang (13-digital-features.js). ---- -->
+        <!-- Trang Tính năng số hoá — đang để trống, chờ nội dung mới. -->
         <div id="page-digital-features" hidden>
-          <section class="card">
-            <h2>Bộ lọc</h2>
-            <div class="row">
+          <!-- Danh sách hệ thống — dữ liệu CHUNG với Cấu hình > Hệ thống (bảng he_thong_options); 13-systems.js -->
+          <div id="sys-list-view">
+            <div class="sys-head">
               <div>
-                <label for="df-filter-module">Module</label>
-                <select id="df-filter-module"><option value="">Tất cả</option></select>
+                <h2 class="sys-title">Hệ thống</h2>
+                <p class="muted sys-sub">Các hệ thống đang quản lý, số tính năng và tình trạng tài liệu của từng hệ thống.</p>
               </div>
-              <div>
-                <label for="df-filter-giai-doan">Giai đoạn</label>
-                <select id="df-filter-giai-doan"><option value="">Tất cả</option></select>
-              </div>
-              <div>
-                <label for="df-filter-don-vi">Đơn vị chủ trì</label>
-                <select id="df-filter-don-vi"><option value="">Tất cả</option></select>
-              </div>
+              <button id="sys-add-btn" class="primary tbl-add-btn">+ Thêm hệ thống</button>
             </div>
-          </section>
-
-          <section class="card">
-            <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-              <!-- Tiêu đề để flex:0 0 auto (không co/giãn, nowrap) — khi nút
-                   "Xóa đã chọn (N)" hiện ra, tiêu đề giữ nguyên 1 dòng, nhóm
-                   nút tự wrap xuống dòng dưới nếu thiếu chỗ (.row mặc định
-                   flex-wrap:wrap). -->
-              <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Tính năng số hoá</h2>
-              <!-- Chọn nhiều để xóa — CHỈ admin (nút "Xóa đã chọn" mang class
-                   "delete-action", tự ẩn với viewer/editor qua CSS role,
-                   khớp luật chặn thật ở server — requireAdmin gắn riêng cho
-                   path "delete-selected", xem app.ts). -->
-              <div class="row" style="flex:0 0 auto">
-                <button id="delete-selected-df-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-df-count">0</span>)</button>
-                <!-- Tùy chọn ẩn/hiện cột — giống bảng Nhiệm vụ / Yêu cầu tính
-                     năng: cho người dùng tự tắt cột không cần xem, lưu
-                     localStorage theo máy (13-digital-features.js). -->
-                <div class="col-menu-wrap" id="df-col-menu-wrap">
-                  <button type="button" id="df-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
-                    <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
-                    <span class="caret" aria-hidden="true">▾</span>
-                  </button>
-                  <div class="col-menu" id="df-col-menu" role="menu" hidden>
-                    <div class="col-menu-list" id="df-col-menu-list"></div>
-                    <div class="bulk-menu-sep"></div>
-                    <button type="button" class="bulk-menu-item" id="df-col-menu-reset">Hiện tất cả</button>
-                  </div>
-                </div>
-                <button id="download-df-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Tải excel mẫu</button>
-                <button id="import-df-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
-                <input type="file" id="df-import-input" accept=".xlsx,.xlsm" hidden />
-                <button id="export-df-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất Excel</button>
-                <button id="add-digital-feature-btn" class="primary tbl-add-btn write-action">+ Thêm mới</button>
-              </div>
+            <div class="sys-banner" id="sys-banner" hidden></div>
+            <div class="sys-stats" id="sys-stats"></div>
+            <div class="sys-toolbar">
+              <div class="sys-seg" id="sys-tabs"></div>
+              <label class="sys-search" for="sys-search">
+                <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="sys-search" placeholder="Tìm theo tên hoặc mã hệ thống" autocomplete="off">
+              </label>
             </div>
-            <div class="row" style="margin-bottom:12px;align-items:center">
-              <label for="df-filter-search" style="margin:0">Tìm kiếm</label>
-              <input type="text" id="df-filter-search" placeholder="Nhập từ khoá để tìm trong dữ liệu..." style="min-width:280px" />
-            </div>
-            <!-- Thanh cuộn ngang PHÍA TRÊN bảng — bảng có 11 cột dữ liệu,
-                 đồng bộ 2 chiều với .table-wrap thật bên dưới (setupDfScroll
-                 TopSync ở 13-digital-features.js). -->
-            <div class="table-scroll-top" id="df-table-scroll-top"><div id="df-table-scroll-top-spacer"></div></div>
-            <div class="table-wrap" id="df-table-wrap">
-              <table id="df-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px"><input type="checkbox" id="df-select-all" /></th>
-                    <th style="min-width:48px">STT</th>
-                    <th style="min-width:90px" data-col="ma">Mã</th>
-                    <th style="min-width:170px">Module</th>
-                    <th style="min-width:170px" data-col="don_vi_chu_tri">Đơn vị chủ trì (đề xuất)</th>
-                    <th style="min-width:170px" data-col="don_vi_phoi_hop">Đơn vị phối hợp</th>
-                    <th style="min-width:110px" data-col="giai_doan">Giai đoạn</th>
-                    <th style="min-width:80px" data-col="tn_mh">TN / MH</th>
-                    <th style="min-width:240px" data-col="muc_tieu_nghiep_vu">Mục tiêu nghiệp vụ</th>
-                    <th style="min-width:170px" data-col="vai_tro_pbdkd">Vai trò P.BĐKD</th>
-                    <th style="min-width:170px" data-col="nhan_dau_vao_tu">Nhận đầu vào từ</th>
-                    <th style="min-width:170px" data-col="chuyen_dau_ra_toi">Chuyển đầu ra tới</th>
-                    <th style="min-width:110px">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="df-tbody"></tbody>
-              </table>
-              <p class="muted" id="df-empty" hidden style="padding:16px;text-align:center">Chưa có tính năng số hoá nào.</p>
-            </div>
-            <div class="pagination-bar" id="df-pagination">
-              <div class="row">
-                <label for="df-page-size" style="margin:0">Số dòng/trang</label>
-                <select id="df-page-size">
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </div>
-              <div class="row">
-                <button type="button" id="df-page-prev" class="small">‹ Trước</button>
-                <span id="df-page-info" class="muted"></span>
-                <button type="button" id="df-page-next" class="small">Sau ›</button>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- ---- Dialog Thêm mới / Sửa tính năng số hoá ---- -->
-        <dialog id="digital-feature-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <form id="digital-feature-form">
-            <h2 id="df-dialog-title" style="margin:0">Thêm tính năng số hoá</h2>
-            <input type="hidden" id="df-id" />
-            <div class="field-row">
-              <div>
-                <label for="df-ma">Mã <span class="muted" style="font-weight:400">(trống thì tự sinh TNSH-xxx)</span></label>
-                <input id="df-ma" style="width:100%" />
-              </div>
-              <div>
-                <label for="df-module">Module *</label>
-                <input id="df-module" required style="width:100%" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="df-don-vi-chu-tri">Đơn vị chủ trì (đề xuất)</label>
-                <input id="df-don-vi-chu-tri" style="width:100%" />
-              </div>
-              <div>
-                <label for="df-don-vi-phoi-hop">Đơn vị phối hợp <span class="muted" style="font-weight:400">(chọn phòng ban — giữ Ctrl/Cmd để chọn nhiều)</span></label>
-                <select id="df-don-vi-phoi-hop" multiple size="4" style="width:100%"></select>
-                <!-- Dữ liệu cũ import trước khi có cột phòng ban thật — chỉ
-                     hiển thị tham khảo, không sửa được bằng ô chọn ở trên
-                     (xem comment migrations/digitalFeatures.ts). -->
-                <div id="df-don-vi-phoi-hop-legacy" class="muted" style="font-size:12px;margin-top:2px"></div>
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="df-giai-doan">Giai đoạn</label>
-                <input id="df-giai-doan" style="width:100%" />
-              </div>
-              <div>
-                <label for="df-tn-mh">TN / MH</label>
-                <input id="df-tn-mh" style="width:100%" />
-              </div>
-            </div>
-            <div>
-              <label for="df-muc-tieu">Mục tiêu nghiệp vụ</label>
-              <textarea id="df-muc-tieu" rows="2" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="df-vai-tro">Vai trò P.BĐKD</label>
-              <textarea id="df-vai-tro" rows="2" style="width:100%"></textarea>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="df-nhan-dau-vao">Nhận đầu vào từ</label>
-                <textarea id="df-nhan-dau-vao" rows="2" style="width:100%"></textarea>
-              </div>
-              <div>
-                <label for="df-chuyen-dau-ra">Chuyển đầu ra tới</label>
-                <textarea id="df-chuyen-dau-ra" rows="2" style="width:100%"></textarea>
-              </div>
-            </div>
-            <div class="row" style="justify-content:flex-end;margin-top:8px">
-              <button type="button" id="digital-feature-cancel-btn">Hủy</button>
-              <button type="submit" class="primary">Lưu</button>
-            </div>
-          </form>
-        </dialog>
-
-        <!-- Dialog Thêm/Sửa màn hình (tab "Màn hình, Tính năng & Phân quyền"
-             trong trang chi tiết) — cùng cấu trúc dialog tính năng số hoá. -->
-        <dialog id="digital-feature-screen-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <form id="digital-feature-screen-form">
-            <h2 id="dfs-dialog-title" style="margin:0">Thêm màn hình / chức năng</h2>
-            <input type="hidden" id="dfs-id" />
-            <div class="field-row">
-              <div>
-                <label for="dfs-ma-mh">Mã MH <span class="muted" style="font-weight:400">(trống thì tự sinh MH-xxx)</span></label>
-                <input id="dfs-ma-mh" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-tn">TN</label>
-                <input id="dfs-tn" style="width:100%" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="dfs-ten-man-hinh">Tên màn hình / chức năng *</label>
-                <input id="dfs-ten-man-hinh" required style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-loai">Loại</label>
-                <input id="dfs-loai" style="width:100%" />
-              </div>
-            </div>
-            <div>
-              <label for="dfs-thanh-phan">Thành phần chính / trường dữ liệu</label>
-              <textarea id="dfs-thanh-phan" rows="2" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="dfs-hanh-dong">Hành động (nút / thao tác)</label>
-              <textarea id="dfs-hanh-dong" rows="2" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="dfs-quy-tac">Quy tắc nghiệp vụ &amp; kiểm tra</label>
-              <textarea id="dfs-quy-tac" rows="2" style="width:100%"></textarea>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="dfs-sales-am">Sales / AM</label>
-                <input id="dfs-sales-am" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-truong-dvkd">Trưởng đơn vị KD</label>
-                <input id="dfs-truong-dvkd" style="width:100%" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="dfs-presales-sp">Presales / Sản phẩm</label>
-                <input id="dfs-presales-sp" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-nv-bdkd">NV BĐKD (thực thi)</label>
-                <input id="dfs-nv-bdkd" style="width:100%" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="dfs-ks-lanh-dao">Kiểm soát / Lãnh đạo BĐKD</label>
-                <input id="dfs-ks-lanh-dao" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-phap-che">Pháp chế</label>
-                <input id="dfs-phap-che" style="width:100%" />
-              </div>
-            </div>
-            <div class="field-row">
-              <div>
-                <label for="dfs-tckt">TCKT</label>
-                <input id="dfs-tckt" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfs-ban-lanh-dao">Ban lãnh đạo</label>
-                <input id="dfs-ban-lanh-dao" style="width:100%" />
-              </div>
-            </div>
-            <div>
-              <label for="dfs-quan-tri-he-thong">Quản trị hệ thống</label>
-              <input id="dfs-quan-tri-he-thong" style="width:100%" />
-            </div>
-            <div class="row" style="justify-content:flex-end;margin-top:16px">
-              <button type="button" id="digital-feature-screen-cancel-btn">Hủy</button>
-              <button type="submit" class="primary">Lưu</button>
-            </div>
-          </form>
-        </dialog>
-
-        <!-- Dialog Thêm/Sửa Danh mục (Master Data) — tab 3 trang chi tiết,
-             4 trường: Mã danh mục, Tên danh mục, Nội dung/thuộc tính, Quản trị bởi. -->
-        <dialog id="digital-feature-md-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <form id="digital-feature-md-form">
-            <h2 id="dfmd-dialog-title" style="margin:0">Thêm danh mục</h2>
-            <input type="hidden" id="dfmd-id" />
-            <div class="field-row">
-              <div>
-                <label for="dfmd-ma">Mã danh mục <span class="muted" style="font-weight:400">(trống thì tự sinh DM-xxx)</span></label>
-                <input id="dfmd-ma" style="width:100%" />
-              </div>
-              <div>
-                <label for="dfmd-ten">Tên danh mục *</label>
-                <input id="dfmd-ten" required style="width:100%" />
-              </div>
-            </div>
-            <div>
-              <label for="dfmd-noi-dung">Nội dung / thuộc tính</label>
-              <textarea id="dfmd-noi-dung" rows="3" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="dfmd-quan-tri">Quản trị bởi</label>
-              <input id="dfmd-quan-tri" style="width:100%" />
-            </div>
-            <div class="row" style="justify-content:flex-end;margin-top:16px">
-              <button type="button" id="digital-feature-md-cancel-btn">Hủy</button>
-              <button type="submit" class="primary">Lưu</button>
-            </div>
-          </form>
-        </dialog>
-
-        <!-- Dialog Thêm/Sửa Đối tượng dữ liệu & Vòng đời — tab 4 trang chi
-             tiết, 3 trường: Đối tượng, Khóa & thuộc tính chính, Vòng đời. -->
-        <dialog id="digital-feature-do-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <form id="digital-feature-do-form">
-            <h2 id="dfdo-dialog-title" style="margin:0">Thêm đối tượng dữ liệu</h2>
-            <input type="hidden" id="dfdo-id" />
-            <div>
-              <label for="dfdo-doi-tuong">Đối tượng *</label>
-              <input id="dfdo-doi-tuong" required style="width:100%" />
-            </div>
-            <div>
-              <label for="dfdo-khoa">Khóa &amp; thuộc tính chính</label>
-              <textarea id="dfdo-khoa" rows="3" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="dfdo-vong-doi">Vòng đời trạng thái</label>
-              <textarea id="dfdo-vong-doi" rows="3" style="width:100%"></textarea>
-            </div>
-            <div class="row" style="justify-content:flex-end;margin-top:16px">
-              <button type="button" id="digital-feature-do-cancel-btn">Hủy</button>
-              <button type="submit" class="primary">Lưu</button>
-            </div>
-          </form>
-        </dialog>
-
-        <!-- Dialog Thêm/Sửa Tích hợp & Sự kiện — tab 5 trang chi tiết, 4
-             trường: Hướng, Module/hệ thống, Dữ liệu trao đổi, Cơ chế & tần suất. -->
-        <dialog id="digital-feature-int-dialog">
-          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
-          <form id="digital-feature-int-form">
-            <h2 id="dfint-dialog-title" style="margin:0">Thêm tích hợp &amp; sự kiện</h2>
-            <input type="hidden" id="dfint-id" />
-            <div class="field-row">
-              <div>
-                <label for="dfint-huong">Hướng *</label>
-                <input id="dfint-huong" required style="width:100%" placeholder="Nhận vào / Đẩy ra / 2 chiều" />
-              </div>
-              <div>
-                <label for="dfint-module">Module / hệ thống</label>
-                <input id="dfint-module" style="width:100%" />
-              </div>
-            </div>
-            <div>
-              <label for="dfint-du-lieu">Dữ liệu trao đổi</label>
-              <textarea id="dfint-du-lieu" rows="3" style="width:100%"></textarea>
-            </div>
-            <div>
-              <label for="dfint-co-che">Cơ chế &amp; tần suất</label>
-              <textarea id="dfint-co-che" rows="3" style="width:100%"></textarea>
-            </div>
-            <div class="row" style="justify-content:flex-end;margin-top:16px">
-              <button type="button" id="digital-feature-int-cancel-btn">Hủy</button>
-              <button type="submit" class="primary">Lưu</button>
-            </div>
-          </form>
-        </dialog>
-
-        <!-- ---- Trang chi tiết Tính năng số hoá — MÀN HÌNH RIÊNG (không có
-             mục ở menu trái): mở bằng icon "Xem chi tiết" ở bảng danh sách,
-             quay lại bằng nút "← Quay lại". Nội dung chia theo tab giống
-             menu CSKH (chrome-tabs + pill); nội dung cụ thể từng tab chờ mô
-             tả yêu cầu (13-digital-features.js). ---- -->
-        <div id="page-digital-feature-detail" hidden>
-          <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div class="row" style="align-items:center;gap:10px;margin:0">
-              <button type="button" id="df-detail-back-btn" class="small">← Quay lại</button>
-              <h2 style="margin:0;font-size:1.1rem" id="df-detail-page-title">Chi tiết tính năng số hoá</h2>
-            </div>
-            <span class="status-badge status-default status-badge-wrap" id="df-detail-page-ma" hidden></span>
+            <div class="sys-grid" id="sys-grid"></div>
+            <p class="muted" id="sys-empty" hidden style="text-align:center;padding:24px">Chưa có hệ thống nào.</p>
           </div>
 
-          <div class="tab-panel-group">
-            <div class="chrome-tabs" id="df-detail-subnav">
-              <span class="pill active" data-tab="module-info">Thông tin Module</span>
-              <span class="pill" data-tab="screens">Màn hình, Tính năng &amp; Phân quyền</span>
-              <span class="pill" data-tab="master-data">Danh mục (Master Data) của Module</span>
-              <span class="pill" data-tab="data-lifecycle">Đối tượng dữ liệu &amp; Vòng đời trạng thái</span>
-              <span class="pill" data-tab="integration">Tích hợp &amp; Sự kiện</span>
+          <!-- Thêm / sửa hệ thống -->
+          <form id="sys-form-view" hidden novalidate>
+            <div class="sys-crumb"><a href="#" id="sys-crumb-back">Hệ thống</a> <span>/</span> <span id="sys-crumb-cur">Thêm hệ thống</span></div>
+            <h2 class="sys-title" id="sys-form-title">Thêm hệ thống</h2>
+            <p class="muted sys-sub">Trường có dấu <b>*</b> là bắt buộc. Sau khi tạo, bạn có thể thêm tính năng cho hệ thống.</p>
+
+            <section class="card sys-sec">
+              <h3>1. Thông tin chung</h3>
+              <div class="sys-row two">
+                <div><label for="sys-ma">Mã hệ thống *</label><input id="sys-ma" maxlength="50"></div>
+                <div><label for="sys-ten">Tên hệ thống *</label><input id="sys-ten" maxlength="255" placeholder="Ví dụ: Quản lý tài sản"></div>
+              </div>
+              <div><label for="sys-mota">Mô tả</label><textarea id="sys-mota" rows="3" maxlength="2000" placeholder="Hệ thống phục vụ nghiệp vụ gì, cho ai"></textarea></div>
+              <div>
+                <label for="sys-status">Trạng thái</label>
+                <select id="sys-status"></select>
+              </div>
+            </section>
+
+            <section class="card sys-sec">
+              <h3>2. Quản lý và vận hành</h3>
+              <div class="sys-row three">
+                <div><label for="sys-donvi">Đơn vị quản lý *</label><select id="sys-donvi"></select></div>
+                <div><label for="sys-daumoi">Đầu mối kỹ thuật</label><select id="sys-daumoi"></select></div>
+                <div><label for="sys-dvpt">Đơn vị phát triển</label><input id="sys-dvpt" maxlength="255" placeholder="Đội nội bộ hoặc nhà cung cấp"></div>
+              </div>
+              <div class="sys-row three">
+                <div><label for="sys-url">Địa chỉ truy cập</label><input id="sys-url" maxlength="500" placeholder="https://"></div>
+                <div><label for="sys-ver">Phiên bản hiện tại</label><input id="sys-ver" maxlength="50" placeholder="Ví dụ: 1.0.0"></div>
+                <div><label for="sys-ngay">Ngày đưa vào vận hành</label><input id="sys-ngay" type="date"></div>
+              </div>
+            </section>
+
+            <section class="card sys-sec">
+              <div class="row" style="justify-content:space-between;align-items:center">
+                <h3 style="margin:0">3. Tài liệu bắt buộc cho mỗi tính năng</h3>
+                <span class="status-badge status-dang-thuc-hien" id="sys-doc-count">Đã chọn 0/0</span>
+              </div>
+              <p class="muted" style="margin:6px 0 12px">Tính năng thiếu loại đã chọn sẽ được đánh dấu "Thiếu tài liệu".</p>
+              <div class="sys-docs" id="sys-docs"></div>
+              <div class="sys-doc-add" id="sys-doc-add" hidden>
+                <input id="sys-doc-new" maxlength="100" placeholder="Tên loại tài liệu">
+                <button type="button" class="primary" id="sys-doc-new-ok">Thêm</button>
+                <button type="button" id="sys-doc-new-cancel">Hủy</button>
+              </div>
+              <button type="button" id="sys-doc-add-btn" class="sys-doc-add-btn">+ Thêm loại tài liệu</button>
+            </section>
+
+            <div class="sys-actions">
+              <button type="button" id="sys-cancel-btn">Hủy</button>
+              <button type="button" id="sys-save-add-btn" class="sys-btn-blue">Tạo và thêm tính năng</button>
+              <button type="submit" id="sys-save-btn" class="primary">Tạo hệ thống</button>
             </div>
+          </form>
 
-            <section class="card" id="df-detail-tab-module-info">
-              <!-- Thông tin Module — các trường lấy từ dòng dữ liệu đang xem
-                   trong danh sách; style tái dùng bộ fr-detail-* của trang
-                   chi tiết Yêu cầu tính năng (13-digital-features.js điền) -->
-              <div class="fr-detail-grid">
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Đơn vị chủ trì (đề xuất)</div>
-                  <div id="df-info-don-vi-chu-tri"></div>
+          <!-- Chi tiết hệ thống + danh sách tính năng -->
+          <div id="sys-detail-view" hidden>
+            <div class="sys-crumb"><a href="#" id="sys-detail-back">Hệ thống</a> <span>/</span> <span id="sys-detail-crumb"></span></div>
+            <section class="card sys-detail-head">
+              <div class="sys-detail-top">
+                <div>
+                  <div class="sys-detail-tags"><span class="sys-code" id="sys-d-code"></span><span class="status-badge" id="sys-d-status"></span></div>
+                  <h2 class="sys-title" id="sys-d-name"></h2>
+                  <p class="muted sys-sub" id="sys-d-desc"></p>
                 </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Đơn vị phối hợp</div>
-                  <div id="df-info-don-vi-phoi-hop"></div>
-                </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Giai đoạn</div>
-                  <div id="df-info-giai-doan"></div>
-                </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">TN / MH</div>
-                  <div id="df-info-tn-mh"></div>
-                </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Vai trò P.BĐKD</div>
-                  <div id="df-info-vai-tro-pbdkd"></div>
-                </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Nhận đầu vào từ</div>
-                  <div id="df-info-nhan-dau-vao"></div>
-                </div>
-                <div class="fr-detail-field">
-                  <div class="fr-detail-label">Chuyển đầu ra tới</div>
-                  <div id="df-info-chuyen-dau-ra"></div>
+                <div class="sys-detail-actions">
+                  <button type="button" id="sys-d-edit" class="sys-btn-blue">Sửa thông tin</button>
+                  <button type="button" id="sys-d-add" class="primary tbl-add-btn">+ Thêm tính năng</button>
                 </div>
               </div>
-              <!-- Mục tiêu nghiệp vụ — nội dung dài, hiển thị dạng khối quote
-                   ở dưới cùng (giống "MÔ TẢ TỪNG BƯỚC ĐANG THỰC HIỆN" ở chi
-                   tiết Yêu cầu tính năng) -->
-              <div class="fr-detail-block" style="margin-top:14px">
-                <div class="fr-detail-label">Mục tiêu nghiệp vụ</div>
-                <p class="fr-detail-quote" id="df-info-muc-tieu"></p>
-              </div>
+              <div class="sys-detail-info" id="sys-d-info"></div>
             </section>
-
-            <section class="card" id="df-detail-tab-screens" hidden>
-              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Màn hình, Tính năng &amp; Phân quyền</h2>
-                <!-- Cùng bộ nút với bảng Tính năng số hoá: Xóa đã chọn chỉ
-                     hiện với admin (class delete-action tự ẩn theo quyền qua
-                     CSS role — khớp luật chặn server ở app.ts). -->
-                <!-- margin-left:auto: khi hàng nút dài quá bị wrap xuống
-                     dòng dưới vẫn bám cạnh phải, không dồn trái. -->
-                <div class="row" style="flex:0 0 auto;margin-left:auto">
-                  <button id="delete-selected-dfs-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfs-count">0</span>)</button>
-                  <div class="col-menu-wrap" id="dfs-col-menu-wrap">
-                    <button type="button" id="dfs-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
-                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
-                      <span class="caret" aria-hidden="true">▾</span>
-                    </button>
-                    <div class="col-menu" id="dfs-col-menu" role="menu" hidden>
-                      <div class="col-menu-list" id="dfs-col-menu-list"></div>
-                      <div class="bulk-menu-sep"></div>
-                      <button type="button" class="bulk-menu-item" id="dfs-col-menu-reset">Hiện tất cả</button>
-                    </div>
-                  </div>
-                  <button id="download-dfs-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
-                  <button id="import-dfs-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
-                  <input type="file" id="dfs-import-input" accept=".xlsx,.xlsm" hidden />
-                  <button id="export-dfs-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-screen-btn" class="primary tbl-add-btn write-action">+ Thêm mới</button>
-                </div>
+            <div class="sys-stats five" id="sys-d-stats"></div>
+            <section class="card sys-ft-card">
+              <div class="sys-ft-head">
+                <div><h3 style="margin:0">Tính năng của hệ thống</h3><div class="muted" id="sys-ft-count" style="font-size:0.85rem"></div></div>
+                <label class="sys-search" for="sys-ft-search">
+                  <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                  <input type="search" id="sys-ft-search" placeholder="Tìm tính năng, đơn vị yêu cầu" autocomplete="off">
+                </label>
               </div>
-              <!-- Thanh cuộn ngang phía trên — bảng 16 cột dữ liệu rất rộng
-                   (nhân bản setupDfScrollTopSync cùng file). -->
-              <div class="table-scroll-top" id="dfs-table-scroll-top"><div id="dfs-table-scroll-top-spacer"></div></div>
-              <div class="table-wrap" id="dfs-table-wrap">
-                <table id="dfs-table">
-                  <thead>
-                    <tr>
-                      <th style="width:36px"><input type="checkbox" id="dfs-select-all" /></th>
-                      <th style="min-width:48px">STT</th>
-                      <th style="min-width:90px" data-col="ma_mh">Mã MH</th>
-                      <th style="min-width:80px" data-col="tn">TN</th>
-                      <th style="min-width:220px">Tên màn hình / chức năng</th>
-                      <th style="min-width:140px" data-col="loai">Loại</th>
-                      <th style="min-width:240px" data-col="thanh_phan_chinh">Thành phần chính / trường dữ liệu</th>
-                      <th style="min-width:200px" data-col="hanh_dong">Hành động (nút / thao tác)</th>
-                      <th style="min-width:240px" data-col="quy_tac_nghiep_vu">Quy tắc nghiệp vụ &amp; kiểm tra</th>
-                      <th style="min-width:110px" data-col="sales_am">Sales / AM</th>
-                      <th style="min-width:120px" data-col="truong_dvkd">Trưởng đơn vị KD</th>
-                      <th style="min-width:120px" data-col="presales_sp">Presales / Sản phẩm</th>
-                      <th style="min-width:130px" data-col="nv_bdkd">NV BĐKD (thực thi)</th>
-                      <th style="min-width:140px" data-col="ks_lanh_dao_bdkd">Kiểm soát / Lãnh đạo BĐKD</th>
-                      <th style="min-width:100px" data-col="phap_che">Pháp chế</th>
-                      <th style="min-width:90px" data-col="tckt">TCKT</th>
-                      <th style="min-width:110px" data-col="ban_lanh_dao">Ban lãnh đạo</th>
-                      <th style="min-width:120px" data-col="quan_tri_he_thong">Quản trị hệ thống</th>
-                      <th style="min-width:110px"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="dfs-tbody"></tbody>
+              <div class="sys-seg" id="sys-ft-tabs"></div>
+              <div class="table-wrap">
+                <table class="sys-ft-table">
+                  <thead><tr><th>Mã</th><th>Tính năng</th><th>Đơn vị yêu cầu</th><th>Bắt đầu</th><th>Hạn hoàn thành</th><th>Hoàn thành thực tế</th><th>Trạng thái</th><th>Tài liệu</th></tr></thead>
+                  <tbody id="sys-ft-tbody"></tbody>
                 </table>
-                <p class="muted" id="dfs-empty" hidden style="padding:16px;text-align:center">Chưa có màn hình / chức năng nào.</p>
+                <p class="muted" id="sys-ft-empty" hidden style="padding:20px;text-align:center">Chưa có tính năng nào — bấm "+ Thêm tính năng" hoặc tạo yêu cầu thuộc hệ thống này ở menu Yêu cầu tính năng (mọi yêu cầu đều tự có mặt ở đây).</p>
               </div>
-              <!-- Chú giải ký hiệu quyền (khớp bảng "KÝ HIỆU QUYỀN" trong tài
-                   liệu mô tả — một ô gộp nhiều chữ cái, VD "CEA"). -->
-              <p class="muted" id="dfs-perm-legend" style="margin:10px 4px;font-size:0.8rem;line-height:1.7">
-                <b>Ký hiệu quyền:</b>
-                <b>V</b> – Xem · <b>C</b> – Tạo mới · <b>E</b> – Sửa · <b>D</b> – Hủy, xóa mềm ·
-                <b>A</b> – Phê duyệt, xác nhận, khóa · <b>X</b> – Xuất báo cáo/file ·
-                <b>S</b> – Cấu hình (rule, danh mục, mẫu) · <b>—</b> – Không có quyền
-              </p>
-              <div class="pagination-bar" id="dfs-pagination">
+              <div class="pagination-bar" id="sft-pagination">
                 <div class="row">
-                  <label for="dfs-page-size" style="margin:0">Số dòng/trang</label>
-                  <select id="dfs-page-size">
+                  <label for="sft-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="sft-page-size">
                     <option value="20">20</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                   </select>
                 </div>
                 <div class="row">
-                  <button type="button" id="dfs-page-prev" class="small">‹ Trước</button>
-                  <span id="dfs-page-info" class="muted"></span>
-                  <button type="button" id="dfs-page-next" class="small">Sau ›</button>
+                  <button type="button" id="sft-page-prev" class="small">‹ Trước</button>
+                  <span id="sft-page-info" class="muted"></span>
+                  <button type="button" id="sft-page-next" class="small">Sau ›</button>
                 </div>
+              </div>
+              <div class="sys-ft-legend" id="sys-ft-legend"></div>
+            </section>
+          </div>
+
+          <!-- Chi tiết tính năng -->
+          <div id="sys-ftdetail-view" hidden>
+            <div class="sys-crumb"><a href="#" id="ftd-crumb-sys">Hệ thống</a> <span>/</span> <a href="#" id="ftd-crumb-detail"></a> <span>/</span> <span id="ftd-crumb-cur"></span></div>
+            <div class="ftd-head">
+              <div>
+                <div class="ftd-tags"><span class="sys-code" id="ftd-code"></span><span class="status-badge" id="ftd-status"></span><span class="status-badge" id="ftd-days" hidden></span></div>
+                <h2 class="sys-title" id="ftd-title"></h2>
+              </div>
+              <div class="sys-detail-actions">
+                <button type="button" id="ftd-edit" class="sys-btn-blue">Sửa thông tin</button>
+                <button type="button" id="ftd-progress" class="primary tbl-add-btn">Cập nhật tiến độ</button>
+              </div>
+            </div>
+            <div class="ftd-grid">
+              <div class="ftd-main">
+                <section class="card">
+                  <h3 style="margin:0 0 8px">Mô tả yêu cầu</h3>
+                  <p id="ftd-desc" class="ftd-desc"></p>
+                  <div class="ftd-chips" id="ftd-chips"></div>
+                  <div id="ftd-sched"></div>
+                </section>
+                <section class="card">
+                  <div class="ftd-docs-head">
+                    <div><h3 style="margin:0">Tài liệu liên quan</h3><div class="muted" id="ftd-docs-sub" style="font-size:0.85rem"></div></div>
+                    <button type="button" id="ftd-upload" class="primary tbl-add-btn">↑ Tải tài liệu lên</button>
+                  </div>
+                  <div class="sys-seg" id="ftd-doc-tabs"></div>
+                  <div id="ftd-doc-list"></div>
+                </section>
+              </div>
+              <aside class="ftd-side">
+                <section class="card"><h3 style="margin:0 0 10px">Thông tin thực hiện</h3>
+                  <div class="ftd-prog"><div class="ftd-prog-l"><span>Tiến độ</span><b id="ftd-pct"></b></div><div class="sys-bar"><i id="ftd-bar"></i></div></div>
+                  <dl class="ftd-dl" id="ftd-info"></dl>
+                </section>
+                <section class="card"><div class="ftd-req-head"><h3 style="margin:0">Bộ tài liệu bắt buộc</h3><span class="muted" id="ftd-req-count"></span></div><ul class="ftd-req" id="ftd-req"></ul></section>
+                <section class="card"><h3 style="margin:0 0 10px">Lịch sử</h3><ul class="ftd-events" id="ftd-events"></ul></section>
+              </aside>
+            </div>
+          </div>
+
+          <!-- Tải tài liệu lên -->
+          <dialog id="sys-up-dialog" class="sys-up-dialog">
+            <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+            <form id="sys-up-form">
+              <div><h2 style="margin:0">Tải tài liệu lên</h2><p class="muted" id="sys-up-sub" style="margin:4px 0 0"></p></div>
+              <div class="sys-up-drop" id="sys-up-drop" tabindex="0" role="button">
+                <svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>
+                <b>Kéo thả tệp vào đây hoặc chọn tệp</b>
+                <small>DOCX, XLSX, PDF, PPTX, ảnh · tối đa 50 MB mỗi tệp</small>
+                <input type="file" id="sys-up-input" multiple hidden>
+              </div>
+              <div id="sys-up-files"></div>
+              <div>
+                <label>Loại tài liệu <span style="color:var(--red-600)">*</span></label>
+                <div class="sys-seg" id="sys-up-types"></div>
+                <small class="muted" id="sys-up-hint"></small>
+              </div>
+              <div class="sys-row two">
+                <div><label for="sys-up-ver">Phiên bản</label><input id="sys-up-ver" maxlength="30"></div>
+                <div><label for="sys-up-date">Ngày ban hành</label><input id="sys-up-date" type="date"></div>
+              </div>
+              <div><label for="sys-up-note">Ghi chú thay đổi</label><textarea id="sys-up-note" rows="3" maxlength="1000" placeholder="Ví dụ: Bổ sung mục tra cứu bằng số định danh"></textarea></div>
+              <div class="actions">
+                <button type="button" id="sys-up-cancel">Hủy</button>
+                <button type="submit" class="primary" id="sys-up-submit">Lưu tài liệu</button>
+              </div>
+            </form>
+          </dialog>
+
+          <!-- Cập nhật tiến độ -->
+          <dialog id="sys-prog-dialog" class="sys-up-dialog">
+            <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+            <form id="sys-prog-form">
+              <div><h2 style="margin:0">Cập nhật tiến độ</h2><p class="muted" id="sys-prog-sub" style="margin:4px 0 0"></p></div>
+              <div>
+                <label for="sys-prog-range">Tiến độ: <b id="sys-prog-pct">0%</b></label>
+                <input id="sys-prog-range" type="range" min="0" max="100" step="5" style="width:100%">
+              </div>
+              <div class="sys-row two">
+                <div><label for="sys-prog-status">Trạng thái</label><select id="sys-prog-status"></select></div>
+                <div><label for="sys-prog-ver">Phiên bản phát hành</label><input id="sys-prog-ver" maxlength="50" placeholder="Ví dụ: 2.4.0"></div>
+              </div>
+              <div><label for="sys-prog-note">Ghi chú</label><textarea id="sys-prog-note" rows="3" maxlength="500" placeholder="Đã làm được gì, vướng gì (không bắt buộc)"></textarea></div>
+              <div class="actions">
+                <button type="button" id="sys-prog-cancel">Hủy</button>
+                <button type="submit" class="primary">Lưu tiến độ</button>
+              </div>
+            </form>
+          </dialog>
+
+          <!-- Thêm / sửa tính năng -->
+          <form id="sys-ft-form-view" hidden novalidate>
+            <div class="sys-crumb"><a href="#" id="sys-ft-crumb-sys">Hệ thống</a> <span>/</span> <a href="#" id="sys-ft-crumb-detail"></a> <span>/</span> <span id="sys-ft-crumb-cur">Thêm tính năng</span></div>
+            <h2 class="sys-title" id="sys-ft-title">Thêm tính năng</h2>
+            <p class="muted sys-sub">Trường có dấu <b>*</b> là bắt buộc. Tài liệu có thể bổ sung sau.</p>
+
+            <section class="card sys-sec">
+              <h3>1. Thông tin chung</h3>
+              <div class="sys-row two">
+                <div><label for="sft-system">Hệ thống</label><small class="muted">Tính năng sẽ thuộc hệ thống này</small><select id="sft-system"></select></div>
+                <div><label for="sft-ma">Mã tính năng</label><small class="muted">Tự sinh, có thể sửa</small><input id="sft-ma" maxlength="50"></div>
+              </div>
+              <div><label for="sft-ten">Tên tính năng *</label><input id="sft-ten" maxlength="255" placeholder="Ví dụ: Tra cứu tình trạng hồ sơ"></div>
+              <div><label for="sft-mota">Mô tả yêu cầu</label><textarea id="sft-mota" rows="4" maxlength="4000" placeholder="Tính năng giải quyết việc gì, ai sử dụng, kết quả mong muốn"></textarea></div>
+              <div><label for="sft-uutien">Mức ưu tiên</label><select id="sft-uutien"></select></div>
+            </section>
+
+            <section class="card sys-sec">
+              <h3>2. Đơn vị yêu cầu</h3>
+              <div class="sys-row three">
+                <div><label for="sft-donvi">Đơn vị yêu cầu *</label><select id="sft-donvi"></select></div>
+                <div><label for="sft-nguoi">Người yêu cầu</label><input id="sft-nguoi" maxlength="255" placeholder="Họ và tên"></div>
+                <div><label for="sft-vb">Số văn bản yêu cầu</label><input id="sft-vb" maxlength="100" placeholder="Ví dụ: 245/HC"></div>
+              </div>
+              <div class="sys-row three">
+                <div><label for="sft-ngayyc">Ngày yêu cầu</label><input id="sft-ngayyc" type="date"></div>
               </div>
             </section>
 
-            <section class="card" id="df-detail-tab-master-data" hidden>
-              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Danh mục (Master Data) của Module</h2>
-                <!-- Cùng bộ nút với tab Màn hình: Xóa đã chọn chỉ hiện với
-                     admin (class delete-action tự ẩn theo quyền qua CSS role
-                     — khớp luật chặn server ở app.ts). -->
-                <div class="row" style="flex:0 0 auto;margin-left:auto">
-                  <button id="delete-selected-dfmd-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfmd-count">0</span>)</button>
-                  <div class="col-menu-wrap" id="dfmd-col-menu-wrap">
-                    <button type="button" id="dfmd-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
-                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
-                      <span class="caret" aria-hidden="true">▾</span>
-                    </button>
-                    <div class="col-menu" id="dfmd-col-menu" role="menu" hidden>
-                      <div class="col-menu-list" id="dfmd-col-menu-list"></div>
-                      <div class="bulk-menu-sep"></div>
-                      <button type="button" class="bulk-menu-item" id="dfmd-col-menu-reset">Hiện tất cả</button>
-                    </div>
-                  </div>
-                  <button id="download-dfmd-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
-                  <button id="import-dfmd-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
-                  <input type="file" id="dfmd-import-input" accept=".xlsx,.xlsm" hidden />
-                  <button id="export-dfmd-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-md-btn" class="primary tbl-add-btn write-action">+ Thêm mới</button>
-                </div>
+            <section class="card sys-sec">
+              <div class="row" style="justify-content:space-between;align-items:center">
+                <h3 style="margin:0">3. Thời gian thực hiện</h3>
+                <span class="status-badge status-dang-thuc-hien" id="sft-duration" hidden></span>
               </div>
-              <div class="table-scroll-top" id="dfmd-table-scroll-top"><div id="dfmd-table-scroll-top-spacer"></div></div>
-              <div class="table-wrap" id="dfmd-table-wrap">
-                <table id="dfmd-table">
-                  <thead>
-                    <tr>
-                      <th style="width:36px"><input type="checkbox" id="dfmd-select-all" /></th>
-                      <th style="min-width:48px">STT</th>
-                      <th style="min-width:110px" data-col="ma_danh_muc">Mã danh mục</th>
-                      <th style="min-width:220px">Tên danh mục</th>
-                      <th style="min-width:340px" data-col="noi_dung_thuoc_tinh">Nội dung / thuộc tính</th>
-                      <th style="min-width:180px" data-col="quan_tri_boi">Quản trị bởi</th>
-                      <th style="min-width:110px"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="dfmd-tbody"></tbody>
+              <div class="sys-row four">
+                <div><label for="sft-bd">Ngày bắt đầu *</label><input id="sft-bd" type="date"></div>
+                <div><label for="sft-han">Hạn hoàn thành *</label><input id="sft-han" type="date"></div>
+                <div><label for="sft-tt">Ngày hoàn thành thực tế</label><input id="sft-tt" type="date"><small class="muted">Điền khi nghiệm thu xong</small></div>
+                <div><label for="sft-pt">Người phụ trách</label><select id="sft-pt"></select></div>
+              </div>
+              <div class="sys-row four">
+                <div><label for="sft-trangthai">Trạng thái</label><select id="sft-trangthai"></select></div>
+              </div>
+            </section>
+
+            <section class="card sys-sec">
+              <h3>4. Tài liệu ban đầu <span class="muted" style="font-weight:400;font-size:0.9rem">(không bắt buộc)</span></h3>
+              <p class="muted" style="margin:0;font-size:0.85rem">Kéo thả tệp vào đúng loại. Mỗi loại nhận nhiều tệp, tối đa 50 MB mỗi tệp.</p>
+              <div class="sys-drops" id="sft-drops"></div>
+            </section>
+
+            <div class="sys-actions">
+              <button type="button" id="sft-cancel">Hủy</button>
+              <button type="button" id="sft-draft" class="sys-btn-blue">Lưu nháp</button>
+              <button type="submit" id="sft-save" class="primary">Tạo tính năng</button>
+            </div>
+          </form>
+
+          <!-- Tính năng chưa gán hệ thống -->
+          <div id="sys-unassigned-view" hidden>
+            <div class="sys-crumb"><a href="#" id="sys-un-back">Hệ thống</a> <span>/</span> <span>Chưa phân loại</span></div>
+            <h2 class="sys-title">Tính năng chưa phân loại</h2>
+            <p class="muted sys-sub">Yêu cầu tính năng có tên hệ thống chưa có trong danh mục. Chọn hệ thống để gán, hoặc tạo hệ thống mới theo tên người dùng đã nhập.</p>
+            <section class="card" style="margin-top:16px">
+              <div class="table-wrap">
+                <table class="sys-ft-table">
+                  <thead><tr><th>Mã</th><th>Tính năng</th><th>Hệ thống người dùng nhập</th><th>Trạng thái</th><th>Gán vào hệ thống</th><th></th></tr></thead>
+                  <tbody id="sys-un-tbody"></tbody>
                 </table>
-                <p class="muted" id="dfmd-empty" hidden style="padding:16px;text-align:center">Chưa có danh mục nào.</p>
+                <p class="muted" id="sys-un-empty" hidden style="padding:20px;text-align:center">Không còn tính năng nào chưa phân loại.</p>
               </div>
-              <div class="pagination-bar" id="dfmd-pagination">
+              <div class="pagination-bar" id="sun-pagination">
                 <div class="row">
-                  <label for="dfmd-page-size" style="margin:0">Số dòng/trang</label>
-                  <select id="dfmd-page-size">
+                  <label for="sun-page-size" style="margin:0">Số dòng/trang</label>
+                  <select id="sun-page-size">
                     <option value="20">20</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
                   </select>
                 </div>
                 <div class="row">
-                  <button type="button" id="dfmd-page-prev" class="small">‹ Trước</button>
-                  <span id="dfmd-page-info" class="muted"></span>
-                  <button type="button" id="dfmd-page-next" class="small">Sau ›</button>
-                </div>
-              </div>
-            </section>
-
-            <section class="card" id="df-detail-tab-data-lifecycle" hidden>
-              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Đối tượng dữ liệu &amp; Vòng đời trạng thái</h2>
-                <!-- Cùng bộ nút với tab Danh mục: Xóa đã chọn chỉ hiện với
-                     admin (class delete-action tự ẩn theo quyền qua CSS role
-                     — khớp luật chặn server ở app.ts). -->
-                <div class="row" style="flex:0 0 auto;margin-left:auto">
-                  <button id="delete-selected-dfdo-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfdo-count">0</span>)</button>
-                  <div class="col-menu-wrap" id="dfdo-col-menu-wrap">
-                    <button type="button" id="dfdo-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
-                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
-                      <span class="caret" aria-hidden="true">▾</span>
-                    </button>
-                    <div class="col-menu" id="dfdo-col-menu" role="menu" hidden>
-                      <div class="col-menu-list" id="dfdo-col-menu-list"></div>
-                      <div class="bulk-menu-sep"></div>
-                      <button type="button" class="bulk-menu-item" id="dfdo-col-menu-reset">Hiện tất cả</button>
-                    </div>
-                  </div>
-                  <button id="download-dfdo-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
-                  <button id="import-dfdo-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
-                  <input type="file" id="dfdo-import-input" accept=".xlsx,.xlsm" hidden />
-                  <button id="export-dfdo-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-do-btn" class="primary tbl-add-btn write-action">+ Thêm mới</button>
-                </div>
-              </div>
-              <div class="table-scroll-top" id="dfdo-table-scroll-top"><div id="dfdo-table-scroll-top-spacer"></div></div>
-              <div class="table-wrap" id="dfdo-table-wrap">
-                <table id="dfdo-table">
-                  <thead>
-                    <tr>
-                      <th style="width:36px"><input type="checkbox" id="dfdo-select-all" /></th>
-                      <th style="min-width:48px">STT</th>
-                      <th style="min-width:200px">Đối tượng</th>
-                      <th style="min-width:340px" data-col="khoa_thuoc_tinh">Khóa &amp; thuộc tính chính</th>
-                      <th style="min-width:340px" data-col="vong_doi_trang_thai">Vòng đời trạng thái</th>
-                      <th style="min-width:110px"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="dfdo-tbody"></tbody>
-                </table>
-                <p class="muted" id="dfdo-empty" hidden style="padding:16px;text-align:center">Chưa có đối tượng dữ liệu nào.</p>
-              </div>
-              <div class="pagination-bar" id="dfdo-pagination">
-                <div class="row">
-                  <label for="dfdo-page-size" style="margin:0">Số dòng/trang</label>
-                  <select id="dfdo-page-size">
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                  </select>
-                </div>
-                <div class="row">
-                  <button type="button" id="dfdo-page-prev" class="small">‹ Trước</button>
-                  <span id="dfdo-page-info" class="muted"></span>
-                  <button type="button" id="dfdo-page-next" class="small">Sau ›</button>
-                </div>
-              </div>
-            </section>
-
-            <section class="card" id="df-detail-tab-integration" hidden>
-              <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-                <h2 style="margin:0;flex:0 0 auto;white-space:nowrap">Tích hợp &amp; Sự kiện</h2>
-                <!-- Cùng bộ nút với tab Danh mục: Xóa đã chọn chỉ hiện với
-                     admin (class delete-action tự ẩn theo quyền qua CSS role
-                     — khớp luật chặn server ở app.ts). -->
-                <div class="row" style="flex:0 0 auto;margin-left:auto">
-                  <button id="delete-selected-dfint-btn" class="delete-action danger" hidden>Xóa đã chọn (<span id="selected-dfint-count">0</span>)</button>
-                  <div class="col-menu-wrap" id="dfint-col-menu-wrap">
-                    <button type="button" id="dfint-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
-                      <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình cột
-                      <span class="caret" aria-hidden="true">▾</span>
-                    </button>
-                    <div class="col-menu" id="dfint-col-menu" role="menu" hidden>
-                      <div class="col-menu-list" id="dfint-col-menu-list"></div>
-                      <div class="bulk-menu-sep"></div>
-                      <button type="button" class="bulk-menu-item" id="dfint-col-menu-reset">Hiện tất cả</button>
-                    </div>
-                  </div>
-                  <button id="download-dfint-template-btn" class="btn-edit"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>File mẫu</button>
-                  <button id="import-dfint-btn" class="btn-exclude write-action"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-upload"/></svg>Import Excel</button>
-                  <input type="file" id="dfint-import-input" accept=".xlsx,.xlsm" hidden />
-                  <button id="export-dfint-btn" class="btn-export"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Export Excel</button>
-                  <button id="add-df-int-btn" class="primary tbl-add-btn write-action">+ Thêm mới</button>
-                </div>
-              </div>
-              <div class="table-scroll-top" id="dfint-table-scroll-top"><div id="dfint-table-scroll-top-spacer"></div></div>
-              <div class="table-wrap" id="dfint-table-wrap">
-                <table id="dfint-table">
-                  <thead>
-                    <tr>
-                      <th style="width:36px"><input type="checkbox" id="dfint-select-all" /></th>
-                      <th style="min-width:48px">STT</th>
-                      <th style="min-width:120px">Hướng</th>
-                      <th style="min-width:200px" data-col="module_he_thong">Module / hệ thống</th>
-                      <th style="min-width:320px" data-col="du_lieu_trao_doi">Dữ liệu trao đổi</th>
-                      <th style="min-width:320px" data-col="co_che_tan_suat">Cơ chế &amp; tần suất</th>
-                      <th style="min-width:110px"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="dfint-tbody"></tbody>
-                </table>
-                <p class="muted" id="dfint-empty" hidden style="padding:16px;text-align:center">Chưa có luồng tích hợp nào.</p>
-              </div>
-              <div class="pagination-bar" id="dfint-pagination">
-                <div class="row">
-                  <label for="dfint-page-size" style="margin:0">Số dòng/trang</label>
-                  <select id="dfint-page-size">
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                  </select>
-                </div>
-                <div class="row">
-                  <button type="button" id="dfint-page-prev" class="small">‹ Trước</button>
-                  <span id="dfint-page-info" class="muted"></span>
-                  <button type="button" id="dfint-page-next" class="small">Sau ›</button>
+                  <button type="button" id="sun-page-prev" class="small">‹ Trước</button>
+                  <span id="sun-page-info" class="muted"></span>
+                  <button type="button" id="sun-page-next" class="small">Sau ›</button>
                 </div>
               </div>
             </section>
@@ -2162,6 +1790,11 @@
                 <div id="fr-detail-attachment"></div>
               </div>
             </div>
+            <!-- Lịch thực hiện: mong muốn (đơn vị đề xuất) vs dự kiến (đơn vị thực hiện) -->
+            <div class="fr-detail-block" id="fr-detail-schedule-wrap">
+              <div class="fr-detail-label">Lịch thực hiện</div>
+              <div id="fr-detail-schedule"></div>
+            </div>
             <div class="fr-detail-block">
               <div class="fr-detail-label">Mô tả từng bước đang thực hiện</div>
               <p id="fr-detail-mo-ta" class="fr-detail-quote"></p>
@@ -2188,6 +1821,32 @@
             </div>
             <div class="actions" id="fr-detail-actions"></div>
           </div>
+        </dialog>
+
+        <!-- Xác nhận / điều chỉnh lịch thực hiện — chỉ phòng đích. -->
+        <dialog id="fr-schedule-dialog" class="fr-schedule-dialog">
+          <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
+          <form id="fr-schedule-form">
+            <h2 style="margin:0" id="fr-sch-title">Xác nhận lịch thực hiện</h2>
+            <p class="muted" id="fr-sch-sub" style="margin:4px 0 0"></p>
+            <input type="hidden" id="fr-sch-id" />
+            <input type="hidden" id="fr-sch-mode" />
+            <div class="fr-sch-compare">
+              <div><div class="fr-sch-lbl">Đơn vị đề xuất mong muốn</div><b id="fr-sch-wanted">—</b></div>
+              <div><label class="fr-sch-lbl" for="fr-sch-date">Đơn vị thực hiện dự kiến</label><input id="fr-sch-date" type="date" /></div>
+            </div>
+            <div class="fr-sch-quick" id="fr-sch-quick"></div>
+            <div id="fr-sch-viz"></div>
+            <div id="fr-sch-reason-wrap" hidden>
+              <label for="fr-sch-reason">Lý do điều chỉnh *</label>
+              <div class="fr-sch-chips" id="fr-sch-chips"></div>
+              <textarea id="fr-sch-reason" rows="3" maxlength="1000" placeholder="Vì sao lịch khác với thời gian mong muốn — để đơn vị đề xuất nắm được"></textarea>
+            </div>
+            <div class="actions">
+              <button type="button" id="fr-sch-cancel">Hủy</button>
+              <button type="submit" class="primary" id="fr-sch-submit">Lưu lịch</button>
+            </div>
+          </form>
         </dialog>
 
         <!-- Từ chối yêu cầu — chỉ phòng đích thấy nút mở dialog này. -->
@@ -4758,7 +4417,7 @@
   <script src="js/08-home.js"></script>
   <script src="js/10-feature-requests.js"></script>
   <script src="js/11-action-logs.js"></script>
-  <script src="js/13-digital-features.js"></script>
+  <script src="js/13-systems.js"></script>
   <script src="js/14-reports.js"></script>
   <script src="js/15-summary-plan.js"></script>
   <script src="js/16-overtime.js"></script>

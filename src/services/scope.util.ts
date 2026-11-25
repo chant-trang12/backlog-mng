@@ -104,6 +104,17 @@ export function assertDepartmentInScope(scope: DataScope, departmentId: number |
 // Lưu ý an toàn (IDOR): quyền phải suy từ req.dataScope (đã chứng thực ở
 // server), KHÔNG từ tham số ?department_id= client gửi lên — tham số đó có
 // thể bị sửa tự do (Burp) để xem/thao tác trái phép trên phòng khác.
+// Tính năng của hệ thống (menu "Hệ thống & Tính năng"): chỉ 2 bên liên quan thấy — đơn vị yêu cầu và đơn vị thực hiện
+// (giống phạm vi xem của Yêu cầu tính năng).
+export function isSystemFeatureInScope(
+  scope: DataScope,
+  f: { don_vi_yeu_cau_id: number | null; don_vi_thuc_hien_id: number | null },
+): boolean {
+  if (scope.all) return true;
+  if (scope.departmentId == null) return false;
+  return f.don_vi_yeu_cau_id === scope.departmentId || f.don_vi_thuc_hien_id === scope.departmentId;
+}
+
 export function isFeatureRequestInScope(
   scope: DataScope,
   fr: { department_id: number | null; target_department_id: number | null },

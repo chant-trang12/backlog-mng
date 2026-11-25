@@ -6,10 +6,6 @@ const pages = {
   team: document.getElementById("page-team"),
   roadmap: document.getElementById("page-roadmap"),
   "digital-features": document.getElementById("page-digital-features"),
-  // Trang CHI TIẾT tính năng số hoá — không có mục ở menu trái (mở bằng
-  // icon "Xem chi tiết" ở bảng danh sách, 13-digital-features.js). Nằm
-  // trong `pages` để khi user bấm sang mục menu khác, trang này tự ẩn.
-  "digital-feature-detail": document.getElementById("page-digital-feature-detail"),
   reports: document.getElementById("page-reports"),
   "summary-plan": document.getElementById("page-summary-plan"),
   config: document.getElementById("page-config"),
@@ -58,7 +54,8 @@ document.querySelectorAll(".nav-item").forEach((btn) => {
     if (btn.dataset.page === "feature-requests") loadFeatureRequests().catch((err) => showToast(err.message));
     // Quản lý tính năng số hoá — tải lại mỗi lần vào trang để thấy ngay dữ
     // liệu mới (import/xóa ở lần xem trước).
-    if (btn.dataset.page === "digital-features") loadDigitalFeatures().catch((err) => showToast(err.message));
+    // Hệ thống & Tính năng — tải lại mỗi lần vào (dữ liệu chung với Cấu hình > Hệ thống).
+    if (btn.dataset.page === "digital-features") loadSystems().catch((err) => showToast(err.message));
     // Báo cáo - Thống kê — tab "Yêu cầu tính năng" đang mở mặc định (pill
     // active sẵn trong HTML) nên tải ngay; chuyển sang tab "fr" từ tab khác
     // thì tự tải lại ở chính handler click pill (05-cskh.js).

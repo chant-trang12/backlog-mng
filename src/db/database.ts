@@ -20,6 +20,8 @@ import {
   migrateSoftDeleteTeamRecords,
 } from "./migrations/core.js";
 import { migrateRoadmapTables } from "./migrations/roadmap.js";
+import { migrateHeThongSystemColumns } from "./migrations/heThongSystems.js";
+import { migrateSystemFeatureTables } from "./migrations/systemFeatures.js";
 import { migrateScoringTables } from "./migrations/scoring.js";
 import {
   migrateTaskDauMoiPhoiHop,
@@ -97,6 +99,7 @@ export async function initDatabase(): Promise<void> {
     // 24-28: he_thong_options / muc_tieu_options / roadmap_items / roadmap_details
     // / roadmap_items.synced_task_id — cần bảng departments + tasks đã có ở trên.
     await migrateRoadmapTables();
+    await migrateHeThongSystemColumns();
     // 29-30: task_members + phan_loai_nhan_su_options.
     await migrateTaskMembersTables();
     // 31-32: task_items + task_item_members ("Việc" con trong 1 Nhiệm vụ).
@@ -138,6 +141,7 @@ export async function initDatabase(): Promise<void> {
     // feature_requests + loai_yeu_cau_options (module "Yêu cầu tính năng")
     // — cần bảng departments đã có ở migrateDepartments() (bước 23 ở trên).
     await migrateFeatureRequestTables();
+    await migrateSystemFeatureTables();
     // action_logs (Nhật ký hoạt động) — cần bảng users (migrateUsersTable)
     // + departments (migrateDepartments, bước 23 ở trên) đã tồn tại sẵn.
     await migrateActionLogsTable();

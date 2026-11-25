@@ -86,6 +86,7 @@ function pvRunHtml(r, base) {
   if (r.b) st.push("font-weight:700");
   if (r.i) st.push("font-style:italic");
   if (r.u) st.push("text-decoration:underline");
+  if (r.spc) st.push(`letter-spacing:${pvFont(r.spc)}`);
   st.push(`color:${r.color ?? "#1c1917"}`);
   return `<span style="${st.join(";")}">${pxEsc(r.t)}</span>`;
 }
@@ -118,7 +119,19 @@ function pvCommentBadge(codes) {
 }
 function pvShapeHtml(sh) {
   const media = (key) => pv.model.media[key] ?? "";
-  if (sh.t === "image") return `<div class="pv-shape" style="${pvBox(sh)}"><img src="${media(sh.src)}" alt="" draggable="false"/></div>`;
+  if (sh.t === "image") {
+    // Ảnh cắt xén (a:srcRect): phóng ảnh to hơn khung rồi dịch để chỉ lộ phần được giữ lại.
+    const c = sh.crop;
+    const img = c
+      ? `<img src="${media(sh.src)}" alt="" draggable="false" style="position:absolute;width:${(100 / (1 - c[0] - c[2])).toFixed(3)}%;height:${(100 / (1 - c[1] - c[3])).toFixed(3)}%;left:${((-c[0] / (1 - c[0] - c[2])) * 100).toFixed(3)}%;top:${((-c[1] / (1 - c[1] - c[3])) * 100).toFixed(3)}%;max-width:none"/>`
+      : `<img src="${media(sh.src)}" alt="" draggable="false"/>`;
+    return `<div class="pv-shape" style="${pvBox(sh)}${c ? ";overflow:hidden" : ""}">${img}</div>`;
+  }
+  if (sh.t === "line") {
+    const lw = Math.max(1, (sh.lineW ?? 12700) / PT);
+    const y1 = sh.flipV ? "100%" : "0", y2 = sh.flipV ? "0" : "100%";
+    return `<div class="pv-shape" style="left:${px2(sh.x)};top:${px2(sh.y)};width:${px2(sh.w)};height:${px2(sh.h)};${sh.rot ? `transform:rotate(${sh.rot}deg)` : ""}"><svg width="100%" height="100%" style="overflow:visible;display:block"><line x1="0" y1="${y1}" x2="100%" y2="${y2}" stroke="${sh.line}" stroke-width="${lw}"/></svg></div>`;
+  }
   if (sh.t === "imagebox") {
     const inner = sh.has_image
       ? `<img src="${sh.url}" alt="" draggable="false"/>${sh.caption ? `<div class="pv-img-cap">${pxEsc(sh.caption)}</div>` : ""}`
@@ -166,7 +179,7 @@ function pvRenderSlide() {
   el.style.height = `${H}px`;
   const bg = slide.bg;
   el.style.background = bg?.color ?? "#fff";
-  el.style.backgroundImage = bg?.image ? `url("${pv.model.media[bg.image]}")` : "none";
+  el.style.backgroundImage = bg?.image ? `url("${pv.model.media[bg.image]}")` : bg?.css ?? "none";
   el.style.backgroundSize = "100% 100%";
   el.innerHTML = slide.shapes.map(pvShapeHtml).join("");
   pvRenderNotes(slide);
@@ -175,16 +188,7 @@ function pvRenderSlide() {
   pvQ("pv-next").disabled = pv.no >= pv.model.slides.length;
   pvFit();
   pvMarkActive();
-  // co chữ cho vừa khung (giống tự động co chữ của PowerPoint)
-  el.querySelectorAll(".pv-text").forEach((t) => {
-    let k = Number(t.style.getPropertyValue("--k")) || 1;
-    const box = t.parentElement;
-    let guard = 0;
-    while (t.scrollHeight > box.clientHeight + 1 && k > 0.4 && guard++ < 24) {
-      k -= 0.04;
-      t.style.setProperty("--k", k.toFixed(2));
-    }
-  });
+  // Cỡ chữ giữ đúng như file mẫu (cỡ gốc × fontScale của normAutofit nếu có) — KHÔNG tự co thêm: chữ dài hơn khung thì tràn ra như khi mở file xuất bằng PowerPoint.
 }
 // Ghi chú thuyết trình (khung Notes dưới slide): hiện ngay dưới slide, bấm vào để sửa / góp ý như các đầu mục khác.
 function pvRenderNotes(slide) {

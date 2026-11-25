@@ -1,4 +1,5 @@
 import { db } from "../db/database.js";
+import { syncFeatureRequests } from "./systemFeature.service.js";
 import type {
   CreateFeatureRequestInput,
   FeatureRequestAttachment,
@@ -289,10 +290,53 @@ export async function listLoaiYeuCau(): Promise<LoaiYeuCauOption[]> {
 // ---- Luồng Duyệt/Từ chối (chỉ phòng đích được gọi — kiểm tra scope ở
 // controller trước khi tới đây) ----
 
-export async function approveFeatureRequest(id: number): Promise<FeatureRequestWithDept | undefined> {
+export class ScheduleError extends Error {}
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const dayN = (s: string) => Math.floor(Date.parse(`${s}T00:00:00Z`) / 86400000);
+
+// Lịch thực hiện do đơn vị thực hiện xác nhận. Quy tắc: lệch so với "Thời gian mong muốn" (> 0 ngày) thì BẮT BUỘC có lý do
+// — để đơn vị đề xuất hiểu vì sao đổi. Mỗi lần đổi ghi 1 dòng nhật ký (từ -> đến, lý do, ai).
+export async function setFeatureRequestSchedule(
+  id: number,
+  input: { thoi_gian_du_kien?: unknown; ly_do?: unknown },
+  actor: { name: string | null; deptName: string | null },
+): Promise<FeatureRequestWithDept | undefined> {
+  const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
+  if (!existing) return undefined;
+  if (existing.trang_thai === "Từ chối") throw new ScheduleError("Yêu cầu đã bị từ chối — không điều chỉnh lịch.");
+  const to = typeof input.thoi_gian_du_kien === "string" ? input.thoi_gian_du_kien.trim() : "";
+  if (!DATE_RE.test(to) || isNaN(Date.parse(to))) throw new ScheduleError("Thời gian dự kiến không hợp lệ.");
+  const reason = typeof input.ly_do === "string" ? input.ly_do.trim().slice(0, 1000) : "";
+  const wanted = typeof existing.thoi_gian_mong_muon === "string" && DATE_RE.test(existing.thoi_gian_mong_muon.slice(0, 10)) ? existing.thoi_gian_mong_muon.slice(0, 10) : null;
+  const from: string | null = existing.thoi_gian_du_kien || wanted;
+  if (from === to && !reason) return getFeatureRequest(id); // không đổi gì
+  if (wanted && dayN(to) !== dayN(wanted) && !reason) throw new ScheduleError("Lịch khác thời gian mong muốn — vui lòng nhập lý do để đơn vị đề xuất nắm.");
+  await db("feature_requests").where({ id }).update({
+    thoi_gian_du_kien: to,
+    ly_do_dieu_chinh: reason || null,
+    du_kien_boi: actor.name,
+    du_kien_at: db.fn.now(),
+    updated_at: db.fn.now(),
+  });
+  await db("feature_request_schedule_log").insert({ feature_request_id: id, tu_ngay: from, den_ngay: to, ly_do: reason || null, nguoi_thuc_hien: actor.name, don_vi: actor.deptName });
+  return getFeatureRequest(id);
+}
+
+export async function listFeatureRequestScheduleLog(id: number) {
+  return db("feature_request_schedule_log").where({ feature_request_id: id }).orderBy("id", "desc");
+}
+
+export async function approveFeatureRequest(
+  id: number,
+  schedule?: { thoi_gian_du_kien?: unknown; ly_do?: unknown; actor: { name: string | null; deptName: string | null } },
+): Promise<FeatureRequestWithDept | undefined> {
   const existing = await db("feature_requests").where({ id, is_deleted: false }).first();
   if (!existing || existing.trang_thai !== "Chờ duyệt") return undefined;
+  // Xác nhận lịch kèm lúc duyệt (có thể ném ScheduleError -> chưa duyệt gì cả).
+  if (schedule?.thoi_gian_du_kien) await setFeatureRequestSchedule(id, schedule, schedule.actor);
   await db("feature_requests").where({ id }).update({ trang_thai: "Đã duyệt", updated_at: db.fn.now() });
+  await syncFeatureRequests().catch(() => {}); // cập nhật trạng thái ở menu "Hệ thống & Tính năng"
   return getFeatureRequest(id);
 }
 

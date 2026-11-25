@@ -58,6 +58,8 @@ const MODULE_LABELS: Record<string, { module: string; entity: string; table?: st
     table: "cbnv_xep_loai_records",
     nameColumn: "ho_va_ten",
   },
+  systems: { module: "Quản lý tính năng số hoá", entity: "Hệ thống", table: "he_thong_options", nameColumn: "ten_he_thong" },
+  "system-features": { module: "Quản lý tính năng số hoá", entity: "Tính năng của hệ thống", table: "system_features", nameColumn: "ten" },
   "digital-features": { module: "Quản lý tính năng số hoá", entity: "Tính năng số hoá", table: "digital_features", nameColumn: "module" },
   // 4 đối tượng con của Tính năng số hoá — route phẳng (sửa/xóa 1 dòng:
   // /digital-feature-<tên>/:id). Không khai báo thì entity rơi về chính
@@ -134,6 +136,8 @@ const VERB_LABELS: Record<string, { action: ActionLogType; verb: string }> = {
   "mark-excluded": { action: "cap_nhat", verb: "Đánh dấu loại trừ" },
   approve: { action: "cap_nhat", verb: "Duyệt" },
   reject: { action: "cap_nhat", verb: "Từ chối" },
+  progress: { action: "cap_nhat", verb: "Cập nhật tiến độ" },
+  schedule: { action: "cap_nhat", verb: "Điều chỉnh lịch thực hiện" },
   "to-backlog": { action: "chuyen_du_lieu", verb: "Đưa vào Backlog" },
   "to-roadmap": { action: "chuyen_du_lieu", verb: "Đưa vào Roadmap năm" },
   clone: { action: "tao_moi", verb: "Sao chép" },

@@ -16,7 +16,7 @@ export const MENU_ITEMS = [
   { key: "team", label: "Team & Nhân sự", function_key: "team_nhan_su" },
   { key: "roadmap", label: "Roadmap năm", function_key: "roadmap" },
   { key: "feature-requests", label: "Yêu cầu tính năng", function_key: "yeu_cau_tinh_nang" },
-  { key: "digital-features", label: "Tính năng số hoá", function_key: "quan_ly_tinh_nang_so_hoa" },
+  { key: "digital-features", label: "Hệ thống & Tính năng", function_key: "quan_ly_tinh_nang_so_hoa" },
   { key: "reports", label: "Báo cáo - Thống kê", function_key: "bao_cao_thong_ke" },
   { key: "summary-plan", label: "Kế hoạch tổng hợp", function_key: "ke_hoach_tong_hop" },
   { key: "config", label: "Cấu hình", function_key: null },

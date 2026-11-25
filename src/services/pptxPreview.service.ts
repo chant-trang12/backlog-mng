@@ -104,15 +104,29 @@ function fillOf(pr: XNode | undefined, theme: Theme): string | null | undefined 
   if (kid(pr, "a:noFill")) return null;
   const sf = kid(pr, "a:solidFill");
   if (sf) return colorOf(sf, theme) ?? undefined;
+  const gf = kid(pr, "a:gradFill");
+  if (gf) return gradCss(gf, theme);
   return undefined;
+}
+// Nền chuyển màu (a:gradFill) -> CSS linear-gradient (bỏ qua gradient dạng path/tâm, lấy theo trục góc).
+function gradCss(gf: XNode, theme: Theme): string | undefined {
+  const stops = kids(kid(gf, "a:gsLst"), "a:gs")
+    .map((g) => ({ pos: num(g.a.pos, 0) / 1000, color: colorOf(g, theme) }))
+    .filter((x): x is { pos: number; color: string } => !!x.color);
+  if (!stops.length) return undefined;
+  if (stops.length === 1) return stops[0].color;
+  const ang = num(kid(gf, "a:lin")?.a.ang, 5400000) / 60000; // OOXML: 0° = trái -> phải, tăng theo chiều kim đồng hồ; CSS: 0° = dưới -> trên
+  return `linear-gradient(${(ang + 90) % 360}deg, ${stops.map((x) => `${x.color} ${x.pos}%`).join(", ")})`;
 }
 
 // ---------------------------------------------------------------- Mô hình trả về
-export interface PRun { t: string; b?: boolean; i?: boolean; u?: boolean; sz?: number; color?: string }
+export interface PRun { t: string; b?: boolean; i?: boolean; u?: boolean; sz?: number; color?: string; spc?: number } // spc: giãn chữ (pt)
 export interface PPara { runs: PRun[]; align?: string; bullet?: string; marL?: number; indent?: number; sz?: number; code?: string; line?: number }
 export interface PCell { paras: PPara[]; fill?: string; span?: number; vmerge?: boolean; code?: string; row?: string; sub?: string; edit?: boolean; anchor?: string }
 export interface PShape {
-  t: "text" | "table" | "image" | "imagebox";
+  t: "text" | "table" | "image" | "imagebox" | "line";
+  flipV?: boolean; // đường thẳng chạy từ dưới lên
+  crop?: [number, number, number, number]; // ảnh cắt xén (a:srcRect) l,t,r,b dạng tỉ lệ 0..1
   x: number; y: number; w: number; h: number; rot?: number;
   anchor?: string; fill?: string; line?: string; lineW?: number; geom?: string;
   insets?: [number, number, number, number];
@@ -124,13 +138,14 @@ export interface PShape {
   src?: string; code?: string; caption?: string; has_image?: boolean; url?: string;
   deco?: boolean; // hình trang trí từ layout/master
 }
-export interface PSlide { no: number; bg?: { color?: string; image?: string }; shapes: PShape[]; notes?: PPara[] } // notes: ghi chú thuyết trình (khung Notes dưới slide)
+export interface PSlide { no: number; bg?: { color?: string; image?: string; css?: string }; shapes: PShape[]; notes?: PPara[] } // notes: ghi chú thuyết trình (khung Notes dưới slide)
 export interface PreviewModel { slide_w: number; slide_h: number; slides: PSlide[]; media: Record<string, string> } // media: khoá -> data URI (ảnh nền/ảnh trong mẫu, dùng chung nhiều slide)
 
 const TOKEN_RE = /\{\{\s*([\p{L}\p{N}_]+)(?:\.([\p{L}\p{N}_]+))?\s*\}\}/gu;
 const nfc = (s: string) => s.normalize("NFC");
-const MAX_IMG = 1_500_000;
-const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp" };
+const MAX_IMG = 12_000_000; // mỗi ảnh (ảnh bìa/nền chất lượng cao thường > 1,5MB)
+const MAX_MEDIA_TOTAL = 40_000_000; // tổng ảnh gửi về trình duyệt
+const MIME: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", jfif: "image/jpeg", jpe: "image/jpeg", bmp: "image/bmp", gif: "image/gif", svg: "image/svg+xml", webp: "image/webp" };
 
 interface Ctx {
   zip: JSZip;
@@ -170,7 +185,8 @@ async function mediaUri(ctx: Ctx, target: string): Promise<string | null> {
   if (f) {
     const buf = await f.async("nodebuffer");
     const ext = target.split(".").pop()!.toLowerCase();
-    if (buf.length <= MAX_IMG && MIME[ext]) {
+    const used = Object.values(ctx.media).reduce((a, v) => a + v.length, 0);
+    if (buf.length <= MAX_IMG && MIME[ext] && used + buf.length * 1.4 <= MAX_MEDIA_TOTAL) {
       key = `m${Object.keys(ctx.media).length + 1}`;
       ctx.media[key] = `data:${MIME[ext]};base64,${buf.toString("base64")}`;
     }
@@ -217,6 +233,7 @@ function buildRuns(p: XNode, inh: Inherit, lvl: number, theme: Theme): PRun[] {
       u: (rp?.a.u && rp.a.u !== "none") || undefined,
       sz: rp?.a.sz ? num(rp.a.sz) / 100 : defSz,
       color: colorOf(kid(rp, "a:solidFill"), theme) ?? defColor,
+      spc: rp?.a.spc ? num(rp.a.spc) / 100 : undefined,
     });
   }
   return out;
@@ -292,6 +309,13 @@ function xfOf(node: XNode | undefined, g: GroupT): Xf | undefined {
   if (!xf || !off || !ext) return undefined;
   return { x: g.ox + num(off.a.x) * g.sx, y: g.oy + num(off.a.y) * g.sy, w: num(ext.a.cx) * g.sx, h: num(ext.a.cy) * g.sy, rot: xf.a.rot ? num(xf.a.rot) / 60000 : undefined };
 }
+const cropOf = (bf: XNode | undefined): [number, number, number, number] | undefined => {
+  const r = kid(bf, "a:srcRect");
+  if (!r) return undefined;
+  const v = (k: string) => Math.max(0, Math.min(0.95, num(r.a[k], 0) / 100000));
+  const c: [number, number, number, number] = [v("l"), v("t"), v("r"), v("b")];
+  return c.some((x) => x > 0) ? c : undefined;
+};
 const phOf = (sp: XNode) => kid(kid(kid(sp, "p:nvSpPr"), "p:nvPr"), "p:ph");
 
 interface LayoutInfo { shapes: XNode[]; master: XNode | undefined; bg: XNode | undefined }
@@ -322,6 +346,14 @@ async function renderTree(tree: XNode, ctx: Ctx, rels: Map<string, { type: strin
       const fill = fillOf(spPr, ctx.theme);
       const ln = kid(spPr, "a:ln");
       const lnColor = ln && !kid(ln, "a:noFill") ? colorOf(kid(ln, "a:solidFill"), ctx.theme) : undefined;
+      // Hình khối tô bằng ảnh (a:blipFill trong spPr) — thường là ảnh bìa/nền: vẽ ảnh phía dưới chữ.
+      const sbf = kid(spPr, "a:blipFill");
+      const srid = kid(sbf, "a:blip")?.a["r:embed"];
+      const starget = srid ? rels.get(srid)?.target : undefined;
+      if (starget) {
+        const ssrc = await mediaUri(ctx, starget);
+        if (ssrc) out.push({ t: "image", x: xf.x, y: xf.y, w: xf.w, h: xf.h, rot: xf.rot, src: ssrc, crop: cropOf(sbf), deco: decoOnly || undefined });
+      }
       const base: PShape = { t: "text", x: xf.x, y: xf.y, w: xf.w, h: xf.h, rot: xf.rot, fill: fill ?? undefined, line: lnColor, lineW: ln?.a.w ? num(ln.a.w) : undefined, geom, deco: decoOnly || undefined };
       // Khung chữ chứa mã ảnh -> ô ảnh báo cáo.
       const allText = paras.map((p) => runsText(buildRuns(p, inh, 0, ctx.theme))).join("\n");
@@ -344,11 +376,22 @@ async function renderTree(tree: XNode, ctx: Ctx, rels: Map<string, { type: strin
       });
     } else if (el.n === "p:pic") {
       const xf = xfOf(kid(el, "p:spPr"), g);
-      const rid = kid(kid(el, "p:blipFill"), "a:blip")?.a["r:embed"];
+      const bf = kid(el, "p:blipFill");
+      const rid = kid(bf, "a:blip")?.a["r:embed"];
       const target = rid ? rels.get(rid)?.target : undefined;
       if (!xf || !target) continue;
       const src = await mediaUri(ctx, target);
-      if (src) out.push({ t: "image", x: xf.x, y: xf.y, w: xf.w, h: xf.h, rot: xf.rot, src, deco: decoOnly || undefined });
+      if (src) out.push({ t: "image", x: xf.x, y: xf.y, w: xf.w, h: xf.h, rot: xf.rot, src, crop: cropOf(bf), deco: decoOnly || undefined });
+    } else if (el.n === "p:cxnSp") {
+      // Đường nối/đường kẻ thẳng (VD gạch dưới tiêu đề slide bìa).
+      const spPr = kid(el, "p:spPr");
+      const xf = xfOf(spPr, g);
+      if (!xf) continue;
+      const ln = kid(spPr, "a:ln");
+      const color = ln && !kid(ln, "a:noFill") ? colorOf(kid(ln, "a:solidFill"), ctx.theme) : undefined;
+      if (!color) continue;
+      const xfrm = kid(spPr, "a:xfrm");
+      out.push({ t: "line", x: xf.x, y: xf.y, w: xf.w, h: xf.h, rot: xf.rot, line: color, lineW: ln?.a.w ? num(ln.a.w) : 12700, flipV: xfrm?.a.flipV === "1" || undefined, deco: decoOnly || undefined });
     } else if (el.n === "p:graphicFrame") {
       const tbl = kid(kid(kid(el, "a:graphic"), "a:graphicData"), "a:tbl");
       const xf = xfOf(el, g);
@@ -437,16 +480,37 @@ export async function buildPreviewModel(template: Buffer, data: FillData, opts: 
     const theme = (themePath && themeCache.get(themePath)) || {};
     const sctx: Ctx = { ...ctx, theme };
 
-    // Màu/ảnh nền: slide -> layout -> master.
+    // Màu/ảnh nền: slide -> layout -> master. Hỗ trợ màu đặc, chuyển màu, ảnh và tham chiếu kiểu nền của theme (p:bgRef).
+    const themeRaw = themePath ? await zip.file(themePath)?.async("string") : undefined;
+    const themeRels = themePath ? await relsOf(zip, themePath) : new Map();
     const bgOf = async (root: XNode | undefined, r: Map<string, { type: string; target: string }>) => {
       const bgPr = path(root, "p:cSld", "p:bg", "p:bgPr");
-      if (!bgPr) return undefined;
-      const color = colorOf(kid(bgPr, "a:solidFill"), theme);
-      if (color) return { color };
-      const rid = kid(kid(bgPr, "a:blipFill"), "a:blip")?.a["r:embed"];
-      const t = rid ? r.get(rid)?.target : undefined;
-      const image = t ? await mediaUri(sctx, t) : null;
-      return image ? { image } : undefined;
+      if (bgPr) {
+        const color = colorOf(kid(bgPr, "a:solidFill"), theme);
+        if (color) return { color };
+        const gf = kid(bgPr, "a:gradFill");
+        const css = gf ? gradCss(gf, theme) : undefined;
+        if (css) return { css };
+        const rid = kid(kid(bgPr, "a:blipFill"), "a:blip")?.a["r:embed"];
+        const t = rid ? r.get(rid)?.target : undefined;
+        const image = t ? await mediaUri(sctx, t) : null;
+        return image ? { image } : undefined;
+      }
+      const ref = path(root, "p:cSld", "p:bg", "p:bgRef");
+      const idx = ref ? num(ref.a.idx, 0) : 0;
+      if (ref && idx >= 1001 && themeRaw) {
+        const list = path(parseXml(themeRaw), "a:themeElements", "a:fmtScheme", "a:bgFillStyleLst");
+        const fill = list?.c[idx - 1001];
+        const phClr = colorOf(ref, theme);
+        if (fill?.n === "a:blipFill") {
+          const rid = kid(fill, "a:blip")?.a["r:embed"];
+          const t = rid ? themeRels.get(rid)?.target : undefined;
+          const image = t ? await mediaUri(sctx, t) : null;
+          if (image) return { image };
+        }
+        if (phClr) return { color: phClr };
+      }
+      return undefined;
     };
     const bg = (await bgOf(slideXml, rels)) ?? (await bgOf(layoutXml, layoutRels)) ?? (await bgOf(masterXml, masterRels));
 

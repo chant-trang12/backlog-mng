@@ -260,7 +260,7 @@ function populateFrQuarterFilter() {
   const select = document.getElementById("fr-filter-quy");
   if (!select) return;
   const current = select.value;
-  const quarterSet = new Set(state.featureRequests.map((r) => frQuarterOf(r.thoi_gian_mong_muon)).filter(Boolean));
+  const quarterSet = new Set(state.featureRequests.map((r) => frQuarterOf(frEffectiveDate(r))).filter(Boolean));
   // Sắp theo thời gian (năm tăng dần, trong năm theo quý I->IV) thay vì
   // alphabet — "Quý I/2027" phải đứng SAU "Quý IV/2026".
   const sorted = Array.from(quarterSet).sort((a, b) => {
@@ -292,7 +292,7 @@ function filteredFeatureRequests() {
   return state.featureRequests.filter((r) => {
     if (status && r.trang_thai !== status) return false;
     if (heThong.size && !heThong.has(r.he_thong)) return false;
-    if (quy && frQuarterOf(r.thoi_gian_mong_muon) !== quy) return false;
+    if (quy && frQuarterOf(frEffectiveDate(r)) !== quy) return false;
     if (donVi.size && !donVi.has(String(r.department_id ?? ""))) return false;
     if (donViThucHien.size && !donViThucHien.has(String(r.target_department_id ?? ""))) return false;
     if (uuTien && r.do_uu_tien !== uuTien) return false;
@@ -339,6 +339,60 @@ function filteredFeatureRequests() {
 
 function frFormatDate(value) {
   return formatDbDateTime(value)?.date ?? "";
+}
+
+// ---- Lịch thực hiện: "mong muốn" (đơn vị đề xuất) vs "dự kiến" (đơn vị thực hiện xác nhận) ----
+const FR_DAY = 86400000;
+const frDayN = (s) => Math.floor(Date.parse(`${String(s).slice(0, 10)}T00:00:00Z`) / FR_DAY);
+const frYmd = (n) => new Date(n * FR_DAY).toISOString().slice(0, 10);
+function frAddMonths(ymd, n) {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, last));
+  return d.toISOString().slice(0, 10);
+}
+const frHasDate = (v) => /^\d{4}-\d{2}-\d{2}/.test(String(v ?? ""));
+// Lịch hiệu lực: dự kiến của đơn vị thực hiện nếu đã xác nhận, không thì thời gian mong muốn.
+const frEffectiveDate = (r) => (frHasDate(r.thoi_gian_du_kien) ? r.thoi_gian_du_kien : r.thoi_gian_mong_muon);
+// So lịch dự kiến với mong muốn -> nhãn + màu badge (sớm/đúng = xanh, chậm <= 1 tháng = cam, chậm > 1 tháng = đỏ).
+function frScheduleDelta(wanted, planned) {
+  if (!frHasDate(wanted) || !frHasDate(planned)) return null;
+  const days = frDayN(planned) - frDayN(wanted);
+  const abs = Math.abs(days);
+  const span = abs >= 45 ? `~${Math.round(abs / 30.44)} tháng` : `${abs} ngày`;
+  if (abs <= 3) return { days, label: "Đúng mong muốn", cls: "status-hoan-thanh" };
+  if (days < 0) return { days, label: `Sớm hơn ${span}`, cls: "status-hoan-thanh" };
+  return { days, label: `Chậm ${span}`, cls: days > 30 ? "status-huy" : "status-tru-diem" };
+}
+// Trục thời gian trực quan: chấm "Mong muốn" (trên) và "Dự kiến" (dưới), đoạn lệch tô màu theo mức độ.
+function frTimelineHtml(wanted, planned) {
+  const hasW = frHasDate(wanted), hasP = frHasDate(planned);
+  if (!hasW && !hasP) return "";
+  const w = hasW ? frDayN(wanted) : null, p = hasP ? frDayN(planned) : null;
+  const pts = [w, p].filter((x) => x != null);
+  const lo = Math.min(...pts), hi = Math.max(...pts);
+  const pad = Math.max(20, Math.round((hi - lo) * 0.2));
+  const a = lo - pad, b = hi + pad;
+  const pos = (x) => (((x - a) / (b - a)) * 100).toFixed(2);
+  const delta = hasW && hasP ? frScheduleDelta(wanted, planned) : null;
+  const gap = hasW && hasP && w !== p ? `<i class="fr-tl-gap ${delta && delta.days < 0 ? "early" : delta && delta.days > 30 ? "late" : "warn"}" style="left:${pos(Math.min(w, p))}%;width:${(pos(Math.max(w, p)) - pos(Math.min(w, p))).toFixed(2)}%"></i>` : "";
+  const mark = (x, kind, label, date) => `<span class="fr-tl-mark ${kind}" style="left:${pos(x)}%"><b></b><em>${label}<small>${frFormatDate(date)}</small></em></span>`;
+  return `<div class="fr-tl"><div class="fr-tl-track">${gap}${hasW ? mark(w, "want", "Mong muốn", wanted) : ""}${hasP ? mark(p, "plan", "Dự kiến", planned) : ""}</div></div>`;
+}
+
+// Dòng phụ ở ô "Thời gian": lịch đơn vị thực hiện đã xác nhận + mức lệch so với mong muốn.
+function frScheduleMiniHtml(r) {
+  if (!frHasDate(r.thoi_gian_du_kien)) return "";
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const d = frScheduleDelta(r.thoi_gian_mong_muon, r.thoi_gian_du_kien);
+  const tone = !d || d.cls === "status-hoan-thanh" ? "ok" : d.cls === "status-huy" ? "late" : "warn";
+  const why = r.ly_do_dieu_chinh ? `<div class="fr-sch-why" title="${esc(r.ly_do_dieu_chinh)}"><span>Lý do điều chỉnh</span>${esc(r.ly_do_dieu_chinh)}</div>` : "";
+  return `<div class="fr-sch-card ${tone}">
+    <div class="fr-sch-plan"><span>Dự kiến</span><b>${frFormatDate(r.thoi_gian_du_kien)}</b></div>
+    ${d ? `<span class="status-badge ${d.cls}">${d.label}</span>` : ""}${why}</div>`;
 }
 
 // Quý thực hiện tự suy từ "Thời gian mong muốn thực hiện" (không lưu DB):
@@ -438,7 +492,7 @@ function renderFeatureRequestStats() {
   // luôn xếp cuối cùng (không có ý nghĩa thời gian để so sánh với quý thật).
   const quyMap = new Map();
   rows.forEach((r) => {
-    const quy = frQuarterOf(r.thoi_gian_mong_muon) || "Chưa xếp";
+    const quy = frQuarterOf(frEffectiveDate(r)) || "Chưa xếp";
     if (!quyMap.has(quy)) quyMap.set(quy, {});
     const bucket = quyMap.get(quy);
     bucket[r.do_uu_tien] = (bucket[r.do_uu_tien] ?? 0) + 1;
@@ -530,6 +584,7 @@ function frActionsHtml(r, side) {
     actions += `<button class="small btn-reject write-action reject-fr-btn" data-id="${id}">Từ chối</button>`;
   }
   if (side === "target" && r.trang_thai === "Đã duyệt") {
+    actions += `<button class="small btn-schedule write-action schedule-fr-btn" data-id="${id}">Điều chỉnh lịch</button>`;
     // Chỉ hiện NÚT khi còn thao tác thật sự cần làm — đã đưa vào rồi thì bỏ
     // hẳn khỏi Thao tác (không để "trạng thái xong" giả dạng nút gây nhầm
     // bấm được), đọc trạng thái đã đưa vào qua badge (frLinkedBadgesHtml).
@@ -597,16 +652,13 @@ function wireFrActionButtons(root) {
   });
   root.querySelectorAll(".approve-fr-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const id = Number(btn.dataset.id);
-      if (!(await confirmDialog("Duyệt yêu cầu tính năng này?", { danger: false }))) return;
-      try {
-        await api(`/api/feature-requests/${id}/approve${deptParam("?")}`, { method: "POST" });
-        document.getElementById("fr-detail-dialog").close();
-        await loadFeatureRequests();
-        showToast("Đã duyệt yêu cầu.", "success");
-      } catch (err) {
-        showToast(err.message);
-      }
+      // Duyệt kèm xác nhận lịch: đơn vị thực hiện đối chiếu thời gian mong muốn, chốt lịch dự kiến (+ lý do nếu lệch).
+      openFrScheduleDialog(state.featureRequests.find((r) => r.id === Number(btn.dataset.id)), "approve");
+    });
+  });
+  root.querySelectorAll(".schedule-fr-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openFrScheduleDialog(state.featureRequests.find((r) => r.id === Number(btn.dataset.id)), "adjust");
     });
   });
   root.querySelectorAll(".reject-fr-btn").forEach((btn) => {
@@ -719,8 +771,8 @@ function renderFeatureRequestTable() {
        }</td>
        <td data-col="de_xuat_quy_trinh" ${colHidden("de_xuat_quy_trinh")}>${frClamp(r.de_xuat_quy_trinh)}</td>
        <td data-col="hieu_qua" ${colHidden("hieu_qua")}>${frClamp(r.hieu_qua_khi_thuc_hien)}</td>
-       <td data-col="thoi_gian" ${colHidden("thoi_gian")}>${r.thoi_gian_mong_muon ? frFormatDate(r.thoi_gian_mong_muon) : `<span class="muted">—</span>`}</td>
-       <td data-col="quy" ${colHidden("quy")}>${frQuarterOf(r.thoi_gian_mong_muon) || `<span class="muted">—</span>`}</td>
+       <td data-col="thoi_gian" ${colHidden("thoi_gian")}>${r.thoi_gian_mong_muon ? frFormatDate(r.thoi_gian_mong_muon) : `<span class="muted">—</span>`}${frScheduleMiniHtml(r)}</td>
+       <td data-col="quy" ${colHidden("quy")}>${frQuarterOf(frEffectiveDate(r)) || `<span class="muted">—</span>`}</td>
        <td data-col="ke_hoach_software" ${colHidden("ke_hoach_software")}>${frClamp(r.ke_hoach_software)}</td>
        <td data-col="ket_qua" ${colHidden("ket_qua")}>${frClamp(r.ket_qua_mong_muon)}</td>
        <td data-col="do_uu_tien" ${colHidden("do_uu_tien")}><span class="status-badge ${FR_PRIORITY_CLASS[r.do_uu_tien] ?? "status-default"}">${r.do_uu_tien}</span></td>
@@ -792,6 +844,109 @@ document.getElementById("delete-selected-fr-btn")?.addEventListener("click", asy
   }
 });
 
+// ---- Lịch thực hiện trong popup chi tiết ----
+async function renderFrDetailSchedule(r, side) {
+  const wrap = document.getElementById("fr-detail-schedule");
+  const planned = frHasDate(r.thoi_gian_du_kien) ? r.thoi_gian_du_kien : null;
+  if (!frHasDate(r.thoi_gian_mong_muon) && !planned) {
+    wrap.innerHTML = `<span class="muted">Chưa có thời gian mong muốn hay lịch dự kiến.</span>`;
+    return;
+  }
+  const d = planned ? frScheduleDelta(r.thoi_gian_mong_muon, planned) : null;
+  const head = planned
+    ? `<div class="fr-sch-head">${d ? `<span class="status-badge ${d.cls}">${d.label}</span>` : ""}<span class="muted">Đơn vị thực hiện xác nhận${r.du_kien_boi ? ` bởi ${r.du_kien_boi}` : ""}${r.du_kien_at ? ` · ${frFormatDate(r.du_kien_at)}` : ""}</span></div>`
+    : `<div class="fr-sch-head"><span class="muted">Đơn vị thực hiện chưa xác nhận lịch — hiện tính theo thời gian mong muốn.</span></div>`;
+  const reason = r.ly_do_dieu_chinh ? `<div class="fr-sch-reason"><b>Lý do điều chỉnh:</b> ${String(r.ly_do_dieu_chinh).replace(/</g, "&lt;")}</div>` : "";
+  wrap.innerHTML = `${head}${frTimelineHtml(r.thoi_gian_mong_muon, planned)}${reason}<div id="fr-sch-history"></div>`;
+  if (!planned) return;
+  try {
+    const log = await api(`/api/feature-requests/${r.id}/schedule-log${deptParam("?")}`);
+    if (log.length > 1 || (log.length === 1 && log[0].tu_ngay !== log[0].den_ngay && r.ly_do_dieu_chinh !== log[0].ly_do)) {
+      document.getElementById("fr-sch-history").innerHTML =
+        `<div class="fr-detail-label" style="margin-top:10px">Lịch sử điều chỉnh</div><ul class="fr-sch-log">` +
+        log.map((l) => `<li><b>${l.tu_ngay ? frFormatDate(l.tu_ngay) : "—"} → ${frFormatDate(l.den_ngay)}</b> <span class="muted">${l.nguoi_thuc_hien || ""}${l.don_vi ? ` (${l.don_vi})` : ""} · ${frFormatDate(l.created_at)}</span>${l.ly_do ? `<div>${String(l.ly_do).replace(/</g, "&lt;")}</div>` : ""}</li>`).join("") +
+        `</ul>`;
+    }
+  } catch {
+    /* lịch sử là phần phụ — bỏ qua khi lỗi */
+  }
+}
+
+// ---- Dialog xác nhận / điều chỉnh lịch (đơn vị thực hiện) ----
+const FR_SCH_REASONS = ["Thiếu nguồn lực", "Phụ thuộc hệ thống/đơn vị khác", "Cần thêm thời gian phân tích", "Ưu tiên việc khác"];
+function openFrScheduleDialog(r, mode) {
+  document.getElementById("fr-sch-id").value = r.id;
+  document.getElementById("fr-sch-mode").value = mode;
+  document.getElementById("fr-sch-title").textContent = mode === "approve" ? "Duyệt & xác nhận lịch thực hiện" : "Điều chỉnh lịch thực hiện";
+  document.getElementById("fr-sch-sub").textContent = r.tieu_de;
+  document.getElementById("fr-sch-submit").textContent = mode === "approve" ? "Duyệt yêu cầu" : "Lưu lịch";
+  const wanted = frHasDate(r.thoi_gian_mong_muon) ? r.thoi_gian_mong_muon.slice(0, 10) : "";
+  document.getElementById("fr-sch-wanted").textContent = wanted ? frFormatDate(wanted) : "Không nêu";
+  document.getElementById("fr-sch-date").value = frHasDate(r.thoi_gian_du_kien) ? r.thoi_gian_du_kien : wanted;
+  document.getElementById("fr-sch-reason").value = "";
+  document.getElementById("fr-schedule-dialog").dataset.wanted = wanted;
+  const quick = document.getElementById("fr-sch-quick");
+  quick.innerHTML = wanted
+    ? `<span class="muted">Gợi ý nhanh:</span> <button type="button" data-q="0">Đúng mong muốn</button>` + [1, 2, 3, 6].map((m) => `<button type="button" data-q="${m}">+${m} tháng</button>`).join("")
+    : "";
+  document.getElementById("fr-sch-chips").innerHTML = FR_SCH_REASONS.map((t) => `<button type="button" class="fr-sch-chip">${t}</button>`).join("");
+  frRefreshScheduleDialog();
+  document.getElementById("fr-schedule-dialog").showModal();
+}
+function frRefreshScheduleDialog() {
+  const dlg = document.getElementById("fr-schedule-dialog");
+  const wanted = dlg.dataset.wanted;
+  const planned = document.getElementById("fr-sch-date").value;
+  const d = wanted && planned ? frScheduleDelta(wanted, planned) : null;
+  document.getElementById("fr-sch-viz").innerHTML = (wanted || planned ? frTimelineHtml(wanted, planned) : "") + (d ? `<div style="text-align:center;margin-top:6px"><span class="status-badge ${d.cls}">${d.label}</span></div>` : "");
+  // Gợi ý nhanh đang khớp với ngày chọn -> tô màu theo mức lệch (cùng màu badge bên dưới).
+  const tone = !d || d.cls === "status-hoan-thanh" ? "ok" : d.cls === "status-huy" ? "late" : "warn";
+  document.querySelectorAll("#fr-sch-quick [data-q]").forEach((b) => {
+    const hit = !!wanted && !!planned && frAddMonths(wanted, Number(b.dataset.q)) === planned;
+    b.classList.toggle("on", hit);
+    b.classList.remove("tone-ok", "tone-warn", "tone-late");
+    if (hit) b.classList.add(`tone-${tone}`);
+  });
+  // Lệch lịch -> bắt buộc lý do (đơn vị đề xuất cần biết vì sao đổi).
+  document.getElementById("fr-sch-reason-wrap").hidden = !(d && Math.abs(d.days) > 0);
+}
+document.getElementById("fr-sch-date")?.addEventListener("input", frRefreshScheduleDialog);
+document.getElementById("fr-sch-quick")?.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-q]");
+  if (!b) return;
+  const wanted = document.getElementById("fr-schedule-dialog").dataset.wanted;
+  document.getElementById("fr-sch-date").value = frAddMonths(wanted, Number(b.dataset.q));
+  frRefreshScheduleDialog();
+});
+document.getElementById("fr-sch-chips")?.addEventListener("click", (e) => {
+  const c = e.target.closest(".fr-sch-chip");
+  if (!c) return;
+  const ta = document.getElementById("fr-sch-reason");
+  ta.value = ta.value.trim() ? `${ta.value.trim()}; ${c.textContent}` : c.textContent;
+});
+document.getElementById("fr-sch-cancel")?.addEventListener("click", () => document.getElementById("fr-schedule-dialog").close());
+document.getElementById("fr-schedule-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = Number(document.getElementById("fr-sch-id").value);
+  const mode = document.getElementById("fr-sch-mode").value;
+  const dlg = document.getElementById("fr-schedule-dialog");
+  const date = document.getElementById("fr-sch-date").value;
+  const reason = document.getElementById("fr-sch-reason").value.trim();
+  const d = dlg.dataset.wanted && date ? frScheduleDelta(dlg.dataset.wanted, date) : null;
+  if (d && Math.abs(d.days) > 0 && !reason) return showToast("Lịch khác thời gian mong muốn — vui lòng nhập lý do.");
+  if (mode === "adjust" && !date) return showToast("Hãy chọn thời gian dự kiến.");
+  try {
+    const body = JSON.stringify(date ? { thoi_gian_du_kien: date, ly_do: reason } : {});
+    await api(`/api/feature-requests/${id}/${mode === "approve" ? "approve" : "schedule"}${deptParam("?")}`, { method: "POST", body });
+    dlg.close();
+    document.getElementById("fr-detail-dialog").close();
+    await loadFeatureRequests();
+    showToast(mode === "approve" ? "Đã duyệt yêu cầu." : "Đã cập nhật lịch thực hiện.", "success");
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // ---- Xem chi tiết ----
 
 function openFrDetailDialog(r) {
@@ -820,6 +975,7 @@ function openFrDetailDialog(r) {
   document.getElementById("fr-detail-nguoi-de-xuat").textContent = r.nguoi_de_xuat || "—";
   document.getElementById("fr-detail-thoi-gian").textContent = r.thoi_gian_mong_muon ? frFormatDate(r.thoi_gian_mong_muon) : "—";
   document.getElementById("fr-detail-ngay-tao").textContent = frFormatDate(r.created_at);
+  renderFrDetailSchedule(r, side);
   document.getElementById("fr-detail-attachment").innerHTML = r.attachment_filename
     ? `<a href="/api/feature-requests/${r.id}/attachment${deptParam("?")}" target="_blank" rel="noopener" class="fr-attachment-chip" title="Tải file đính kèm: ${r.attachment_filename}"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-paperclip"/></svg>${r.attachment_filename}</a>`
     : "—";

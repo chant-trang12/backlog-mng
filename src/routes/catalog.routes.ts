@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { createTagHandler, deleteTagHandler, listTagsHandler, updateTagHandler } from "../controllers/tag.controller.js";
 import {
   createPhanLoaiHandler,
@@ -19,6 +19,21 @@ import {
   listHeThongHandler,
   updateHeThongHandler,
 } from "../controllers/hethong.controller.js";
+import {
+  assignFeatureHandler,
+  createFeatureHandler,
+  deleteDocHandler,
+  deleteFeatureHandler,
+  downloadDocHandler,
+  eventsHandler,
+  progressHandler,
+  getFeatureHandler,
+  listSystemFeaturesHandler,
+  listUnassignedHandler,
+  updateFeatureHandler,
+  uploadDocHandler,
+} from "../controllers/systemFeature.controller.js";
+import { createSystemHandler, getSystemHandler, listSystemsHandler, updateSystemHandler } from "../controllers/system.controller.js";
 import {
   createMucTieuHandler,
   deleteMucTieuHandler,
@@ -63,6 +78,25 @@ router.get("/he-thong", listHeThongHandler);
 router.post("/he-thong", requireAdmin, createHeThongHandler);
 router.put("/he-thong/:id", requireAdmin, updateHeThongHandler);
 router.delete("/he-thong/:id", requireAdmin, deleteHeThongHandler);
+// Hồ sơ hệ thống (menu "Hệ thống & Tính năng") — cùng bảng he_thong_options với Cấu hình > Hệ thống;
+// quyền ghi theo chức năng "Quản lý tính năng số hoá" (requireWrite).
+router.get("/systems", listSystemsHandler);
+router.get("/systems/:id", getSystemHandler);
+router.post("/systems", createSystemHandler);
+router.put("/systems/:id", updateSystemHandler);
+// Tính năng theo hệ thống (sinh từ Yêu cầu tính năng đã duyệt hoặc nhập tay). Xoá mềm: chỉ admin (Quy tắc 9.1).
+router.get("/systems/:id/features", listSystemFeaturesHandler);
+router.get("/system-features/unassigned", listUnassignedHandler);
+router.get("/system-features/docs/:docId", downloadDocHandler);
+router.delete("/system-features/docs/:docId", requireAdmin, deleteDocHandler);
+router.get("/system-features/:id", getFeatureHandler);
+router.post("/system-features", createFeatureHandler);
+router.put("/system-features/:id", updateFeatureHandler);
+router.post("/system-features/:id/assign", assignFeatureHandler);
+router.get("/system-features/:id/events", eventsHandler);
+router.post("/system-features/:id/progress", progressHandler);
+router.delete("/system-features/:id", requireAdmin, deleteFeatureHandler);
+router.post("/system-features/:id/docs/:key", express.raw({ type: () => true, limit: "50mb" }), uploadDocHandler);
 
 router.get("/muc-tieu", listMucTieuHandler);
 router.post("/muc-tieu", requireAdmin, createMucTieuHandler);

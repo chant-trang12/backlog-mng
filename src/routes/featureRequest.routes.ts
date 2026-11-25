@@ -1,6 +1,8 @@
 import express, { Router } from "express";
 import {
   approveFeatureRequestHandler,
+  scheduleFeatureRequestHandler,
+  scheduleLogHandler,
   createFeatureRequestHandler,
   deleteFeatureRequestAttachmentHandler,
   deleteFeatureRequestHandler,
@@ -53,6 +55,8 @@ router.delete("/feature-requests/:id", deleteFeatureRequestHandler);
 // Đặt trước "/:id" chung không xung đột vì Express match theo path đầy đủ.
 router.post("/feature-requests/:id/approve", approveFeatureRequestHandler);
 router.post("/feature-requests/:id/reject", rejectFeatureRequestHandler);
+router.post("/feature-requests/:id/schedule", scheduleFeatureRequestHandler);
+router.get("/feature-requests/:id/schedule-log", scheduleLogHandler);
 // Chuyển đơn vị thực hiện — đổi phòng đích (cả 2 phía, còn "Chờ duyệt").
 router.post("/feature-requests/:id/transfer", transferFeatureRequestHandler);
 router.post("/feature-requests/:id/to-backlog", linkFeatureRequestToBacklogHandler);
