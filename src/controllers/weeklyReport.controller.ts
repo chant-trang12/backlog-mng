@@ -136,6 +136,20 @@ export async function viewSharedHandler(req: Request, res: Response) {
     fail(res, e);
   }
 }
+// Xuất Word cho BC tuần được chia sẻ (người nhận chỉ xem + xuất) — cùng quyền với viewSharedHandler.
+export async function exportSharedHandler(req: Request, res: Response) {
+  const id = parsePositiveInt(String(req.params.id ?? ""));
+  if (!id) return res.status(400).json({ error: "id không hợp lệ" });
+  try {
+    const data = await shr.viewReport(id, scopeOf(req), actorOf(req));
+    const buffer = await buildWeeklyReportDocx(data);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="bc-tuan-${data.week.week}-${data.week.year}.docx"`);
+    res.send(buffer);
+  } catch (e) {
+    fail(res, e);
+  }
+}
 export async function sharedWithMeHandler(req: Request, res: Response) {
   res.json(await shr.sharedWithMe(actorOf(req)));
 }

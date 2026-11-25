@@ -1082,7 +1082,7 @@
               <button id="sys-add-btn" class="primary tbl-add-btn">+ Thêm hệ thống</button>
             </div>
             <div class="sys-banner" id="sys-banner" hidden></div>
-            <div class="sys-stats" id="sys-stats"></div>
+            <section class="card sys-stats-card"><div class="fr-stats-cards" id="sys-stats"></div></section>
             <div class="sys-toolbar">
               <div class="sys-seg" id="sys-tabs"></div>
               <label class="sys-search" for="sys-search">
@@ -1166,7 +1166,7 @@
               </div>
               <div class="sys-detail-info" id="sys-d-info"></div>
             </section>
-            <div class="sys-stats five" id="sys-d-stats"></div>
+            <section class="card sys-stats-card"><div class="fr-stats-cards" id="sys-d-stats"></div></section>
             <section class="card sys-ft-card">
               <div class="sys-ft-head">
                 <div><h3 style="margin:0">Tính năng của hệ thống</h3><div class="muted" id="sys-ft-count" style="font-size:0.85rem"></div></div>
@@ -1393,6 +1393,8 @@
                bảng xem gì — xem renderFeatureRequestStats(),
                10-feature-requests.js. Khung RIÊNG, đứng TRƯỚC "Tìm kiếm"
                (user yêu cầu, không nhét chung card nào). -->
+          <!-- Cảnh báo yêu cầu CHỜ phòng mình duyệt, theo tháng / quý hiện tại (renderFrPendingAlert, 10-feature-requests.js) -->
+          <div class="fr-pending-alert" id="fr-pending-alert" hidden></div>
           <section class="card">
             <div class="fr-stats-cards" id="fr-stats-cards">
               <div class="fr-stat-card fr-stat-highlight">
@@ -2293,6 +2295,7 @@
                   <button id="wk-copy-btn" class="btn-view write-action" title="Lấy các dòng của tuần liền trước làm khung cho tuần này (Kế hoạch tuần trước thành Tiến độ tuần này; giữ trạng thái, bỏ qua dòng đã hoàn thành)">Sao chép từ tuần trước</button>
                   <button id="wk-company-btn" class="btn-edit write-action">Sửa tiêu đề</button>
                   <button id="wk-export-btn" class="wk-pdf-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-download"/></svg>Xuất PDF</button>
+                  <button id="wk-export-docx-btn" class="wk-docx-btn"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-down"/></svg>Xuất Word</button>
                 </div>
               </div>
               <div id="wk-doc" class="wk-doc"></div>

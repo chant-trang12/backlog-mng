@@ -39,6 +39,12 @@ async function loadSystems() {
   renderSystems();
 }
 
+function sysStatCards(items) {
+  return items
+    .map(([label, value, sub, hl]) => `<div class="fr-stat-card${hl ? " fr-stat-highlight" : ""}"><div class="fr-stat-label">${label}</div><div class="fr-stat-value">${value}</div>${sub ? `<div class="fr-stat-sub">${sysEsc(sub)}</div>` : ""}</div>`)
+    .join("");
+}
+
 function renderSystems() {
   const all = sysState.list;
   const un = sysState.unassigned || [];
@@ -46,14 +52,17 @@ function renderSystems() {
   banner.hidden = un.length === 0;
   banner.innerHTML = un.length ? `<span>Có <b>${un.length}</b> tính năng chưa gán hệ thống (tên hệ thống ở yêu cầu chưa có trong danh mục).</span> <button type="button" class="sys-view-btn" id="sys-banner-btn">Xử lý ngay →</button>` : "";
   const sum = (k) => all.reduce((a, s) => a + (s[k] || 0), 0);
-  sysEl("sys-stats").innerHTML = [
-    ["Hệ thống", all.length, ""],
-    ["Tổng tính năng", sum("so_tinh_nang"), ""],
-    ["Đang thực hiện", sum("dang_lam"), "sys-stat-blue"],
-    ["Tài liệu đã lưu", sum("so_tai_lieu"), ""],
-  ]
-    .map(([l, n, c]) => `<div class="sys-stat"><div class="sys-stat-l">${l}</div><div class="sys-stat-n ${c}">${n}</div></div>`)
-    .join("");
+  // Thẻ thống kê cùng kiểu màn Yêu cầu tính năng (fr-stat-card): thẻ đầu nổi bật, số đỏ, dòng phụ diễn giải.
+  const total = sum("so_tinh_nang");
+  const pct = (n) => (total ? `${Math.round((n / total) * 100)}% tổng số` : "");
+  const running = all.filter((s) => s.trang_thai === "dang_van_hanh").length;
+  const withFt = all.filter((s) => s.so_tinh_nang > 0).length;
+  sysEl("sys-stats").innerHTML = sysStatCards([
+    ["Hệ thống", all.length, `${running} đang vận hành`, true],
+    ["Tổng tính năng", total, `Thuộc ${withFt} hệ thống`],
+    ["Đang thực hiện", sum("dang_lam"), pct(sum("dang_lam"))],
+    ["Tài liệu đã lưu", sum("so_tai_lieu"), total ? `TB ${(sum("so_tai_lieu") / total).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tài liệu/tính năng` : ""],
+  ]);
 
   const cnt = (st) => all.filter((s) => s.trang_thai === st).length;
   const order = ["dang_van_hanh", "dang_phat_trien", "bao_tri", "ngung_su_dung"];
@@ -345,14 +354,16 @@ function sysAbbr(label) {
 function renderFeatures() {
   const all = ftState.list;
   const cnt = (k) => all.filter((f) => f.trang_thai_hien_thi === k).length;
-  const stat = (label, n, dot) => `<div class="sys-stat"><div class="sys-stat-l"><i class="sys-dot" style="background:${dot}"></i>${label}</div><div class="sys-stat-n">${n}</div></div>`;
-  sysEl("sys-d-stats").innerHTML = [
-    stat("Tổng tính năng", all.length, "#111"),
-    stat("Hoàn thành", cnt("hoan_thanh"), "#16a34a"),
-    stat("Đang thực hiện", all.filter((f) => f.trang_thai === "dang_thuc_hien").length, "#2563eb"),
-    stat("Quá hạn", cnt("qua_han"), "#ee0033"),
-    stat("Thiếu tài liệu", all.filter((f) => f.thieu_tai_lieu).length, "#d97706"),
-  ].join("");
+  const n = all.length;
+  const pct = (k) => (n ? `${Math.round((k / n) * 100)}% tổng số` : "");
+  const done = cnt("hoan_thanh"), doing = all.filter((f) => f.trang_thai === "dang_thuc_hien").length, late = cnt("qua_han"), miss = all.filter((f) => f.thieu_tai_lieu).length;
+  sysEl("sys-d-stats").innerHTML = sysStatCards([
+    ["Tổng tính năng", n, `${cnt("cho_duyet")} chờ duyệt`, true],
+    ["Hoàn thành", done, pct(done)],
+    ["Đang thực hiện", doing, pct(doing)],
+    ["Quá hạn", late, pct(late)],
+    ["Thiếu tài liệu", miss, pct(miss)],
+  ]);
   const tabs = [["all", "Tất cả", all.length], ...["cho_duyet", "chua_bat_dau", "dang_thuc_hien", "cho_nghiem_thu", "qua_han", "hoan_thanh", "tu_choi"].map((k) => [k, FT_STATUS[k].label, cnt(k)])];
   sysEl("sys-ft-tabs").innerHTML = tabs.map(([k, l, n]) => `<button type="button" class="sys-seg-btn${ftState.tab === k ? " active" : ""}" data-ftab="${k}">${l} <span class="sys-tab-n">${n}</span></button>`).join("");
   const q = ftState.q.trim().toLowerCase();

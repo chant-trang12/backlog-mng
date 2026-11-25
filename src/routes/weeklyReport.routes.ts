@@ -14,6 +14,7 @@ import {
   sharedWithMeHandler,
   updateRowHandler,
   viewSharedHandler,
+  exportSharedHandler,
 } from "../controllers/weeklyReport.controller.js";
 
 const router = Router();
@@ -30,6 +31,7 @@ router.post("/weekly-reports/copy-previous", copyPreviousHandler);
 router.get("/weekly-reports/shared-with-me", sharedWithMeHandler);
 router.get("/weekly-reports/shared-unseen-count", sharedUnseenHandler);
 router.get("/weekly-reports/shared/:id", viewSharedHandler);
+router.get("/weekly-reports/shared/:id/export", exportSharedHandler);
 router.get("/weekly-reports/shares", listSharesHandler);
 router.post("/weekly-reports/shares", addShareHandler);
 router.delete("/weekly-reports/shares/:sid", removeShareHandler);

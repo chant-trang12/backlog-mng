@@ -4496,3 +4496,31 @@ button.btn-schedule:hover { background: #cbd5e1; }
 .sys-docchip.has { background: #ffe1e6; color: #d1003a; }
 .sys-banner[hidden] { display: none; }
 .pv-text { overflow: visible; }
+/* Thống kê Hệ thống & Tính năng dùng kiểu thẻ của Yêu cầu tính năng; bỏ lề dưới thừa trong khung. */
+.sys-stats-card { margin: 20px 0; }
+.sys-stats-card .fr-stats-cards { margin-bottom: 0; }
+/* Bỏ khung ngoài quanh dãy thẻ thống kê (chỉ còn các thẻ). */
+#page-digital-features .sys-stats-card { background: transparent; border: 0; box-shadow: none; padding: 0; }
+/* BC tuần: nút Xuất Word — xanh ngọc, khác màu các nút cùng hàng (Chia sẻ cam, Sao chép xanh, Sửa tiêu đề vàng, Xuất PDF hồng). */
+button.wk-docx-btn { background: #d7f0ee; border-color: #8fd3cc; color: #0e6e64; }
+button.wk-docx-btn:hover { background: #b9e4e0; }
+
+/* Yêu cầu tính năng: cảnh báo yêu cầu chờ phòng mình duyệt (theo tháng / quý hiện tại). */
+.fr-pending-alert { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; border: 1px solid #f6c89a; background: #fff6ea; color: #7c2d12; }
+.fr-pending-alert[hidden] { display: none; }
+.fr-pending-alert.danger { border-color: #fbc9d1; background: #fff1f3; }
+.fr-pa-text { display: flex; align-items: center; gap: 8px; }
+.fr-pa-text .icon { width: 18px; height: 18px; margin: 0; color: var(--red-600); flex: none; }
+.fr-pa-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fr-pa-chip { border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; cursor: pointer; border: 1px solid transparent; }
+.fr-pa-chip b { font-size: 0.95rem; }
+.fr-pa-chip:disabled { opacity: 0.45; cursor: default; }
+.fr-pa-chip.red { background: var(--delete-light); color: var(--delete); border-color: #fbc9d1; }
+.fr-pa-chip.amber { background: #ffdfc0; color: #92400e; border-color: #f4b25f; }
+.fr-pa-chip.blue { background: #eaf6ff; color: #1d5f99; border-color: #7cc4f2; }
+.fr-pa-chip.teal { background: #d7f0ee; color: #0e6e64; border-color: #8fd3cc; }
+.fr-pa-chip.slate { background: #e2e8f0; color: #334155; border-color: #94a3b8; }
+.fr-pa-chip.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor; font-weight: 700; }
+.fr-pa-clear { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem; }
+/* Khoảng cách tới khung thống kê = khoảng cách chung giữa các khung của trang (gap), bỏ lề dưới thừa. */
+.fr-pending-alert { margin-bottom: 0; }

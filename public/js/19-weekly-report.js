@@ -442,6 +442,28 @@ function wkExportPdf() {
 }
 document.getElementById("wk-export-btn")?.addEventListener("click", wkExportPdf);
 
+// Xuất Word (.docx) — server dựng file theo mẫu Báo cáo giao ban tuần (A4 ngang, mục A/B/C); BC được chia sẻ xuất qua link chia sẻ.
+async function wkExportDocx() {
+  if (!wkState.data) return showToast("Hãy chọn 1 phòng ban cụ thể trước.");
+  const url = wkState.viewing && wkState.sharedId
+    ? `/api/weekly-reports/shared/${wkState.sharedId}/export${wkQ()}`
+    : `/api/weekly-reports/export?year=${wkState.year}&week=${wkState.week}${deptParam()}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Lỗi ${res.status}`);
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `BC-tuan-${wkState.data.week.week}-${wkState.data.week.year}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => (URL.revokeObjectURL(a.href), a.remove()), 1000);
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+document.getElementById("wk-export-docx-btn")?.addEventListener("click", wkExportDocx);
+
 // ---- Chia sẻ BC tuần (giống Báo cáo PowerPoint): chia sẻ cho từng người / cả phòng; người nhận chỉ xem + xuất PDF ----
 const wkQ = () => (state.currentDepartmentId != null ? `?department_id=${state.currentDepartmentId}` : "");
 const wkDt = (v) => {
@@ -528,6 +550,7 @@ async function wkOpenShared(id) {
   const data = await api(`/api/weekly-reports/shared/${id}${wkQ()}`);
   wkState.data = data;
   wkState.viewing = true;
+  wkState.sharedId = id;
   wkSetShareMode("view");
   renderWeekly();
   wkStripEditUi(document.querySelector("#wk-doc .wk-paper"));

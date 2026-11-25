@@ -289,7 +289,10 @@ function filteredFeatureRequests() {
   const donVi = frMfDonVi.selected;
   const donViThucHien = frMfDonViThucHien.selected;
   const uuTien = document.getElementById("fr-filter-uu-tien")?.value ?? "";
+  // Lọc nhanh từ thanh cảnh báo "chưa duyệt" (cùng tập với frPendingBuckets()).
+  const quick = state.frQuick ? new Set((frPendingBuckets()[state.frQuick] ?? []).map((r) => r.id)) : null;
   return state.featureRequests.filter((r) => {
+    if (quick && !quick.has(r.id)) return false;
     if (status && r.trang_thai !== status) return false;
     if (heThong.size && !heThong.has(r.he_thong)) return false;
     if (quy && frQuarterOf(frEffectiveDate(r)) !== quy) return false;
@@ -415,7 +418,62 @@ function frQuarterOf(value) {
 // được của phòng ban, KHÔNG theo bộ lọc/từ khoá) để luôn là 1 bức tranh
 // tổng thể ổn định, không nhảy số liên tục theo thao tác lọc bảng bên dưới.
 // Gọi lại ở loadFeatureRequests() mỗi khi tải dữ liệu mới.
+// ---- Cảnh báo yêu cầu chờ MÌNH duyệt (phòng đang chọn là đơn vị thực hiện), chia theo thời gian mong muốn ----
+// Đếm chồng nhau có chủ đích: "Tháng này" và "Quý này" là 2 góc nhìn; "Quá hạn" = mong muốn đã qua mà vẫn chưa duyệt.
+function frPendingBuckets() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const pad = (n) => String(n).padStart(2, "0");
+  const today = `${y}-${pad(m + 1)}-${pad(now.getDate())}`;
+  const monthKey = `${y}-${pad(m + 1)}`;
+  const q = Math.floor(m / 3);
+  const qStart = `${y}-${pad(q * 3 + 1)}-01`, qEnd = `${y}-${pad(q * 3 + 3)}-31`;
+  const mine = state.featureRequests.filter((r) => r.trang_thai === "Chờ duyệt" && r.target_department_id === state.currentDepartmentId);
+  const d = (r) => (frHasDate(r.thoi_gian_mong_muon) ? r.thoi_gian_mong_muon.slice(0, 10) : "");
+  return {
+    all: mine,
+    overdue: mine.filter((r) => d(r) && d(r) < today),
+    month: mine.filter((r) => d(r).startsWith(monthKey)),
+    quarter: mine.filter((r) => d(r) && d(r) >= qStart && d(r) <= qEnd),
+    newMonth: mine.filter((r) => String(r.created_at ?? "").slice(0, 7) === monthKey),
+    labels: { month: `Tháng ${m + 1}/${y}`, quarter: `${FR_QUARTER_LABELS[q]}/${y}` },
+  };
+}
+function renderFrPendingAlert() {
+  const box = document.getElementById("fr-pending-alert");
+  if (!box) return;
+  const b = frPendingBuckets();
+  if (!b.all.length) {
+    box.hidden = true;
+    if (state.frQuick) state.frQuick = null;
+    return;
+  }
+  const chip = (key, label, n, tone) =>
+    `<button type="button" class="fr-pa-chip ${tone}${state.frQuick === key ? " on" : ""}" data-frquick="${key}" ${n ? "" : "disabled"}><b>${n}</b> ${label}</button>`;
+  box.hidden = false;
+  box.classList.toggle("danger", b.overdue.length > 0);
+  box.innerHTML = `<div class="fr-pa-text"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-alert"/></svg>
+      <span>Phòng bạn có <b>${b.all.length}</b> yêu cầu tính năng <b>chưa duyệt</b>${b.overdue.length ? ` — trong đó <b>${b.overdue.length}</b> đã quá thời gian mong muốn` : ""}.</span></div>
+    <div class="fr-pa-chips">
+      ${chip("overdue", "quá hạn mong muốn", b.overdue.length, "red")}
+      ${chip("month", `cần làm trong ${b.labels.month}`, b.month.length, "amber")}
+      ${chip("quarter", `cần làm trong ${b.labels.quarter}`, b.quarter.length, "blue")}
+      ${chip("newMonth", `mới nhận trong ${b.labels.month}`, b.newMonth.length, "teal")}
+      ${chip("all", "tất cả chờ duyệt", b.all.length, "slate")}
+      ${state.frQuick ? `<button type="button" class="fr-pa-clear" data-frquick="">✕ Bỏ lọc nhanh</button>` : ""}
+    </div>`;
+}
+document.getElementById("fr-pending-alert")?.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-frquick]");
+  if (!c) return;
+  state.frQuick = c.dataset.frquick || null;
+  renderFrPendingAlert();
+  frResetPageAndRender();
+  if (state.frQuick) document.getElementById("fr-tbody")?.closest("section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 function renderFeatureRequestStats() {
+  renderFrPendingAlert();
   const rows = state.featureRequests;
   const total = rows.length;
   const pct = (n) => (total === 0 ? "0%" : `${Math.round((n / total) * 100)}%`);
