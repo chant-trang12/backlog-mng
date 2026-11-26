@@ -1,5 +1,5 @@
 import { db } from "../connection.js";
-import { saveFile } from "../../utils/fileStorage.js";
+import { moveStored, saveNamedFile } from "../../utils/fileStorage.js";
 
 // Tính năng quản lý theo Hệ thống (menu "Hệ thống & Tính năng"):
 //  - system_features: mỗi tính năng thuộc 1 hệ thống (he_thong_options). system_id = NULL
@@ -71,12 +71,28 @@ export async function migrateSystemFeatureTables(): Promise<void> {
   }
   // Tệp tài liệu lưu trên ổ đĩa (UPLOAD_DIR), DB chỉ giữ mô tả + storage_path. Cột data giữ lại (rỗng) cho tương thích.
   await addCol("system_feature_docs", "storage_path", (t) => t.string("storage_path", 500).nullable());
+  // Thư mục theo tên: <Tên hệ thống>/<Tên tính năng>.
+  const folderOf = async (featureId: number): Promise<string[]> => {
+    const f = await db("system_features as f").leftJoin("he_thong_options as h", "h.id", "f.system_id").where("f.id", featureId).first("f.ten", "h.ten_he_thong");
+    return [f?.ten_he_thong ?? "Chưa phân loại", f?.ten ?? `Tính năng ${featureId}`];
+  };
   // Chuyển một lần các tệp cũ đang nằm trong DB ra ổ đĩa (từng tệp một, không nạp tất cả vào bộ nhớ).
   const pending = (await db("system_feature_docs").whereNull("storage_path").select("id")) as { id: number }[];
   for (const { id } of pending) {
     const row = await db("system_feature_docs").where({ id }).first("id", "feature_id", "filename", "data");
     if (!row?.data || !(row.data as Buffer).length) continue;
-    const rel = await saveFile(`system-features/${row.feature_id}`, row.filename, row.data as Buffer);
+    const rel = await saveNamedFile(["system-features", ...(await folderOf(row.feature_id))], row.filename, row.data as Buffer);
     await db("system_feature_docs").where({ id }).update({ storage_path: rel, data: Buffer.alloc(0) });
+  }
+  // Tệp đã lưu theo kiểu cũ (system-features/<id>/<uuid>.<đuôi>) -> chuyển sang thư mục theo tên, giữ đúng tên tệp gốc.
+  const old = (await db("system_feature_docs").whereNotNull("storage_path").select("id", "feature_id", "filename", "storage_path")) as any[];
+  for (const r of old) {
+    if (!/^system-features\/\d+\/[0-9a-f-]{36}(\.[a-z0-9]+)?$/i.test(r.storage_path)) continue;
+    try {
+      const rel = await moveStored(r.storage_path, ["system-features", ...(await folderOf(r.feature_id))], r.filename);
+      await db("system_feature_docs").where({ id: r.id }).update({ storage_path: rel });
+    } catch (e) {
+      console.error(`Không chuyển được tệp tài liệu #${r.id}:`, (e as Error).message);
+    }
   }
 }

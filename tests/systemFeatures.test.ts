@@ -141,12 +141,23 @@ describe("Tính năng theo hệ thống", () => {
     const dept = await request(app).post("/api/departments").send({ name: "SF phòng Đĩa" });
     const sys = await request(app).post("/api/systems").send({ ma_he_thong: "HT-F9", ten_he_thong: "Hệ thống Đĩa", don_vi_quan_ly_id: dept.body.id });
     const f = await request(app).post("/api/system-features").send({ system_id: sys.body.id, ten: "Lưu đĩa", don_vi_yeu_cau_id: dept.body.id, ngay_bat_dau: "2026-01-01", han_hoan_thanh: "2026-02-01" });
-    const up = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=${encodeURIComponent("../../evil.png")}`).set("Content-Type", "application/octet-stream").send(PNG);
+    // Tên tệp chứa ký tự đường dẫn / HTML / dấu nháy -> từ chối (chống ghi ra ngoài thư mục và XSS khi hiển thị).
+    for (const bad of ["../../evil.png", 'a"onerror=alert(1).png', "a|b.png", "x`y.png", ".hidden.png"]) {
+      const r = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=${encodeURIComponent(bad)}`).set("Content-Type", "application/octet-stream").send(PNG);
+      expect(r.status).toBe(400);
+    }
+    const up = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=${encodeURIComponent("Đặc tả v1.png")}`).set("Content-Type", "application/octet-stream").send(PNG);
     expect(up.status).toBe(200);
     const docId = up.body.docs[0].id;
     const row = await db("system_feature_docs").where({ id: docId }).first();
     expect((row.data as Buffer).length).toBe(0); // DB không giữ nội dung
-    expect(row.storage_path).toMatch(new RegExp(`^system-features/${f.body.id}/[0-9a-f-]{36}\\.png$`)); // tên do server sinh, không dùng "../"
+    // Thư mục theo TÊN hệ thống / TÊN tính năng, tệp giữ ĐÚNG tên người dùng tải lên.
+    expect(row.storage_path).toBe("system-features/Hệ thống Đĩa/Lưu đĩa/Đặc tả v1.png");
+    expect(up.body.docs[0].filename).toBe("Đặc tả v1.png");
+    // Trùng tên -> không ghi đè, thêm hậu tố (1).
+    const up2 = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=${encodeURIComponent("Đặc tả v1.png")}`).set("Content-Type", "application/octet-stream").send(PNG);
+    const row2 = await db("system_feature_docs").where({ id: up2.body.docs[1].id }).first();
+    expect(row2.storage_path).toBe("system-features/Hệ thống Đĩa/Lưu đĩa/Đặc tả v1 (1).png");
     const abs = path.resolve(process.env.UPLOAD_DIR!, row.storage_path);
     expect(fs.readFileSync(abs).equals(PNG)).toBe(true);
     const dl = await request(app).get(`/api/system-features/docs/${docId}`).buffer(true).parse((r, cb) => {

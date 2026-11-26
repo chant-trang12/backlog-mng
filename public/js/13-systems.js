@@ -482,6 +482,10 @@ function ftRenderDrops() {
 function ftAddFiles(key, fileList) {
   const MAX = 50 * 1024 * 1024;
   for (const f of fileList) {
+    if (/[<>:"/\\|?*\u0000-\u001f\u007f`]/.test(f.name) || f.name.startsWith(".") || f.name.length > 180) {
+      showToast(`Tên tệp "${f.name}" không hợp lệ — bỏ các ký tự < > : " / \\ | ? * \` và đặt tên ≤ 180 ký tự.`);
+      continue;
+    }
     if (f.size > MAX) {
       showToast(`"${f.name}" vượt quá 50 MB.`);
       continue;
@@ -885,8 +889,14 @@ function upRenderFiles() {
     .join("");
   sysEl("sys-up-submit").textContent = upState.files.length ? `Lưu ${upState.files.length} tài liệu` : "Lưu tài liệu";
 }
+// Tên tệp được lưu nguyên văn -> chặn sớm ký tự không hợp lệ (server cũng kiểm tra lại).
+const UP_BAD_NAME = /[<>:"/\\|?*\u0000-\u001f\u007f`]/;
 function upAddFiles(list) {
   for (const file of list) {
+    if (UP_BAD_NAME.test(file.name) || file.name.startsWith(".") || file.name.length > 180) {
+      showToast(`Tên tệp "${file.name}" không hợp lệ — bỏ các ký tự < > : " / \\ | ? * \` và đặt tên ≤ 180 ký tự.`);
+      continue;
+    }
     if (file.size > 50 * 1024 * 1024) {
       showToast(`"${file.name}" vượt quá 50 MB.`);
       continue;

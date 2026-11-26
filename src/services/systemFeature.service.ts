@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { db } from "../db/database.js";
 import { getSystem, nextSystemCode, DEFAULT_DOC_TYPES, SystemError, type DocType } from "./system.service.js";
 import { validateAttachmentFile } from "../utils/fileValidation.js";
-import { removeFile, resolveStored, saveFile } from "../utils/fileStorage.js";
+import { removeFile, resolveStored, saveNamedFile, UNSAFE_NAME_RE } from "../utils/fileStorage.js";
 import { softDeleteWhere } from "./softDelete.util.js";
 
 // cho_duyet / tu_choi do Yêu cầu tính năng gốc quyết định (không chọn tay).
@@ -381,6 +381,13 @@ export async function addDoc(featureId: number, docKey: string, filename: string
   const types: DocType[] = sys?.tai_lieu_bat_buoc ?? DEFAULT_DOC_TYPES;
   const type = types.find((d) => d.key === docKey);
   if (!type && docKey !== "khac") throw new SystemError("Loại tài liệu không hợp lệ.");
+  // Tên tệp giữ nguyên như người dùng tải lên nên phải "sạch": không ký tự HTML/đường dẫn/điều khiển (chống XSS khi hiển thị,
+  // chống ghi ra ngoài thư mục), không bắt đầu bằng dấu chấm, tối đa 180 ký tự.
+  const fname = String(filename ?? "").normalize("NFC").trim();
+  if (!fname || UNSAFE_NAME_RE.test(fname) || fname.startsWith(".") || fname.length > 180) {
+    throw new SystemError('Tên tệp không hợp lệ: không dùng các ký tự < > : " / \\ | ? * ` và tối đa 180 ký tự.');
+  }
+  filename = fname;
   if (data.length === 0) throw new SystemError("Thiếu nội dung file.");
   if (data.length > MAX_DOC_BYTES) throw new SystemError("File vượt quá 50MB.");
   const v = validateAttachmentFile(filename, data);
@@ -389,7 +396,8 @@ export async function addDoc(featureId: number, docKey: string, filename: string
   const rel = date(meta.release_date, "Ngày ban hành");
   const note = str(meta.note, 1000, "Ghi chú thay đổi") || null;
   // Nội dung tệp ghi ra ổ đĩa; DB chỉ giữ mô tả + đường dẫn (cột data để rỗng). Ghi DB lỗi thì xoá tệp vừa ghi.
-  const storagePath = await saveFile(`system-features/${featureId}`, filename, data);
+  // Thư mục theo TÊN: <UPLOAD_DIR>/system-features/<Tên hệ thống>/<Tên tính năng>/<tên tệp gốc>.
+  const storagePath = await saveNamedFile(["system-features", sys?.ten_he_thong ?? "Chưa phân loại", f.ten], filename, data);
   try {
     await db("system_feature_docs").insert({ feature_id: featureId, doc_key: docKey, filename: filename.slice(0, 255), mime: v.mime, size: data.length, data: Buffer.alloc(0), storage_path: storagePath, version, release_date: rel, change_note: note, uploaded_by_name: actor?.name ?? null });
   } catch (e) {
