@@ -15,6 +15,8 @@ export default defineConfig({
     fileParallelism: false,
     env: {
       SQLITE_FILENAME: "./data/test-backlog.db",
+      // Tệp tải lên của test ghi vào thư mục riêng (globalSetup dọn trước/sau).
+      UPLOAD_DIR: "./data/test-uploads",
       DB_CLIENT: "sqlite",
       // Force SSO off in tests even if .env has SSO_ENABLED=true.
       // dotenv won't override existing process.env values, so this sticks.

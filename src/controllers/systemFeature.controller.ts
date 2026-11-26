@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import type { Request, Response } from "express";
 import { SystemError, getSystem } from "../services/system.service.js";
 import {
@@ -110,7 +111,11 @@ export async function deleteFeatureHandler(req: Request, res: Response) {
   const id = parsePositiveInt(req.params.id);
   if (!Number.isFinite(id)) return bad(res);
   if (!(await accessible(req, res, id))) return;
-  if (!(await deleteFeature(id))) return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  try {
+    if (!(await deleteFeature(id))) return res.status(404).json({ error: "Không tìm thấy tính năng" });
+  } catch (e) {
+    return fail(res, e);
+  }
   res.status(204).send();
 }
 
@@ -137,13 +142,20 @@ export async function downloadDocHandler(req: Request, res: Response) {
   if (!owner || !isSystemFeatureInScope(scopeOf(req), owner)) return res.status(404).json({ error: "Không tìm thấy tài liệu" });
   const d = await getDoc(id);
   if (!d) return res.status(404).json({ error: "Không tìm thấy tài liệu" });
+  if (d.absPath && !fs.existsSync(d.absPath)) return res.status(404).json({ error: "Tệp không còn trên máy chủ" });
   res.setHeader("Content-Type", d.mime);
   res.setHeader("X-Content-Type-Options", "nosniff");
   const ascii = d.filename.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
   // ?inline=1 (nút Xem): PDF/ảnh mở ngay trên trình duyệt; loại khác vẫn tải về.
   const inline = req.query.inline === "1" && /^(application\/pdf|image\/(png|jpeg|gif|webp))$/.test(d.mime);
   res.setHeader("Content-Disposition", `${inline ? "inline" : "attachment"}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(d.filename)}`);
-  res.send(d.data);
+  if (d.absPath) {
+    // Đọc dạng luồng từ ổ đĩa — không nạp cả tệp (tới 50MB) vào bộ nhớ.
+    res.setHeader("Content-Length", String(fs.statSync(d.absPath).size));
+    fs.createReadStream(d.absPath).on("error", () => res.destroy()).pipe(res);
+    return;
+  }
+  res.send(d.data ?? Buffer.alloc(0));
 }
 
 export async function deleteDocHandler(req: Request, res: Response) {

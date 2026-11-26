@@ -381,6 +381,7 @@ function renderFeatures() {
       <td>${ftDate(f.ngay_hoan_thanh_thuc_te)}${f.tre_ngay ? `<div class="sys-ft-late">Trễ ${f.tre_ngay} ngày</div>` : ""}</td>
       <td>${ftBadge(f)}</td>
       <td><div class="sys-docchips">${f.required_docs.map((d) => `<span class="sys-docchip${d.has ? " has" : ""}" title="${sysEsc(d.label)}">${d.has ? "✓ " : ""}${sysEsc(d.abbr)}</span>`).join("")}</div></td>
+      <td class="sys-ft-act delete-action">${isAdminUser() ? `<button type="button" class="sys-ft-del${f.docs.length ? " off" : ""}" data-ftdel="${f.id}" title="${f.docs.length ? `Còn ${f.docs.length} tài liệu — xoá hết tài liệu trước` : "Xoá tính năng"}" aria-label="Xoá tính năng"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>` : ""}</td>
     </tr>`,
     )
     .join("");
@@ -591,6 +592,12 @@ function sysRenderUnassigned() {
     renderFeatures();
   });
   sysEl("sys-ft-tbody").addEventListener("click", (e) => {
+    const del = e.target.closest("[data-ftdel]");
+    if (del) {
+      const f = ftState.list.find((x) => x.id === Number(del.dataset.ftdel));
+      if (f) sysDeleteFeature(f, () => sysOpenDetail(ftState.system.id));
+      return;
+    }
     const a = e.target.closest("[data-ftedit]");
     if (!a) return;
     e.preventDefault();
@@ -723,6 +730,23 @@ async function sysGoApprove(f) {
   }
 }
 
+// Xoá tính năng (chỉ admin — server chặn thật). Tính năng sinh từ yêu cầu -> xoá luôn yêu cầu gốc, nói rõ trước khi xoá.
+async function sysDeleteFeature(f, after) {
+  if (f.docs?.length) return showToast(`Tính năng còn ${f.docs.length} tài liệu — hãy xoá hết tài liệu trước khi xoá tính năng.`);
+  const msg = f.feature_request_id
+    ? `Xoá tính năng "${f.ten}"? Tính năng này sinh từ Yêu cầu tính năng nên yêu cầu gốc cũng sẽ bị xoá khỏi menu Yêu cầu tính năng.`
+    : `Xoá tính năng "${f.ten}"?`;
+  if (!(await confirmDialog(msg, { title: "Xoá tính năng", okText: "Xoá" }))) return;
+  try {
+    await api(`/api/system-features/${f.id}`, { method: "DELETE" });
+    showToast("Đã xoá tính năng.", "success");
+    await loadSystems();
+    if (after) await after();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
 async function sysOpenFtDetail(id) {
   const [f, events] = await Promise.all([api(`/api/system-features/${id}`), api(`/api/system-features/${id}/events`)]);
   if (!ftState.system || ftState.system.id !== f.system_id) {
@@ -753,6 +777,9 @@ function renderFtDetail() {
     db.textContent = f.con_ngay === 0 ? "Hạn hôm nay" : `Còn ${f.con_ngay} ngày`;
   } else db.hidden = true;
   ftdEl("ftd-title").textContent = f.ten;
+  ftdEl("ftd-delete").hidden = !isAdminUser();
+  ftdEl("ftd-delete").classList.toggle("off", f.docs.length > 0);
+  ftdEl("ftd-delete").title = f.docs.length ? `Còn ${f.docs.length} tài liệu — xoá hết tài liệu trước khi xoá tính năng` : "";
   ftdEl("ftd-desc").textContent = f.mo_ta || "Chưa có mô tả.";
   // Mỗi nhãn một màu: Ưu tiên theo mức (Cao đỏ / Trung bình cam / Thấp xanh nhạt), Văn bản yêu cầu xanh dương, nguồn yêu cầu xanh ngọc.
   const chips = [[`Ưu tiên: ${FT_PRIORITY[f.muc_uu_tien] || ""}`, `p-${f.muc_uu_tien}`]];
@@ -909,6 +936,7 @@ document.addEventListener("click", (e) => {
   sysEl("ftd-crumb-sys").addEventListener("click", back(loadSystems));
   sysEl("ftd-crumb-detail").addEventListener("click", back(() => sysOpenDetail(ftState.system.id)));
   sysEl("ftd-edit").addEventListener("click", () => sysOpenFtForm(ftdState.f.id));
+  sysEl("ftd-delete").addEventListener("click", () => sysDeleteFeature(ftdState.f, () => sysOpenDetail(ftState.system.id)));
   sysEl("ftd-doc-tabs").addEventListener("click", (e) => {
     const b = e.target.closest("[data-dtab]");
     if (!b) return;

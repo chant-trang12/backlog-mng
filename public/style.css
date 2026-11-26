@@ -4524,3 +4524,11 @@ button.wk-docx-btn:hover { background: #b9e4e0; }
 .fr-pa-clear { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem; }
 /* Khoảng cách tới khung thống kê = khoảng cách chung giữa các khung của trang (gap), bỏ lề dưới thừa. */
 .fr-pending-alert { margin-bottom: 0; }
+/* Xoá tính năng (chỉ admin). */
+.sys-ft-table td.sys-ft-act { width: 44px; text-align: center; }
+.sys-ft-del { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: 1px solid #fbc9d1; background: var(--delete-light); color: var(--delete); cursor: pointer; }
+.sys-ft-del .icon { margin: 0; width: 16px; height: 16px; }
+.sys-ft-del:hover { background: #fbc9d1; }
+button.sys-btn-del { background: var(--delete-light); border-color: #fbc9d1; color: var(--delete); }
+button.sys-btn-del[hidden] { display: none; }
+.sys-ft-del.off, button.sys-btn-del.off { opacity: 0.45; cursor: not-allowed; }

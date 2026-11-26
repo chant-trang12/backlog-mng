@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { db } from "../db/database.js";
 import { getSystem, nextSystemCode, DEFAULT_DOC_TYPES, SystemError, type DocType } from "./system.service.js";
 import { validateAttachmentFile } from "../utils/fileValidation.js";
+import { removeFile, resolveStored, saveFile } from "../utils/fileStorage.js";
+import { softDeleteWhere } from "./softDelete.util.js";
 
 // cho_duyet / tu_choi do Yêu cầu tính năng gốc quyết định (không chọn tay).
 export const FEATURE_STATUSES = ["chua_bat_dau", "dang_thuc_hien", "cho_nghiem_thu", "hoan_thanh", "cho_duyet", "tu_choi"] as const;
@@ -331,9 +333,17 @@ export async function updateProgress(id: number, input: { tien_do?: unknown; tra
   return getFeature(id);
 }
 
+// Xoá (mềm) tính năng. Tính năng sinh từ Yêu cầu tính năng -> xoá mềm cả yêu cầu gốc, để 2 menu luôn khớp nhau
+// (nếu chỉ xoá tính năng thì yêu cầu vẫn còn bên Yêu cầu tính năng mà không còn ở đây). Tệp tài liệu giữ nguyên để khôi phục được.
 export async function deleteFeature(id: number): Promise<boolean> {
-  const n = await db("system_features").where({ id, is_deleted: false }).update({ is_deleted: true, updated_at: db.fn.now() });
-  return n > 0;
+  const cur = await db("system_features").where({ id, is_deleted: false }).first("id", "feature_request_id");
+  if (!cur) return false;
+  // Còn tài liệu thì không cho xoá — phải xoá hết tài liệu trước (tránh mất tài liệu đã nghiệm thu theo tính năng).
+  const docs = Number(((await db("system_feature_docs").where({ feature_id: id }).count({ n: "*" }).first()) as any)?.n ?? 0);
+  if (docs > 0) throw new SystemError(`Tính năng còn ${docs} tài liệu — hãy xoá hết tài liệu trước khi xoá tính năng.`);
+  await db("system_features").where({ id }).update({ is_deleted: true, updated_at: db.fn.now() });
+  if (cur.feature_request_id) await softDeleteWhere(db, "feature_requests", { id: cur.feature_request_id, is_deleted: false });
+  return true;
 }
 
 // Gán tính năng chưa phân loại vào hệ thống (mã trùng trong hệ thống đích -> sinh mã mới).
@@ -378,21 +388,33 @@ export async function addDoc(featureId: number, docKey: string, filename: string
   const version = str(meta.version, 30, "Phiên bản") || null;
   const rel = date(meta.release_date, "Ngày ban hành");
   const note = str(meta.note, 1000, "Ghi chú thay đổi") || null;
-  await db("system_feature_docs").insert({ feature_id: featureId, doc_key: docKey, filename: filename.slice(0, 255), mime: v.mime, size: data.length, data, version, release_date: rel, change_note: note, uploaded_by_name: actor?.name ?? null });
+  // Nội dung tệp ghi ra ổ đĩa; DB chỉ giữ mô tả + đường dẫn (cột data để rỗng). Ghi DB lỗi thì xoá tệp vừa ghi.
+  const storagePath = await saveFile(`system-features/${featureId}`, filename, data);
+  try {
+    await db("system_feature_docs").insert({ feature_id: featureId, doc_key: docKey, filename: filename.slice(0, 255), mime: v.mime, size: data.length, data: Buffer.alloc(0), storage_path: storagePath, version, release_date: rel, change_note: note, uploaded_by_name: actor?.name ?? null });
+  } catch (e) {
+    await removeFile(storagePath);
+    throw e;
+  }
   await db("system_features").where({ id: featureId }).update({ updated_at: db.fn.now() });
   await logEvent(featureId, "doc", `Tải lên ${type?.label ?? "Khác"} ${filename}${version ? ` v${version}` : ""}`, actor);
   return getFeature(featureId);
 }
 
+// Thông tin để tải tệp: đường dẫn tuyệt đối trên ổ đĩa (absPath) — hoặc nội dung trong DB với bản ghi cũ chưa chuyển.
 export async function getDoc(docId: number) {
-  const d = (await db("system_feature_docs as d").join("system_features as f", "f.id", "d.feature_id").where("d.id", docId).where("f.is_deleted", false).first("d.filename", "d.mime", "d.data")) as any;
-  return d as { filename: string; mime: string; data: Buffer } | undefined;
+  const d = (await db("system_feature_docs as d").join("system_features as f", "f.id", "d.feature_id").where("d.id", docId).where("f.is_deleted", false).first("d.filename", "d.mime", "d.size", "d.storage_path")) as any;
+  if (!d) return undefined;
+  if (d.storage_path) return { filename: d.filename as string, mime: d.mime as string, size: Number(d.size), absPath: resolveStored(d.storage_path) };
+  const legacy = await db("system_feature_docs").where({ id: docId }).first("data");
+  return { filename: d.filename as string, mime: d.mime as string, size: Number(d.size), data: legacy?.data as Buffer | undefined };
 }
 
 export async function deleteDoc(docId: number, actor?: Actor) {
   const d = await db("system_feature_docs").where({ id: docId }).first();
   if (!d) return undefined;
   await db("system_feature_docs").where({ id: docId }).delete();
+  await removeFile(d.storage_path);
   await logEvent(d.feature_id, "doc", `Xoá tài liệu ${d.filename}`, actor);
   await db("system_features").where({ id: d.feature_id }).update({ updated_at: db.fn.now() });
   return getFeature(d.feature_id);

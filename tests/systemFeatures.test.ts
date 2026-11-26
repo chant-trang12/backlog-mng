@@ -132,4 +132,61 @@ describe("Tính năng theo hệ thống", () => {
     expect((await list(b.body.id)).body.length).toBe(6);
     expect((await list(a.body.id)).body.length).toBe(5);
   });
+
+  it("tài liệu lưu trên ổ đĩa (UPLOAD_DIR), DB chỉ giữ mô tả; tải về đúng nội dung; xoá thì xoá cả tệp", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const { db } = await import("../src/db/database.js");
+    const app = createApp();
+    const dept = await request(app).post("/api/departments").send({ name: "SF phòng Đĩa" });
+    const sys = await request(app).post("/api/systems").send({ ma_he_thong: "HT-F9", ten_he_thong: "Hệ thống Đĩa", don_vi_quan_ly_id: dept.body.id });
+    const f = await request(app).post("/api/system-features").send({ system_id: sys.body.id, ten: "Lưu đĩa", don_vi_yeu_cau_id: dept.body.id, ngay_bat_dau: "2026-01-01", han_hoan_thanh: "2026-02-01" });
+    const up = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=${encodeURIComponent("../../evil.png")}`).set("Content-Type", "application/octet-stream").send(PNG);
+    expect(up.status).toBe(200);
+    const docId = up.body.docs[0].id;
+    const row = await db("system_feature_docs").where({ id: docId }).first();
+    expect((row.data as Buffer).length).toBe(0); // DB không giữ nội dung
+    expect(row.storage_path).toMatch(new RegExp(`^system-features/${f.body.id}/[0-9a-f-]{36}\\.png$`)); // tên do server sinh, không dùng "../"
+    const abs = path.resolve(process.env.UPLOAD_DIR!, row.storage_path);
+    expect(fs.readFileSync(abs).equals(PNG)).toBe(true);
+    const dl = await request(app).get(`/api/system-features/docs/${docId}`).buffer(true).parse((r, cb) => {
+      const chunks: Buffer[] = [];
+      r.on("data", (c: Buffer) => chunks.push(c));
+      r.on("end", () => cb(null, Buffer.concat(chunks)));
+    });
+    expect(dl.status).toBe(200);
+    expect((dl.body as Buffer).equals(PNG)).toBe(true);
+    expect((await request(app).delete(`/api/system-features/docs/${docId}`)).status).toBe(200);
+    expect(fs.existsSync(abs)).toBe(false);
+  });
+
+  it("xoá tính năng: nhập tay -> mất khỏi danh sách; sinh từ yêu cầu -> xoá luôn yêu cầu gốc, không tự tạo lại", async () => {
+    const app = createApp();
+    const dept = await request(app).post("/api/departments").send({ name: "SF phòng Xoá" });
+    const sys = await request(app).post("/api/systems").send({ ma_he_thong: "HT-FX", ten_he_thong: "Hệ thống Xoá", don_vi_quan_ly_id: dept.body.id });
+    const list = async () => (await request(app).get(`/api/systems/${sys.body.id}/features?department_id=${dept.body.id}`)).body as any[];
+    const manual = await request(app).post("/api/system-features").send({ system_id: sys.body.id, ten: "Xoá nhập tay", don_vi_yeu_cau_id: dept.body.id, ngay_bat_dau: "2026-01-01", han_hoan_thanh: "2026-02-01" });
+    expect((await request(app).delete(`/api/system-features/${manual.body.id}`)).status).toBe(204);
+    expect((await list()).some((f) => f.id === manual.body.id)).toBe(false);
+
+    const fr = await request(app).post("/api/feature-requests").send({ he_thong: "Hệ thống Xoá", tieu_de: "Xoá từ yêu cầu", target_department_id: dept.body.id, department_id: dept.body.id, nguoi_de_xuat: "An" });
+    const linked = (await list()).find((f) => f.feature_request_id === fr.body.id);
+    expect((await request(app).delete(`/api/system-features/${linked.id}`)).status).toBe(204);
+    expect((await list()).some((f) => f.feature_request_id === fr.body.id)).toBe(false); // đồng bộ lại không tạo lại
+    const frs = (await request(app).get(`/api/feature-requests?department_id=${dept.body.id}`)).body as any[];
+    expect(frs.some((r) => r.id === fr.body.id)).toBe(false); // yêu cầu gốc cũng đã xoá
+  });
+
+  it("không xoá được tính năng còn tài liệu; xoá hết tài liệu rồi mới xoá được", async () => {
+    const app = createApp();
+    const dept = await request(app).post("/api/departments").send({ name: "SF phòng Còn TL" });
+    const sys = await request(app).post("/api/systems").send({ ma_he_thong: "HT-FT", ten_he_thong: "Hệ thống Còn TL", don_vi_quan_ly_id: dept.body.id });
+    const f = await request(app).post("/api/system-features").send({ system_id: sys.body.id, ten: "Có tài liệu", don_vi_yeu_cau_id: dept.body.id, ngay_bat_dau: "2026-01-01", han_hoan_thanh: "2026-02-01" });
+    const up = await request(app).post(`/api/system-features/${f.body.id}/docs/dac_ta?filename=a.png`).set("Content-Type", "application/octet-stream").send(PNG);
+    const blocked = await request(app).delete(`/api/system-features/${f.body.id}`);
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.error).toMatch(/tài liệu/);
+    await request(app).delete(`/api/system-features/docs/${up.body.docs[0].id}`);
+    expect((await request(app).delete(`/api/system-features/${f.body.id}`)).status).toBe(204);
+  });
 });

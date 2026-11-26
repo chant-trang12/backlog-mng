@@ -1,4 +1,5 @@
 import { db } from "../connection.js";
+import { saveFile } from "../../utils/fileStorage.js";
 
 // Tính năng quản lý theo Hệ thống (menu "Hệ thống & Tính năng"):
 //  - system_features: mỗi tính năng thuộc 1 hệ thống (he_thong_options). system_id = NULL
@@ -67,5 +68,15 @@ export async function migrateSystemFeatureTables(): Promise<void> {
       t.string("actor", 255).nullable();
       t.dateTime("created_at").notNullable().defaultTo(db.fn.now());
     });
+  }
+  // Tệp tài liệu lưu trên ổ đĩa (UPLOAD_DIR), DB chỉ giữ mô tả + storage_path. Cột data giữ lại (rỗng) cho tương thích.
+  await addCol("system_feature_docs", "storage_path", (t) => t.string("storage_path", 500).nullable());
+  // Chuyển một lần các tệp cũ đang nằm trong DB ra ổ đĩa (từng tệp một, không nạp tất cả vào bộ nhớ).
+  const pending = (await db("system_feature_docs").whereNull("storage_path").select("id")) as { id: number }[];
+  for (const { id } of pending) {
+    const row = await db("system_feature_docs").where({ id }).first("id", "feature_id", "filename", "data");
+    if (!row?.data || !(row.data as Buffer).length) continue;
+    const rel = await saveFile(`system-features/${row.feature_id}`, row.filename, row.data as Buffer);
+    await db("system_feature_docs").where({ id }).update({ storage_path: rel, data: Buffer.alloc(0) });
   }
 }

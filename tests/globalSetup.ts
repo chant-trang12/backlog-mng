@@ -13,6 +13,7 @@ function cleanTestDb() {
       }
     }
   }
+  fs.rmSync(path.join(dataDir, "test-uploads"), { recursive: true, force: true });
 }
 
 export function setup() {
