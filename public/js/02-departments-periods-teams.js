@@ -129,7 +129,7 @@ function renderDeptSwitcher() {
       <button type="button" class="dept-option${d.id === state.currentDepartmentId ? " active" : ""}" role="menuitem" data-dept-id="${d.id}">
         <span class="dept-mono" style="background:${deptColor(d)}">${deptMonogram(d)}</span>
         <span class="dept-option-name">${d.name}</span>
-        <span class="dept-option-check">✓</span>
+        <span class="dept-option-check">${svgIcon("i-check")}</span>
       </button>`,
       )
       .join("") +
@@ -323,7 +323,7 @@ function renderGradingHistory(t, mode) {
   const btn =
     mode === "percent"
       ? `<button type="button" class="grade-hist-toggle mini left" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-history"/></svg>${entries.length}</button>`
-      : `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">Lịch sử ${entries.length} ▾</button>`;
+      : `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử đánh giá qua các tháng">Lịch sử ${entries.length} ${svgIcon("i-chevron-down", "icon-caret")}</button>`;
   return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
 }
 
@@ -355,7 +355,7 @@ function renderProgressHistory(t) {
     )
     .join("");
   const hid = `hist-${t.id}-tiendo`;
-  const btn = `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử Tiến độ qua các tháng">Lịch sử ${entries.length} ▾</button>`;
+  const btn = `<button type="button" class="grade-hist-toggle right" data-hist-target="${hid}" title="Lịch sử Tiến độ qua các tháng">Lịch sử ${entries.length} ${svgIcon("i-chevron-down", "icon-caret")}</button>`;
   return `${btn}<div class="grade-history-list" id="${hid}" hidden>${rows}</div>`;
 }
 

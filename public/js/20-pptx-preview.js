@@ -63,7 +63,7 @@ function pvRenderThumbs() {
       const done = fs.length > 0 && fs.every((f) => f.kind === "auto" || f.filled);
       return `<button type="button" class="pv-thumb${s.no === pv.no ? " is-active" : ""}${done ? " is-done" : ""}" data-no="${s.no}">
         <b>${s.no}</b><span class="pv-thumb-cap">${pxEsc(pvCaption(s) || "(không có tiêu đề)")}</span>
-        ${fs.length ? `<i>${fs.length} mục</i>` : ""}${total ? `<em class="${open ? "has-open" : ""}" title="Góp ý">💬 ${open || total}</em>` : ""}</button>`;
+        ${fs.length ? `<i>${fs.length} mục</i>` : ""}${total ? `<em class="${open ? "has-open" : ""}" title="Góp ý">${svgIcon("i-message")}${open || total}</em>` : ""}</button>`;
     })
     .join("");
 }
@@ -115,7 +115,7 @@ function pvCommentBadge(codes) {
   const list = (codes ?? []).flatMap((c) => pvCommentsOf(c));
   if (!list.length) return "";
   const open = pxOpenOf(list);
-  return `<span class="pv-cm-badge${open ? " has-open" : ""}" title="${list.length} góp ý">💬 ${open || list.length}</span>`;
+  return `<span class="pv-cm-badge${open ? " has-open" : ""}" title="${list.length} góp ý">${svgIcon("i-message")}${open || list.length}</span>`;
 }
 function pvShapeHtml(sh) {
   const media = (key) => pv.model.media[key] ?? "";
@@ -203,7 +203,7 @@ function pvRenderNotes(slide) {
   const codes = [...new Set(notes.map((p) => p.code).filter(Boolean))];
   const hasText = notes.some((p) => p.runs.some((r) => r.t.trim()));
   const editable = codes.some((c) => ["paragraph", "list"].includes(pxField(c)?.kind));
-  box.innerHTML = `<div class="pv-notes-head">📝 Ghi chú${pvCommentBadge(codes).replace("pv-cm-badge", "pv-cm-badge pv-cm-inline")}</div>
+  box.innerHTML = `<div class="pv-notes-head">${svgIcon("i-file-text")}Ghi chú${pvCommentBadge(codes).replace("pv-cm-badge", "pv-cm-badge pv-cm-inline")}</div>
     <div class="pv-notes-body${codes.length ? " pv-hit" : ""}${!hasText && editable ? " pv-empty" : ""}" ${codes.length ? `data-code="${pxEsc(codes[0])}"` : ""}>${notes
       .map((p) => `<div class="pv-note-p${p.code ? " pv-hit" : ""}" ${p.code ? `data-code="${pxEsc(p.code)}"` : ""}>${p.bullet ? "• " : ""}${p.runs.map((r) => (r.t === "\n" ? "<br/>" : `<span${r.b ? ' style="font-weight:700"' : ""}>${pxEsc(r.t)}</span>`)).join("") || "&nbsp;"}</div>`)
       .join("")}</div>`;
@@ -290,7 +290,7 @@ pvQ("pv-slide")?.addEventListener("click", (e) => {
 function pvEditBar(label, onSave) {
   const bar = pvQ("pv-editbar");
   bar.hidden = false;
-  bar.innerHTML = `<span>✎ Đang sửa: <b>${pxEsc(label)}</b> <span class="muted">— Ctrl+Enter để lưu · Esc để hủy</span></span><span class="row" style="gap:8px"><button type="button" class="small" id="pv-edit-cancel">Hủy</button><button type="button" class="small primary" id="pv-edit-save">Lưu</button></span>`;
+  bar.innerHTML = `<span>${svgIcon("i-pen")}Đang sửa: <b>${pxEsc(label)}</b> <span class="muted">— Ctrl+Enter để lưu · Esc để hủy</span></span><span class="row" style="gap:8px"><button type="button" class="small" id="pv-edit-cancel">Hủy</button><button type="button" class="small primary" id="pv-edit-save">Lưu</button></span>`;
   pvQ("pv-edit-cancel").onclick = pvCancelEdit;
   pvQ("pv-edit-save").onclick = onSave;
 }
@@ -424,12 +424,12 @@ function pvRenderSide() {
         .map((f) => {
           const cm = pvCommentsOf(f.code);
           const open = pxOpenOf(cm);
-          return `<button type="button" class="pv-field${f.code === pv.code ? " is-active" : ""}" data-code="${pxEsc(f.code)}"><span class="pv-field-name">${pxEsc(f.label)}</span><i class="${f.kind === "auto" || f.filled ? "ok" : "warn"}">${f.kind === "auto" ? "Tự điền" : f.filled ? "Đã nhập" : "Trống"}</i>${cm.length ? `<em class="${open ? "has-open" : ""}">💬 ${open || cm.length}</em>` : ""}</button>`;
+          return `<button type="button" class="pv-field${f.code === pv.code ? " is-active" : ""}" data-code="${pxEsc(f.code)}"><span class="pv-field-name">${pxEsc(f.label)}</span><i class="${f.kind === "auto" || f.filled ? "ok" : "warn"}">${f.kind === "auto" ? "Tự điền" : f.filled ? "Đã nhập" : "Trống"}</i>${cm.length ? `<em class="${open ? "has-open" : ""}">${svgIcon("i-message")}${open || cm.length}</em>` : ""}</button>`;
         })
         .join("")
     : '<p class="muted" style="margin:6px 0">Slide này không có đầu mục nhập liệu.</p>';
   const thread = sel
-    ? `<div class="pv-thread"><div class="pv-thread-title">💬 Góp ý — ${pxEsc(sel.label)}</div>${
+    ? `<div class="pv-thread"><div class="pv-thread-title">${svgIcon("i-message")}Góp ý — ${pxEsc(sel.label)}</div>${
         pvCommentsOf(sel.code)
           .map(
             (c) => `<div class="pptx-cm-item${c.status === "resolved" ? " is-resolved" : ""}">
@@ -438,7 +438,7 @@ function pvRenderSide() {
               c.status === "resolved"
                 ? `<span class="pptx-pill ok">Đã xử lý</span><button type="button" class="pptx-icon write-action" data-cm="cm-open" data-id="${c.id}" title="Mở lại">↺</button>`
                 : `<button type="button" class="small btn-view write-action" data-cm="cm-resolve" data-id="${c.id}">Đã xử lý</button>`
-            }${pptx.report.access === "shared" && c.author_id !== state.currentUserId ? "" : `<button type="button" class="pptx-icon write-action" data-cm="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button>`}</div></div>
+            }${pptx.report.access === "shared" && c.author_id !== state.currentUserId ? "" : `<button type="button" class="pptx-icon write-action" data-cm="cm-del" data-id="${c.id}" title="Xóa góp ý" aria-label="Xóa góp ý">${svgIcon("i-trash")}</button>`}</div></div>
           <div class="pptx-cm-text">${pxEsc(c.content).replace(/\n/g, "<br/>")}</div></div>`,
           )
           .join("") || '<p class="muted" style="margin:4px 0">Chưa có góp ý cho đầu mục này.</p>'

@@ -813,7 +813,9 @@ button.tc-btn[aria-expanded="true"] { background: var(--vidc-color-background-su
 .tc-item.is-dragging { opacity: 0.45; }
 .tc-item.drop-before { border-top-color: var(--vidc-primitive-red); }
 .tc-item.drop-after { border-bottom-color: var(--vidc-primitive-red); }
-.tc-grip { width: 18px; text-align: center; color: var(--vidc-color-text-muted); font-size: 0.75rem; letter-spacing: -1px; }
+.tc-grip { width: 18px; display: inline-flex; justify-content: center; color: var(--vidc-color-text-muted); font-size: 0.95rem; }
+.tc-grip .icon, button.tc-move .icon { margin: 0; }
+.tc-item.is-locked .tc-grip { font-size: 0.85rem; }
 .tc-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 button.tc-move {
   min-height: 24px;
@@ -822,7 +824,10 @@ button.tc-move {
   border-color: transparent;
   background: transparent;
   color: var(--vidc-color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 button.tc-move:hover:not(:disabled) { background: var(--card-bg); border-color: var(--vidc-color-border-default); color: var(--text); }
 button.tc-move:disabled { opacity: 0.25; }
@@ -975,3 +980,95 @@ button.task-warning-urgent:hover:not(:disabled) {
   border-color: var(--vidc-button-danger-background-hover);
   color: #fff;
 }
+
+/* ---- Sidebar thu gọn chỉ còn icon (desktop >900px) ----
+   Bật/tắt bằng nút cuối sidebar, nhớ theo trình duyệt (localStorage
+   "sidebar-collapsed"); class đặt trên <html> từ js/00-sidebar.js trong
+   <head> để không nháy khi tải trang. */
+.sidebar-collapse-btn { display: none; }
+.sidebar-logo-mini { display: none; }
+@media (min-width: 901px) {
+  .sidebar { position: sticky; top: 0; height: 100vh; }
+  .sidebar-collapse-btn,
+  .sidebar-collapse-btn:hover:not(:disabled) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 8px 8px;
+    padding: 8px 12px;
+    min-height: 0;
+    border: none;
+    border-radius: var(--vidc-radius-md);
+    background: transparent;
+    color: var(--vidc-color-text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    justify-content: flex-start;
+  }
+  .sidebar-collapse-btn:hover:not(:disabled) { background: var(--vidc-color-background-subtle); color: var(--text); }
+  .sidebar-collapse-btn .icon { margin: 0; font-size: 1.05rem; }
+  .sidebar-collapse-btn .i-open { display: none; }
+
+  .sidebar-nav { min-height: 0; overflow-y: auto; }
+  html.sidebar-collapsed .sidebar { width: 68px; flex: 0 0 68px; }
+  html.sidebar-collapsed .sidebar-header { padding: 18px 10px 10px; display: flex; flex-direction: column; align-items: center; }
+  html.sidebar-collapsed .sidebar-logo { display: none; }
+  html.sidebar-collapsed .sidebar-logo-mini { display: block; width: 28px; height: 28px; margin: 0 auto; }
+  html.sidebar-collapsed .dept-switcher { margin-top: 12px; }
+  html.sidebar-collapsed .dept-trigger { width: auto; padding: 4px; justify-content: center; }
+  html.sidebar-collapsed .dept-trigger-text,
+  html.sidebar-collapsed .dept-trigger-chev { display: none; }
+  /* Panel chọn phòng mở sang phải, ngay cạnh sidebar. */
+  html.sidebar-collapsed .dept-panel { top: 0; left: calc(100% + 18px); min-width: 240px; }
+  html.sidebar-collapsed .dept-tip { left: calc(100% + 26px); }
+  html.sidebar-collapsed .sidebar-nav { padding: 8px 10px; align-items: stretch; }
+  html.sidebar-collapsed .nav-item,
+  html.sidebar-collapsed .nav-item:hover:not(:disabled) { justify-content: center; padding: 10px 0; }
+  html.sidebar-collapsed .nav-item[data-page] { padding-right: 0; }
+  html.sidebar-collapsed .nav-item .icon { font-size: 1.15rem; }
+  html.sidebar-collapsed .nav-label { display: none; }
+  /* Badge số thành chấm nhỏ ở góc icon. */
+  html.sidebar-collapsed .nav-badge { top: 4px; right: 8px; min-width: 9px; height: 9px; padding: 0; font-size: 0; line-height: 9px; border: 2px solid var(--vidc-console-sidebar-bg, var(--card-bg)); box-sizing: content-box; }
+  html.sidebar-collapsed .sidebar-user { margin: 8px 10px; padding: 8px 0; align-items: center; background: transparent; }
+  html.sidebar-collapsed .sidebar-user .user-info { display: none; }
+  html.sidebar-collapsed .sidebar-user .btn-logout { font-size: 0; padding: 6px; border-radius: var(--vidc-radius-md); }
+  html.sidebar-collapsed .sidebar-user .btn-logout .icon { font-size: 1.05rem; margin: 0; }
+  html.sidebar-collapsed .sidebar-user .btn-logout:hover { background: var(--vidc-color-background-subtle); text-decoration: none; }
+  html.sidebar-collapsed .sidebar-collapse-btn,
+  html.sidebar-collapsed .sidebar-collapse-btn:hover:not(:disabled) { justify-content: center; margin: 0 10px 10px; padding: 8px 0; }
+  html.sidebar-collapsed .sidebar-collapse-btn .nav-label,
+  html.sidebar-collapsed .sidebar-collapse-btn .i-close { display: none; }
+  html.sidebar-collapsed .sidebar-collapse-btn .i-open { display: inline-block; }
+}
+
+/* ---- Icon SVG thay cho emoji/ký tự (✓ ✕ ✎ 🗑 💬 ▾ ▸...) ----
+   .icon mặc định có margin-right (icon đứng trước chữ); các chỗ chỉ có
+   icon thì bỏ margin, căn giữa. */
+.dept-trigger-chev .icon,
+.caret .icon,
+.icon-caret,
+.pptx-icon .icon,
+.pptx-chev .icon,
+.ftd-tick .icon,
+.dept-option-check .icon,
+.confirm-icon .icon,
+.pptx-share-card-title span .icon,
+.pptx-edited .icon,
+.ots-manual .icon { margin: 0; }
+.caret .icon { width: 1.35em; height: 1.35em; vertical-align: -0.3em; }
+.dept-trigger-chev { display: inline-flex; }
+.icon-caret { margin-left: 2px; width: 0.95em; height: 0.95em; }
+.pptx-icon, .pptx-chev { display: inline-flex; align-items: center; justify-content: center; }
+.pptx-icon .icon { width: 1rem; height: 1rem; }
+.pptx-chev .icon { width: 1.1rem; height: 1.1rem; }
+.confirm-icon .icon { width: 55%; height: 55%; }
+.ftd-tick .icon { width: 12px; height: 12px; stroke-width: 3; }
+.pptx-share-card-title span .icon { width: 13px; height: 13px; stroke-width: 3; }
+.pptx-edited .icon, .ots-manual .icon { width: 0.9em; height: 0.9em; }
+.sys-docchip .icon,
+.pptx-share-perm .icon,
+.rm-synced-badge .icon,
+.rm-backlog-badge .icon,
+.fr-linked-badge-backlog .icon,
+.fr-linked-badge-roadmap .icon,
+.pptx-pill .icon { width: 0.95em; height: 0.95em; margin-right: 0.25em; stroke-width: 2.5; }

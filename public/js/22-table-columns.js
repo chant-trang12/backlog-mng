@@ -86,6 +86,7 @@
 
   const defaultOrder = (table) => headerRow(table).dataset.tcDefault.split(",");
   const originalOrder = (table) => headerRow(table).dataset.tcOriginal.split(",");
+  const tcIcon = (id) => `<svg class="icon" aria-hidden="true"><use href="icons.svg#${id}"/></svg>`;
   const lockedCount = (table) => Number(headerRow(table).dataset.tcLocked || 0);
 
   function currentOrder(table) {
@@ -287,17 +288,17 @@
     panel.innerHTML = `
       <div class="tc-head">
         <strong>Cột hiển thị</strong>
-        <span class="muted">Tích để hiện/ẩn, kéo thả hoặc ↑ ↓ để đổi thứ tự</span>
+        <span class="muted">Tích để hiện/ẩn, kéo thả hoặc dùng nút lên/xuống để đổi thứ tự</span>
       </div>
       <ol class="tc-list">${order
         .map((k, i) => {
           const isLocked = i < locked;
           return `<li class="tc-item${isLocked ? " is-locked" : ""}${k === "actions" ? " is-actions" : ""}" data-key="${k}" ${isLocked ? "" : "data-draggable"}>
-            <span class="tc-grip" aria-hidden="true">${isLocked ? "🔒" : "⋮⋮"}</span>
+            <span class="tc-grip" aria-hidden="true">${tcIcon(isLocked ? "i-lock" : "i-grip")}</span>
             <input type="checkbox" class="tc-vis" aria-label="Hiện cột ${escapeHtmlText(labelOf(k))}" ${vis.get(k)?.visible ? "checked" : ""} ${vis.get(k)?.toggleable ? "" : "disabled"} />
             <span class="tc-label">${escapeHtmlText(labelOf(k))}${vis.get(k)?.autoHidden ? ' <em class="muted">(ẩn tự động)</em>' : ""}</span>
-            ${isLocked ? "" : `<button type="button" class="tc-move" data-dir="-1" title="Lên" ${i <= locked ? "disabled" : ""}>↑</button>
-            <button type="button" class="tc-move" data-dir="1" title="Xuống" ${i === order.length - 1 ? "disabled" : ""}>↓</button>`}
+            ${isLocked ? "" : `<button type="button" class="tc-move" data-dir="-1" title="Lên" aria-label="Lên" ${i <= locked ? "disabled" : ""}>${tcIcon("i-chevron-up")}</button>
+            <button type="button" class="tc-move" data-dir="1" title="Xuống" aria-label="Xuống" ${i === order.length - 1 ? "disabled" : ""}>${tcIcon("i-chevron-down")}</button>`}
           </li>`;
         })
         .join("")}</ol>

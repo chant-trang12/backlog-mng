@@ -360,7 +360,7 @@ function renderHomeHero(tasks) {
       </li>`,
         )
         .join("")
-    : `<li class="home-hero-task-list-empty">Không có nhiệm vụ nào quá hạn 🎉</li>`;
+    : `<li class="home-hero-task-list-empty">${svgIcon("i-check")}Không có nhiệm vụ nào quá hạn</li>`;
 }
 
 document.getElementById("home-hero-create-fr-btn")?.addEventListener("click", () => openFeatureRequestDialog(null));

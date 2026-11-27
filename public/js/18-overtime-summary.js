@@ -123,7 +123,7 @@ function renderOvertimeSummary() {
       <td class="ot-center ots-strong">${otsNum(r.tong_thang)}</td>
       <td class="ot-center ${r.vuot_quy_dinh > 0 ? "ots-bad" : ""}">${otsNum(r.vuot_quy_dinh)}</td>
       <td class="ot-center">${otsRating(r.danh_gia_thang)}</td>
-      <td class="ot-center">${otsNum(r.tong_cac_thang_truoc)}${r.tong_cac_thang_truoc_nhap != null ? ' <i class="ots-manual" title="Nhập tay">✎</i>' : ""}</td>
+      <td class="ot-center">${otsNum(r.tong_cac_thang_truoc)}${r.tong_cac_thang_truoc_nhap != null ? ' <i class="ots-manual" title="Nhập tay">' + svgIcon("i-pen") + '</i>' : ""}</td>
       <td class="ot-center ots-strong">${otsNum(r.luy_ke)}</td>
       <td class="ot-center ${r.ty_le > 100 ? "ots-bad" : ""}">${otsNum(r.ty_le)}%</td>
       <td class="ot-center">${otsRating(r.danh_gia_nam)}</td>

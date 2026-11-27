@@ -1,3 +1,7 @@
+// Icon SVG từ sprite public/icons.svg — KHÔNG dùng emoji làm icon.
+const svgIcon = (id, cls = "") =>
+  `<svg class="icon${cls ? ` ${cls}` : ""}" aria-hidden="true"><use href="icons.svg#${id}"/></svg>`;
+
 const state = {
   currentUserId: null, // id cục bộ (bảng users) của người đang đăng nhập — xem checkAuth()
   currentUserName: null, // Họ và Tên (hoặc username) người đang đăng nhập — khối chào mừng ở Trang chủ, xem checkAuth()
@@ -663,7 +667,7 @@ function showToast(message, type = "error") {
 function confirmDialog(message, opts = {}) {
   const { title = "Xác nhận", okText = "OK", cancelText = "Hủy", danger = true } = opts;
   return new Promise((resolve) => {
-    el.confirmDialogIcon.textContent = danger ? "!" : "✓";
+    el.confirmDialogIcon.innerHTML = svgIcon(danger ? "i-alert" : "i-check");
     el.confirmDialogIcon.className = danger ? "confirm-icon" : "confirm-icon confirm-icon-primary";
     el.confirmDialogTitle.textContent = title;
     el.confirmDialogMessage.textContent = message;

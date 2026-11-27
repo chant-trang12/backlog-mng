@@ -228,7 +228,7 @@ function renderPptxPicker() {
     grid = [1, 2, 3, 4]
       .map((q) => {
         const qr = pptxReportOf("quarter", q);
-        const note = qr ? (qr.status === "exported" ? "Báo cáo quý ✓" : "Quý đang nháp") : "Chưa tạo quý";
+        const note = qr ? (qr.status === "exported" ? `Báo cáo quý ${svgIcon("i-check")}` : "Quý đang nháp") : "Chưa tạo quý";
         return `<div class="pptx-qbox"><div class="pptx-qhead"><span>QUÝ ${ROMAN[q]}</span><span class="muted">${note}</span></div>
           <div class="pptx-chips">${[0, 1, 2].map((k) => chip((q - 1) * 3 + 1 + k, `T${(q - 1) * 3 + 1 + k}`)).join("")}</div></div>`;
       })
@@ -341,15 +341,15 @@ function renderPptxComments(f) {
   const list = pxCommentsOf(f.code);
   const open = pxOpenOf(list);
   return `<div class="pptx-cm${open ? " has-open" : ""}">
-    <div class="pptx-cm-head">💬 Góp ý${list.length ? ` · ${open} chưa xử lý / ${list.length}` : ""}</div>
+    <div class="pptx-cm-head">${svgIcon("i-message")}Góp ý${list.length ? ` · ${open} chưa xử lý / ${list.length}` : ""}</div>
     ${list
       .map(
         (c) => `<div class="pptx-cm-item${c.status === "resolved" ? " is-resolved" : ""}">
         <div class="pptx-cm-meta"><b>${pxEsc(c.author_name ?? "Ẩn danh")}</b><span class="muted">${pxDateTime(c.created_at)}</span>
-          <span class="pptx-pill ${c.status === "resolved" ? "ok" : "warn"}">${c.status === "resolved" ? "✓ Đã xử lý" : "● Mới"}</span>
+          <span class="pptx-pill ${c.status === "resolved" ? "ok" : "warn"}">${c.status === "resolved" ? `${svgIcon("i-check")}Đã xử lý` : "● Mới"}</span>
           <span style="flex:1"></span>
           ${c.status === "resolved" ? `<button type="button" class="small write-action" data-act="cm-open" data-id="${c.id}">Mở lại</button>` : `<button type="button" class="small btn-view write-action" data-act="cm-resolve" data-id="${c.id}">Xử lý</button>`}
-          ${pptx.report.access === "shared" && c.author_id !== state.currentUserId ? "" : `<button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý">🗑</button>`}</div>
+          ${pptx.report.access === "shared" && c.author_id !== state.currentUserId ? "" : `<button type="button" class="pptx-icon write-action" data-act="cm-del" data-id="${c.id}" title="Xóa góp ý" aria-label="Xóa góp ý">${svgIcon("i-trash")}</button>`}</div>
         <div class="pptx-cm-text">${pxEsc(c.content).replace(/\n/g, "<br/>")}</div>
         ${c.status === "resolved" && c.resolved_by ? `<div class="muted" style="font-size:.75rem">Xử lý bởi ${pxEsc(c.resolved_by)}</div>` : ""}</div>`,
       )
@@ -399,7 +399,7 @@ function renderPptxSlideBar(rep) {
     return `<button type="button" aria-pressed="${String(pptx.slideFilter) === String(key)}" class="pptx-slide-chip${String(pptx.slideFilter) === String(key) ? " is-active" : ""}${filled === fields.length ? " is-done" : ""}" data-slide="${key}">${label}<i>${filled}/${fields.length}</i>${openCm ? `<em class="pptx-slide-cm" title="Góp ý chưa xử lý">${openCm}</em>` : ""}${need ? '<b class="pptx-slide-dot" title="Còn đầu mục bắt buộc chưa nhập"></b>' : ""}</button>`;
   };
   return `<div class="pptx-slide-chips">${chip("all", "Tất cả", rep.fields)}${slides.map((n) => chip(String(n), n ? `Slide ${n}` : "Khác", rep.fields.filter((f) => (f.slide_no ?? 0) === n))).join("")}</div>
-    <div class="pptx-slide-tools"><button type="button" class="small pptx-btn-cm${pptx.onlyOpenComments ? " is-on" : ""}" data-act="only-open-cm" title="Chỉ hiện đầu mục có góp ý chưa xử lý">💬 Góp ý chưa xử lý (${rep.fields.reduce((n, f) => n + pxOpenOf(pxCommentsOf(f.code)), 0)})</button><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small pptx-btn-expand" data-act="expand-all">Mở rộng tất cả</button></div>`;
+    <div class="pptx-slide-tools"><button type="button" class="small pptx-btn-cm${pptx.onlyOpenComments ? " is-on" : ""}" data-act="only-open-cm" title="Chỉ hiện đầu mục có góp ý chưa xử lý">${svgIcon("i-message")}Góp ý chưa xử lý (${rep.fields.reduce((n, f) => n + pxOpenOf(pxCommentsOf(f.code)), 0)})</button><button type="button" class="small btn-edit" data-act="collapse-all">Thu gọn tất cả</button><button type="button" class="small pptx-btn-expand" data-act="expand-all">Mở rộng tất cả</button></div>`;
 }
 
 function renderPptxSectionInner(f, i) {
@@ -411,9 +411,9 @@ function renderPptxSectionInner(f, i) {
       <span class="pptx-num">${i + 1}</span>
       <div style="flex:1"><b style="font-size:1.05rem">${pxEsc(f.label)}</b>
         <div class="muted" style="font-size:.78rem">Slide ${f.slide_no ?? "?"} · mã <code>{{${pxEsc(f.code)}}}</code> · ${PPTX_KINDS[f.kind]}${f.required ? " · bắt buộc" : ""}${sourceTxt}${collapsed ? ` · <b>${pxEsc(pxSummary(f))}</b>` : ""}</div></div>
-      ${pxCommentsOf(f.code).length ? `<span class="pptx-cm-badge${pxOpenOf(pxCommentsOf(f.code)) ? " has-open" : ""}" title="Góp ý">💬 ${pxOpenOf(pxCommentsOf(f.code)) || pxCommentsOf(f.code).length}</span>` : ""}
+      ${pxCommentsOf(f.code).length ? `<span class="pptx-cm-badge${pxOpenOf(pxCommentsOf(f.code)) ? " has-open" : ""}" title="Góp ý">${svgIcon("i-message")}${pxOpenOf(pxCommentsOf(f.code)) || pxCommentsOf(f.code).length}</span>` : ""}
       <span data-pill>${pptxFieldPill(f)}</span>
-      <button type="button" class="pptx-chev" data-act="toggle" title="${collapsed ? "Mở rộng" : "Thu gọn"}">${collapsed ? "▸" : "▾"}</button>
+      <button type="button" class="pptx-chev" data-act="toggle" title="${collapsed ? "Mở rộng" : "Thu gọn"}">${svgIcon(collapsed ? "i-chevron-right" : "i-chevron-down")}</button>
     </div>
     ${collapsed ? "" : `<div class="pptx-sec-body">${renderPptxBody(f)}</div>${renderPptxComments(f)}`}`;
 }
@@ -504,10 +504,10 @@ function renderPptxBody(f) {
           return `<tr data-row="${r.id}">
           <td><input data-f="ten" value="${pxEsc(r.ten)}" placeholder="Tên chỉ tiêu" /></td>
           <td><input data-f="don_vi" value="${pxEsc(r.don_vi)}" /></td>
-          <td class="r"><input data-f="ke_hoach" inputmode="decimal" value="${pxEsc(r.ke_hoach ?? "")}" />${r.edited?.ke_hoach ? '<i class="pptx-edited" title="Đã sửa tay">✎</i>' : ""}</td>
-          <td class="r"><input data-f="thuc_hien" inputmode="decimal" value="${pxEsc(r.thuc_hien ?? "")}" />${r.edited?.thuc_hien ? '<i class="pptx-edited" title="Đã sửa tay">✎</i>' : ""}</td>
+          <td class="r"><input data-f="ke_hoach" inputmode="decimal" value="${pxEsc(r.ke_hoach ?? "")}" />${r.edited?.ke_hoach ? '<i class="pptx-edited" title="Đã sửa tay">' + svgIcon("i-pen") + '</i>' : ""}</td>
+          <td class="r"><input data-f="thuc_hien" inputmode="decimal" value="${pxEsc(r.thuc_hien ?? "")}" />${r.edited?.thuc_hien ? '<i class="pptx-edited" title="Đã sửa tay">' + svgIcon("i-pen") + '</i>' : ""}</td>
           <td class="r pptx-pct ${cls}">${p == null ? "—" : p.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "%"}</td>
-          <td class="r"><button type="button" class="pptx-icon" data-act="del-row" title="Xoá">🗑</button></td></tr>`;
+          <td class="r"><button type="button" class="pptx-icon" data-act="del-row" title="Xoá" aria-label="Xoá">${svgIcon("i-trash")}</button></td></tr>`;
         })
         .join("") || '<tr><td colspan="6" class="muted" style="padding:12px">Chưa có chỉ tiêu.</td></tr>'}
       </tbody></table>
@@ -529,8 +529,8 @@ function renderPptxBody(f) {
         <span class="pptx-ord">${k + 1}.</span>
         ${it.src ? `<label class="pptx-pick"><input type="checkbox" data-act="pick" data-id="${it.id}" ${it.selected ? "checked" : ""} /></label>` : ""}
         <span style="flex:1">${pxRich(it.text)}${it.src ? ` <span class="pptx-src">${pxEsc(it.src)}</span>` : ""}</span>
-        <button type="button" class="pptx-icon" data-act="edit" data-id="${it.id}" title="Sửa">✎</button>
-        <button type="button" class="pptx-icon" data-act="del" data-id="${it.id}" title="Xoá">🗑</button>
+        <button type="button" class="pptx-icon" data-act="edit" data-id="${it.id}" title="Sửa" aria-label="Sửa">${svgIcon("i-pen")}</button>
+        <button type="button" class="pptx-icon" data-act="del" data-id="${it.id}" title="Xoá" aria-label="Xoá">${svgIcon("i-trash")}</button>
         <span class="pptx-grip" title="Kéo để đổi thứ tự">⠿</span></div>`;
     })
     .join("");
