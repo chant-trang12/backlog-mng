@@ -105,6 +105,8 @@
     --vidc-color-text-primary: #f8fafc;
     --vidc-color-text-secondary: #cbd5e1;
     --vidc-color-text-muted: #94a3b8;
+    --vidc-color-text-inverse: #0f172a;
+    --vidc-color-background-brand-subtle: rgba(238, 0, 51, 0.2);
     --vidc-color-background-canvas: #090d16;
     --vidc-color-background-elevated: #141c2e;
     --vidc-color-background-subtle: #1e293b;
@@ -479,3 +481,231 @@ dialog {
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
 }
 dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
+
+/* =====================================================================
+ * Từng trang — các thành phần có màu riêng
+ * ===================================================================== */
+
+/* Bảng nhiều tầng tiêu đề (Kế hoạch tổng hợp: KQ xếp loại CBNV, GNV, Làm thêm
+   giờ, Tổng hợp làm thêm giờ, BC tuần): bỏ màu tiêu đề riêng (xanh ngọc, xanh
+   lá, hồng kiểu Excel) — tầng trên nền đậm hơn tầng dưới một bậc; giữ kẻ dọc
+   để đọc được nhóm cột. Selector đủ mạnh để đè các rule :nth-child cũ. */
+#cbnv-table thead tr:nth-child(n) th:nth-child(n),
+#gnv-table thead tr:nth-child(n) th:nth-child(n),
+#ot-table thead tr:nth-child(n) th:nth-child(n),
+#otsum-table thead tr:nth-child(n) th:nth-child(n),
+.wk-table thead tr:nth-child(n) th:nth-child(n) {
+  background: var(--vidc-table-header-bg);
+  color: var(--vidc-table-header-color);
+}
+#cbnv-table thead tr:first-child:not(:only-child) th:nth-child(n),
+#gnv-table thead tr:first-child:not(:only-child) th:nth-child(n),
+#ot-table thead tr:first-child:not(:only-child) th:nth-child(n),
+#otsum-table thead tr:first-child:not(:only-child) th:nth-child(n) {
+  background: var(--vidc-color-background-subtle);
+  color: var(--vidc-color-text-secondary);
+}
+#cbnv-table th, #cbnv-table td,
+#gnv-table th, #gnv-table td,
+#ot-table th, #ot-table td,
+#otsum-table th, #otsum-table td,
+.wk-table th, .wk-table td { border-right: 1px solid var(--vidc-table-border); }
+#cbnv-table tr > :last-child,
+#gnv-table tr > :last-child,
+#ot-table tr > :last-child,
+#otsum-table tr > :last-child,
+.wk-table tr > :last-child { border-right: none; }
+/* Dòng nhóm của GNV (trước vàng đậm #ffc000) */
+#gnv-table tr.gnv-group-row td {
+  background: var(--vidc-color-status-warning-surface);
+  color: var(--vidc-color-status-warning-text);
+  font-weight: 600;
+}
+button.gnv-pick-btn {
+  background: var(--vidc-button-secondary-background-default);
+  border-color: var(--vidc-button-secondary-border-default);
+  color: var(--vidc-button-secondary-foreground-default);
+}
+button.gnv-pick-btn:hover:not(:disabled) { background: var(--vidc-button-secondary-background-hover); border-color: var(--vidc-color-border-strong); }
+
+/* Bản đồ nhiệt Báo cáo: tiêu đề trước chữ trắng trên nền đỏ */
+.rpfr-heat-table th { color: var(--vidc-table-header-color); }
+
+/* Thanh tiêu đề "nổi" khi cuộn bảng dài */
+.floating-table-header { box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08); }
+
+/* Bộ chọn năm (Roadmap năm, Báo cáo PowerPoint): dạng viên thuốc V9 */
+.year-stepper,
+.pptx-year {
+  background: var(--vt-pill-track);
+  border: 1px solid var(--vidc-color-border-default);
+  border-radius: var(--vidc-radius-full);
+  box-shadow: none;
+  padding: 3px;
+  gap: 6px;
+}
+.year-stepper button,
+.year-stepper button:hover:not(:disabled),
+.pptx-year button,
+.pptx-year button:hover:not(:disabled) {
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--vidc-button-secondary-border-default);
+  background: var(--vidc-button-secondary-background-default);
+  color: var(--vidc-color-text-secondary);
+}
+.year-stepper button:hover:not(:disabled),
+.pptx-year button:hover:not(:disabled) { color: var(--text); border-color: var(--vidc-color-border-strong); }
+.year-stepper-value,
+.pptx-year b { background: transparent; color: var(--text); font-weight: 700; }
+
+/* Trang chủ: thẻ đôn đốc (Việc đang treo / Việc cần xử lý gấp) */
+.home-urgent-card {
+  background: var(--vidc-color-status-danger-surface);
+  border: 1px solid var(--vidc-color-status-danger-border);
+  box-shadow: none;
+}
+.home-urgent-card h2 { color: var(--vidc-color-status-danger-text); }
+.home-urgent-card .table-wrap { border-color: var(--vidc-color-status-danger-border); }
+.home-urgent-card thead th {
+  background: var(--vidc-color-status-danger-surface) !important;
+  color: var(--vidc-color-status-danger-text);
+}
+.home-hero-progress-card { background: var(--vidc-color-background-subtle); border-color: var(--vidc-color-border-default); }
+
+/* Yêu cầu tính năng / Báo cáo: thẻ số liệu được nhấn */
+.fr-stat-card.fr-stat-highlight {
+  background: var(--vidc-color-background-brand-subtle);
+  border-color: color-mix(in srgb, var(--vidc-primitive-red) 30%, transparent);
+}
+
+/* Hệ thống & Tính năng */
+.sys-stat, .sys-card { border-radius: var(--vidc-card-radius); border-color: var(--vidc-card-border-default); }
+.sys-stat-n.sys-stat-blue { color: var(--vidc-color-status-info-text); }
+.sys-code {
+  background: var(--vidc-color-background-subtle);
+  color: var(--vidc-color-text-secondary);
+  font-family: var(--vidc-font-family-mono);
+}
+.sys-seg {
+  background: var(--vt-pill-track);
+  border: 1px solid var(--vidc-color-border-default);
+  border-radius: var(--vidc-radius-full);
+}
+.sys-seg-btn,
+.sys-seg-btn:hover:not(:disabled) {
+  min-height: 0;
+  border: none;
+  border-radius: var(--vidc-radius-full);
+  background: transparent;
+  color: var(--vidc-color-text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.sys-seg-btn:hover:not(:disabled) { color: var(--text); background: rgba(148, 163, 184, 0.18); }
+.sys-seg-btn.active,
+.sys-seg-btn.active:hover:not(:disabled) {
+  background: var(--vt-pill-active);
+  color: var(--vidc-color-text-inverse);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+.sys-seg-btn.active .sys-tab-n { background: #fff; color: var(--vt-pill-active); }
+.sys-view-btn,
+.sys-view-btn:hover:not(:disabled) {
+  min-height: 30px;
+  border-radius: var(--vidc-radius-sm);
+  border: 1px solid var(--vidc-button-secondary-border-default);
+  background: var(--vidc-button-secondary-background-default);
+  color: var(--vidc-button-secondary-foreground-default);
+  font-weight: 500;
+}
+.sys-view-btn:hover:not(:disabled) { background: var(--vidc-button-secondary-background-hover); border-color: var(--vidc-color-border-strong); }
+
+/* Nút màu riêng ở Báo cáo PowerPoint */
+button.pptx-btn-share {
+  background: var(--vidc-button-secondary-background-default);
+  border-color: var(--vidc-button-secondary-border-default);
+  color: var(--vidc-button-secondary-foreground-default);
+}
+button.pptx-btn-share:hover:not(:disabled) { background: var(--vidc-button-secondary-background-hover); }
+
+/* Chấm số trên tab con */
+.pill-badge { background: var(--vidc-primitive-red); box-shadow: 0 0 0 2px var(--card-bg); }
+
+/* Công tắc phân đoạn của Kế hoạch tổng hợp (Báo cáo/Mẫu PowerPoint, Của phòng
+   tôi/Được chia sẻ, kỳ Tháng/Quý..., chọn GNV): trước mỗi chỗ một màu (xanh
+   ngọc, xanh trời, hồng) -> viên thuốc V9 giống dải tab. */
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg {
+  background: var(--vt-pill-track);
+  border: 1px solid var(--vidc-color-border-default);
+  border-radius: var(--vidc-radius-full);
+  padding: 4px;
+  gap: 2px;
+}
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn,
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn:hover:not(:disabled) {
+  min-height: 0;
+  border: none;
+  border-radius: var(--vidc-radius-full);
+  background: transparent;
+  color: var(--vidc-color-text-secondary);
+  box-shadow: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn:hover:not(:disabled) { color: var(--text); background: rgba(148, 163, 184, 0.18); }
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn.active,
+:is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn.active:hover:not(:disabled) {
+  background: var(--vt-pill-active);
+  color: var(--vidc-color-text-inverse);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+/* BC tuần: nút xuất và dòng nhóm */
+button.wk-pdf-btn,
+button.wk-docx-btn {
+  background: var(--vidc-button-secondary-background-default);
+  border-color: var(--vidc-button-secondary-border-default);
+  color: var(--vidc-button-secondary-foreground-default);
+}
+button.wk-pdf-btn:hover:not(:disabled),
+button.wk-docx-btn:hover:not(:disabled) { background: var(--vidc-button-secondary-background-hover); border-color: var(--vidc-color-border-strong); }
+.wk-table tr.wk-group td {
+  background: var(--vidc-color-background-subtle);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Trang chủ > Tổng hợp: dải nhóm cột (theo chỉ tiêu / trừ / cộng) — giữ 3 màu
+   để phân nhóm nhưng dùng nền trạng thái nhạt thay cho nền đậm chữ trắng. */
+th.home-tonghop-head { font-weight: 700; }
+th.home-tonghop-head-chitieu { background: var(--vidc-color-status-warning-surface); color: var(--vidc-color-status-warning-text); }
+th.home-tonghop-head-tru { background: var(--vidc-color-status-danger-surface); color: var(--vidc-color-status-danger-text); }
+th.home-tonghop-head-cong { background: var(--vidc-color-status-success-surface); color: var(--vidc-color-status-success-text); }
+
+/* Màn hẹp: dải tab viên thuốc không xuống dòng (xuống dòng thành khối bo tròn
+   méo) — cuộn ngang như vConsole. */
+@media (max-width: 900px) {
+  .chrome-tabs,
+  :is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg,
+  .sys-seg {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chrome-tabs::-webkit-scrollbar,
+  .sys-seg::-webkit-scrollbar { display: none; }
+  .chrome-tabs .pill,
+  .sys-seg-btn,
+  :is(#page-summary-plan, #gnv-pick-dialog, #gnv-copy-dialog) .gnv-seg-btn { flex: 0 0 auto; white-space: nowrap; }
+}
+/* Màn hẹp: nhóm nút công cụ có style="flex:0 0 auto" (không co) tràn ra ngoài
+   thẻ — cho chiếm trọn hàng và xuống dòng (lỗi có từ trước theme). */
+@media (max-width: 720px) {
+  .card .row > .row[style*="flex:0 0 auto"] { flex: 1 1 100% !important; }
+}
+.year-stepper, .pptx-year { max-width: max-content; }
