@@ -711,40 +711,148 @@ th.home-tonghop-head-cong { background: var(--vidc-color-status-success-surface)
 .year-stepper, .pptx-year { max-width: max-content; }
 
 /* =====================================================================
- * Cột Thao tác (ô có .actions-cell): ghim mép phải bảng khi cuộn ngang
- * — không phải kéo hết bảng mới bấm được Sửa/Xóa. Màn ≤720px không ghim
- * (cột sẽ chiếm quá nửa màn hình).
+ * Cột Thao tác (ô có .actions-cell) — chế độ do 22-table-columns.js gắn:
+ *  - .tc-actions-hover (mặc định): cột thu về 0px, rê chuột vào dòng thì
+ *    thanh nút hiện nổi ở mép phải phần đang nhìn thấy (kiểu Gmail);
+ *  - .tc-actions-pin: người dùng bật "Ghim" — cột luôn hiện ở mép phải.
+ * Chỉ áp khi có chuột và màn >720px; màn cảm ứng/hẹp: cột thường.
  * ===================================================================== */
 .actions-cell button > svg,
 .actions-cell button > .ra-icon { pointer-events: none; }
 
-@media (min-width: 721px) {
-  table:has(> tbody > tr > td > .actions-cell) > thead > tr:first-child > th:last-child,
-  table td:has(> .actions-cell) {
+@media (hover: hover) and (min-width: 721px) {
+  /* Ghim */
+  table.tc-actions-pin > thead > tr:first-child > th:last-child,
+  table.tc-actions-pin > tbody > tr > td:has(> .actions-cell) {
     position: sticky;
     right: 0;
     box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.22);
   }
-  table:has(> tbody > tr > td > .actions-cell) > thead > tr:first-child > th:last-child {
-    z-index: 4;
-    background: var(--vidc-table-header-bg);
+  table.tc-actions-pin > thead > tr:first-child > th:last-child { z-index: 4; background: var(--vidc-table-header-bg); }
+  table.tc-actions-pin > tbody > tr > td:has(> .actions-cell) { z-index: 2; background-color: var(--card-bg); }
+  table.tc-actions-pin > tbody > tr:hover > td:has(> .actions-cell) { background-color: var(--vidc-table-row-hover); }
+  #task-table.tc-actions-pin tbody tr.row-highlighted > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
+  #task-table.tc-actions-pin tbody tr.task-row-urgent > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
+  #roadmap-table.tc-actions-pin tbody tr.rm-row-selected > td:has(> .actions-cell) { background-color: var(--bg); }
+
+  /* Rê chuột (Gmail): cột rộng 0, ô vẫn sticky ở mép phải để làm điểm neo */
+  table.tc-actions-hover > thead > tr:first-child > th:last-child,
+  table.tc-actions-hover > tbody > tr > td:has(> .actions-cell) {
+    position: sticky;
+    right: 0;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: visible;
+    background: transparent !important;
+    box-shadow: none;
   }
-  table td:has(> .actions-cell) {
-    z-index: 2;
-    background-color: var(--card-bg);
+  table.tc-actions-hover > thead > tr:first-child > th:last-child { font-size: 0; color: transparent; z-index: 4; }
+  table.tc-actions-hover > tbody > tr > td:has(> .actions-cell) { z-index: 2; }
+  table.tc-actions-hover > tbody > tr > td > .actions-cell {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    align-items: center;
+    padding: 0 10px 0 36px;
+    background: linear-gradient(to right, transparent, var(--tc-row-bg, var(--vidc-table-row-hover)) 28px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--vidc-motion-duration-fast);
   }
-  /* Ô ghim phải tự tô theo màu dòng (nền dòng đặt ở <tr> không lọt qua ô có nền riêng). */
-  tbody tr:hover > td:has(> .actions-cell) { background-color: var(--vidc-table-row-hover); }
-  #task-table tbody tr.row-highlighted > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
-  #task-table tbody tr.task-row-urgent > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
-  #roadmap-table tbody tr.rm-row-selected > td:has(> .actions-cell) { background-color: var(--bg); }
+  table.tc-actions-hover > tbody > tr:hover > td > .actions-cell,
+  table.tc-actions-hover > tbody > tr:focus-within > td > .actions-cell,
+  table.tc-actions-hover > tbody > tr > td > .actions-cell.ra-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  #task-table tbody tr.task-row-urgent { --tc-row-bg: color-mix(in srgb, var(--delete) 16%, var(--card-bg)); }
+  #task-table tbody tr.row-highlighted { --tc-row-bg: color-mix(in srgb, var(--red-600) 22%, var(--card-bg)); }
+
   .wk-table.wk-fixed td.wk-actions { background: var(--card-bg); }
   /* Menu ⋯ đang mở: nổi trên các ô ghim của dòng khác. */
   table td:has(> .actions-cell.ra-open) { z-index: 30; }
 }
 
+/* ---- Nút + bảng "Sắp xếp cột" (22-table-columns.js) ---- */
+.tc-bar { display: flex; justify-content: flex-end; margin-top: 10px; }
+.tc-bar + .table-wrap, .tc-bar + .table-scroll-top { margin-top: 6px; }
+button.tc-btn {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vidc-color-text-secondary);
+  font-size: 0.8rem;
+}
+button.tc-btn:hover:not(:disabled),
+button.tc-btn[aria-expanded="true"] { background: var(--vidc-color-background-subtle); color: var(--text); border-color: transparent; }
+.tc-panel {
+  position: fixed;
+  z-index: var(--vidc-z-dropdown);
+  width: 320px;
+  max-height: min(560px, calc(100vh - 24px));
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--vidc-color-border-default);
+  border-radius: var(--vidc-radius-lg);
+  box-shadow: var(--dd-shadow);
+}
+.tc-head { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px 8px; }
+.tc-head .muted { font-size: 0.75rem; }
+.tc-list { list-style: none; margin: 0; padding: 4px 8px; overflow-y: auto; flex: 1 1 auto; }
+.tc-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--vidc-radius-sm);
+  font-size: 0.85rem;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+}
+.tc-item[data-draggable] { cursor: grab; touch-action: none; user-select: none; }
+.tc-item:hover { background: var(--vidc-color-background-subtle); }
+.tc-item.is-locked { color: var(--muted); }
+.tc-item.is-actions .tc-label { font-weight: 600; }
+.tc-item.is-dragging { opacity: 0.45; }
+.tc-item.drop-before { border-top-color: var(--vidc-primitive-red); }
+.tc-item.drop-after { border-bottom-color: var(--vidc-primitive-red); }
+.tc-grip { width: 18px; text-align: center; color: var(--vidc-color-text-muted); font-size: 0.75rem; letter-spacing: -1px; }
+.tc-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.tc-move {
+  min-height: 24px;
+  width: 24px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vidc-color-text-muted);
+  font-size: 0.8rem;
+}
+button.tc-move:hover:not(:disabled) { background: var(--card-bg); border-color: var(--vidc-color-border-default); color: var(--text); }
+button.tc-move:disabled { opacity: 0.25; }
+.tc-pin {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--vidc-color-border-default);
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.tc-pin input { grid-row: span 2; margin-top: 2px; }
+.tc-pin .muted { font-size: 0.75rem; }
+.tc-pin.is-disabled { cursor: not-allowed; opacity: 0.7; }
+.tc-foot { display: flex; justify-content: space-between; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--vidc-color-border-default); }
+
 /* Nút thao tác đã thu gọn (21-row-actions.js) */
-.actions-cell.ra-done { flex-wrap: nowrap; justify-content: flex-end; gap: 4px; }
+.actions-cell.ra-done { flex-wrap: nowrap; justify-content: center; gap: 4px; }
 td .actions-cell button.small.ra-icon-btn {
   width: 28px;
   min-width: 28px;
