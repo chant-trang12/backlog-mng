@@ -5,7 +5,14 @@ import morgan from "morgan";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dbDebug } from "./middleware/dbDebug.middleware.js";
-import { buildSessionOptions, clearSessionCookie, isSessionExpired } from "./session.config.js";
+import {
+  buildSessionOptions,
+  clearSessionCookie,
+  isSessionExpired,
+  resolveSessionSecret,
+  sessionIdleMs,
+} from "./session.config.js";
+import { KnexSessionStore } from "./db/sessionStore.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
@@ -43,7 +50,7 @@ import { sanitizeWriteInput } from "./middleware/sanitize.middleware.js";
 import { notFound } from "./middleware/notFound.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
 import { isSsoEnabled, getOidcConfig } from "./services/auth.service.js";
-import "./db/database.js";
+import { db, initDatabase } from "./db/database.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -79,6 +86,7 @@ function assertSsoEnabledInProduction(): void {
 
 export function createApp() {
   assertSsoEnabledInProduction();
+  const sessionSecret = resolveSessionSecret();
 
   const app = express();
 
@@ -133,10 +141,13 @@ export function createApp() {
   // timeout, khuyến nghị 30-50 phút) + absolute timeout 8 giờ kiểm tra ở
   // phía server (session.config.ts + requireAuth). Trước đây cookie chỉ có
   // maxAge 24 giờ, không giới hạn idle/absolute ở server.
+  // Phiên lưu trong bảng `sessions` (db/sessionStore.ts), không phải bộ nhớ
+  // process: restart dịch vụ không bắt mọi người đăng nhập lại.
   app.use(
     session({
       ...buildSessionOptions(),
-      secret: process.env.SESSION_SECRET || "backlog-mng-default-dev-secret-key-32chars",
+      store: new KnexSessionStore(db, initDatabase, sessionIdleMs()),
+      secret: sessionSecret,
     }),
   );
 

@@ -91,6 +91,33 @@ export function touchSession(req: { session?: { user?: unknown; lastSeen?: numbe
   }
 }
 
+const DEV_SESSION_SECRET = "backlog-mng-default-dev-secret-key-32chars";
+// Giá trị mẫu trong .env.example — chép nguyên sang .env là coi như chưa đặt.
+const EXAMPLE_SESSION_SECRET = "change-me-to-a-random-32-char-secret-string";
+const MIN_SESSION_SECRET_LENGTH = 32;
+
+/**
+ * Chuỗi ký cookie phiên. Production bắt buộc tự đặt SESSION_SECRET (>= 32 ký
+ * tự, khác giá trị mẫu): chuỗi mặc định nằm công khai trong mã nguồn, ai biết
+ * nó đều ký được cookie phiên giả. Dev/test được dùng chuỗi mặc định.
+ */
+export function resolveSessionSecret(): string {
+  const secret = (process.env.SESSION_SECRET ?? "").trim();
+  if (process.env.NODE_ENV !== "production") return secret || DEV_SESSION_SECRET;
+  if (!secret || secret === EXAMPLE_SESSION_SECRET || secret === DEV_SESSION_SECRET) {
+    throw new Error(
+      "Refusing to start: NODE_ENV=production but SESSION_SECRET is missing or still the example value. " +
+        "Set SESSION_SECRET to a random string of at least 32 characters.",
+    );
+  }
+  if (secret.length < MIN_SESSION_SECRET_LENGTH) {
+    throw new Error(
+      `Refusing to start: SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters (got ${secret.length}).`,
+    );
+  }
+  return secret;
+}
+
 /**
  * Options express-session dùng chung cho app thật (app.ts) và test.
  * rolling: true — mỗi request có phiên hợp lệ đều gia hạn lại cookie maxAge
