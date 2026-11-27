@@ -935,3 +935,52 @@ td .actions-cell button.ra-more[hidden] { display: none; }
 /* Chữ ẩn (.ra-sr, position:absolute) phải neo vào chính nút — không thì trên
    màn hẹp (ô không ghim) nó thoát khung cuộn của bảng và kéo rộng cả trang. */
 .ra-icon-btn { position: relative; }
+
+/* Cột Thao tác khi là cột thường (mặc định đứng sau STT): vừa khít nút,
+   bỏ min-width cố định 170px trong markup cũ. */
+table th[data-tc-key="actions"],
+table td[data-tc-key="actions"] { width: 1%; min-width: 0 !important; white-space: nowrap; }
+/* Nút "Cột hiển thị" gộp (22-table-columns.js) */
+.tc-item input.tc-vis { margin: 0; flex: 0 0 auto; }
+.tc-item input.tc-vis:disabled { opacity: 0.45; }
+/* Bỏ thanh cuộn ngang "giả" phía trên bảng (Nhiệm vụ, Yêu cầu tính năng) —
+   chỉ giữ thanh cuộn của chính bảng ở dưới. */
+.table-scroll-top { display: none !important; }
+/* Nút gộp đặt trên thanh công cụ (thay nút "Cột hiển thị" cũ): kiểu nút Phụ. */
+button.tc-btn.tc-btn-toolbar {
+  min-height: 36px;
+  padding: 7px 14px;
+  border-color: var(--vidc-button-secondary-border-default);
+  background: var(--vidc-button-secondary-background-default);
+  color: var(--vidc-button-secondary-foreground-default);
+  font-size: 0.875rem;
+}
+button.tc-btn.tc-btn-toolbar:hover:not(:disabled),
+button.tc-btn.tc-btn-toolbar[aria-expanded="true"] {
+  background: var(--vidc-button-secondary-background-hover);
+  border-color: var(--vidc-color-border-strong);
+}
+
+/* Dải cảnh báo Nhiệm vụ là <button>: rule chung button:hover (nền trắng) làm
+   mất màu chip — chip "Việc cần xử lý gấp" còn thành chữ trắng trên nền trắng.
+   Giữ màu riêng từng chip khi rê chuột, chỉ đậm hơn một chút. */
+button.task-warning-graded:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--vidc-color-status-info-border) 45%, var(--vidc-color-status-info-surface));
+  border-color: var(--vidc-color-status-info-border);
+  color: var(--vidc-color-status-info-text);
+}
+button.task-warning-overdue:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--vidc-color-status-danger-border) 45%, var(--vidc-color-status-danger-surface));
+  border-color: var(--vidc-color-status-danger-border);
+  color: var(--vidc-color-status-danger-text);
+}
+button.task-warning-upcoming:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--vidc-color-status-warning-border) 45%, var(--vidc-color-status-warning-surface));
+  border-color: var(--vidc-color-status-warning-border);
+  color: var(--vidc-color-status-warning-text);
+}
+button.task-warning-urgent:hover:not(:disabled) {
+  background: var(--vidc-button-danger-background-hover);
+  border-color: var(--vidc-button-danger-background-hover);
+  color: #fff;
+}
