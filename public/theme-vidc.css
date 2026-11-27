@@ -486,25 +486,27 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
  * Từng trang — các thành phần có màu riêng
  * ===================================================================== */
 
-/* Bảng nhiều tầng tiêu đề (Kế hoạch tổng hợp: KQ xếp loại CBNV, GNV, Làm thêm
-   giờ, Tổng hợp làm thêm giờ, BC tuần): bỏ màu tiêu đề riêng (xanh ngọc, xanh
-   lá, hồng kiểu Excel) — tầng trên nền đậm hơn tầng dưới một bậc; giữ kẻ dọc
-   để đọc được nhóm cột. Selector đủ mạnh để đè các rule :nth-child cũ. */
-#cbnv-table thead tr:nth-child(n) th:nth-child(n),
-#gnv-table thead tr:nth-child(n) th:nth-child(n),
-#ot-table thead tr:nth-child(n) th:nth-child(n),
-#otsum-table thead tr:nth-child(n) th:nth-child(n),
-.wk-table thead tr:nth-child(n) th:nth-child(n) {
-  background: var(--vidc-table-header-bg);
-  color: var(--vidc-table-header-color);
+/* Bảng của Kế hoạch tổng hợp (KQ xếp loại CBNV, GNV, Làm thêm giờ, Tổng hợp
+   làm thêm giờ, BC tuần): GIỮ màu tiêu đề + dòng nhóm như cũ — trùng với file
+   Excel/PDF xuất ra (xanh ngọc #179188, xanh lá #2EC48F/#21A844, xanh nhạt
+   #E2EFDA, cam #FFC000, đỏ BC tuần) — màu do style.css quy định, theme không
+   đè. Chỉ bỏ kiểu chữ hoa nhỏ của tiêu đề bảng chung để giống file xuất. */
+#cbnv-table th,
+#gnv-table th,
+#ot-table th,
+#otsum-table th,
+.wk-table th {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
-#cbnv-table thead tr:first-child:not(:only-child) th:nth-child(n),
-#gnv-table thead tr:first-child:not(:only-child) th:nth-child(n),
-#ot-table thead tr:first-child:not(:only-child) th:nth-child(n),
-#otsum-table thead tr:first-child:not(:only-child) th:nth-child(n) {
-  background: var(--vidc-color-background-subtle);
-  color: var(--vidc-color-text-secondary);
-}
+/* BC tuần: style.css dùng var(--header-bg) — biến này theme đã đổi sang nền
+   sáng cho bảng chung, nên đặt lại đúng màu đỏ cũ (trùng bản PDF xuất ra). */
+.wk-table th { background: var(--red-600); color: #fff; }
+/* KQ xếp loại CBNV: hàng tiêu đề trên (xanh ngọc) chữ trắng như cũ — trước đây
+   lấy từ th { color:#fff } chung mà theme đã đổi. */
+#cbnv-table thead tr:first-child th { color: #fff; }
 #cbnv-table th, #cbnv-table td,
 #gnv-table th, #gnv-table td,
 #ot-table th, #ot-table td,
@@ -515,12 +517,6 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
 #ot-table tr > :last-child,
 #otsum-table tr > :last-child,
 .wk-table tr > :last-child { border-right: none; }
-/* Dòng nhóm của GNV (trước vàng đậm #ffc000) */
-#gnv-table tr.gnv-group-row td {
-  background: var(--vidc-color-status-warning-surface);
-  color: var(--vidc-color-status-warning-text);
-  font-weight: 600;
-}
 button.gnv-pick-btn {
   background: var(--vidc-button-secondary-background-default);
   border-color: var(--vidc-button-secondary-border-default);
@@ -673,11 +669,6 @@ button.wk-docx-btn {
 }
 button.wk-pdf-btn:hover:not(:disabled),
 button.wk-docx-btn:hover:not(:disabled) { background: var(--vidc-button-secondary-background-hover); border-color: var(--vidc-color-border-strong); }
-.wk-table tr.wk-group td {
-  background: var(--vidc-color-background-subtle);
-  color: var(--text);
-  font-weight: 600;
-}
 
 /* Trang chủ > Tổng hợp: dải nhóm cột (theo chỉ tiêu / trừ / cộng) — giữ 3 màu
    để phân nhóm nhưng dùng nền trạng thái nhạt thay cho nền đậm chữ trắng. */
