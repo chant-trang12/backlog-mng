@@ -1,0 +1,262 @@
+/*
+ * Viettel IDC Design Tokens v2.0.0
+ * Source of truth for vConsole v3
+ * Namespace: --vidc-*
+ */
+
+:root, [data-theme="light"] {
+  /* Typography */
+  --vidc-font-family-sans: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --vidc-font-family-mono: 'SFMono-Regular', Consolas, "Liberation Mono", Menlo, Courier, monospace;
+
+  /* Font sizes */
+  --vidc-type-h1: 2rem;       /* 32px */
+  --vidc-type-h2: 1.75rem;    /* 28px */
+  --vidc-type-h3: 1.5rem;     /* 24px */
+  --vidc-type-h4: 1.25rem;    /* 20px */
+  --vidc-type-h5: 1.125rem;   /* 18px */
+  --vidc-type-h6: 1rem;       /* 16px */
+  --vidc-type-body: 1rem;     /* 16px */
+  --vidc-type-body-sm: 0.875rem; /* 14px */
+  --vidc-type-caption: 0.75rem;  /* 12px */
+  --vidc-type-overline: 0.6875rem; /* 11px */
+  --vidc-type-label: 0.875rem;
+
+  /* Brand Primitive Markers */
+  --vidc-primitive-red: #EE0033;
+  --vidc-primitive-red-hover: #D6002E;
+  --vidc-primitive-red-active: #BE0029;
+  --vidc-primitive-red-subtle: #FFF0F3;
+  --vidc-primitive-red-dark: #990020;
+
+  /* Semantic Colors - Light Mode */
+  --vidc-color-text-primary: #111827;
+  --vidc-color-text-secondary: #4B5563;
+  --vidc-color-text-muted: #6B7280;
+  --vidc-color-text-brand: var(--vidc-primitive-red);
+  --vidc-color-text-inverse: #FFFFFF;
+
+  --vidc-color-background-canvas: #F8FAFC;
+  --vidc-color-background-app: #F1F5F9;
+  --vidc-color-background-elevated: #FFFFFF;
+  --vidc-color-background-subtle: #F1F5F9;
+  --vidc-color-background-inverse: #0F172A;
+  --vidc-color-background-brand-subtle: #FFF0F3;
+
+  --vidc-color-border-default: #E2E8F0;
+  --vidc-color-border-subtle: #F1F5F9;
+  --vidc-color-border-strong: #CBD5E1;
+  --vidc-color-border-brand: var(--vidc-primitive-red);
+
+  /* Status Colors */
+  --vidc-color-status-success-surface: #ECFDF5;
+  --vidc-color-status-success-text: #065F46;
+  --vidc-color-status-success-border: #A7F3D0;
+  --vidc-color-status-success-icon: #10B981;
+
+  --vidc-color-status-warning-surface: #FFFBEB;
+  --vidc-color-status-warning-text: #92400E;
+  --vidc-color-status-warning-border: #FDE68A;
+  --vidc-color-status-warning-icon: #F59E0B;
+
+  --vidc-color-status-danger-surface: #FEF2F2;
+  --vidc-color-status-danger-text: #991B1B;
+  --vidc-color-status-danger-border: #FECACA;
+  --vidc-color-status-danger-icon: #EF4444;
+
+  --vidc-color-status-info-surface: #EFF6FF;
+  --vidc-color-status-info-text: #1E40AF;
+  --vidc-color-status-info-border: #BFDBFE;
+  --vidc-color-status-info-icon: #3B82F6;
+
+  /* Component CTA Tokens */
+  --vidc-button-primary-background-default: var(--vidc-primitive-red);
+  --vidc-button-primary-background-hover: var(--vidc-primitive-red-hover);
+  --vidc-button-primary-foreground-default: #FFFFFF;
+
+  --vidc-button-secondary-background-default: #FFFFFF;
+  --vidc-button-secondary-background-hover: #F8FAFC;
+  --vidc-button-secondary-border-default: #CBD5E1;
+  --vidc-button-secondary-foreground-default: #1E293B;
+
+  --vidc-button-tertiary-background-default: transparent;
+  --vidc-button-tertiary-background-hover: #F1F5F9;
+  --vidc-button-tertiary-foreground-default: #334155;
+
+  --vidc-button-danger-background-default: #DC2626;
+  --vidc-button-danger-background-hover: #B91C1C;
+  --vidc-button-danger-foreground-default: #FFFFFF;
+
+  --vidc-color-focus-ring: rgba(238, 0, 51, 0.4);
+  --vidc-button-focus-width: 2px;
+  --vidc-button-focus-offset: 2px;
+
+  /* Card Component Tokens */
+  --vidc-card-background-default: #FFFFFF;
+  --vidc-card-border-default: #E2E8F0;
+  --vidc-card-shadow: none;
+  --vidc-card-radius: 12px;
+
+  /* Table Component Tokens */
+  --vidc-table-header-bg: #F8FAFC;
+  --vidc-table-header-color: #475569;
+  --vidc-table-row-hover: #F8FAFC;
+  --vidc-table-border: #E2E8F0;
+
+  /* Input Component Tokens */
+  --vidc-input-bg: #FFFFFF;
+  --vidc-input-border: #CBD5E1;
+  --vidc-input-border-focus: var(--vidc-primitive-red);
+  --vidc-input-text: #0F172A;
+  --vidc-input-placeholder: #94A3B8;
+  --vidc-input-radius: 8px;
+
+  /* Layout Spacing */
+  --vidc-space-1: 0.25rem; /* 4px */
+  --vidc-space-2: 0.5rem;  /* 8px */
+  --vidc-space-3: 0.75rem; /* 12px */
+  --vidc-space-4: 1rem;    /* 16px */
+  --vidc-space-5: 1.25rem; /* 20px */
+  --vidc-space-6: 1.5rem;  /* 24px */
+  --vidc-space-8: 2rem;    /* 32px */
+  --vidc-space-10: 2.5rem; /* 40px */
+  --vidc-space-12: 3rem;   /* 48px */
+
+  --vidc-radius-sm: 6px;
+  --vidc-radius-md: 8px;
+  --vidc-radius-lg: 12px;
+  --vidc-radius-xl: 16px;
+  --vidc-radius-full: 9999px;
+
+  /* Z-Index Hierarchy */
+  --vidc-z-dropdown: 1000;
+  --vidc-z-sticky: 1020;
+  --vidc-z-overlay: 1040;
+  --vidc-z-modal: 1050;
+  --vidc-z-toast: 1080;
+
+  /* Motion */
+  --vidc-motion-duration-fast: 150ms;
+  --vidc-motion-duration-base: 200ms;
+  --vidc-motion-duration-moderate: 300ms;
+  --vidc-motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Navigation Breadcrumb */
+  --vidc-navigation-breadcrumb-gap: 0.5rem;
+
+  /* ==========================================
+   * TOKEN GAPs (Defined explicitly per spec)
+   * ========================================== */
+  /* TOKEN GAP: component.console.sidebar.background */
+  --vidc-console-sidebar-bg: #FFFFFF;
+  /* TOKEN GAP: component.console.sidebar.active-bg */
+  --vidc-console-sidebar-item-active-bg: #FFF0F3;
+  /* TOKEN GAP: component.console.sidebar.width */
+  --vidc-console-sidebar-width: 260px;
+  /* TOKEN GAP: component.console.sidebar.width-collapsed */
+  --vidc-console-sidebar-width-collapsed: 64px;
+  /* TOKEN GAP: component.console.header.height */
+  --vidc-console-header-height: 56px;
+  /* TOKEN GAP: component.console.content.padding.desktop */
+  --vidc-console-content-padding-desktop: 24px;
+  /* TOKEN GAP: component.console.content.padding.mobile */
+  --vidc-console-content-padding-mobile: 16px;
+  /* TOKEN GAP: component.console.sidebar.item.active-background */
+  --vidc-console-sidebar-item-active-bg: rgba(238, 0, 51, 0.15);
+  /* TOKEN GAP: component.console.sidebar.item.active-border */
+  --vidc-console-sidebar-item-active-border: var(--vidc-primitive-red);
+  /* TOKEN GAP: component.console.balance-chip.background */
+  --vidc-console-balance-chip-bg: #FFF0F3;
+  /* TOKEN GAP: pattern.console.ticket-message.customer.background */
+  --vidc-console-ticket-customer-bg: #F1F5F9;
+  /* TOKEN GAP: pattern.console.ticket-message.agent.background */
+  --vidc-console-ticket-agent-bg: #EFF6FF;
+  /* TOKEN GAP: pattern.console.ticket-message.system.background */
+  --vidc-console-ticket-system-bg: #FFFBEB;
+}
+
+[data-theme="dark"] {
+  /* Semantic Colors - Dark Mode */
+  --vidc-color-text-primary: #F8FAFC;
+  --vidc-color-text-secondary: #CBD5E1;
+  --vidc-color-text-muted: #94A3B8;
+  --vidc-color-text-brand: #FF3366;
+  --vidc-color-text-inverse: #0F172A;
+
+  --vidc-color-background-canvas: #090D16;
+  --vidc-color-background-elevated: #141C2E;
+  --vidc-color-background-subtle: #1E293B;
+  --vidc-color-background-inverse: #F8FAFC;
+  --vidc-color-background-brand-subtle: rgba(238, 0, 51, 0.2);
+
+  --vidc-color-border-default: #26334D;
+  --vidc-color-border-subtle: #1E293B;
+  --vidc-color-border-strong: #334155;
+  --vidc-color-border-brand: #FF3366;
+
+  /* Status Colors - Dark */
+  --vidc-color-status-success-surface: rgba(6, 95, 70, 0.3);
+  --vidc-color-status-success-text: #6EE7B7;
+  --vidc-color-status-success-border: #065F46;
+
+  --vidc-color-status-warning-surface: rgba(146, 64, 14, 0.3);
+  --vidc-color-status-warning-text: #FDE047;
+  --vidc-color-status-warning-border: #78350F;
+
+  --vidc-color-status-danger-surface: rgba(153, 27, 27, 0.3);
+  --vidc-color-status-danger-text: #FCA5A5;
+  --vidc-color-status-danger-border: #7F1D1D;
+
+  --vidc-color-status-info-surface: rgba(30, 64, 175, 0.3);
+  --vidc-color-status-info-text: #93C5FD;
+  --vidc-color-status-info-border: #1E3A8A;
+
+  /* Card Component Tokens - Dark */
+  --vidc-card-background-default: #141C2E;
+  --vidc-card-border-default: #26334D;
+  --vidc-card-shadow: none;
+
+  /* Table Component Tokens - Dark */
+  --vidc-table-header-bg: #1E293B;
+  --vidc-table-header-color: #94A3B8;
+  --vidc-table-row-hover: #1E293B;
+  --vidc-table-border: #26334D;
+
+  /* Input Component Tokens - Dark */
+  --vidc-input-bg: #1A2337;
+  --vidc-input-border: #334155;
+  --vidc-input-text: #F8FAFC;
+  --vidc-input-placeholder: #64748B;
+
+  /* Button Secondary - Dark */
+  --vidc-button-secondary-background-default: #1E293B;
+  --vidc-button-secondary-background-hover: #334155;
+  --vidc-button-secondary-border-default: #475569;
+  --vidc-button-secondary-foreground-default: #F8FAFC;
+
+  /* Token Gaps Overrides */
+  --vidc-console-sidebar-bg: #FFFFFF;
+  --vidc-console-balance-chip-bg: rgba(238, 0, 51, 0.2);
+  --vidc-console-ticket-customer-bg: #1E293B;
+  --vidc-console-ticket-agent-bg: #1E3A8A;
+  --vidc-console-ticket-system-bg: #78350F;
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-family: var(--vidc-font-family-sans);
+  background-color: var(--vidc-color-background-canvas);
+  color: var(--vidc-color-text-primary);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
