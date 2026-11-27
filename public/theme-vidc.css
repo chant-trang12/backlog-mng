@@ -158,7 +158,14 @@ h1 { font-weight: 700; letter-spacing: -0.01em; }
 .card h2 { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.005em; }
 
 /* ---- Khung trang ---- */
-main { max-width: 1600px; }
+/* Nội dung chiếm hết bề ngang còn lại cạnh sidebar (kể cả màn hình độ phân
+   giải cao và khi sidebar thu gọn) — bỏ mọi trần max-width của style.css. */
+main { max-width: none; }
+
+/* overflow-x:hidden (style.css) biến .app-shell thành vùng cuộn nên làm hỏng
+   position:sticky của sidebar -> sidebar trôi theo trang. "clip" vẫn cắt tràn
+   ngang nhưng không tạo vùng cuộn. */
+.app-shell { overflow-x: clip; }
 
 .sidebar {
   background: var(--vidc-console-sidebar-bg);
@@ -1072,3 +1079,23 @@ button.task-warning-urgent:hover:not(:disabled) {
 .fr-linked-badge-backlog .icon,
 .fr-linked-badge-roadmap .icon,
 .pptx-pill .icon { width: 0.95em; height: 0.95em; margin-right: 0.25em; stroke-width: 2.5; }
+
+/* ---- Thanh cuộn ngang nổi ở đáy màn hình (js/23-sticky-hscroll.js) ----
+   Bảng dài: thanh cuộn thật nằm ở CUỐI bảng nên phải cuộn dọc hết mới kéo
+   ngang được -> hiện 1 thanh cuộn đồng bộ ghim đáy khung nhìn. */
+.sticky-hscroll {
+  position: fixed;
+  bottom: 0;
+  z-index: 20;
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--card-bg);
+  border-top: 1px solid var(--vidc-color-border-default);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
+}
+.sticky-hscroll[hidden] { display: none; }
+.sticky-hscroll > div { height: 1px; }
+.sticky-hscroll::-webkit-scrollbar { height: 12px; }
+.sticky-hscroll::-webkit-scrollbar-track { background: var(--vidc-color-background-subtle); }
+.sticky-hscroll::-webkit-scrollbar-thumb { background: var(--vidc-color-text-muted); border-radius: 6px; border: 2px solid var(--vidc-color-background-subtle); }
