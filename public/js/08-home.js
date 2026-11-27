@@ -48,6 +48,13 @@ function homeTeamBarHex(teamName) {
 // ánh đúng kết quả tìm kiếm.
 function renderHomeDashboard() {
   if (!document.getElementById("home-vbar-chart")) return;
+  // Trang chủ đang ẩn: bỏ qua (vào lại Trang chủ luôn vẽ lại); đang trong
+  // withHomeRenderBatch: hoãn tới cuối đợt — xem 02-departments-periods-teams.js.
+  if (!isHomeVisible()) return;
+  if (homeRenderSuspend > 0) {
+    homeRenderPending = true;
+    return;
+  }
 
   const theoTask = homeApplyKpiModeUI();
 

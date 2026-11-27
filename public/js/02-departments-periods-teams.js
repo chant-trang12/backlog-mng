@@ -455,7 +455,11 @@ function defaultPeriodId() {
   return (currentReal ?? state.periods[0])?.id ?? null;
 }
 
-async function loadPeriods() {
+function loadPeriods() {
+  return withHomeRenderBatch(loadPeriodsInner);
+}
+
+async function loadPeriodsInner() {
   state.periods = await api("/api/periods");
   const optionsHtml = state.periods.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
   el.periodSelect.innerHTML = optionsHtml;
@@ -477,7 +481,7 @@ async function loadPeriods() {
     await loadEvaluationRecords();
     await loadAttendanceRecords();
     await refreshHomeFilters();
-    if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
+    await reloadOpenSummaryPlanTab();
     return;
   }
 
@@ -509,10 +513,7 @@ async function loadPeriods() {
   await loadEvaluationRecords();
   await loadAttendanceRecords();
   await refreshHomeFilters();
-  if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
-  if (typeof loadGnv === "function") await loadGnv();
-  if (typeof loadOvertime === "function") await loadOvertime();
-  if (typeof loadOvertimeSummary === "function") await loadOvertimeSummary();
+  await reloadOpenSummaryPlanTab();
 }
 
 // Bộ lọc "Tháng"/"Team" riêng ở trang Home — mặc định theo tháng đang chọn ở
@@ -542,6 +543,65 @@ async function loadHomeKpiTheoTask(periodId) {
   state.homeKpiTheoTask = await api(`/api/kpi-theo-task?period_id=${periodId}${deptParam()}`);
 }
 
+// ---- Vẽ lại Trang chủ: chỉ khi đang mở, và gom nhiều lần thành 1 ----
+// Mỗi lần vẽ Trang chủ gọi thêm API (Việc đang treo, Việc cần xử lý gấp, KPI
+// theo task). Trước đây mọi loadTeams/loadTasks/loadMembers ở trang KHÁC cũng
+// vẽ lại Trang chủ dù nó đang ẩn -> gọi API thừa. Giờ: Trang chủ ẩn thì bỏ qua
+// (bấm vào Trang chủ luôn gọi refreshHomeForPeriod nên không bị dữ liệu cũ);
+// trong withHomeRenderBatch (khởi động, đổi tháng) chỉ vẽ 1 lần ở cuối.
+let homeRenderSuspend = 0;
+let homeRenderPending = false;
+
+function isHomeVisible() {
+  const page = document.getElementById("page-home");
+  return !!page && !page.hidden;
+}
+
+async function renderHomeNow() {
+  await loadHomeKpiTheoTask(state.homePeriodId);
+  populateHomeTeamFilterOptions();
+  renderHomeDashboard();
+}
+
+function requestHomeRender() {
+  if (!isHomeVisible()) return Promise.resolve();
+  if (homeRenderSuspend > 0) {
+    homeRenderPending = true;
+    return Promise.resolve();
+  }
+  return renderHomeNow();
+}
+
+async function withHomeRenderBatch(fn) {
+  homeRenderSuspend++;
+  try {
+    return await fn();
+  } finally {
+    homeRenderSuspend--;
+    if (homeRenderSuspend === 0 && homeRenderPending) {
+      homeRenderPending = false;
+      renderHomeNow().catch((err) => showToast(err.message));
+    }
+  }
+}
+
+// Kế hoạch tổng hợp: chỉ nạp lại tab ĐANG MỞ, và chỉ khi trang đang hiện —
+// vào trang/đổi tab đã tự nạp dữ liệu của tab đó (05-cskh.js), không cần tải
+// sẵn cả 4 bảng (CBNV, GNV, Làm thêm giờ, Tổng hợp làm thêm giờ) mỗi lần
+// khởi động hoặc đổi tháng ở trang khác.
+async function reloadOpenSummaryPlanTab() {
+  const page = document.getElementById("page-summary-plan");
+  if (!page || page.hidden) return;
+  const tab = document.querySelector("#summary-plan-subnav .pill.active")?.dataset.tab;
+  const loaders = {
+    overtime: typeof loadOvertime === "function" ? loadOvertime : null,
+    otsum: typeof loadOvertimeSummary === "function" ? loadOvertimeSummary : null,
+    cbnv: typeof loadCbnvXepLoai === "function" ? loadCbnvXepLoai : null,
+    gnv: typeof loadGnv === "function" ? loadGnv : null,
+  };
+  await loaders[tab]?.();
+}
+
 async function refreshHomeForPeriod(periodId) {
   if (!periodId) {
     state.homeTeams = [];
@@ -564,7 +624,6 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
     state.homeEvaluationRecords = state.evaluationRecords;
-    await loadHomeKpiTheoTask(periodId);
   } else {
     const [teams, members, tasks, compliance, attendance, workRuleOverrides, support, training, evaluation] = await Promise.all([
       api(`/api/teams?period_id=${periodId}${deptParam()}`),
@@ -586,10 +645,8 @@ async function refreshHomeForPeriod(periodId) {
     state.homeSupportRecords = support;
     state.homeTrainingRecords = training;
     state.homeEvaluationRecords = evaluation;
-    await loadHomeKpiTheoTask(periodId);
   }
-  populateHomeTeamFilterOptions();
-  renderHomeDashboard();
+  await requestHomeRender();
 }
 
 function populateHomeTeamFilterOptions() {
@@ -617,9 +674,7 @@ function syncHomeFromCurrentIfNeeded() {
     state.homeSupportRecords = state.supportRecords;
     state.homeTrainingRecords = state.trainingRecords;
     state.homeEvaluationRecords = state.evaluationRecords;
-    populateHomeTeamFilterOptions();
-    renderHomeDashboard();
-    loadHomeKpiTheoTask(state.homePeriodId).then(renderHomeDashboard);
+    requestHomeRender().catch((err) => showToast(err.message));
   }
 }
 
@@ -653,7 +708,11 @@ el.createPeriodBtn.addEventListener("click", async () => {
 // Đổi tháng đang chọn — dùng chung cho 3 ô: "Chọn tháng" (Backlog), "Tháng"
 // (Team & Nhân sự) và "Đang khai báo cho tháng" (Cấu hình → Team). Đổi ở đâu
 // cũng đồng bộ cả ba và nạp lại toàn bộ dữ liệu theo tháng.
-async function switchPeriod(newId) {
+function switchPeriod(newId) {
+  return withHomeRenderBatch(() => switchPeriodInner(newId));
+}
+
+async function switchPeriodInner(newId) {
   state.currentPeriodId = Number(newId);
   const v = String(state.currentPeriodId);
   el.periodSelect.value = v;
@@ -670,11 +729,9 @@ async function switchPeriod(newId) {
   await loadSupportRecords();
   await loadEvaluationRecords();
   await loadAttendanceRecords();
-  if (typeof loadCbnvXepLoai === "function") await loadCbnvXepLoai();
-  // GNV + Làm thêm giờ cũng theo "Tháng theo dõi" — phải nạp lại khi đổi tháng.
-  if (typeof loadGnv === "function") await loadGnv();
-  if (typeof loadOvertime === "function") await loadOvertime();
-  if (typeof loadOvertimeSummary === "function") await loadOvertimeSummary();
+  // CBNV/GNV/Làm thêm giờ cũng theo "Tháng theo dõi" — nạp lại tab đang mở
+  // (các tab khác tự nạp khi người dùng chuyển sang).
+  await reloadOpenSummaryPlanTab();
 }
 
 el.periodSelect.addEventListener("change", () => switchPeriod(el.periodSelect.value));
