@@ -151,7 +151,7 @@ function renderRoadmap() {
       // tiết từng tháng hoặc kiểu cũ); tooltip liệt kê các tháng đã đưa.
       const syncedMonths = it.synced_months ?? [];
       const backlogBadge = syncedMonths.length
-        ? `<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">✓ Đã vào Backlog</span>`
+        ? `<span class="rm-synced-badge" title="Đã tự động đưa vào Backlog các tháng: ${syncedMonths.join(", ")}">${svgIcon("i-check")}Đã vào Backlog</span>`
         : "";
       return `<tr data-id="${it.id}"${selCls}>
       <td style="text-align:center"><input type="checkbox" class="roadmap-row-checkbox" ${state.roadmapSelectedIds.has(it.id) ? "checked" : ""} /></td>
@@ -324,7 +324,7 @@ function renderRoadmapDetail() {
       const syncedCount = rows.filter((d) => d.synced_task_id && !d.task_deleted).length;
       const monthBadge = rows.length
         ? syncedCount === rows.length
-          ? '<span class="rm-backlog-badge" title="Tất cả việc của tháng này đã được tự động đưa vào Backlog (DOD = Nội dung công việc)">✓ Đã vào Backlog</span>'
+          ? '<span class="rm-backlog-badge" title="Tất cả việc của tháng này đã được tự động đưa vào Backlog (DOD = Nội dung công việc)">' + svgIcon("i-check") + 'Đã vào Backlog</span>'
           : '<span class="rm-backlog-badge pending" title="Chưa đưa hết việc vào Backlog (tháng chưa được quản lý, ngoài phạm vi Bắt đầu -> Kết thúc, hoặc task đã bị xóa)">Chưa vào Backlog</span>'
         : "";
       const body = rows.length

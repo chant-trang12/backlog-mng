@@ -122,5 +122,8 @@ chỉ làm reverse proxy bằng URL Rewrite + Application Request Routing (ARR).
 5. `.env` của Node: `TRUST_PROXY=1`, `COOKIE_SECURE=true` (nếu site dùng
    HTTPS), `OIDC_REDIRECT_URI`/`OIDC_LOGOUT_URI` là URL đầy đủ qua IIS (đăng ký đúng URL đó trên IdP).
 
-Lưu ý: phiên đăng nhập lưu trong bộ nhớ process Node — khởi động lại dịch vụ
-thì mọi người phải đăng nhập lại. Chỉ chạy 1 process Node.
+Phiên đăng nhập lưu trong bảng `sessions` của DB (tự tạo khi khởi động), nên
+khởi động lại dịch vụ không bắt mọi người đăng nhập lại. Khi chạy
+`NODE_ENV=production`, app từ chối khởi động nếu `SESSION_SECRET` chưa đặt,
+ngắn hơn 32 ký tự hoặc còn là giá trị mẫu của `.env.example`. Tạo chuỗi ngẫu
+nhiên bằng `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.

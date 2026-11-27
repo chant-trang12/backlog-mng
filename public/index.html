@@ -6,6 +6,9 @@
   <title>Progress & Evaluation Management</title>
   <link rel="icon" type="image/png" href="favicon-idc.png" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="vidc-tokens.css" />
+  <link rel="stylesheet" href="theme-vidc.css" />
+  <script src="js/00-sidebar.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -13,6 +16,7 @@
       <div class="sidebar-header">
         <button type="button" id="sidebar-logo-btn" class="sidebar-logo-btn" title="Về Trang chủ">
           <img src="logo-viettel-idc.svg" alt="Quản lý nhiệm vụ" class="sidebar-logo" />
+          <img src="favicon-idc.png" alt="" class="sidebar-logo-mini" />
         </button>
         <div class="dept-switcher" id="dept-switcher">
           <button type="button" class="dept-trigger" id="dept-trigger" aria-haspopup="true" aria-expanded="false">
@@ -21,24 +25,24 @@
               <span class="dept-trigger-label">Phòng ban</span>
               <span class="dept-trigger-name" id="dept-trigger-name">—</span>
             </span>
-            <span class="dept-trigger-chev" aria-hidden="true">⌄</span>
+            <span class="dept-trigger-chev" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
           </button>
           <div class="dept-panel" id="dept-panel" role="menu" hidden></div>
           <div class="dept-tip" id="dept-tip" hidden></div>
         </div>
       </div>
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="home"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg>Trang chủ</button>
-        <button class="nav-item" data-page="backlog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg>Nhiệm vụ</button>
-        <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg>Team &amp; Nhân sự</button>
-        <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg>Roadmap năm</button>
-        <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg>Yêu cầu tính năng<span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
-        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg>Hệ thống &amp; Tính năng</button>
-        <button class="nav-item" data-page="reports"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg>Báo cáo - Thống kê</button>
-        <button class="nav-item" data-page="summary-plan"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg>Kế hoạch tổng hợp<span id="sp-nav-badge" class="nav-badge" hidden title="Góp ý báo cáo PowerPoint chưa xử lý">0</span></button>
-        <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cấu hình</button>
-        <button class="nav-item" data-page="action-logs"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg>Nhật ký hoạt động</button>
-        <button class="nav-item" data-page="hdsd"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg>HDSD</button>
+        <button class="nav-item active" data-page="home"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-home"/></svg><span class="nav-label">Trang chủ</span></button>
+        <button class="nav-item" data-page="backlog"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-clipboard-check"/></svg><span class="nav-label">Nhiệm vụ</span></button>
+        <button class="nav-item" data-page="team"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-users"/></svg><span class="nav-label">Team &amp; Nhân sự</span></button>
+        <button class="nav-item" data-page="roadmap"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-map"/></svg><span class="nav-label">Roadmap năm</span></button>
+        <button class="nav-item" data-page="feature-requests"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-lightbulb"/></svg><span class="nav-label">Yêu cầu tính năng</span><span id="fr-nav-badge" class="nav-badge" hidden>0</span></button>
+        <button class="nav-item" data-page="digital-features"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-cpu"/></svg><span class="nav-label">Hệ thống &amp; Tính năng</span></button>
+        <button class="nav-item" data-page="reports"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-bar-chart"/></svg><span class="nav-label">Báo cáo - Thống kê</span></button>
+        <button class="nav-item" data-page="summary-plan"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-calendar"/></svg><span class="nav-label">Kế hoạch tổng hợp</span><span id="sp-nav-badge" class="nav-badge" hidden title="Góp ý báo cáo PowerPoint chưa xử lý">0</span></button>
+        <button class="nav-item" data-page="config"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg><span class="nav-label">Cấu hình</span></button>
+        <button class="nav-item" data-page="action-logs"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-file-text"/></svg><span class="nav-label">Nhật ký hoạt động</span></button>
+        <button class="nav-item" data-page="hdsd"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-book"/></svg><span class="nav-label">HDSD</span></button>
       </nav>
       <div class="sidebar-user" id="sidebar-user" style="display: none;">
         <div class="user-avatar" id="user-avatar"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-user"/></svg></div>
@@ -48,6 +52,11 @@
         </div>
         <a href="/auth/logout" class="btn-logout" title="Đăng xuất"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-log-out"/></svg>Đăng xuất</a>
       </div>
+      <button type="button" id="sidebar-collapse-btn" class="sidebar-collapse-btn" aria-expanded="true" title="Thu gọn menu">
+        <svg class="icon i-close" aria-hidden="true"><use href="icons.svg#i-panel-close"/></svg>
+        <svg class="icon i-open" aria-hidden="true"><use href="icons.svg#i-panel-open"/></svg>
+        <span class="nav-label">Thu gọn</span>
+      </button>
     </aside>
 
     <div class="app-content">
@@ -415,7 +424,7 @@
                 <div class="bulk-actions write-action" id="bulk-actions" hidden>
                   <button type="button" id="bulk-actions-btn" class="btn-move-month" aria-haspopup="true" aria-expanded="false">
                     Thao tác với <span id="selected-task-count">0</span> task đã chọn
-                    <span class="caret" aria-hidden="true">▾</span>
+                    <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
                   </button>
                   <div class="bulk-menu" id="bulk-actions-menu" role="menu" hidden>
                     <button type="button" class="bulk-menu-item" role="menuitem" data-bulk-action="move">Chuyển sang tháng sau</button>
@@ -430,7 +439,7 @@
                 <div class="col-menu-wrap" id="task-col-menu-wrap">
                   <button type="button" id="task-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
                     <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
-                    <span class="caret" aria-hidden="true">▾</span>
+                    <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
                   </button>
                   <div class="col-menu" id="task-col-menu" role="menu" hidden>
                     <div class="col-menu-list" id="task-col-menu-list"></div>
@@ -838,7 +847,7 @@
                 <div class="col-menu-wrap" id="incident-col-menu-wrap">
                   <button type="button" id="incident-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
                     <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
-                    <span class="caret" aria-hidden="true">▾</span>
+                    <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
                   </button>
                   <div class="col-menu" id="incident-col-menu" role="menu" hidden>
                     <div class="col-menu-list" id="incident-col-menu-list"></div>
@@ -1511,7 +1520,7 @@
                 <div class="col-menu-wrap" id="fr-col-menu-wrap">
                   <button type="button" id="fr-col-menu-btn" class="btn-col-menu" aria-haspopup="true" aria-expanded="false">
                     <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders"/></svg>Cột hiển thị
-                    <span class="caret" aria-hidden="true">▾</span>
+                    <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
                   </button>
                   <div class="col-menu" id="fr-col-menu" role="menu" hidden>
                     <div class="col-menu-list" id="fr-col-menu-list"></div>
@@ -2533,9 +2542,9 @@
           <div class="pptx-share-body">
             <h2 id="wk-share-title" style="margin:0">Chia sẻ BC tuần</h2>
             <div class="pptx-share-perm">
-              <span class="pptx-share-perm-ok">✓ Xem toàn bộ báo cáo</span>
-              <span class="pptx-share-perm-ok">✓ Xuất PDF</span>
-              <span class="pptx-share-perm-no">✕ Không sửa nội dung</span>
+              <span class="pptx-share-perm-ok"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg>Xem toàn bộ báo cáo</span>
+              <span class="pptx-share-perm-ok"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg>Xuất PDF</span>
+              <span class="pptx-share-perm-no"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg>Không sửa nội dung</span>
             </div>
             <section class="pptx-share-card">
               <div class="pptx-share-card-title"><span>1</span> Chia sẻ cho từng người</div>
@@ -2547,7 +2556,7 @@
               <div class="pptx-share-dept-row"><select id="wk-share-dept"></select><button type="button" class="primary" id="wk-share-dept-btn">Chia sẻ cả phòng</button></div>
             </section>
             <section class="pptx-share-card pptx-share-card-list">
-              <div class="pptx-share-card-title"><span>✓</span> Đã chia sẻ <em id="wk-share-count"></em></div>
+              <div class="pptx-share-card-title"><span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></span> Đã chia sẻ <em id="wk-share-count"></em></div>
               <div id="wk-share-list"></div>
             </section>
           </div>
@@ -2688,10 +2697,10 @@
           <div class="pptx-share-body">
             <h2 id="pptx-share-title" style="margin:0">Chia sẻ báo cáo</h2>
             <div class="pptx-share-perm">
-              <span class="pptx-share-perm-ok">✓ Xem toàn bộ báo cáo</span>
-              <span class="pptx-share-perm-ok">✓ Góp ý</span>
-              <span class="pptx-share-perm-ok">✓ Xuất PowerPoint</span>
-              <span class="pptx-share-perm-no">✕ Không sửa nội dung</span>
+              <span class="pptx-share-perm-ok"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg>Xem toàn bộ báo cáo</span>
+              <span class="pptx-share-perm-ok"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg>Góp ý</span>
+              <span class="pptx-share-perm-ok"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg>Xuất PowerPoint</span>
+              <span class="pptx-share-perm-no"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg>Không sửa nội dung</span>
             </div>
 
             <section class="pptx-share-card">
@@ -2706,7 +2715,7 @@
             </section>
 
             <section class="pptx-share-card pptx-share-card-list">
-              <div class="pptx-share-card-title"><span>✓</span> Đã chia sẻ <em id="pptx-share-count"></em></div>
+              <div class="pptx-share-card-title"><span><svg class="icon" aria-hidden="true"><use href="icons.svg#i-check"/></svg></span> Đã chia sẻ <em id="pptx-share-count"></em></div>
               <div id="pptx-share-list"></div>
             </section>
           </div>
@@ -3569,7 +3578,7 @@
       <div class="tm-add-frame" style="margin-top:10px">
         <button type="button" id="add-incident-member-btn" class="tm-add-frame-toggle" aria-expanded="false">
           <span>Thêm nhân sự liên quan</span>
-          <span class="caret" aria-hidden="true">▾</span>
+          <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
         </button>
         <form id="incident-member-add-form" style="padding:0" hidden>
           <div>
@@ -4077,7 +4086,7 @@
       <div class="tm-add-frame tm-add-frame-warn grade-write-action" style="margin-top:4px">
         <button type="button" id="grade-deduction-toggle-btn" class="tm-add-frame-toggle" aria-expanded="false">
           <span>Trừ điểm cá nhân</span>
-          <span class="caret" aria-hidden="true">▾</span>
+          <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
         </button>
         <div id="grade-deduction-frame" hidden style="padding:10px 2px 0">
           <div class="field-row" style="align-items:flex-end">
@@ -4161,7 +4170,7 @@
       <div class="tm-add-frame">
         <button type="button" id="ti-add-frame-toggle" class="tm-add-frame-toggle" aria-expanded="false">
           <span>Thêm việc</span>
-          <span class="caret" aria-hidden="true">▾</span>
+          <span class="caret" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-chevron-down"/></svg></span>
         </button>
         <div id="ti-add-frame-body" hidden>
           <div>
@@ -4370,7 +4379,7 @@
   <dialog id="confirm-dialog" class="confirm-dialog">
     <button type="button" class="dialog-close-x" aria-label="Đóng">×</button>
     <form method="dialog">
-      <div id="confirm-dialog-icon" class="confirm-icon">!</div>
+      <div id="confirm-dialog-icon" class="confirm-icon"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-alert"/></svg></div>
       <h2 id="confirm-dialog-title">Xác nhận</h2>
       <p id="confirm-dialog-message"></p>
       <div class="actions confirm-actions">
@@ -4431,5 +4440,8 @@
   <script src="js/20-pptx-preview.js"></script>
   <script src="js/09-main.js"></script>
   <script src="js/12-select.js"></script>
+  <script src="js/21-row-actions.js"></script>
+  <script src="js/22-table-columns.js"></script>
+  <script src="js/23-sticky-hscroll.js"></script>
 </body>
 </html>

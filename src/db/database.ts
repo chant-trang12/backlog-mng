@@ -61,6 +61,7 @@ import { migrateWeeklyReportTables } from "./migrations/weeklyReport.js";
 import { migrateRolePermissions } from "./migrations/rolePermissions.js";
 import { migrateMenuVisibility } from "./migrations/menuVisibility.js";
 import { scrubLegacyHtmlChars } from "./migrations/xssScrub.js";
+import { migrateSessionsTable } from "./migrations/sessions.js";
 
 let initPromise: Promise<void> | null = null;
 
@@ -179,6 +180,8 @@ export async function initDatabase(): Promise<void> {
     // "Phân quyền theo phòng ban" (ẩn/hiện menu trái theo phòng ban) — cần
     // bảng departments đã có sẵn (migrateDepartments ở trên).
     await migrateMenuVisibility();
+    // sessions — phiên đăng nhập (express-session), bảng độc lập.
+    await migrateSessionsTable();
   })();
 
   return initPromise;

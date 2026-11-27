@@ -642,11 +642,16 @@ el.addPositionBtn.addEventListener("click", async () => {
 
 // ---- Cấu hình > Phòng ban ----
 
-async function loadDepartmentConfig() {
+// reuseDepartments: dùng luôn state.departments vừa tải ở loadDepartments()
+// (lúc khởi động) thay vì gọi lại /api/departments lần nữa.
+async function loadDepartmentConfig({ reuseDepartments = false } = {}) {
   if (!el.departmentConfigTbody) return;
+  // Chưa có tháng backlog nào (hoặc chưa tải xong danh sách tháng) thì không
+  // gọi /api/teams — period_id=0 luôn bị server trả 400.
+  const periodId = state.currentPeriodId ?? state.periods[0]?.id;
   const [departments, teamCounts] = await Promise.all([
-    api("/api/departments"),
-    api(`/api/teams?period_id=${state.currentPeriodId ?? state.periods[0]?.id ?? 0}`).catch(() => []),
+    reuseDepartments && state.departments.length ? Promise.resolve(state.departments) : api("/api/departments"),
+    periodId ? api(`/api/teams?period_id=${periodId}`).catch(() => []) : Promise.resolve([]),
   ]);
   state.departments = departments;
   state.departmentConfigTeamCounts = teamCounts || [];

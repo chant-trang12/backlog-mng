@@ -460,7 +460,7 @@ function renderFrPendingAlert() {
       ${chip("quarter", `cần làm trong ${b.labels.quarter}`, b.quarter.length, "blue")}
       ${chip("newMonth", `mới nhận trong ${b.labels.month}`, b.newMonth.length, "teal")}
       ${chip("all", "tất cả chờ duyệt", b.all.length, "slate")}
-      ${state.frQuick ? `<button type="button" class="fr-pa-clear" data-frquick="">✕ Bỏ lọc nhanh</button>` : ""}
+      ${state.frQuick ? `<button type="button" class="fr-pa-clear" data-frquick="">${svgIcon("i-x")}Bỏ lọc nhanh</button>` : ""}
     </div>`;
 }
 document.getElementById("fr-pending-alert")?.addEventListener("click", (e) => {
@@ -619,9 +619,9 @@ function frStatusLabel(r) {
 // màu Ưu tiên trong cùng bảng — tránh đọc nhầm badge nào là trạng thái gì.
 function frLinkedBadgesHtml(r) {
   return (
-    (r.linked_task_id ? `<span class="status-badge fr-linked-badge-backlog" title="Đã đưa vào Backlog">✓ Backlog</span>` : "") +
+    (r.linked_task_id ? `<span class="status-badge fr-linked-badge-backlog" title="Đã đưa vào Backlog">${svgIcon("i-check")}Backlog</span>` : "") +
     (r.linked_roadmap_item_id
-      ? `<span class="status-badge fr-linked-badge-roadmap" title="Đã đưa vào Roadmap năm">✓ Roadmap</span>`
+      ? `<span class="status-badge fr-linked-badge-roadmap" title="Đã đưa vào Roadmap năm">${svgIcon("i-check")}Roadmap</span>`
       : "")
   );
 }

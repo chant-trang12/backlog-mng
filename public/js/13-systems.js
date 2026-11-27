@@ -380,7 +380,7 @@ function renderFeatures() {
       <td>${ftDate(f.han_hoan_thanh)}${ftWantedNote(f)}</td>
       <td>${ftDate(f.ngay_hoan_thanh_thuc_te)}${f.tre_ngay ? `<div class="sys-ft-late">Trễ ${f.tre_ngay} ngày</div>` : ""}</td>
       <td>${ftBadge(f)}</td>
-      <td><div class="sys-docchips">${f.required_docs.map((d) => `<span class="sys-docchip${d.has ? " has" : ""}" title="${sysEsc(d.label)}">${d.has ? "✓ " : ""}${sysEsc(d.abbr)}</span>`).join("")}</div></td>
+      <td><div class="sys-docchips">${f.required_docs.map((d) => `<span class="sys-docchip${d.has ? " has" : ""}" title="${sysEsc(d.label)}">${d.has ? svgIcon("i-check") : ""}${sysEsc(d.abbr)}</span>`).join("")}</div></td>
       <td class="sys-ft-act delete-action">${isAdminUser() ? `<button type="button" class="sys-ft-del${f.docs.length ? " off" : ""}" data-ftdel="${f.id}" title="${f.docs.length ? `Còn ${f.docs.length} tài liệu — xoá hết tài liệu trước` : "Xoá tính năng"}" aria-label="Xoá tính năng"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-trash"/></svg></button>` : ""}</td>
     </tr>`,
     )
@@ -814,7 +814,7 @@ function renderFtDetail() {
   ftdEl("ftd-req").innerHTML = req
     .map((d) => {
       const n = f.docs.filter((x) => x.doc_key === d.key).length;
-      return `<li><i class="ftd-tick${d.has ? " on" : ""}">${d.has ? "✓" : ""}</i><span>${sysEsc(d.label)}</span><em>${n ? `${n} tệp` : "Chưa có"}</em></li>`;
+      return `<li><i class="ftd-tick${d.has ? " on" : ""}">${d.has ? svgIcon("i-check") : ""}</i><span>${sysEsc(d.label)}</span><em>${n ? `${n} tệp` : "Chưa có"}</em></li>`;
     })
     .join("");
 

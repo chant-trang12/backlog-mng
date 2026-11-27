@@ -237,10 +237,14 @@ async function checkAuth() {
   el.newMonth.value = now.getMonth() + 1;
   // Phòng ban phải nạp trước loadPeriods() vì loadTeams/loadMembers phụ thuộc
   // state.currentDepartmentId.
-  loadDepartments()
-    .then(() =>
+  // Cả đợt khởi động nằm trong 1 withHomeRenderBatch: Trang chủ chỉ vẽ (và
+  // gọi API Việc treo/Việc gấp/KPI theo task) 1 lần khi mọi dữ liệu đã về.
+  // Roadmap không tải ở đây — bấm vào trang Roadmap năm luôn tự tải (09-main).
+  withHomeRenderBatch(() =>
+    loadDepartments().then(() =>
       Promise.all([
-        loadPeriods(),
+        // Cấu hình > Phòng ban cần tháng đang chọn để đếm số team -> chạy sau loadPeriods().
+        loadPeriods().then(() => loadDepartmentConfig({ reuseDepartments: true })),
         loadIncidents(),
         loadTickets(),
         loadCreationRates(),
@@ -250,17 +254,16 @@ async function checkAuth() {
         loadCategory(),
         loadGroup(),
         loadPosition(),
-        loadDepartmentConfig(),
         loadSystem(),
         loadObjective(),
         loadLoaiYeuCau(),
         loadMemberParticipation(),
-        loadRoadmap(),
         refreshFeatureRequestNavBadge(),
         typeof refreshSpNavBadge === "function" ? refreshSpNavBadge() : null,
         typeof refreshWkBadge === "function" ? refreshWkBadge() : null,
       ]),
-    )
+    ),
+  )
     .then(() => restoreAfterDeptSwitch()) // vừa đổi phòng ban (đã tải lại trang): mở lại đúng trang/tab đang đứng
     .catch((err) => showToast(err.message));
 })();
