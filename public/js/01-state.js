@@ -947,6 +947,9 @@ function setupFloatingTableHeader(wrapId, tableId) {
       if (cs.position === "sticky") {
         floatTh.style.position = "sticky";
         floatTh.style.left = cs.left;
+        // Cột "Thao tác" ghim mép PHẢI (theme-vidc.css) — chép luôn right + bóng.
+        floatTh.style.right = cs.right;
+        floatTh.style.boxShadow = cs.boxShadow;
         floatTh.style.zIndex = cs.zIndex;
         floatTh.style.background = cs.backgroundColor;
       }

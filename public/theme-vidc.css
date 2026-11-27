@@ -709,3 +709,121 @@ th.home-tonghop-head-cong { background: var(--vidc-color-status-success-surface)
   .card .row > .row[style*="flex:0 0 auto"] { flex: 1 1 100% !important; }
 }
 .year-stepper, .pptx-year { max-width: max-content; }
+
+/* =====================================================================
+ * Cột Thao tác (ô có .actions-cell): ghim mép phải bảng khi cuộn ngang
+ * — không phải kéo hết bảng mới bấm được Sửa/Xóa. Màn ≤720px không ghim
+ * (cột sẽ chiếm quá nửa màn hình).
+ * ===================================================================== */
+.actions-cell button > svg,
+.actions-cell button > .ra-icon { pointer-events: none; }
+
+@media (min-width: 721px) {
+  table:has(> tbody > tr > td > .actions-cell) > thead > tr:first-child > th:last-child,
+  table td:has(> .actions-cell) {
+    position: sticky;
+    right: 0;
+    box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.22);
+  }
+  table:has(> tbody > tr > td > .actions-cell) > thead > tr:first-child > th:last-child {
+    z-index: 4;
+    background: var(--vidc-table-header-bg);
+  }
+  table td:has(> .actions-cell) {
+    z-index: 2;
+    background-color: var(--card-bg);
+  }
+  /* Ô ghim phải tự tô theo màu dòng (nền dòng đặt ở <tr> không lọt qua ô có nền riêng). */
+  tbody tr:hover > td:has(> .actions-cell) { background-color: var(--vidc-table-row-hover); }
+  #task-table tbody tr.row-highlighted > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--red-600) 16%, var(--card-bg)); }
+  #task-table tbody tr.task-row-urgent > td:has(> .actions-cell) { background-color: color-mix(in srgb, var(--delete) 10%, var(--card-bg)); }
+  #roadmap-table tbody tr.rm-row-selected > td:has(> .actions-cell) { background-color: var(--bg); }
+  .wk-table.wk-fixed td.wk-actions { background: var(--card-bg); }
+  /* Menu ⋯ đang mở: nổi trên các ô ghim của dòng khác. */
+  table td:has(> .actions-cell.ra-open) { z-index: 30; }
+}
+
+/* Nút thao tác đã thu gọn (21-row-actions.js) */
+.actions-cell.ra-done { flex-wrap: nowrap; justify-content: flex-end; gap: 4px; }
+td .actions-cell button.small.ra-icon-btn {
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vidc-color-text-secondary);
+}
+td .actions-cell button.small.ra-icon-btn:hover:not(:disabled) {
+  background: var(--vidc-color-background-subtle);
+  border-color: transparent;
+  color: var(--text);
+}
+td .actions-cell button.small.ra-icon-btn.ra-danger:hover:not(:disabled) {
+  background: var(--vidc-color-status-danger-surface);
+  color: var(--vidc-color-status-danger-text);
+}
+.ra-icon-btn .ra-icon { width: 16px; height: 16px; margin: 0; }
+.ra-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+td .actions-cell button.small.ra-more {
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+  letter-spacing: 1px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--vidc-color-text-secondary);
+}
+td .actions-cell button.small.ra-more:hover:not(:disabled),
+.actions-cell.ra-open button.small.ra-more {
+  background: var(--vidc-color-background-subtle);
+  color: var(--text);
+}
+.ra-menu {
+  position: fixed;
+  z-index: var(--vidc-z-dropdown);
+  min-width: 180px;
+  max-width: 280px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--card-bg);
+  border: 1px solid var(--vidc-color-border-default);
+  border-radius: var(--vidc-radius-md);
+  box-shadow: var(--dd-shadow);
+}
+.ra-menu[hidden] { display: none; }
+td .actions-cell .ra-menu button.small {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--vidc-radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: left;
+  white-space: nowrap;
+}
+td .actions-cell .ra-menu button.small:hover:not(:disabled) { background: var(--vidc-color-background-subtle); }
+td .actions-cell .ra-menu button.small.ra-danger { color: var(--vidc-color-status-danger-text); }
+td .actions-cell .ra-menu button.small.ra-danger:hover:not(:disabled) { background: var(--vidc-color-status-danger-surface); }
+.ra-menu .ra-sep { height: 1px; margin: 3px 4px; background: var(--vidc-color-border-default); }
+.actions-cell button > * { pointer-events: none; }
+td .actions-cell button.ra-more[hidden] { display: none; }
+/* Chữ ẩn (.ra-sr, position:absolute) phải neo vào chính nút — không thì trên
+   màn hẹp (ô không ghim) nó thoát khung cuộn của bảng và kéo rộng cả trang. */
+.ra-icon-btn { position: relative; }
